@@ -71,4 +71,137 @@
         WHERE id = #{id}
     </update>
 
+    <!-- PK로 사용자 단건 조회 (소프트 삭제 제외) -->
+    <select id="findById" resultMap="userResultMap">
+        SELECT id, username, email AS email, password_hash, name,
+               status, fail_count, locked_until, last_login_at,
+               password_changed_at, created_at, updated_at, deleted_at
+        FROM users
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </select>
+
+    <!--
+      사용자 목록 페이징 조회.
+      sort 컬럼은 Java 측에서 화이트리스트 검증 후 전달 (SQL Injection 방지).
+    -->
+    <select id="findPage" resultType="kr.co.ircp.cms.domain.auth.dto.UserSummary">
+        SELECT id, uuid, username, email AS email, name,
+               status, last_login_at AS lastLoginAt, created_at AS createdAt
+        FROM users
+        <where>
+            deleted_at IS NULL
+            <if test="search != null and search != ''">
+                AND (username ILIKE '%' || #{search} || '%'
+                  OR name     ILIKE '%' || #{search} || '%'
+                  OR email    ILIKE '%' || #{search} || '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sort == 'updatedAt,desc'">updated_at DESC</when>
+            <when test="sort == 'updatedAt,asc'">updated_at ASC</when>
+            <when test="sort == 'username,asc'">username ASC</when>
+            <when test="sort == 'username,desc'">username DESC</when>
+            <when test="sort == 'lastLoginAt,desc'">last_login_at DESC NULLS LAST</when>
+            <when test="sort == 'lastLoginAt,asc'">last_login_at ASC NULLS LAST</when>
+            <when test="sort == 'createdAt,asc'">created_at ASC</when>
+            <otherwise>created_at DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 조건부 전체 행 수 조회 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM users
+        <where>
+            deleted_at IS NULL
+            <if test="search != null and search != ''">
+                AND (username ILIKE '%' || #{search} || '%'
+                  OR name     ILIKE '%' || #{search} || '%'
+                  OR email    ILIKE '%' || #{search} || '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 사용자 신규 삽입 (useGeneratedKeys로 id 채움) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (username, email, password_hash, name, status,
+                           password_changed_at, created_at, updated_at)
+        VALUES (#{username}, #{email}, #{passwordHash}, #{name},
+                COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
+                NOW(), NOW(), NOW())
+    </insert>
+
+    <!-- 사용자 정보 수정 (email, name, status, updated_at) -->
+    <update id="update">
+        UPDATE users
+        SET email      = COALESCE(#{email}, email),
+            name       = COALESCE(#{name}, name),
+            status     = COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, status),
+            updated_at = NOW()
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 소프트 삭제 (status='DELETED', deleted_at 설정) -->
+    <update id="softDelete">
+        UPDATE users
+        SET status     = 'DELETED',
+            deleted_at = #{deletedAt},
+            updated_at = #{deletedAt}
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 사용자에게 부여된 역할 코드 집합 조회 -->
+    <select id="findRoleCodesByUserId" resultType="string">
+        SELECT role_code
+        FROM user_roles
+        WHERE user_id = #{id}
+    </select>
+
+    <!-- 사용자-역할 매핑 삽입 -->
+    <insert id="insertRole">
+        INSERT INTO user_roles (user_id, role_code, granted_at, granted_by)
+        VALUES (#{userId}, #{roleCode}, #{now}, #{grantedBy})
+        ON CONFLICT (user_id, role_code) DO NOTHING
+    </insert>
+
+    <!-- 사용자의 모든 역할 매핑 삭제 -->
+    <delete id="deleteRolesByUserId">
+        DELETE FROM user_roles WHERE user_id = #{userId}
+    </delete>
+
+    <!-- username 존재 여부 확인 (소프트 삭제 포함 — 유일성은 deleted 상관없이 유지) -->
+    <select id="existsByUsername" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM users
+        WHERE username = #{username}
+    </select>
+
+    <!-- email 존재 여부 확인 -->
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM users
+        WHERE email = #{email}
+    </select>
+
+    <!-- 계정 잠금 해제 (status=ACTIVE, locked_until=NULL, fail_count=0) -->
+    <update id="unlock">
+        UPDATE users
+        SET status       = 'ACTIVE',
+            locked_until = NULL,
+            fail_count   = 0,
+            updated_at   = #{now}
+        WHERE id = #{id}
+    </update>
+
 </mapper>

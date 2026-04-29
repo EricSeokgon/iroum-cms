@@ -44,12 +44,22 @@
     "comingSoon": "다음 사이클에서 제공 예정",
     "statusError": "오류"
   },
+  "common": {
+    "cancel": "취소",
+    "back": "뒤로"
+  },
   "users": {
     "title": "사용자 관리",
-    "empty": "사용자 데이터 없음",
-    "emptyDescription": "사용자 CRUD API는 SPEC-CMS-002 REQ-AUTH-006 다음 사이클에서 구현 예정입니다",
-    "search": "사용자명 또는 이메일 검색",
+    "empty": "사용자가 없습니다",
+    "emptyDescription": "검색 조건에 맞는 사용자가 없습니다",
+    "search": "사용자명·이메일·이름 검색",
     "filterStatus": "상태 필터",
+    "add": "사용자 추가",
+    "edit": "수정",
+    "delete": "삭제",
+    "unlock": "잠금 해제",
+    "forceLogout": "강제 로그아웃",
+    "passwordHint": "8자 이상, 영문 대·소문자·숫자·특수문자 중 3종 이상",
     "col": {
       "username": "사용자명",
       "email": "이메일",
@@ -58,15 +68,78 @@
       "lastLogin": "마지막 로그인",
       "actions": "액션"
     },
+    "field": {
+      "username": "사용자명",
+      "email": "이메일",
+      "password": "비밀번호",
+      "name": "이름",
+      "status": "상태",
+      "roleCodes": "역할",
+      "lastLoginAt": "마지막 로그인",
+      "createdAt": "가입일",
+      "updatedAt": "수정일",
+      "failCount": "로그인 실패 횟수",
+      "lockedUntil": "잠금 해제 시각",
+      "passwordChangedAt": "비밀번호 변경일"
+    },
     "status": {
-      "all": "전체",
-      "active": "활성",
-      "inactive": "비활성",
-      "locked": "잠김",
-      "deleted": "삭제됨"
+      "ALL": "전체",
+      "ACTIVE": "활성",
+      "INACTIVE": "비활성",
+      "LOCKED": "잠김",
+      "DELETED": "삭제됨"
+    },
+    "role": {
+      "SUPER_ADMIN": "슈퍼 관리자",
+      "DEPT_ADMIN": "부서 관리자",
+      "EDITOR": "에디터",
+      "VIEWER": "뷰어"
     },
     "action": {
-      "edit": "수정"
+      "view": "보기",
+      "edit": "수정",
+      "delete": "삭제",
+      "unlock": "잠금 해제",
+      "forceLogout": "강제 로그아웃"
+    },
+    "confirm": {
+      "delete": "{name} 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+      "unlock": "{name} 사용자의 잠금을 해제하시겠습니까?",
+      "forceLogout": "{name} 사용자를 강제 로그아웃하시겠습니까?"
+    },
+    "error": {
+      "loadFailed": "사용자 목록을 불러오지 못했습니다",
+      "saveFailed": "저장 중 오류가 발생했습니다",
+      "deleteFailed": "삭제 중 오류가 발생했습니다",
+      "unlockFailed": "잠금 해제 중 오류가 발생했습니다",
+      "forceLogoutFailed": "강제 로그아웃 중 오류가 발생했습니다",
+      "duplicateUsername": "이미 사용 중인 사용자명입니다",
+      "duplicateEmail": "이미 사용 중인 이메일입니다",
+      "passwordPolicy": "비밀번호는 8자 이상, 영문 대·소문자·숫자·특수문자 중 3종 이상이어야 합니다",
+      "notFound": "사용자를 찾을 수 없습니다",
+      "usernameRequired": "사용자명을 입력해 주세요",
+      "usernameLength": "사용자명은 3~50자 사이여야 합니다",
+      "emailRequired": "이메일을 입력해 주세요",
+      "emailInvalid": "올바른 이메일 형식이 아닙니다",
+      "passwordRequired": "비밀번호를 입력해 주세요",
+      "nameRequired": "이름을 입력해 주세요",
+      "roleRequired": "역할을 하나 이상 선택해 주세요"
+    },
+    "success": {
+      "created": "사용자가 생성되었습니다",
+      "updated": "사용자 정보가 수정되었습니다",
+      "deleted": "사용자가 삭제되었습니다",
+      "unlocked": "잠금이 해제되었습니다",
+      "forcedLogout": "강제 로그아웃이 완료되었습니다"
+    },
+    "detail": {
+      "title": "사용자 상세",
+      "basicInfo": "기본 정보",
+      "roles": "역할",
+      "noRoles": "할당된 역할 없음",
+      "activity": "활동 정보",
+      "loginHistory": "로그인 이력",
+      "loginHistoryPlaceholder": "로그인 이력 조회는 SPEC-CMS-005에서 구현 예정입니다"
     }
   },
   "health": {

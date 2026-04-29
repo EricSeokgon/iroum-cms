@@ -1,10 +1,12 @@
 package kr.co.ircp.cms.config;
 
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
+import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
+import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -86,6 +88,34 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Password Policy Violation");
         detail.setProperty("code", "PASSWORD_POLICY");
+        return detail;
+    }
+
+    /**
+     * 사용자 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-AUTH-006 — id에 해당하는 사용자가 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ProblemDetail handleUserNotFound(UserNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("User Not Found");
+        detail.setProperty("code", "USER_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 중복 사용자 → HTTP 409 Conflict.
+     *
+     * <p>REQ-AUTH-006 — username 또는 email이 이미 존재하는 경우.
+     */
+    @ExceptionHandler(DuplicateUserException.class)
+    public ProblemDetail handleDuplicateUser(DuplicateUserException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate User");
+        detail.setProperty("code", "USER_DUPLICATE");
         return detail;
     }
 }

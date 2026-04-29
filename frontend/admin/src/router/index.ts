@@ -36,6 +36,13 @@ const router = createRouter({
           meta: { title: '사용자 관리' },
         },
         {
+          path: 'users/:id',
+          name: 'user-detail',
+          component: () => import('@/views/users/UserDetailView.vue'),
+          props: true,
+          meta: { title: '사용자 상세' },
+        },
+        {
           path: 'health',
           name: 'health',
           component: () => import('@/views/HealthView.vue'),

@@ -63,7 +63,7 @@ export interface RefreshResult {
   refreshExpiresInSeconds: number
 }
 
-// ── 사용자 타입 ──────────────────────────────────────────────────────────────
+// ── 사용자 타입 (SPEC-CMS-002 REQ-AUTH-006) ──────────────────────────────────
 
 /** 사용자 상태 코드 */
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'LOCKED' | 'DELETED'
@@ -76,5 +76,49 @@ export interface UserSummary {
   email: string
   name: string
   status: UserStatus
-  lastLoginAt?: string
+  lastLoginAt?: string  // ISO 8601
+  createdAt: string
+}
+
+/** 사용자 상세 DTO */
+export interface UserDetail extends UserSummary {
+  failCount: number
+  lockedUntil?: string
+  passwordChangedAt: string
+  updatedAt: string
+  roleCodes: string[]
+}
+
+/** 사용자 생성 요청 */
+export interface UserCreateRequest {
+  username: string
+  email: string
+  password: string
+  name: string
+  status?: UserStatus
+  roleCodes: string[]
+}
+
+/** 사용자 수정 요청 */
+export interface UserUpdateRequest {
+  email?: string
+  name?: string
+  status?: UserStatus
+  roleCodes?: string[]
+}
+
+/** 현재 로그인 사용자 정보 */
+export interface UserSelf {
+  id: number
+  uuid: string
+  username: string
+  email: string
+  name: string
+  roleCodes: string[]
+}
+
+/** 현재 로그인 사용자 수정 요청 */
+export interface UserSelfUpdateRequest {
+  email?: string
+  name?: string
 }

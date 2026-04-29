@@ -44,12 +44,22 @@
     "comingSoon": "Coming in next cycle",
     "statusError": "Error"
   },
+  "common": {
+    "cancel": "Cancel",
+    "back": "Back"
+  },
   "users": {
     "title": "User Management",
-    "empty": "No users",
-    "emptyDescription": "User CRUD API will be implemented in the next cycle (SPEC-CMS-002 REQ-AUTH-006)",
-    "search": "Search by username or email",
+    "empty": "No users found",
+    "emptyDescription": "No users match the current filters",
+    "search": "Search by username, email or name",
     "filterStatus": "Filter by status",
+    "add": "Add User",
+    "edit": "Edit",
+    "delete": "Delete",
+    "unlock": "Unlock",
+    "forceLogout": "Force Logout",
+    "passwordHint": "Min 8 characters with uppercase, lowercase, number and special character (3 of 4 types)",
     "col": {
       "username": "Username",
       "email": "Email",
@@ -58,15 +68,78 @@
       "lastLogin": "Last Login",
       "actions": "Actions"
     },
+    "field": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "name": "Name",
+      "status": "Status",
+      "roleCodes": "Roles",
+      "lastLoginAt": "Last Login",
+      "createdAt": "Registered",
+      "updatedAt": "Updated",
+      "failCount": "Failed Login Count",
+      "lockedUntil": "Locked Until",
+      "passwordChangedAt": "Password Changed"
+    },
     "status": {
-      "all": "All",
-      "active": "Active",
-      "inactive": "Inactive",
-      "locked": "Locked",
-      "deleted": "Deleted"
+      "ALL": "All",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "LOCKED": "Locked",
+      "DELETED": "Deleted"
+    },
+    "role": {
+      "SUPER_ADMIN": "Super Admin",
+      "DEPT_ADMIN": "Dept Admin",
+      "EDITOR": "Editor",
+      "VIEWER": "Viewer"
     },
     "action": {
-      "edit": "Edit"
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "unlock": "Unlock",
+      "forceLogout": "Force Logout"
+    },
+    "confirm": {
+      "delete": "Delete user {name}? This action cannot be undone.",
+      "unlock": "Unlock account for {name}?",
+      "forceLogout": "Force logout {name}?"
+    },
+    "error": {
+      "loadFailed": "Failed to load users",
+      "saveFailed": "An error occurred while saving",
+      "deleteFailed": "An error occurred while deleting",
+      "unlockFailed": "An error occurred while unlocking",
+      "forceLogoutFailed": "An error occurred during force logout",
+      "duplicateUsername": "Username is already taken",
+      "duplicateEmail": "Email is already in use",
+      "passwordPolicy": "Password must be at least 8 characters with 3 of 4 types: uppercase, lowercase, number, special",
+      "notFound": "User not found",
+      "usernameRequired": "Please enter a username",
+      "usernameLength": "Username must be 3–50 characters",
+      "emailRequired": "Please enter an email",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Please enter a password",
+      "nameRequired": "Please enter a name",
+      "roleRequired": "Please select at least one role"
+    },
+    "success": {
+      "created": "User created successfully",
+      "updated": "User updated successfully",
+      "deleted": "User deleted successfully",
+      "unlocked": "Account unlocked successfully",
+      "forcedLogout": "Force logout completed"
+    },
+    "detail": {
+      "title": "User Detail",
+      "basicInfo": "Basic Information",
+      "roles": "Roles",
+      "noRoles": "No roles assigned",
+      "activity": "Activity",
+      "loginHistory": "Login History",
+      "loginHistoryPlaceholder": "Login history will be available in SPEC-CMS-005"
     }
   },
   "health": {
