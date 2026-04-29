@@ -8,6 +8,7 @@
     "dashboard": "Dashboard",
     "users": "User Management",
     "organizations": "Organization",
+    "roles": "Roles & Permissions",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu"
@@ -84,6 +85,7 @@
   "common": {
     "cancel": "Cancel",
     "back": "Back",
+    "loading": "Loading...",
     "error": {
       "network": "Unable to connect to server. Please try again later.",
       "unknown": "An unknown error occurred"
@@ -285,6 +287,80 @@
     "skipNav": "Skip to main content",
     "languageSelect": "Select language",
     "currentUser": "Current user",
-    "pagination": "Page navigation"
+    "pagination": "Page navigation",
+    "permissionCell": "{resource} resource — {action} action",
+    "permissionNotAvailable": "Not applicable"
+  },
+  "roles": {
+    "title": "Roles & Permissions",
+    "list": "Role List",
+    "detail": "Permission Matrix",
+    "field": {
+      "code": "Code",
+      "name": "Name",
+      "description": "Description",
+      "isSystem": "System Role",
+      "aliasedTo": "Aliased To",
+      "userCount": "Users",
+      "permissionCount": "Permissions",
+      "createdAt": "Created"
+    },
+    "action": {
+      "add": "Add Role",
+      "edit": "Edit",
+      "delete": "Delete",
+      "save": "Save Changes",
+      "reset": "Reset"
+    },
+    "matrix": {
+      "title": "{role} Permission Matrix",
+      "noChanges": "No changes",
+      "saved": "Permissions saved",
+      "selectRoleHint": "Select a role from the left panel",
+      "systemRoleReadonly": "System role permissions are read-only (code cannot be changed)"
+    },
+    "form": {
+      "createTitle": "New Role",
+      "editTitle": "Edit Role: {code}",
+      "codeHint": "Uppercase letters and underscores only, 3–50 characters (e.g. CONTENT_REVIEWER)"
+    },
+    "error": {
+      "duplicateCode": "Role code is already in use",
+      "invalidCode": "Invalid role code format (uppercase letters and underscores, 3–50 chars)",
+      "systemRoleProtected": "System roles cannot be deleted",
+      "hasUsers": "Cannot delete role — {count} user(s) assigned",
+      "notFound": "Role not found"
+    },
+    "success": {
+      "created": "Role created successfully",
+      "updated": "Role updated successfully",
+      "deleted": "Role deleted successfully",
+      "permissionsUpdated": "Permissions updated successfully"
+    },
+    "alias": "Alias of {aliasedTo}"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "field": {
+      "code": "Code",
+      "resource": "Resource",
+      "action": "Action",
+      "description": "Description"
+    },
+    "resource": {
+      "USER": "User",
+      "ORGANIZATION": "Organization",
+      "ROLE": "Role",
+      "PERMISSION": "Permission",
+      "AUDIT": "Audit Log",
+      "SYSTEM": "System"
+    },
+    "action": {
+      "READ": "Read",
+      "WRITE": "Write",
+      "DELETE": "Delete",
+      "EXECUTE": "Execute",
+      "ADMIN": "Admin"
+    }
   }
 }

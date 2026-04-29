@@ -201,3 +201,56 @@ export interface OrganizationHistoryEntry {
   changedAt: string
   changeSummary?: string
 }
+
+// ── 역할 타입 (REQ-AUTH-013) ──────────────────────────────────────────────────
+
+/** 역할 목록용 요약 DTO */
+export interface RoleSummary {
+  code: string
+  name: string
+  description?: string
+  isSystem: boolean
+  aliasedTo?: string | null
+  userCount: number
+  permissionCount: number
+  createdAt: string
+}
+
+/** 역할 상세 DTO (권한 코드 목록 포함) */
+export interface RoleDetail {
+  code: string
+  name: string
+  description?: string
+  isSystem: boolean
+  aliasedTo?: string | null
+  userCount: number
+  permissionCodes: string[]
+  createdAt: string
+}
+
+/** 역할 생성 요청 */
+export interface RoleCreateRequest {
+  /** ^[A-Z_]{3,50}$ */
+  code: string
+  name: string
+  description?: string
+  permissionCodes: string[]
+}
+
+/** 역할 수정 요청 */
+export interface RoleUpdateRequest {
+  name?: string
+  description?: string
+  permissionCodes?: string[]
+}
+
+// ── 권한 타입 (REQ-AUTH-013) ──────────────────────────────────────────────────
+
+/** 권한 카탈로그 항목 */
+export interface PermissionSummary {
+  /** "USER:READ" 형식의 권한 코드 */
+  code: string
+  resource: string
+  action: 'READ' | 'WRITE' | 'DELETE' | 'EXECUTE' | 'ADMIN'
+  description?: string
+}

@@ -60,6 +60,12 @@ const router = createRouter({
           component: () => import('@/views/organizations/OrganizationTreeView.vue'),
           meta: { title: '조직 관리' },
         },
+        {
+          path: 'roles',
+          name: 'role-matrix',
+          component: () => import('@/views/roles/RoleMatrixView.vue'),
+          meta: { title: '역할/권한 관리' },
+        },
       ],
     },
 

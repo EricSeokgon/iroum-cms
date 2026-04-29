@@ -50,6 +50,16 @@
           <span>{{ t('nav.health') }}</span>
         </el-menu-item>
 
+        <!-- 역할/권한 관리 — SUPER_ADMIN 또는 DEPT_ADMIN -->
+        <el-menu-item
+          v-if="hasPermission(auth, 'ROLE:READ')"
+          index="/roles"
+          :aria-label="t('nav.roles')"
+        >
+          <el-icon><i-ep-lock /></el-icon>
+          <span>{{ t('nav.roles') }}</span>
+        </el-menu-item>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 
@@ -129,6 +139,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+
+// 권한 기반 메뉴 노출 헬퍼
+function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string): boolean {
+  const roles: string[] = auth.user?.roleCodes ?? []
+  if (roles.includes('SUPER_ADMIN')) return true
+  if (permission === 'ROLE:READ' && roles.includes('DEPT_ADMIN')) return true
+  return false
+}
 
 const { t, locale } = useI18n()
 const route = useRoute()
