@@ -7,9 +7,12 @@ import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.repository.LoginHistoryMapper;
+import kr.co.ircp.cms.domain.auth.repository.PasswordHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
@@ -22,14 +25,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,6 +57,7 @@ class AuthServiceTest {
     @Mock private TokenBlacklistMapper tokenBlacklistMapper;
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private PasswordPolicyService passwordPolicyService;
+    @Mock private PasswordHistoryMapper passwordHistoryMapper;
 
     private JwtProperties jwtProperties;
     private AuthService authService;
@@ -64,7 +72,7 @@ class AuthServiceTest {
         authService = new AuthServiceImpl(
                 userMapper, refreshTokenMapper, loginHistoryMapper,
                 tokenBlacklistMapper, jwtTokenProvider, passwordPolicyService,
-                jwtProperties);
+                passwordHistoryMapper, jwtProperties);
     }
 
     // ============================================================
@@ -304,6 +312,132 @@ class AuthServiceTest {
 
         verify(tokenBlacklistMapper).insert(argThat(entry ->
                 sha256Hex("access.token").equals(entry.getTokenHash())));
+    }
+
+    // ============================================================
+    // REQ-AUTH-009 / REQ-AUTH-010: 비밀번호 변경 + 재사용 금지
+    // ============================================================
+
+    @Test
+    @DisplayName("REQ-AUTH-009: 현재 비밀번호 일치 + 새 비밀번호 정책 준수 → 변경 성공")
+    void changePassword_succeeds_whenCurrentMatches_andNewIsCompliant() {
+        User user = activeUser(10L, "admin", 0);
+        when(userMapper.findById(10L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
+        when(passwordHistoryMapper.findRecentHashes(10L, 5)).thenReturn(List.of());
+        when(passwordPolicyService.matches("NewP@ss456!", any())).thenReturn(false);
+        when(passwordPolicyService.hash("NewP@ss456!")).thenReturn("$2a$12$newHash");
+
+        authService.changePassword(10L, "OldP@ss123", "NewP@ss456!");
+
+        verify(userMapper).updatePassword(eq(10L), eq("$2a$12$newHash"), any(Instant.class));
+        verify(passwordHistoryMapper).insert(eq(10L), eq("$2a$12$newHash"), any(Instant.class));
+        verify(refreshTokenMapper).revokeAllForUser(eq(10L), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-009: 현재 비밀번호 불일치 → InvalidCredentialsException")
+    void changePassword_throwsInvalidCredentials_whenCurrentMismatch() {
+        User user = activeUser(11L, "admin", 0);
+        when(userMapper.findById(11L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("WrongOld", user.getPasswordHash())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.changePassword(11L, "WrongOld", "NewP@ss456!"))
+                .isInstanceOf(InvalidCredentialsException.class);
+
+        verify(userMapper, never()).updatePassword(anyLong(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-009: 새 비밀번호 정책 위반 → PasswordPolicyViolationException")
+    void changePassword_throwsPasswordPolicy_whenNewWeak() {
+        User user = activeUser(12L, "admin", 0);
+        when(userMapper.findById(12L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
+        doThrow(new PasswordPolicyViolationException("정책 위반"))
+                .when(passwordPolicyService).validate("weak");
+
+        assertThatThrownBy(() -> authService.changePassword(12L, "OldP@ss123", "weak"))
+                .isInstanceOf(PasswordPolicyViolationException.class);
+
+        verify(userMapper, never()).updatePassword(anyLong(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-010: 새 비밀번호가 현재 해시와 동일 → PasswordReuseException")
+    void changePassword_throwsPasswordReuse_whenNewMatchesCurrentHash() {
+        User user = activeUser(13L, "admin", 0);
+        when(userMapper.findById(13L)).thenReturn(Optional.of(user));
+        // 현재 비밀번호 검증: OldP@ss123 일치
+        when(passwordPolicyService.matches(eq("OldP@ss123"), eq(user.getPasswordHash()))).thenReturn(true);
+        when(passwordHistoryMapper.findRecentHashes(13L, 5)).thenReturn(List.of());
+        // 새 비번이 현재 해시와 일치 → 재사용 탐지
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), eq(user.getPasswordHash()))).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.changePassword(13L, "OldP@ss123", "NewP@ss456!"))
+                .isInstanceOf(PasswordReuseException.class);
+
+        verify(userMapper, never()).updatePassword(anyLong(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-010: 새 비밀번호가 이력 항목과 일치 → PasswordReuseException")
+    void changePassword_throwsPasswordReuse_whenNewMatchesHistoryEntry() {
+        User user = activeUser(14L, "admin", 0);
+        String historyHash = "$2a$12$oldHistoryHash";
+        when(userMapper.findById(14L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
+        when(passwordHistoryMapper.findRecentHashes(14L, 5)).thenReturn(List.of(historyHash));
+        // 새 비번이 현재 해시와는 다르지만 이력 해시와 일치
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), eq(user.getPasswordHash()))).thenReturn(false);
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), eq(historyHash))).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.changePassword(14L, "OldP@ss123", "NewP@ss456!"))
+                .isInstanceOf(PasswordReuseException.class);
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-009: 변경 성공 시 새 해시가 DB와 이력에 모두 적재됨")
+    void changePassword_persistsNewHashAndHistory() {
+        User user = activeUser(15L, "admin", 0);
+        when(userMapper.findById(15L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
+        when(passwordHistoryMapper.findRecentHashes(15L, 5)).thenReturn(List.of());
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), any())).thenReturn(false);
+        when(passwordPolicyService.hash("NewP@ss456!")).thenReturn("$2a$12$newHash");
+
+        authService.changePassword(15L, "OldP@ss123", "NewP@ss456!");
+
+        verify(userMapper).updatePassword(eq(15L), eq("$2a$12$newHash"), any(Instant.class));
+        verify(passwordHistoryMapper).insert(eq(15L), eq("$2a$12$newHash"), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-009: 변경 성공 시 해당 사용자의 모든 Refresh Token 무효화")
+    void changePassword_revokesAllRefreshTokens() {
+        User user = activeUser(16L, "admin", 0);
+        when(userMapper.findById(16L)).thenReturn(Optional.of(user));
+        when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
+        when(passwordHistoryMapper.findRecentHashes(16L, 5)).thenReturn(List.of());
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), any())).thenReturn(false);
+        when(passwordPolicyService.hash("NewP@ss456!")).thenReturn("$2a$12$newHash");
+
+        authService.changePassword(16L, "OldP@ss123", "NewP@ss456!");
+
+        verify(refreshTokenMapper).revokeAllForUser(eq(16L), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-009: @AuditLog 어노테이션 — changePassword 메서드에 PASSWORD_CHANGE 적용 확인")
+    void changePassword_recordsAuditLog() throws NoSuchMethodException {
+        // @AuditLog 어노테이션이 changePassword 구현체에 선언되어 있는지 간접 검증
+        var method = AuthServiceImpl.class.getDeclaredMethod(
+                "changePassword", long.class, String.class, String.class);
+        var annotation = method.getAnnotation(kr.co.ircp.cms.domain.audit.annotation.AuditLog.class);
+
+        assertThat(annotation).isNotNull();
+        assertThat(annotation.action()).isEqualTo("PASSWORD_CHANGE");
+        assertThat(annotation.entityType()).isEqualTo("User");
     }
 
     // ============================================================

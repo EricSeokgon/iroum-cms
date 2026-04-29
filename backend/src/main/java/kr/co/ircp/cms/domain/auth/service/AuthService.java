@@ -5,6 +5,8 @@ import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 
@@ -65,4 +67,21 @@ public interface AuthService {
      * @param refreshTokenCookie Cookie의 Refresh Token 값
      */
     void logout(String accessToken, String refreshTokenCookie);
+
+    /**
+     * 비밀번호 변경.
+     *
+     * <p>REQ-AUTH-009 — 현재 비밀번호 확인 후 새 비밀번호로 변경.
+     * REQ-AUTH-010 — 직전 5회 사용한 비밀번호 재사용 금지.
+     * 변경 성공 시 모든 Refresh Token을 무효화하여 재로그인을 강제한다.
+     *
+     * @param userId          변경 대상 사용자 PK (JwtPrincipal에서 추출)
+     * @param currentPassword 현재 비밀번호 (본인 확인)
+     * @param newPassword     변경할 새 비밀번호
+     * @throws InvalidCredentialsException    현재 비밀번호 불일치
+     * @throws PasswordPolicyViolationException 새 비밀번호 정책 위반
+     * @throws PasswordReuseException         직전 5개 비밀번호 재사용
+     */
+    void changePassword(long userId, String currentPassword, String newPassword)
+            throws InvalidCredentialsException, PasswordPolicyViolationException, PasswordReuseException;
 }

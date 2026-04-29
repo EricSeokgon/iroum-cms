@@ -12,16 +12,21 @@ import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.repository.LoginHistoryMapper;
+import kr.co.ircp.cms.domain.auth.repository.PasswordHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,6 +48,7 @@ public class AuthServiceImpl implements AuthService {
     private final TokenBlacklistMapper tokenBlacklistMapper;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordPolicyService passwordPolicyService;
+    private final PasswordHistoryMapper passwordHistoryMapper;
     private final JwtProperties jwtProperties;
 
     public AuthServiceImpl(
@@ -52,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
             TokenBlacklistMapper tokenBlacklistMapper,
             JwtTokenProvider jwtTokenProvider,
             PasswordPolicyService passwordPolicyService,
+            PasswordHistoryMapper passwordHistoryMapper,
             JwtProperties jwtProperties) {
         this.userMapper = userMapper;
         this.refreshTokenMapper = refreshTokenMapper;
@@ -59,6 +66,7 @@ public class AuthServiceImpl implements AuthService {
         this.tokenBlacklistMapper = tokenBlacklistMapper;
         this.jwtTokenProvider = jwtTokenProvider;
         this.passwordPolicyService = passwordPolicyService;
+        this.passwordHistoryMapper = passwordHistoryMapper;
         this.jwtProperties = jwtProperties;
     }
 
@@ -250,6 +258,56 @@ public class AuthServiceImpl implements AuthService {
                     .expiresAt(expiresAt)
                     .build());
         }
+    }
+
+    /**
+     * 비밀번호 변경.
+     *
+     * <p>REQ-AUTH-009, REQ-AUTH-010 흐름:
+     * 사용자 조회 → 현재 비밀번호 검증 → 새 비밀번호 정책 검증 → 직전 5개 재사용 검사
+     * → 비밀번호 갱신 → 이력 적재 → Refresh Token 전체 무효화.
+     */
+    // @MX:ANCHOR: [AUTO] AuthServiceImpl.changePassword — 비밀번호 변경 핵심 도메인 흐름 (fan_in >= 3)
+    // @MX:REASON: AuthController, 관리자 서비스, 테스트에서 참조; 재사용 금지·정책·세션 무효화 보안 계약 포함
+    @Override
+    @Transactional
+    @AuditLog(action = "PASSWORD_CHANGE", entityType = "User", severity = "INFO")
+    public void changePassword(long userId, String currentPassword, String newPassword) {
+        Instant now = Instant.now();
+
+        // 1. 사용자 조회
+        User user = userMapper.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("사용자를 찾을 수 없습니다"));
+
+        // 2. 현재 비밀번호 검증
+        if (!passwordPolicyService.matches(currentPassword, user.getPasswordHash())) {
+            throw new InvalidCredentialsException("현재 비밀번호가 일치하지 않습니다");
+        }
+
+        // 3. 새 비밀번호 정책 검증 (길이·복잡도)
+        passwordPolicyService.validate(newPassword);
+
+        // 4. 직전 5개 재사용 금지 (REQ-AUTH-010)
+        // history 최근 5개 + 현재 해시 모두 비교 대상
+        List<String> recentHashes = passwordHistoryMapper.findRecentHashes(userId, 5);
+        Set<String> hashesToCheck = new HashSet<>(recentHashes);
+        hashesToCheck.add(user.getPasswordHash());
+
+        boolean reused = hashesToCheck.stream()
+                .anyMatch(h -> passwordPolicyService.matches(newPassword, h));
+        if (reused) {
+            throw new PasswordReuseException("최근 5회 사용한 비밀번호는 재사용할 수 없습니다");
+        }
+
+        // 5. 새 비밀번호 해시 생성 및 갱신
+        String newHash = passwordPolicyService.hash(newPassword);
+        userMapper.updatePassword(userId, newHash, now);
+
+        // 6. 비밀번호 이력 적재
+        passwordHistoryMapper.insert(userId, newHash, now);
+
+        // 7. 모든 Refresh Token 무효화 → 재로그인 강제
+        refreshTokenMapper.revokeAllForUser(userId, now);
     }
 
     /**

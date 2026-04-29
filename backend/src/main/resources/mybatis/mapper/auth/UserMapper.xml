@@ -204,4 +204,14 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 비밀번호 해시 갱신 (REQ-AUTH-009) -->
+    <update id="updatePassword">
+        UPDATE users
+        SET password_hash       = #{hash},
+            password_changed_at = #{now},
+            updated_at          = #{now}
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
 </mapper>

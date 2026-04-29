@@ -4,6 +4,7 @@ import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
@@ -116,6 +117,20 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT, ex.getMessage());
         detail.setTitle("Duplicate User");
         detail.setProperty("code", "USER_DUPLICATE");
+        return detail;
+    }
+
+    /**
+     * 비밀번호 재사용 금지 위반 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-AUTH-010 — 직전 5회 사용한 비밀번호 재사용 시도.
+     */
+    @ExceptionHandler(PasswordReuseException.class)
+    public ProblemDetail handlePasswordReuse(PasswordReuseException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Password Reuse Prohibited");
+        detail.setProperty("code", "PASSWORD_REUSE");
         return detail;
     }
 }

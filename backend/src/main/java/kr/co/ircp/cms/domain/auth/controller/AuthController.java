@@ -5,12 +5,16 @@ import jakarta.validation.Valid;
 import kr.co.ircp.cms.config.JwtProperties;
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
+import kr.co.ircp.cms.domain.auth.dto.PasswordChangeRequest;
+import kr.co.ircp.cms.domain.auth.dto.PasswordChangeResponse;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -124,6 +128,33 @@ public class AuthController {
                 .path("/api/v1/auth")
                 .maxAge(jwtProperties.refreshTokenTtl())
                 .build();
+    }
+
+    /**
+     * POST /api/v1/auth/password/change — 비밀번호 변경.
+     *
+     * <p>REQ-AUTH-009 — 현재 비밀번호 확인 후 새 비밀번호로 변경.
+     * REQ-AUTH-010 — 직전 5회 사용한 비밀번호 재사용 금지.
+     * 변경 성공 시 모든 Refresh Token 무효화 + refresh_token 쿠키 즉시 삭제.
+     */
+    @PostMapping("/password/change")
+    public ResponseEntity<PasswordChangeResponse> changePassword(
+            @Valid @RequestBody PasswordChangeRequest req,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        authService.changePassword(principal.userId(), req.currentPassword(), req.newPassword());
+
+        // 모든 refresh token 무효화 후 클라이언트 쿠키도 즉시 삭제
+        ResponseCookie clearCookie = ResponseCookie.from(REFRESH_COOKIE, "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/api/v1/auth")
+                .maxAge(0)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
+                .body(new PasswordChangeResponse("비밀번호가 변경되었습니다. 다시 로그인해 주세요."));
     }
 
     /**

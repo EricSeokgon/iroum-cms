@@ -44,9 +44,49 @@
     "comingSoon": "다음 사이클에서 제공 예정",
     "statusError": "오류"
   },
+  "account": {
+    "title": "내 정보",
+    "password": {
+      "title": "비밀번호 변경",
+      "current": "현재 비밀번호",
+      "new": "새 비밀번호",
+      "confirm": "새 비밀번호 확인",
+      "submit": "변경",
+      "success": "비밀번호가 변경되었습니다. 잠시 후 로그인 페이지로 이동합니다.",
+      "policyHint": "8자 이상, 대소문자/숫자/특수문자 중 3종 이상 조합",
+      "error": {
+        "currentRequired": "현재 비밀번호를 입력해 주세요",
+        "newRequired": "새 비밀번호를 입력해 주세요",
+        "confirmRequired": "새 비밀번호 확인을 입력해 주세요",
+        "currentMismatch": "현재 비밀번호가 일치하지 않습니다",
+        "policy": "비밀번호는 8자 이상, 대소문자/숫자/특수문자 중 3종 이상이어야 합니다",
+        "reuse": "최근 5회 사용한 비밀번호입니다. 다른 비밀번호를 입력해 주세요.",
+        "confirmMismatch": "새 비밀번호와 확인이 일치하지 않습니다",
+        "sameAsCurrent": "현재 비밀번호와 다른 비밀번호를 입력하세요"
+      },
+      "strength": {
+        "label": "비밀번호 강도",
+        "veryWeak": "매우 약함",
+        "weak": "약함",
+        "fair": "보통",
+        "good": "강함",
+        "veryStrong": "매우 강함"
+      }
+    }
+  },
+  "login": {
+    "notice": {
+      "passwordChanged": "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
+      "sessionExpired": "세션이 만료되었습니다. 다시 로그인해 주세요."
+    }
+  },
   "common": {
     "cancel": "취소",
-    "back": "뒤로"
+    "back": "뒤로",
+    "error": {
+      "network": "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
+      "unknown": "알 수 없는 오류가 발생했습니다"
+    }
   },
   "users": {
     "title": "사용자 관리",

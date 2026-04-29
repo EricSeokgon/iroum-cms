@@ -156,4 +156,15 @@ public interface UserMapper {
      * <p>REQ-AUTH-001 — 로그인 성공 시 last_login_at=now, updated_at=now.
      */
     void updateLastLoginAt(@Param("id") long id, @Param("now") Instant now);
+
+    /**
+     * 비밀번호 해시 갱신.
+     *
+     * <p>REQ-AUTH-009 — 비밀번호 변경 시 password_hash + password_changed_at + updated_at 갱신.
+     *
+     * @param id   사용자 PK
+     * @param hash 새 BCrypt 해시
+     * @param now  변경 시각
+     */
+    void updatePassword(@Param("id") long id, @Param("hash") String hash, @Param("now") Instant now);
 }

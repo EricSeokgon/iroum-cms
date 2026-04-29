@@ -6,10 +6,13 @@ import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.config.JwtProperties;
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
+import kr.co.ircp.cms.domain.auth.dto.PasswordChangeRequest;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
-import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
+import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,16 +25,23 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -144,5 +154,79 @@ class AuthControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refresh_token=")))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")));
+    }
+
+    // ============================================================
+    // REQ-AUTH-009 / REQ-AUTH-010: POST /password/change
+    // ============================================================
+
+    /**
+     * JwtPrincipal을 SecurityContext에 주입하는 헬퍼.
+     */
+    private UsernamePasswordAuthenticationToken principalAuth(long userId) {
+        JwtPrincipal principal = new JwtPrincipal(userId, "admin", Set.of("VIEWER"));
+        return new UsernamePasswordAuthenticationToken(
+                principal, null, List.of(new SimpleGrantedAuthority("ROLE_VIEWER")));
+    }
+
+    @Test
+    @DisplayName("POST /password/change — 200 OK + Cookie 삭제(Max-Age=0)")
+    void postPasswordChange_returns200_andClearsCookie() throws Exception {
+        doNothing().when(authService).changePassword(anyLong(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .with(authentication(principalAuth(1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordChangeRequest("OldP@ss123", "NewP@ss456!"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("비밀번호가 변경되었습니다. 다시 로그인해 주세요."))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refresh_token=")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")));
+    }
+
+    @Test
+    @DisplayName("POST /password/change — 401 현재 비밀번호 불일치 (InvalidCredentialsException)")
+    void postPasswordChange_returns401_onCurrentMismatch() throws Exception {
+        doThrow(new InvalidCredentialsException("현재 비밀번호가 일치하지 않습니다"))
+                .when(authService).changePassword(anyLong(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .with(authentication(principalAuth(1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordChangeRequest("WrongOld", "NewP@ss456!"))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTH_INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    @DisplayName("POST /password/change — 400 새 비밀번호 정책 위반 (PASSWORD_POLICY)")
+    void postPasswordChange_returns400_onPasswordPolicy() throws Exception {
+        doThrow(new PasswordPolicyViolationException("비밀번호 정책 위반"))
+                .when(authService).changePassword(anyLong(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .with(authentication(principalAuth(1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordChangeRequest("OldP@ss123", "weak"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PASSWORD_POLICY"));
+    }
+
+    @Test
+    @DisplayName("POST /password/change — 400 비밀번호 재사용 금지 (PASSWORD_REUSE)")
+    void postPasswordChange_returns400_onPasswordReuse() throws Exception {
+        doThrow(new PasswordReuseException("최근 5회 사용한 비밀번호는 재사용할 수 없습니다"))
+                .when(authService).changePassword(anyLong(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/change")
+                        .with(authentication(principalAuth(1L)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordChangeRequest("OldP@ss123", "OldP@ss123"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PASSWORD_REUSE"));
     }
 }

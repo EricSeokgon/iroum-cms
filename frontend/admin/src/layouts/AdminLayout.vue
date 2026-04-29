@@ -82,26 +82,31 @@
             <el-option label="English" value="en" />
           </el-select>
 
-          <!-- 사용자 표시 -->
-          <span
+          <!-- 사용자 드롭다운 — 비밀번호 변경 / 로그아웃 -->
+          <el-dropdown
             v-if="auth.user"
-            class="text-sm text-gray-600"
-            :aria-label="`${t('a11y.currentUser')}: ${auth.user.username}`"
+            trigger="click"
+            @command="handleUserCommand"
           >
-            {{ auth.user.username }}
-          </span>
-
-          <!-- 헤더 로그아웃 버튼 -->
-          <el-button
-            size="small"
-            type="danger"
-            plain
-            @click="handleLogout"
-            :loading="loggingOut"
-            :aria-label="t('nav.logout')"
-          >
-            {{ t('nav.logout') }}
-          </el-button>
+            <span
+              class="flex cursor-pointer items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+              :aria-label="`${t('a11y.currentUser')}: ${auth.user.username}`"
+              tabindex="0"
+            >
+              {{ auth.user.username }}
+              <el-icon class="text-xs"><i-ep-arrow-down /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="password-change">
+                  {{ t('account.password.title') }}
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided :loading="loggingOut">
+                  {{ t('nav.logout') }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
 
@@ -115,13 +120,14 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 const loggingOut = ref(false)
@@ -143,6 +149,14 @@ async function handleLogout(): Promise<void> {
     ElMessage.error(t('auth.logout.error'))
   } finally {
     loggingOut.value = false
+  }
+}
+
+async function handleUserCommand(command: string): Promise<void> {
+  if (command === 'password-change') {
+    router.push({ name: 'password-change' })
+  } else if (command === 'logout') {
+    await handleLogout()
   }
 }
 </script>

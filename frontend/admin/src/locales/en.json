@@ -44,9 +44,49 @@
     "comingSoon": "Coming in next cycle",
     "statusError": "Error"
   },
+  "account": {
+    "title": "My Account",
+    "password": {
+      "title": "Change Password",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm New Password",
+      "submit": "Change",
+      "success": "Password changed successfully. Redirecting to login...",
+      "policyHint": "Min 8 characters with 3 of 4 types: uppercase, lowercase, number, special",
+      "error": {
+        "currentRequired": "Please enter your current password",
+        "newRequired": "Please enter a new password",
+        "confirmRequired": "Please confirm your new password",
+        "currentMismatch": "Current password is incorrect",
+        "policy": "Password must be at least 8 characters with 3 of 4 types: uppercase, lowercase, number, special",
+        "reuse": "This password was used recently. Please choose a different one.",
+        "confirmMismatch": "New passwords do not match",
+        "sameAsCurrent": "New password must be different from your current password"
+      },
+      "strength": {
+        "label": "Password strength",
+        "veryWeak": "Very Weak",
+        "weak": "Weak",
+        "fair": "Fair",
+        "good": "Strong",
+        "veryStrong": "Very Strong"
+      }
+    }
+  },
+  "login": {
+    "notice": {
+      "passwordChanged": "Password changed successfully. Please log in again.",
+      "sessionExpired": "Your session has expired. Please log in again."
+    }
+  },
   "common": {
     "cancel": "Cancel",
-    "back": "Back"
+    "back": "Back",
+    "error": {
+      "network": "Unable to connect to server. Please try again later.",
+      "unknown": "An unknown error occurred"
+    }
   },
   "users": {
     "title": "User Management",

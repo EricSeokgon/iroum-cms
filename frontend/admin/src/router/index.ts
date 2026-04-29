@@ -48,6 +48,12 @@ const router = createRouter({
           component: () => import('@/views/HealthView.vue'),
           meta: { title: '서버 상태' },
         },
+        {
+          path: 'account/password',
+          name: 'password-change',
+          component: () => import('@/views/account/PasswordChangeView.vue'),
+          meta: { title: '비밀번호 변경' },
+        },
       ],
     },
 

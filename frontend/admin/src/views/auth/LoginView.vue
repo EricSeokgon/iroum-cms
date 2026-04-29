@@ -8,6 +8,18 @@
           {{ t('auth.login.title') }}
         </h1>
 
+        <!-- 성공/안내 알림 — 비밀번호 변경·세션 만료 후 리다이렉트 시 표시 -->
+        <el-alert
+          v-if="noticeMessage"
+          :title="noticeMessage"
+          :type="noticeType"
+          show-icon
+          :closable="false"
+          role="status"
+          class="mb-4"
+          data-testid="login-notice"
+        />
+
         <!-- 에러 알림 — KWCAG 4.1.3 상태 메시지 -->
         <el-alert
           v-if="errorMessage"
@@ -89,7 +101,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -106,6 +118,19 @@ const auth = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const errorMessage = ref('')
+
+// ── URL query reason 처리 — 비밀번호 변경·세션 만료 후 리다이렉트 안내 ─────────
+const noticeMessage = computed<string>(() => {
+  const reason = route.query.reason as string | undefined
+  if (reason === 'password_changed') return t('login.notice.passwordChanged')
+  if (reason === 'session_expired') return t('login.notice.sessionExpired')
+  return ''
+})
+
+const noticeType = computed<'success' | 'info'>(() => {
+  const reason = route.query.reason as string | undefined
+  return reason === 'password_changed' ? 'success' : 'info'
+})
 
 const form = reactive({ username: '', password: '' })
 

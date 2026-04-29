@@ -122,3 +122,16 @@ export interface UserSelfUpdateRequest {
   email?: string
   name?: string
 }
+
+// ── 비밀번호 변경 타입 (SPEC-CMS-002 REQ-AUTH-009) ──────────────────────────
+
+/** POST /api/v1/auth/password/change 요청 */
+export interface PasswordChangeRequest {
+  currentPassword: string
+  newPassword: string
+}
+
+/** POST /api/v1/auth/password/change 200 응답 */
+export interface PasswordChangeResponse {
+  message: string
+}

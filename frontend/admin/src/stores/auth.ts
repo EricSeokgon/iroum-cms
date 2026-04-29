@@ -88,6 +88,15 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
+  /**
+   * 로컬 인증 상태만 초기화 — 비밀번호 변경 후 사용
+   * 서버가 이미 refresh token 무효화 + cookie clear 처리했으므로
+   * logout API 별도 호출 불필요
+   */
+  function clearLocal(): void {
+    _clearState()
+  }
+
   return {
     accessToken,
     expiresAt,
@@ -95,6 +104,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     login,
     logout,
+    clearLocal,
     _applyToken,  // 테스트용 노출
     _clearState,  // 테스트용 노출
   }
