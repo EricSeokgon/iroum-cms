@@ -66,6 +66,12 @@ const router = createRouter({
           component: () => import('@/views/roles/RoleMatrixView.vue'),
           meta: { title: '역할/권한 관리' },
         },
+        {
+          path: 'audit/permission-changes',
+          name: 'permission-change-history',
+          component: () => import('@/views/audit/PermissionChangeHistoryView.vue'),
+          meta: { title: '권한 변경 이력' },
+        },
       ],
     },
 

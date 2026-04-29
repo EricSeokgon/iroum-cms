@@ -25,13 +25,18 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * 사용자 CRUD 서비스 구현체.
  *
  * <p>SPEC-CMS-002 REQ-AUTH-006 §6.3 — 사용자 관리 비즈니스 로직.
  * 트랜잭션 경계: 조회는 readOnly=true, 변경은 기본 트랜잭션.
+ *
+ * <p>REQ-AUTH-016: 역할 부여/회수 시 {@link PermissionChangeHistoryService}를 통해 이력 적재.
  */
+// @MX:WARN: [AUTO] UserServiceImpl — 역할 diff 계산 포함; 기존 역할 조회 후 추가/제거 비교
+// @MX:REASON: update() 내 역할 재설정 시 before/after diff 계산으로 recordRoleAssignment/Unassignment 호출; 목록 크기에 비례한 처리 비용 존재
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -43,10 +48,14 @@ public class UserServiceImpl implements UserService {
             "lastLoginAt,desc", "lastLoginAt,asc"
     );
 
+    private static final String REASON_AUTO_CREATE = "사용자 생성 시 자동 부여";
+    private static final String REASON_AUTO_UPDATE = "사용자 수정 시 자동 변경";
+
     private final UserMapper userMapper;
     private final RefreshTokenMapper refreshTokenMapper;
     private final PasswordPolicyService passwordPolicyService;
     private final OrganizationMapper organizationMapper;
+    private final PermissionChangeHistoryService permissionChangeHistoryService;
 
     // @MX:ANCHOR: [AUTO] findPage — 사용자 목록 API 진입점, UserController.list 호출
     // @MX:REASON: 페이징·검색·정렬 복합 쿼리; sort 파라미터 화이트리스트 검증 포함 (fan_in >= 3)
@@ -139,11 +148,12 @@ public class UserServiceImpl implements UserService {
 
         userMapper.insert(user);
 
-        // 역할 부여
+        // 역할 부여 + 이력 적재 (REQ-AUTH-016)
         Set<String> roleCodes = req.roleCodes() != null ? req.roleCodes() : Collections.emptySet();
         Instant now = Instant.now();
         for (String roleCode : roleCodes) {
             userMapper.insertRole(user.getId(), roleCode, createdBy, now);
+            permissionChangeHistoryService.recordRoleAssignment(user.getId(), roleCode, createdBy, REASON_AUTO_CREATE);
         }
 
         return findById(user.getId());
@@ -167,12 +177,30 @@ public class UserServiceImpl implements UserService {
 
         userMapper.update(patch);
 
-        // 역할 재설정 (null이면 변경 없음)
+        // 역할 재설정 (null이면 변경 없음) + diff 기반 이력 적재 (REQ-AUTH-016)
         if (req.roleCodes() != null) {
+            Set<String> oldRoles = userMapper.findRoleCodesByUserId(id);
+            Set<String> newRoles = req.roleCodes();
+
+            // 추가된 역할
+            Set<String> added = new HashSet<>(newRoles);
+            added.removeAll(oldRoles);
+
+            // 제거된 역할
+            Set<String> removed = new HashSet<>(oldRoles);
+            removed.removeAll(newRoles);
+
             userMapper.deleteRolesByUserId(id);
             Instant now = Instant.now();
-            for (String roleCode : req.roleCodes()) {
+            for (String roleCode : newRoles) {
                 userMapper.insertRole(id, roleCode, updatedBy, now);
+            }
+
+            for (String roleCode : added) {
+                permissionChangeHistoryService.recordRoleAssignment(id, roleCode, updatedBy, REASON_AUTO_UPDATE);
+            }
+            for (String roleCode : removed) {
+                permissionChangeHistoryService.recordRoleUnassignment(id, roleCode, updatedBy, REASON_AUTO_UPDATE);
             }
         }
 

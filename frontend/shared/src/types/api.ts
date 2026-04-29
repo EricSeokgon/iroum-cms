@@ -254,3 +254,30 @@ export interface PermissionSummary {
   action: 'READ' | 'WRITE' | 'DELETE' | 'EXECUTE' | 'ADMIN'
   description?: string
 }
+
+// ── 감사 로그 타입 (REQ-AUTH-016) ─────────────────────────────────────────────
+
+/** 권한 변경 유형 */
+export type PermissionChangeType =
+  | 'ROLE_ASSIGN'
+  | 'ROLE_UNASSIGN'
+  | 'ROLE_PERMISSION_GRANT'
+  | 'ROLE_PERMISSION_REVOKE'
+
+/** 감사 심각도 */
+export type AuditSeverity = 'INFO' | 'WARN' | 'CRITICAL'
+
+/** 권한 변경 이력 항목 */
+export interface PermissionChangeEntry {
+  id: number
+  changeType: PermissionChangeType
+  targetUserId: number | null
+  targetUsername: string | null
+  targetRoleCode: string | null
+  targetResource: string             // role_code 또는 permission_code
+  changedBy: number | null
+  changedByUsername: string | null
+  changedAt: string                  // ISO 8601
+  severity: AuditSeverity
+  reason?: string
+}

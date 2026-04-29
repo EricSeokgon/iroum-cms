@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ public class RoleService {
     private final RoleMapper roleMapper;
     private final RolePermissionMapper rolePermissionMapper;
     private final PermissionService permissionService;
+    private final PermissionChangeHistoryService permissionChangeHistoryService;
 
     /**
      * 전체 역할 목록 조회 (user_count, permission_count 포함).
@@ -162,7 +164,7 @@ public class RoleService {
     }
 
     /**
-     * 역할 권한 재설정 (atomic replace).
+     * 역할 권한 재설정 (atomic replace) + diff 기반 이력 적재 (REQ-AUTH-016).
      *
      * @param code            역할 코드
      * @param permissionCodes 새 권한 코드 집합
@@ -175,9 +177,28 @@ public class RoleService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "역할을 찾을 수 없습니다: " + code));
 
+        // diff 계산: 기존 권한 vs 새 권한
+        Set<String> oldPerms = permissionService.findEffectivePermissionsForRole(code);
+        Set<String> newPerms = permissionCodes != null ? permissionCodes : Collections.emptySet();
+
+        Set<String> granted = new HashSet<>(newPerms);
+        granted.removeAll(oldPerms);
+
+        Set<String> revoked = new HashSet<>(oldPerms);
+        revoked.removeAll(newPerms);
+
         rolePermissionMapper.deleteByRole(code);
-        if (permissionCodes != null && !permissionCodes.isEmpty()) {
-            rolePermissionMapper.insertBatch(code, permissionCodes, actorId, Instant.now());
+        if (!newPerms.isEmpty()) {
+            rolePermissionMapper.insertBatch(code, newPerms, actorId, Instant.now());
+        }
+
+        // 이력 적재 (REQ-AUTH-016)
+        String reason = "역할 권한 재설정";
+        for (String permCode : granted) {
+            permissionChangeHistoryService.recordPermissionGrant(code, permCode, actorId, reason);
+        }
+        for (String permCode : revoked) {
+            permissionChangeHistoryService.recordPermissionRevoke(code, permCode, actorId, reason);
         }
     }
 

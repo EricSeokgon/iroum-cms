@@ -60,6 +60,17 @@
           <span>{{ t('nav.roles') }}</span>
         </el-menu-item>
 
+        <!-- 감사 그룹 — AUDIT:READ 권한 보유자 (모든 인증 사용자) -->
+        <el-sub-menu index="audit" :aria-label="t('nav.audit')">
+          <template #title>
+            <el-icon><i-ep-document-checked /></el-icon>
+            <span>{{ t('nav.audit') }}</span>
+          </template>
+          <el-menu-item index="/audit/permission-changes">
+            <span>{{ t('nav.permissionChanges') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 

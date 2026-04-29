@@ -56,13 +56,14 @@ class UserServiceTest {
     @Mock private RefreshTokenMapper refreshTokenMapper;
     @Mock private PasswordPolicyService passwordPolicyService;
     @Mock private OrganizationMapper organizationMapper;
+    @Mock private PermissionChangeHistoryService permissionChangeHistoryService;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         userService = new UserServiceImpl(userMapper, refreshTokenMapper,
-                passwordPolicyService, organizationMapper);
+                passwordPolicyService, organizationMapper, permissionChangeHistoryService);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -221,7 +222,10 @@ class UserServiceTest {
     void update_replacesRoles() {
         when(userMapper.findById(1L))
                 .thenReturn(Optional.of(activeUser(1L, "admin")));
-        when(userMapper.findRoleCodesByUserId(1L)).thenReturn(Set.of("EDITOR"));
+        // 첫 호출(diff 계산): EDITOR 보유, 두 번째 호출(findById 재조회): EDITOR+VIEWER
+        when(userMapper.findRoleCodesByUserId(1L))
+                .thenReturn(Set.of("EDITOR"))
+                .thenReturn(Set.of("EDITOR", "VIEWER"));
 
         UserUpdateRequest req = new UserUpdateRequest(null, null, null, Set.of("EDITOR", "VIEWER"));
         userService.update(1L, req, 99L);
@@ -386,6 +390,54 @@ class UserServiceTest {
         // orgPathPrefix=null — organizationMapper.findById 미호출 (actorOrgId가 null)
         verify(organizationMapper, never()).findById(anyLong());
         verify(userMapper).findPageWithScope(0, 20, null, null, "createdAt,desc", null);
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // REQ-AUTH-016 — 권한 변경 이력 연동 테스트
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("create — 역할 부여 시 recordRoleAssignment 호출 (REQ-AUTH-016)")
+    void create_recordsRoleAssignment_inHistory() {
+        UserCreateRequest req = new UserCreateRequest(
+                "newuser", "new@test.com", "ValidP@ss123!",
+                "새사용자", "ACTIVE", Set.of("VIEWER"));
+
+        when(userMapper.existsByUsername("newuser")).thenReturn(false);
+        when(userMapper.existsByEmail("new@test.com")).thenReturn(false);
+        when(passwordPolicyService.hash("ValidP@ss123!")).thenReturn("$2a$12$hashed");
+
+        org.mockito.Mockito.doAnswer(invocation -> {
+            try {
+                java.lang.reflect.Field f = User.class.getDeclaredField("id");
+                f.setAccessible(true);
+                f.set(invocation.getArgument(0), 10L);
+            } catch (Exception e) { /* ignore */ }
+            return null;
+        }).when(userMapper).insert(any(User.class));
+
+        when(userMapper.findById(anyLong())).thenReturn(Optional.of(activeUser(10L, "newuser")));
+        when(userMapper.findRoleCodesByUserId(anyLong())).thenReturn(Set.of("VIEWER"));
+
+        userService.create(req, 1L);
+
+        verify(permissionChangeHistoryService).recordRoleAssignment(eq(10L), eq("VIEWER"), eq(1L), anyString());
+    }
+
+    @Test
+    @DisplayName("update — 역할 추가 시 recordRoleAssignment, 제거 시 recordRoleUnassignment 호출 (REQ-AUTH-016)")
+    void update_recordsRoleAssignmentAndUnassignment_diff() {
+        when(userMapper.findById(1L)).thenReturn(Optional.of(activeUser(1L, "admin")));
+        // 기존 역할: EDITOR, 새 역할: VIEWER (EDITOR 제거, VIEWER 추가)
+        when(userMapper.findRoleCodesByUserId(1L))
+                .thenReturn(Set.of("EDITOR"))   // update 내 diff 계산용
+                .thenReturn(Set.of("VIEWER"));  // findById 재조회용
+
+        UserUpdateRequest req = new UserUpdateRequest(null, null, null, Set.of("VIEWER"));
+        userService.update(1L, req, 99L);
+
+        verify(permissionChangeHistoryService).recordRoleAssignment(eq(1L), eq("VIEWER"), eq(99L), anyString());
+        verify(permissionChangeHistoryService).recordRoleUnassignment(eq(1L), eq("EDITOR"), eq(99L), anyString());
     }
 
     // ──────────────────────────────────────────────────────────────

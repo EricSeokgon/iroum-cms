@@ -44,12 +44,14 @@ class RoleServiceTest {
     @Mock private RoleMapper roleMapper;
     @Mock private RolePermissionMapper rolePermissionMapper;
     @Mock private PermissionService permissionService;
+    @Mock private PermissionChangeHistoryService permissionChangeHistoryService;
 
     private RoleService roleService;
 
     @BeforeEach
     void setUp() {
-        roleService = new RoleService(roleMapper, rolePermissionMapper, permissionService);
+        roleService = new RoleService(roleMapper, rolePermissionMapper, permissionService,
+                permissionChangeHistoryService);
     }
 
     @Test
@@ -167,12 +169,52 @@ class RoleServiceTest {
     void updatePermissions_replacesPermissions() {
         Role role = customRole("EDITOR", "편집자");
         when(roleMapper.findByCode("EDITOR")).thenReturn(Optional.of(role));
+        when(permissionService.findEffectivePermissionsForRole("EDITOR"))
+                .thenReturn(Set.of("USER:READ"));
 
         roleService.updatePermissions("EDITOR", Set.of("USER:READ", "AUDIT:READ"), 1L);
 
         verify(rolePermissionMapper).deleteByRole("EDITOR");
         verify(rolePermissionMapper).insertBatch(eq("EDITOR"),
                 eq(Set.of("USER:READ", "AUDIT:READ")), eq(1L), any(Instant.class));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // REQ-AUTH-016 — 권한 변경 이력 연동 테스트
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("updatePermissions — 신규 권한 부여 시 recordPermissionGrant 호출 (REQ-AUTH-016)")
+    void updatePermissions_recordsGrantAndRevoke_diff_grant() {
+        Role role = customRole("EDITOR", "편집자");
+        when(roleMapper.findByCode("EDITOR")).thenReturn(Optional.of(role));
+        // 기존 권한: USER:READ, 새 권한: USER:READ + AUDIT:READ → AUDIT:READ 추가
+        when(permissionService.findEffectivePermissionsForRole("EDITOR"))
+                .thenReturn(Set.of("USER:READ"));
+
+        roleService.updatePermissions("EDITOR", Set.of("USER:READ", "AUDIT:READ"), 1L);
+
+        verify(permissionChangeHistoryService).recordPermissionGrant(
+                eq("EDITOR"), eq("AUDIT:READ"), eq(1L), anyString());
+        verify(permissionChangeHistoryService, never()).recordPermissionRevoke(
+                anyString(), anyString(), anyLong(), anyString());
+    }
+
+    @Test
+    @DisplayName("updatePermissions — 권한 회수 시 recordPermissionRevoke 호출 (REQ-AUTH-016)")
+    void updatePermissions_recordsGrantAndRevoke_diff_revoke() {
+        Role role = customRole("EDITOR", "편집자");
+        when(roleMapper.findByCode("EDITOR")).thenReturn(Optional.of(role));
+        // 기존 권한: USER:READ + AUDIT:READ, 새 권한: USER:READ → AUDIT:READ 제거
+        when(permissionService.findEffectivePermissionsForRole("EDITOR"))
+                .thenReturn(Set.of("USER:READ", "AUDIT:READ"));
+
+        roleService.updatePermissions("EDITOR", Set.of("USER:READ"), 1L);
+
+        verify(permissionChangeHistoryService).recordPermissionRevoke(
+                eq("EDITOR"), eq("AUDIT:READ"), eq(1L), anyString());
+        verify(permissionChangeHistoryService, never()).recordPermissionGrant(
+                anyString(), anyString(), anyLong(), anyString());
     }
 
     // ─── 헬퍼 ───────────────────────────────────────────────────

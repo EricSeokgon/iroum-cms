@@ -9,6 +9,8 @@
     "users": "User Management",
     "organizations": "Organization",
     "roles": "Roles & Permissions",
+    "audit": "Audit",
+    "permissionChanges": "Permission Change History",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu"
@@ -338,6 +340,46 @@
       "permissionsUpdated": "Permissions updated successfully"
     },
     "alias": "Alias of {aliasedTo}"
+  },
+  "audit": {
+    "permissionChanges": {
+      "title": "Permission Change History",
+      "filter": {
+        "targetUser": "Target User",
+        "changeType": "Change Type",
+        "changedBy": "Changed By",
+        "period": "Period",
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "field": {
+        "changedAt": "Timestamp",
+        "changeType": "Type",
+        "targetUser": "Target User",
+        "targetResource": "Resource",
+        "changedBy": "Changed By",
+        "severity": "Severity",
+        "reason": "Reason",
+        "traceId": "Trace ID"
+      },
+      "type": {
+        "ROLE_ASSIGN": "Role Assigned",
+        "ROLE_UNASSIGN": "Role Removed",
+        "ROLE_PERMISSION_GRANT": "Permission Granted",
+        "ROLE_PERMISSION_REVOKE": "Permission Revoked"
+      },
+      "severity": {
+        "INFO": "Info",
+        "WARN": "Warning",
+        "CRITICAL": "Critical"
+      },
+      "empty": "No history found",
+      "viewAll": "View All",
+      "userSection": {
+        "title": "Recent Permission Changes",
+        "viewAllLink": "View All History"
+      }
+    }
   },
   "permissions": {
     "title": "Permissions",

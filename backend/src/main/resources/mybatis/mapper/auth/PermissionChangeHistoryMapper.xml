@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    REQ-AUTH-016-D-1 권한 변경 이력 매퍼
+    SPEC-CMS-002 v0.3.2 §13.A
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.PermissionChangeHistoryMapper">
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- ResultMap                                                    -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <resultMap id="entryMap" type="kr.co.ircp.cms.domain.auth.dto.PermissionChangeEntry">
+        <constructor>
+            <idArg   column="id"                 javaType="long"         />
+            <arg     column="target_user_id"     javaType="Long"         />
+            <arg     column="target_username"    javaType="String"       />
+            <arg     column="change_type"        javaType="String"       />
+            <arg     column="target_resource"    javaType="String"       />
+            <arg     column="changed_by"         javaType="Long"         />
+            <arg     column="changed_by_username" javaType="String"      />
+            <arg     column="changed_at"         javaType="java.time.Instant" />
+            <arg     column="reason"             javaType="String"       />
+        </constructor>
+    </resultMap>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- INSERT                                                       -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.auth.entity.PermissionChangeHistory"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO permission_change_history (
+            change_type, target_user_id, target_role_code, target_resource,
+            changed_by, changed_at, severity, reason, actor_ip, trace_id
+        ) VALUES (
+            #{changeType},
+            #{targetUserId},
+            #{targetRoleCode},
+            #{targetResource},
+            #{changedBy},
+            #{changedAt},
+            #{severity},
+            #{reason},
+            #{actorIp},
+            #{traceId}
+        )
+    </insert>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- 공통 SELECT 절 (users JOIN)                                  -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <sql id="selectColumns">
+        pch.id,
+        pch.target_user_id,
+        tu.username AS target_username,
+        pch.change_type,
+        pch.target_resource,
+        pch.changed_by,
+        cu.username AS changed_by_username,
+        pch.changed_at,
+        pch.reason
+    </sql>
+
+    <sql id="joinUsers">
+        FROM permission_change_history pch
+        LEFT JOIN users tu ON tu.id = pch.target_user_id
+        LEFT JOIN users cu ON cu.id = pch.changed_by
+    </sql>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- 동적 WHERE 절                                                -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <sql id="dynamicWhere">
+        <where>
+            <if test="targetUserId != null">
+                AND pch.target_user_id = #{targetUserId}
+            </if>
+            <if test="changeType != null and changeType != ''">
+                AND pch.change_type = #{changeType}
+            </if>
+            <if test="changedBy != null">
+                AND pch.changed_by = #{changedBy}
+            </if>
+            <if test="from != null">
+                AND pch.changed_at &gt;= #{from}
+            </if>
+            <if test="to != null">
+                AND pch.changed_at &lt;= #{to}
+            </if>
+        </where>
+    </sql>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- findPage (전체, 동적 필터 + 정렬)                            -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <select id="findPage" resultMap="entryMap">
+        SELECT <include refid="selectColumns"/>
+        <include refid="joinUsers"/>
+        <include refid="dynamicWhere"/>
+        <choose>
+            <when test="sort == 'changedAt,asc'">  ORDER BY pch.changed_at ASC</when>
+            <otherwise>                             ORDER BY pch.changed_at DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- countAll (전체, 동적 필터)                                   -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        <include refid="joinUsers"/>
+        <include refid="dynamicWhere"/>
+    </select>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- findByTargetUser (특정 사용자)                               -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <select id="findByTargetUser" resultMap="entryMap">
+        SELECT <include refid="selectColumns"/>
+        <include refid="joinUsers"/>
+        WHERE pch.target_user_id = #{userId}
+        ORDER BY pch.changed_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <!-- countByTargetUser                                           -->
+    <!-- ─────────────────────────────────────────────────────────── -->
+    <select id="countByTargetUser" resultType="long">
+        SELECT COUNT(*)
+        FROM permission_change_history pch
+        WHERE pch.target_user_id = #{userId}
+    </select>
+
+</mapper>

@@ -102,6 +102,73 @@
         />
       </el-card>
 
+      <!-- 권한 변경 이력 섹션 (REQ-AUTH-016) -->
+      <el-card class="mb-4">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <span class="font-semibold">{{ t('audit.permissionChanges.userSection.title') }}</span>
+            <router-link
+              :to="{ name: 'permission-change-history', query: { targetUserId: user.id } }"
+              class="text-sm text-blue-600 hover:underline"
+              :aria-label="t('audit.permissionChanges.userSection.viewAllLink')"
+            >
+              {{ t('audit.permissionChanges.userSection.viewAllLink') }}
+            </router-link>
+          </div>
+        </template>
+
+        <div v-if="auditLoading" v-loading="auditLoading" style="min-height: 60px" />
+        <el-empty
+          v-else-if="recentPermissionChanges.length === 0"
+          :description="t('audit.permissionChanges.empty')"
+          :image-size="60"
+        />
+        <el-table
+          v-else
+          :data="recentPermissionChanges"
+          size="small"
+          :show-header="true"
+        >
+          <el-table-column
+            prop="changedAt"
+            :label="t('audit.permissionChanges.field.changedAt')"
+            min-width="140"
+          >
+            <template #default="{ row }">
+              {{ formatDate(row.changedAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="changeType"
+            :label="t('audit.permissionChanges.field.changeType')"
+            min-width="120"
+          >
+            <template #default="{ row }">
+              {{ t(`audit.permissionChanges.type.${row.changeType}`) }}
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="targetResource"
+            :label="t('audit.permissionChanges.field.targetResource')"
+            min-width="140"
+          />
+          <el-table-column
+            prop="severity"
+            :label="t('audit.permissionChanges.field.severity')"
+            width="90"
+          >
+            <template #default="{ row }">
+              <span
+                class="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium"
+                :class="severityClass(row.severity)"
+              >
+                {{ t(`audit.permissionChanges.severity.${row.severity}`) }}
+              </span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
       <!-- 액션 버튼 -->
       <div class="flex flex-wrap gap-2">
         <el-button type="primary" @click="openEdit">
@@ -140,8 +207,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usersApi } from '@/api/users'
+import { auditApi } from '@/api/audit'
 import UserFormView from './UserFormView.vue'
-import type { UserDetail, UserStatus, UserSummary } from '@iroum/shared/types/api'
+import type { UserDetail, UserStatus, UserSummary, PermissionChangeEntry, AuditSeverity } from '@iroum/shared/types/api'
 
 const props = defineProps<{ id: string }>()
 const { t } = useI18n()
@@ -151,6 +219,10 @@ const user = ref<UserDetail | null>(null)
 const loading = ref(false)
 const loadError = ref('')
 const showForm = ref(false)
+
+// 권한 변경 이력 (REQ-AUTH-016)
+const recentPermissionChanges = ref<PermissionChangeEntry[]>([])
+const auditLoading = ref(false)
 
 // UserFormView는 UserSummary를 받으므로 변환
 const userAsSummary = computed<UserSummary | null>(() => {
@@ -236,6 +308,28 @@ async function handleDelete(): Promise<void> {
   }
 }
 
+async function loadRecentPermissionChanges(): Promise<void> {
+  if (!props.id) return
+  auditLoading.value = true
+  try {
+    const res = await auditApi.permissionChangesByUser(Number(props.id), { page: 0, size: 10 })
+    recentPermissionChanges.value = res.data.content
+  } catch {
+    // 감사 이력 로드 실패는 사용자 상세에 영향 없음
+  } finally {
+    auditLoading.value = false
+  }
+}
+
+function severityClass(severity: AuditSeverity): string {
+  const map: Record<AuditSeverity, string> = {
+    INFO: 'bg-gray-100 text-gray-700',
+    WARN: 'bg-orange-100 text-orange-700',
+    CRITICAL: 'bg-red-100 text-red-700',
+  }
+  return map[severity] ?? 'bg-gray-100 text-gray-700'
+}
+
 function statusTagType(status: UserStatus): '' | 'success' | 'warning' | 'danger' | 'info' {
   const map: Record<UserStatus, '' | 'success' | 'warning' | 'danger' | 'info'> = {
     ACTIVE: 'success',
@@ -253,5 +347,8 @@ function formatDate(iso: string): string {
   })
 }
 
-onMounted(loadUser)
+onMounted(() => {
+  loadUser()
+  loadRecentPermissionChanges()
+})
 </script>

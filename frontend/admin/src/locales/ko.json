@@ -9,6 +9,8 @@
     "users": "사용자 관리",
     "organizations": "조직 관리",
     "roles": "역할/권한 관리",
+    "audit": "감사",
+    "permissionChanges": "권한 변경 이력",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
     "mainMenu": "주요 메뉴"
@@ -338,6 +340,46 @@
       "permissionsUpdated": "권한이 업데이트되었습니다"
     },
     "alias": "{aliasedTo} 의 별칭"
+  },
+  "audit": {
+    "permissionChanges": {
+      "title": "권한 변경 이력",
+      "filter": {
+        "targetUser": "대상 사용자",
+        "changeType": "변경 유형",
+        "changedBy": "변경자",
+        "period": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "field": {
+        "changedAt": "발생일시",
+        "changeType": "유형",
+        "targetUser": "대상 사용자",
+        "targetResource": "리소스",
+        "changedBy": "변경자",
+        "severity": "심각도",
+        "reason": "사유",
+        "traceId": "추적 ID"
+      },
+      "type": {
+        "ROLE_ASSIGN": "역할 부여",
+        "ROLE_UNASSIGN": "역할 회수",
+        "ROLE_PERMISSION_GRANT": "권한 부여",
+        "ROLE_PERMISSION_REVOKE": "권한 회수"
+      },
+      "severity": {
+        "INFO": "정보",
+        "WARN": "경고",
+        "CRITICAL": "치명"
+      },
+      "empty": "조회된 이력이 없습니다",
+      "viewAll": "전체 보기",
+      "userSection": {
+        "title": "최근 권한 변경 이력",
+        "viewAllLink": "전체 이력 보기"
+      }
+    }
   },
   "permissions": {
     "title": "권한",
