@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ircp.cms.domain.media.mapper.MediaProcessingJobMapper">
+
+    <resultMap id="jobResultMap" type="kr.co.ircp.cms.domain.media.entity.MediaProcessingJob">
+        <id property="id" column="id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="jobType" column="job_type"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="finishedAt" column="finished_at"/>
+        <result property="errorMessage" column="error_message"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO media_processing_job (asset_id, job_type, status)
+        VALUES (#{assetId}, #{jobType}, #{status})
+    </insert>
+
+    <insert id="insertAll">
+        INSERT INTO media_processing_job (asset_id, job_type, status)
+        VALUES
+        <foreach collection="jobs" item="j" separator=",">
+            (#{j.assetId}, #{j.jobType}, #{j.status})
+        </foreach>
+    </insert>
+
+    <select id="findPending" resultMap="jobResultMap">
+        SELECT * FROM media_processing_job
+        WHERE status = 'PENDING'
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE media_processing_job SET
+            status = #{status},
+            error_message = #{errorMessage},
+            finished_at = CASE WHEN #{status} IN ('SUCCESS','FAILED') THEN NOW() ELSE finished_at END,
+            started_at  = CASE WHEN #{status} = 'RUNNING' THEN NOW() ELSE started_at END
+        WHERE id = #{id}
+    </update>
+
+</mapper>

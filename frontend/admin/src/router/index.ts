@@ -102,6 +102,26 @@ const router = createRouter({
           component: () => import('@/views/account/MyLoginHistoryView.vue'),
           meta: { title: '내 로그인 이력' },
         },
+        // ── 미디어 라우트 (SPEC-CMS-MEDIA-001) ───────────────────────────────
+        {
+          path: 'media',
+          name: 'media-library',
+          component: () => import('@/views/media/MediaLibraryView.vue'),
+          meta: { title: '미디어 라이브러리' },
+        },
+        {
+          path: 'media/collections',
+          name: 'media-collections',
+          component: () => import('@/views/media/MediaCollectionView.vue'),
+          meta: { title: '미디어 컬렉션' },
+        },
+        {
+          path: 'media/:uuid',
+          name: 'media-detail',
+          component: () => import('@/views/media/MediaDetailView.vue'),
+          props: true,
+          meta: { title: '미디어 상세' },
+        },
         // ── 게시판 라우트 (SPEC-CMS-003) ────────────────────────────────────
         {
           path: 'board/masters',

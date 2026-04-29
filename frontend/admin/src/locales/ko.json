@@ -19,7 +19,9 @@
     "sidebarLabel": "관리자 메뉴",
     "mainMenu": "주요 메뉴",
     "board": "콘텐츠",
-    "boardMasters": "게시판 관리"
+    "boardMasters": "게시판 관리",
+    "media": "미디어 라이브러리",
+    "mediaCollections": "미디어 컬렉션"
   },
   "auth": {
     "login": {
@@ -651,6 +653,92 @@
       "DELETE": "삭제",
       "EXECUTE": "실행",
       "ADMIN": "관리"
+    }
+  },
+  "media": {
+    "title": "미디어 라이브러리",
+    "upload": "미디어 업로드",
+    "uploadForm": "미디어 업로드 폼",
+    "uploadArea": "파일 업로드 영역",
+    "uploadDrag": "파일을 여기로 드래그하거나",
+    "uploadOr": "또는",
+    "uploadBrowse": "파일 선택",
+    "uploadTip": "최대 10개 파일, 파일당 최대 100MB",
+    "uploadProgress": "업로드 진행률",
+    "search": "파일명 검색",
+    "filterType": "유형 필터",
+    "filterTags": "태그 필터",
+    "gridRegion": "미디어 그리드",
+    "empty": "미디어 파일이 없습니다",
+    "cardLabel": "미디어 카드",
+    "actions": "액션",
+    "usageCount": "사용 수",
+    "deleteBlockedHint": "사용 중인 미디어는 삭제할 수 없습니다. 사용처를 먼저 해제해 주세요.",
+    "type": {
+      "IMAGE": "이미지",
+      "VIDEO": "동영상",
+      "DOCUMENT": "문서",
+      "AUDIO": "오디오"
+    },
+    "field": {
+      "file": "파일",
+      "fileName": "파일명",
+      "type": "유형",
+      "mime": "MIME 유형",
+      "size": "파일 크기",
+      "resolution": "해상도",
+      "duration": "재생 시간",
+      "checksum": "체크섬",
+      "uploadedBy": "업로드자",
+      "uploadedAt": "업로드 일시",
+      "license": "라이선스",
+      "altText": "대체 텍스트",
+      "altTextPlaceholder": "이미지를 설명하는 텍스트 (스크린리더 용)",
+      "altTextRequired": "이미지 파일은 대체 텍스트가 필요합니다",
+      "description": "설명",
+      "tags": "태그",
+      "tagsPlaceholder": "태그 입력 후 Enter"
+    },
+    "action": {
+      "view": "보기",
+      "edit": "편집",
+      "delete": "삭제",
+      "upload": "업로드",
+      "download": "다운로드"
+    },
+    "confirm": {
+      "delete": "'{name}' 파일을 삭제하시겠습니까?"
+    },
+    "success": {
+      "uploaded": "{count}개 파일이 업로드되었습니다",
+      "deleted": "미디어 파일이 삭제되었습니다",
+      "updated": "미디어 정보가 수정되었습니다"
+    },
+    "error": {
+      "loadFailed": "미디어 목록을 불러오는데 실패했습니다",
+      "uploadFailed": "'{name}' 업로드에 실패했습니다",
+      "deleteFailed": "미디어 삭제에 실패했습니다",
+      "updateFailed": "미디어 수정에 실패했습니다",
+      "downloadFailed": "다운로드 URL을 가져오는데 실패했습니다",
+      "fileLimit": "파일은 최대 10개까지 업로드할 수 있습니다"
+    },
+    "detail": {
+      "title": "미디어 상세",
+      "meta": "파일 정보",
+      "usage": "사용처",
+      "noUsage": "이 미디어를 사용하는 콘텐츠가 없습니다"
+    },
+    "collections": {
+      "title": "미디어 컬렉션",
+      "create": "컬렉션 만들기",
+      "empty": "컬렉션이 없습니다",
+      "created": "컬렉션이 생성되었습니다",
+      "field": {
+        "name": "컬렉션명",
+        "description": "설명",
+        "itemCount": "항목 수",
+        "createdAt": "생성일"
+      }
     }
   }
 }

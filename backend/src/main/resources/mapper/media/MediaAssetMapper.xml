@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    미디어 자산 매퍼 XML.
+    REQ-MEDIA-001-D ~ REQ-MEDIA-004-D
+-->
+<mapper namespace="kr.co.ircp.cms.domain.media.mapper.MediaAssetMapper">
+
+    <resultMap id="mediaAssetResultMap" type="kr.co.ircp.cms.domain.media.entity.MediaAsset">
+        <id property="id" column="id"/>
+        <result property="uuid" column="uuid" typeHandler="org.apache.ibatis.type.UUIDTypeHandler"/>
+        <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="originalFilename" column="original_filename"/>
+        <result property="storedPath" column="stored_path"/>
+        <result property="publicUrl" column="public_url"/>
+        <result property="mimeType" column="mime_type"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="checksumSha256" column="checksum_sha256"/>
+        <result property="width" column="width"/>
+        <result property="height" column="height"/>
+        <result property="durationSec" column="duration_sec"/>
+        <result property="exifStripped" column="exif_stripped"/>
+        <result property="webpPath" column="webp_path"/>
+        <result property="thumbnailPathsJson" column="thumbnail_paths"/>
+        <result property="altText" column="alt_text"/>
+        <result property="description" column="description"/>
+        <result property="tags" column="tags" typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="copyrightHolder" column="copyright_holder"/>
+        <result property="licenseType" column="license_type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="usageRestriction" column="usage_restriction"/>
+        <result property="uploadedBy" column="uploaded_by"/>
+        <result property="uploadedFromIpHash" column="uploaded_from_ip_hash"/>
+        <result property="status" column="status" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO media_asset (
+            type, original_filename, stored_path, public_url, mime_type, size_bytes,
+            checksum_sha256, width, height, duration_sec, exif_stripped, webp_path,
+            thumbnail_paths, alt_text, description, tags, copyright_holder, license_type,
+            usage_restriction, uploaded_by, uploaded_from_ip_hash, status
+        ) VALUES (
+            #{type}, #{originalFilename}, #{storedPath}, #{publicUrl}, #{mimeType}, #{sizeBytes},
+            #{checksumSha256}, #{width}, #{height}, #{durationSec}, #{exifStripped}, #{webpPath},
+            #{thumbnailPathsJson}::jsonb, #{altText}, #{description},
+            #{tags,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            #{copyrightHolder}, #{licenseType}, #{usageRestriction},
+            #{uploadedBy}, #{uploadedFromIpHash}, #{status}
+        )
+    </insert>
+
+    <select id="findById" resultMap="mediaAssetResultMap">
+        SELECT * FROM media_asset WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByUuid" resultMap="mediaAssetResultMap">
+        SELECT * FROM media_asset WHERE uuid = #{uuid}::uuid AND deleted_at IS NULL
+    </select>
+
+    <select id="search" resultMap="mediaAssetResultMap">
+        SELECT * FROM media_asset
+        WHERE deleted_at IS NULL
+        <if test="type != null">AND type = #{type}</if>
+        <if test="status != null">AND status = #{status}</if>
+        <if test="uploadedBy != null">AND uploaded_by = #{uploadedBy}</if>
+        <if test="tags != null and !tags.isEmpty()">
+            AND tags @> #{tags,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler}
+        </if>
+        <if test="from != null">AND created_at &gt;= #{from}</if>
+        <if test="to != null">AND created_at &lt;= #{to}</if>
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{page} * #{size}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM media_asset
+        WHERE deleted_at IS NULL
+        <if test="type != null">AND type = #{type}</if>
+        <if test="status != null">AND status = #{status}</if>
+        <if test="uploadedBy != null">AND uploaded_by = #{uploadedBy}</if>
+        <if test="tags != null and !tags.isEmpty()">
+            AND tags @> #{tags,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler}
+        </if>
+        <if test="from != null">AND created_at &gt;= #{from}</if>
+        <if test="to != null">AND created_at &lt;= #{to}</if>
+    </select>
+
+    <update id="update">
+        UPDATE media_asset SET
+            alt_text = #{altText},
+            description = #{description},
+            tags = #{tags,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            copyright_holder = #{copyrightHolder},
+            license_type = #{licenseType},
+            usage_restriction = #{usageRestriction},
+            status = #{status},
+            webp_path = #{webpPath},
+            thumbnail_paths = #{thumbnailPathsJson}::jsonb,
+            exif_stripped = #{exifStripped},
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="softDelete">
+        UPDATE media_asset SET deleted_at = NOW(), status = 'DELETED', updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <select id="countActiveUsages" resultType="int">
+        SELECT COUNT(*) FROM media_asset_usage
+        WHERE asset_id = #{assetId} AND removed_at IS NULL
+    </select>
+
+    <select id="findOrphans" resultMap="mediaAssetResultMap">
+        SELECT ma.* FROM media_asset ma
+        WHERE ma.deleted_at IS NULL
+          AND ma.created_at &lt; NOW() - (#{olderThanDays} || ' days')::interval
+          AND NOT EXISTS (
+              SELECT 1 FROM media_asset_usage u
+              WHERE u.asset_id = ma.id AND u.removed_at IS NULL
+          )
+        ORDER BY ma.created_at ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countOrphans" resultType="long">
+        SELECT COUNT(*) FROM media_asset ma
+        WHERE ma.deleted_at IS NULL
+          AND ma.created_at &lt; NOW() - (#{olderThanDays} || ' days')::interval
+          AND NOT EXISTS (
+              SELECT 1 FROM media_asset_usage u
+              WHERE u.asset_id = ma.id AND u.removed_at IS NULL
+          )
+    </select>
+
+</mapper>

@@ -103,6 +103,14 @@ dependencies {
     // Lombok (테스트 코드에서도 사용)
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
+
+    // ─── 미디어 라이브러리 (SPEC-CMS-MEDIA-001) ───────────────────────────────
+    // Apache Tika: 매직넘버 기반 MIME 검증 (REQ-MEDIA-001-D-5)
+    implementation("org.apache.tika:tika-core:2.9.2")
+    // Apache Commons Imaging: EXIF 메타데이터 제거 (REQ-MEDIA-002-D-1)
+    implementation("org.apache.commons:commons-imaging:1.0.0-alpha5")
+    // imgscalr: 썸네일 생성 (REQ-MEDIA-002-D-3)
+    implementation("org.imgscalr:imgscalr-lib:4.2")
 }
 
 // ─── 빌드 설정 ────────────────────────────────────────────────────────────

@@ -85,7 +85,7 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 콘텐츠 그룹 — 게시판 관리 -->
+        <!-- 콘텐츠 그룹 — 게시판 + 미디어 관리 -->
         <el-sub-menu index="board" :aria-label="t('nav.board')">
           <template #title>
             <el-icon><i-ep-document /></el-icon>
@@ -97,6 +97,13 @@
             index="/board/masters"
           >
             <span>{{ t('nav.boardMasters') }}</span>
+          </el-menu-item>
+          <!-- 미디어 라이브러리 (SPEC-CMS-MEDIA-001) -->
+          <el-menu-item index="/media">
+            <span>{{ t('nav.media') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/media/collections">
+            <span>{{ t('nav.mediaCollections') }}</span>
           </el-menu-item>
         </el-sub-menu>
 

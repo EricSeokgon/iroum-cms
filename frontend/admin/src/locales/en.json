@@ -19,7 +19,9 @@
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu",
     "board": "Content",
-    "boardMasters": "Board Management"
+    "boardMasters": "Board Management",
+    "media": "Media Library",
+    "mediaCollections": "Media Collections"
   },
   "auth": {
     "login": {
@@ -652,6 +654,92 @@
       "DELETE": "Delete",
       "EXECUTE": "Execute",
       "ADMIN": "Admin"
+    }
+  },
+  "media": {
+    "title": "Media Library",
+    "upload": "Upload Media",
+    "uploadForm": "Media Upload Form",
+    "uploadArea": "File Upload Area",
+    "uploadDrag": "Drag files here or",
+    "uploadOr": "or",
+    "uploadBrowse": "Browse Files",
+    "uploadTip": "Up to 10 files, max 100MB per file",
+    "uploadProgress": "Upload progress",
+    "search": "Search by filename",
+    "filterType": "Filter by type",
+    "filterTags": "Filter by tags",
+    "gridRegion": "Media grid",
+    "empty": "No media files found",
+    "cardLabel": "media card",
+    "actions": "Actions",
+    "usageCount": "Usage count",
+    "deleteBlockedHint": "Cannot delete media that is in use. Please remove all references first.",
+    "type": {
+      "IMAGE": "Image",
+      "VIDEO": "Video",
+      "DOCUMENT": "Document",
+      "AUDIO": "Audio"
+    },
+    "field": {
+      "file": "File",
+      "fileName": "File Name",
+      "type": "Type",
+      "mime": "MIME Type",
+      "size": "File Size",
+      "resolution": "Resolution",
+      "duration": "Duration",
+      "checksum": "Checksum",
+      "uploadedBy": "Uploaded By",
+      "uploadedAt": "Uploaded At",
+      "license": "License",
+      "altText": "Alt Text",
+      "altTextPlaceholder": "Describe the image for screen readers",
+      "altTextRequired": "Alt text is required for image files",
+      "description": "Description",
+      "tags": "Tags",
+      "tagsPlaceholder": "Type a tag and press Enter"
+    },
+    "action": {
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete",
+      "upload": "Upload",
+      "download": "Download"
+    },
+    "confirm": {
+      "delete": "Delete '{name}'?"
+    },
+    "success": {
+      "uploaded": "{count} file(s) uploaded successfully",
+      "deleted": "Media deleted successfully",
+      "updated": "Media updated successfully"
+    },
+    "error": {
+      "loadFailed": "Failed to load media",
+      "uploadFailed": "Failed to upload '{name}'",
+      "deleteFailed": "Failed to delete media",
+      "updateFailed": "Failed to update media",
+      "downloadFailed": "Failed to get download URL",
+      "fileLimit": "You can upload up to 10 files at a time"
+    },
+    "detail": {
+      "title": "Media Detail",
+      "meta": "File Info",
+      "usage": "Used In",
+      "noUsage": "This media is not used in any content"
+    },
+    "collections": {
+      "title": "Media Collections",
+      "create": "New Collection",
+      "empty": "No collections found",
+      "created": "Collection created successfully",
+      "field": {
+        "name": "Name",
+        "description": "Description",
+        "itemCount": "Items",
+        "createdAt": "Created At"
+      }
     }
   }
 }

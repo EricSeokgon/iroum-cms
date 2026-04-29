@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ircp.cms.domain.media.mapper.MediaAssetUsageMapper">
+
+    <resultMap id="usageResultMap" type="kr.co.ircp.cms.domain.media.entity.MediaAssetUsage">
+        <id property="id" column="id"/>
+        <result property="assetId" column="asset_id"/>
+        <result property="usedIn" column="used_in"/>
+        <result property="referenceId" column="reference_id"/>
+        <result property="referenceTable" column="reference_table"/>
+        <result property="usedAt" column="used_at"/>
+        <result property="removedAt" column="removed_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO media_asset_usage (asset_id, used_in, reference_id, reference_table)
+        VALUES (#{assetId}, #{usedIn}, #{referenceId}, #{referenceTable})
+        ON CONFLICT (asset_id, used_in, reference_id, reference_table)
+        DO UPDATE SET removed_at = NULL, used_at = NOW()
+    </insert>
+
+    <select id="findActiveByAssetId" resultMap="usageResultMap">
+        SELECT * FROM media_asset_usage
+        WHERE asset_id = #{assetId} AND removed_at IS NULL
+        ORDER BY used_at
+    </select>
+
+    <update id="removeUsage">
+        UPDATE media_asset_usage
+        SET removed_at = NOW()
+        WHERE asset_id = #{assetId}
+          AND used_in = #{usedIn}
+          AND reference_id = #{referenceId}
+          AND reference_table = #{referenceTable}
+          AND removed_at IS NULL
+    </update>
+
+</mapper>

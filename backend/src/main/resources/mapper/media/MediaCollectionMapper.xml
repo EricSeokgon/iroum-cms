@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ircp.cms.domain.media.mapper.MediaCollectionMapper">
+
+    <resultMap id="collectionResultMap" type="kr.co.ircp.cms.domain.media.entity.MediaCollection">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="isPublic" column="is_public"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO media_collection (name, description, owner_id, is_public, sort_order)
+        VALUES (#{name}, #{description}, #{ownerId}, #{isPublic}, #{sortOrder})
+    </insert>
+
+    <select id="findById" resultMap="collectionResultMap">
+        SELECT * FROM media_collection WHERE id = #{id}
+    </select>
+
+    <select id="findByOwner" resultMap="collectionResultMap">
+        SELECT * FROM media_collection
+        WHERE owner_id = #{ownerId}
+        ORDER BY sort_order, created_at
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findPublic" resultMap="collectionResultMap">
+        SELECT * FROM media_collection
+        WHERE is_public = TRUE
+        ORDER BY sort_order, created_at
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="update">
+        UPDATE media_collection SET
+            name = #{name},
+            description = #{description},
+            is_public = #{isPublic},
+            sort_order = #{sortOrder}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM media_collection WHERE id = #{id}
+    </delete>
+
+</mapper>

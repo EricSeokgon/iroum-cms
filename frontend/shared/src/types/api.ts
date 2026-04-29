@@ -478,3 +478,73 @@ export interface AttachmentDownloadUrl {
   signedUrl: string
   expiresAt: string
 }
+
+// ── 미디어 라이브러리 타입 (SPEC-CMS-MEDIA-001) ──────────────────────────────
+
+/** 미디어 파일 유형 */
+export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO'
+
+/** 미디어 자산 상태 */
+export type MediaStatus = 'ACTIVE' | 'PROCESSING' | 'ERROR' | 'DELETED'
+
+/** 라이선스 유형 */
+export type LicenseType = 'ALL_RIGHTS_RESERVED' | 'CC_BY' | 'CC_BY_SA' | 'CC_BY_NC' | 'CC0' | 'PUBLIC_DOMAIN'
+
+/** 미디어 자산 목록용 요약 DTO */
+export interface MediaAssetSummary {
+  uuid: string
+  fileName: string
+  mediaType: MediaType
+  mimeType: string
+  sizeBytes: number
+  /** 이미지 전용 — 썸네일 URL (서명 없음, CDN public 경로) */
+  thumbnailUrl?: string | null
+  altText?: string | null
+  tags: string[]
+  status: MediaStatus
+  usageCount: number
+  uploadedAt: string
+  uploadedBy: string
+}
+
+/** 미디어 자산 상세 DTO */
+export interface MediaAssetDetail extends MediaAssetSummary {
+  description?: string | null
+  width?: number | null
+  height?: number | null
+  durationSeconds?: number | null
+  checksum: string
+  licenseType: LicenseType
+  updatedAt: string
+}
+
+/** 서명된 URL 응답 */
+export interface MediaSignedUrl {
+  signedUrl: string
+  expiresAt: string
+}
+
+/** 미디어 사용 항목 (게시글·페이지 연결) */
+export interface MediaUsageEntry {
+  entityType: string
+  entityId: number
+  entityTitle: string
+  url: string
+}
+
+/** 미디어 컬렉션 요약 DTO */
+export interface MediaCollectionSummary {
+  id: number
+  name: string
+  description?: string | null
+  itemCount: number
+  createdAt: string
+}
+
+/** 미디어 자산 수정 요청 */
+export interface MediaUpdateRequest {
+  altText?: string | null
+  description?: string | null
+  tags?: string[]
+  licenseType?: LicenseType
+}
