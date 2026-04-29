@@ -261,6 +261,52 @@ Stage 2 (runtime): nginx:alpine
 
 ---
 
-_문서 버전: v0.1_
-_작성일: 2026-04-29_
-_다음 단계: SPEC-CMS-002 (Bundle A 상세) 에서 본 연구 노트의 결정사항을 구현 단계 의사결정으로 확정_
+## 9. RFP 통합 분석 (v0.2 amendment, 2026-04-29)
+
+### 9.1 RFP 출처와 적용 원칙
+
+- **출처**: 중소벤처기업진흥공단 (KOSME) 비즈패스파인더 고도화 용역 RFP (2026-04-23, 53페이지)
+- **적용 원칙**: 기능 요구사항 (SFR-001~015 + 일부 INR/DAR/SER/COR) 만 채택, **기술 스택은 본 SPEC v0.1의 결정안 (Vue 3.5 / Spring Boot 3.2.x / Java 17 / egovFrame v5.0.0 / PostgreSQL 16 / JWT) 그대로 유지**
+- **사용자 결정 (2026-04-29)**: archive 안 함, amendment로 진행, 옵션 SPEC 트랙 분리 (AI/ML, SSO 마이그레이션)
+
+### 9.2 채택 / 채택 제외 비교
+
+| 영역 | RFP 명세 | iroum-cms 결정 | 처리 방식 |
+|---|---|---|---|
+| RDBMS | MariaDB | PostgreSQL 16 | tech.md FROZEN 유지 |
+| 벡터 DB | Milvus | (CMS 본 트랙 미사용) | 옵션 SPEC-CMS-AI-001 |
+| FE 표현계층 | JSP 2.1 | Vue 3.5 SPA | 본 SPEC §6 유지 |
+| WAS | Apache + 외부 Tomcat | Spring Boot 내장 Tomcat 10 + Nginx | 본 SPEC §5 유지 |
+| 인증 | 상급기관 통합로그인 SSO API | JWT 기반 (옵션 SSO 별도) | 옵션 SPEC-CMS-MIG-001 |
+| 파일 저장 | 통합파일서버 | Local FS / 객체 스토리지 | 단일 기관 범위 단순화 |
+
+### 9.3 RFP 69개 요구사항 적용 정책
+
+| 분류 | 개수 | iroum-cms 적용 정책 |
+|---|---:|---|
+| SFR (기능) | 15 | 신규 SPEC 5개 (006~010) + 기존 SPEC 002~005 amendment + 옵션 2개로 완전 커버 |
+| PER (성능) | 4 | 모든 child SPEC 비기능 섹션에 일괄 반영 (PER-002~004) |
+| INR (인터페이스) | 12 | SPEC-CMS-008 시각화 / SPEC-CMS-010 검색에 흡수 |
+| DAR (데이터) | 10 | SPEC-CMS-009 데이터 거버넌스에 흡수 |
+| SER (보안) | 7 | 기존 SPEC-CMS-002 / SPEC-CMS-003 보안 정책 강화 |
+| COR (제약) | 6 | KWCAG 2.2 (REQ-CROSS-001), 시큐어 코딩 (REQ-CROSS-002) 이미 반영 |
+| TER / QUR / PMR / PSR (운영) | 15 | 프로젝트 운영 단계 항목, SPEC에 직접 영향 없음 (단 QUR-004 결함률은 acceptance.md QG에 반영) |
+
+### 9.4 다음 amendment 일정
+
+1. **SPEC-CMS-001 v0.2** (본 작업 — §15~17 추가, §14 갱신)
+2. **SPEC-CMS-002~005 amendment v0.2** — 기존 4개 SPEC 일괄 RFP 비기능·SFR 매핑 추가
+3. **신규 SPEC P0 (006/007/008)** — 안전경영·정책사업·시각화 대시보드 (병렬 가능)
+4. **신규 SPEC P1 (009/010)** — 데이터 거버넌스·통합 검색
+5. **(옵션)** SPEC-CMS-AI-001 — AI/ML + Milvus, 별도 사용자 승인 시점 착수
+6. **(옵션)** SPEC-CMS-MIG-001 — 상급기관 SSO + 통합 홈페이지 이관, 별도 사용자 승인 시점 착수
+
+### 9.5 RFP 응찰 vs 자체 프로젝트 정체성
+
+본 iroum-cms는 RFP 응찰 산출물이 아닌 **자체 공공기관 CMS 프로젝트**로 정의된다. RFP는 기능 요구사항의 구체성을 차용하기 위한 참고 자료로 활용하며, RFP의 인프라·계약·검수 조건(PMR-003 spir.kr 등록, 기능점수 측정 전문가 등)은 본 SPEC 범위 밖이다. 단 추후 RFP 응찰 또는 유사 공공기관 도입 시에는 본 SPEC §17.5의 기술 상향 사유를 활용할 수 있다.
+
+---
+
+_문서 버전: v0.2_
+_작성일: 2026-04-29 (v0.2: RFP 통합 분석 추가)_
+_다음 단계: SPEC-CMS-002 amendment v0.2 + SPEC-CMS-006/007/008 신규 작성_

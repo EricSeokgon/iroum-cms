@@ -7,10 +7,11 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
+| 버전 | v0.2 (2026-04-29 RFP 통합) |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
 | 우선순위 | P0 |
-| 분류 | Umbrella SPEC (후속 SPEC-CMS-002 ~ SPEC-CMS-005 분할 예정) |
+| 분류 | Umbrella SPEC (후속 SPEC-CMS-002 ~ SPEC-CMS-010 + 옵션 트랙 분할) |
 | 참조 문서 | `.moai/project/product.md`, `.moai/project/structure.md`, `.moai/project/tech.md` |
 
 본 SPEC은 iroum-cms 1차 출시(공공기관 CMS) 전체 범위를 정의하는 **상위 우산형(Umbrella) SPEC**이다. egovframe 5.0.0 + 공통컴포넌트 v5의 백엔드 로직을 차용하되, 화면(60~80 SPA pages)은 Vue 3 + Element Plus로 신규 구축한다.
@@ -421,8 +422,188 @@ iroum-cms는 다음을 목표로 설계된다.
 
 ---
 
-## 13. 변경 이력
+## 15. RFP 매핑 부록 (비즈패스파인더 고도화 용역, 2026-04-23)
+
+### 15.1 출처
+
+- 발주처: 중소벤처기업진흥공단 (KOSME) — 기업평가데이터실
+- 사업명: 비즈패스파인더 고도화 용역
+- 사업기간: 계약체결일로부터 180일 / 사업예산: 450,000천원 (부가세 포함)
+- RFP 원문: `.moai/refs/RFP/비즈패스파인더 고도화 용역_제안요청서.pdf` (53 페이지)
+- 요약 문서: `.moai/refs/rfp-summary.md`
+- 갭 분석: `.moai/refs/rfp-gap-analysis.md` (v0.2 — 사용자 결정 반영)
+
+본 부록은 RFP의 기능 요구사항을 iroum-cms에 통합하기 위한 매핑 표로, **기술 스택은 본 SPEC v0.1의 결정(Vue 3.5+ / Spring Boot 3.2.x / Java 17 / egovFrame v5.0.0 / PostgreSQL 16 / JWT)을 그대로 유지**하며, RFP의 MariaDB·Milvus·JSP·SSO 등은 옵션 SPEC으로만 처리한다.
+
+### 15.2 SFR (기능 요구사항) → iroum-cms SPEC 매핑
+
+| SFR ID | RFP 명칭 | iroum-cms 매핑 SPEC | 본 umbrella 추적 prefix | 우선 |
+|---|---|---|---|---|
+| SFR-001 | 실시간 데이터 동기화 | SPEC-CMS-009 (데이터 거버넌스) | REQ-DATA-* | P1 |
+| SFR-002 | 성장단계 예측 모델 고도화 | SPEC-CMS-AI-001 (옵션) | REQ-AI-* | 옵션 |
+| SFR-003 | 창업기업 가상 시뮬레이션 | SPEC-CMS-AI-001 또는 SPEC-CMS-008 | REQ-SIM-* | 옵션 |
+| SFR-004 | 경영위험 예측 알고리즘 정교화 | SPEC-CMS-AI-001 (옵션) | REQ-AI-* | 옵션 |
+| SFR-005 | 사고사례 매칭 알고리즘 | SPEC-CMS-006 (안전경영) | REQ-SAFETY-* | P0 |
+| SFR-006 | 안전경영 가이드라인 자동 생성 | SPEC-CMS-006 (안전경영) | REQ-SAFETY-* | P0 |
+| SFR-007 | 정책사업 지능형 매칭 | SPEC-CMS-007 (정책사업) | REQ-POLICY-* | P0 |
+| SFR-008 | 적기 타겟팅 알림 (알림톡/메일) | SPEC-CMS-007 + SPEC-CMS-004 amendment | REQ-NOTI-* | P0 |
+| SFR-009 | 시각화 대시보드 + UI/UX | SPEC-CMS-008 (대시보드) + SPEC-CMS-010 (검색) | REQ-VIZ-*, REQ-SEARCH-* | P0 |
+| SFR-010 | 통합 홈페이지 이관 + SSO | SPEC-CMS-MIG-001 (옵션) + SPEC-CMS-002 amendment | REQ-MIG-*, REQ-AUTH-S-* | 옵션 |
+| SFR-011 | 분석용 데이터 거버넌스 | SPEC-CMS-009 (데이터 거버넌스) | REQ-GOV-* | P1 |
+| SFR-012 | 알고리즘 품질 모니터링 | SPEC-CMS-AI-001 (옵션) | REQ-MON-* | 옵션 |
+| SFR-013 | 통합 KPI 대시보드 | SPEC-CMS-008 + SPEC-CMS-005 amendment | REQ-KPI-* | P0 |
+| SFR-014 | 통합 관리자 권한 + 메뉴 (4단계 RBAC) | SPEC-CMS-002 amendment | REQ-AUTH-013-D~ | P0 |
+| SFR-015 | 시스템 로그 + 연계 이력 | SPEC-CMS-005 amendment | REQ-SYSTEM-008-D~ | P0 |
+
+총 15개 SFR 모두 신규 SPEC 5개(006/007/008/009/010) + 기존 SPEC-CMS-002~005 amendment + 옵션 트랙 2개로 완전 커버.
+
+### 15.3 PER (성능 요구사항) — 모든 SPEC에 비기능으로 반영
+
+- **PER-002**: CPU/Memory/Disk 평균 90% 미만
+- **PER-003**: 검색 응답 3초 이내, 일배치 10분 이내, 월배치 1시간 이내
+- **PER-004**: 초당 50건 처리, 동시 사용자 1,000명, 임계 90% 시 지연 안내 페이지 노출
+
+본 SPEC §9 비기능 요구사항(LCP < 2.5초, 일반 조회 P95 < 200ms)과 충돌하지 않으며, RFP 임계값을 상한으로 추가 반영한다.
+
+### 15.4 INR (인터페이스) — SPEC-CMS-008 시각화 / SPEC-CMS-010 검색에 통합
+
+- **INR-004**: 메인 시안 3종 제시 (SPEC-CMS-008 acceptance 기준)
+- **INR-009**: Cross Browser (본 SPEC §9 호환성과 일치)
+- **INR-011**: 표준 연계모듈 + 공공 OpenAPI (SPEC-CMS-007 정책사업·SPEC-CMS-009 데이터 수집)
+
+### 15.5 DAR (데이터) — SPEC-CMS-009 데이터 거버넌스에 통합
+
+- **DAR-001**: 데이터 표준 사전 (S-Meta / DA# 모델등록시스템 호환 구조 — RFP 발주기관 시스템)
+- **DAR-007**: 메타데이터 등록·현행화 (발주기관 메타시스템 + 중앙메타시스템)
+- **DAR-009**: 보안사고 시 복구 시간 내 복원 (RTO/RPO 정의)
+
+### 15.6 SER (보안) — SPEC-CMS-002 / SPEC-CMS-003 보강
+
+- **SER-002**: 가명/합성정보 처리, 고유식별번호(주민번호·계좌·휴대폰) AES-256-GCM 암호화 (REQ-CROSS-002 강화)
+- **SER-004**: SQL Injection / XSS / 파일 다운로드 / URL 임의 변경 방지 (REQ-AUTH-008·REQ-BOARD-005 강화)
+
+### 15.7 COR (제약사항) — 모든 SPEC 기본 준수
+
+- **COR-001**: KWCAG 2.2 (이미 REQ-CROSS-001로 반영)
+- **COR-005**: 행안부 시큐어 코딩 가이드 준수 (이미 §9 보안에 반영)
+
+### 15.8 채택 제외 RFP 항목 (기술 스택 차이)
+
+| RFP 명세 | iroum-cms 결정 | 사유 |
+|---|---|---|
+| MariaDB + Milvus | PostgreSQL 16 (CMS) + 옵션 Milvus (AI 트랙) | tech.md FROZEN, JSONB·CTE·GIN 인덱스로 CMS 충분 |
+| JSP 2.1 | Vue 3.5 SPA (관리자/사용자 모두) | KWCAG 2.2 / 반응형 / 운영자 UX |
+| 상급기관 SSO API | JWT 기본 + 옵션 SPEC-CMS-MIG-001 | 자체 프로젝트로 외부 IdP 의존 회피 |
+| Apache + 외부 Tomcat | Spring Boot 내장 Tomcat 10 + Nginx | 컨테이너 친화 단순 스택 |
+| 통합파일서버 (SER-006) | Local FS / 객체 스토리지 (선택) | 단일 기관 단일 사이트 범위 |
+| KWCAG 2.1 (RFP 기술표) | KWCAG 2.2 AA (본 SPEC 유지) | RFP 본문 COR-001 자체가 2.2이므로 일치 |
+
+---
+
+## 16. 확장 SPEC 트리 (v0.2 RFP 통합 후)
+
+### 16.1 트리 구조
+
+```
+SPEC-CMS-001 [umbrella v0.2]
+├─ 기존 (1차 출시 핵심) — Bundle A/B/C/D 상세 SPEC
+│  ├─ SPEC-CMS-002 회원·권한·로그인 [+ amendment v0.2: 4단계 RBAC, 부서 권한, SSO 옵션 인터페이스]
+│  ├─ SPEC-CMS-003 게시판·공지·Q&A·FAQ [+ amendment v0.2: 다중 게시판 유형, 설문조사 연계]
+│  ├─ SPEC-CMS-004 콘텐츠·메뉴·사이트관리 [+ amendment v0.2: 알림 템플릿, 메타데이터 항목 확장]
+│  └─ SPEC-CMS-005 통계·로그·시스템관리 [+ amendment v0.2: KPI 대시보드, SSO 로그, 성능 임계값]
+├─ RFP 신규 P0 (사용자 가시성 큰 도메인)
+│  ├─ SPEC-CMS-006 안전경영 + 사고사례 매칭 [SFR-005, SFR-006]
+│  ├─ SPEC-CMS-007 정책사업 매칭 + 적기 알림 [SFR-007, SFR-008]
+│  └─ SPEC-CMS-008 시각화 대시보드 + KPI [SFR-009, SFR-013]
+├─ RFP 신규 P1 (운영·확장)
+│  ├─ SPEC-CMS-009 데이터 거버넌스 [SFR-001, SFR-011, DAR 전체]
+│  └─ SPEC-CMS-010 통합 검색 엔진 [INR + SFR-009 자동완성·인기검색어]
+└─ 옵션 트랙 (별도 일정/리소스 결정 필요)
+   ├─ SPEC-CMS-AI-001 AI/ML + Milvus + 알고리즘 모니터링 [SFR-002, 003, 004, 012]
+   └─ SPEC-CMS-MIG-001 통합 홈페이지 이관 + SSO [SFR-010] — DEPRECATED (자체 프로젝트로 확정, 비즈패스파인더 응찰 시나리오 외에는 불필요)
+```
+
+### 16.2 amendment 영향 추정 (LOC)
+
+| 구분 | 대상 | 추정 LOC 증가 |
+|---|---|---:|
+| 기존 보강 | SPEC-CMS-002~005 amendment v0.2 | +1,500 |
+| 신규 P0 | SPEC-CMS-006 / 007 / 008 신규 | +5,000 |
+| 신규 P1 | SPEC-CMS-009 / 010 신규 | +3,000 |
+| 옵션 트랙 | SPEC-CMS-AI-001 (AI/ML, 잠재 P1) / ~~SPEC-CMS-MIG-001~~ (DEPRECATED) | +2,000 |
+| **누적** | 현재 8,839 + 추가 12,000~14,000 | **약 21,000~23,000** |
+
+### 16.3 작성 순서 권장
+
+1. **SPEC-CMS-001 v0.2 amendment** (본 작업) — 본 SPEC §15~17 추가, §14 갱신
+2. **SPEC-CMS-002~005 amendment v0.2 일괄** — 기존 SPEC에 RFP 비기능·SFR 매핑 추가
+3. **신규 SPEC P0 (006/007/008)** — 병렬 가능. 안전경영·정책사업·대시보드 동시 진행
+4. **신규 SPEC P1 (009/010)** — P0 SPEC 완료 후 데이터 거버넌스·검색 엔진
+5. **옵션 트랙 (SPEC-CMS-AI-001, SPEC-CMS-MIG-001)** — 별도 사용자 승인 시점에 착수
+
+### 16.4 의존 관계
+
+- SPEC-CMS-006/007/008/009/010 모두 **SPEC-CMS-002 (인증·권한)** 에 의존
+- SPEC-CMS-007 (정책 알림) 은 **SPEC-CMS-004 (콘텐츠·알림 템플릿) amendment** 에 의존
+- SPEC-CMS-008 (KPI 대시보드) 은 **SPEC-CMS-005 (통계 집계) amendment** 에 의존
+- SPEC-CMS-009 (데이터 거버넌스) 는 **SPEC-CMS-005 (시스템·배치)** 에 의존
+- SPEC-CMS-AI-001 (옵션) 은 **SPEC-CMS-009 (데이터 파이프라인)** 에 의존
+
+---
+
+## 17. RFP 비기능 횡단 요구사항 적용 정책
+
+본 amendment에서 RFP 비기능 요구사항(PER, SER, DAR 일부)을 모든 child SPEC에 일괄 적용한다. 각 child SPEC의 `## 비기능 요구사항` 섹션과 acceptance.md `5 Quality Gates` 섹션에 다음 항목을 명시한다.
+
+### 17.1 성능 임계값 (PER-002~004)
+
+모든 child SPEC의 비기능 요구사항 섹션에 다음을 명시한다.
+
+- CPU / Memory / Disk 평균 사용률 90% 미만 유지 (PER-002)
+- 검색·조회 API p95 < 3초 (PER-003) — 본 SPEC §9의 일반 조회 P95 200ms는 정상 부하, 3초는 RFP 상한값
+- 일별 배치 < 10분 / 월별 배치 < 1시간 (PER-003)
+- 동시 처리 초당 50건, 동시 사용자 1,000명, 임계 90% 도달 시 지연 안내 페이지 노출 (PER-004)
+
+### 17.2 보안 강화 (SER-002~004)
+
+- **SPEC-CMS-002 (회원·권한)**: 고유식별번호 (주민·계좌·휴대폰) AES-256-GCM 암호화 의무 (REQ-CROSS-002 강화)
+- **SPEC-CMS-003 (게시판)**: SQL Injection / XSS / 파일다운로드 / URL 임의변경 방지 (이미 반영, RFP 명시로 강화)
+- **모든 SPEC**: 가명·합성정보 처리 옵션, 행안부 시큐어 코딩 가이드 준수, 패스워드 하드코딩 절대 금지
+
+### 17.3 데이터 거버넌스 (DAR-001~010)
+
+모든 child SPEC의 데이터 모델 섹션에 다음을 명시한다.
+
+- 표준 명명 규칙: Java camelCase, DB snake_case
+- 데이터 분류체계: 마스터 / 거래 / 통계 / 로그
+- 메타데이터 항목 (S-Meta / DA# 호환 구조):
+  - 테이블·컬럼 한글명
+  - 데이터 표준 도메인
+  - 변경 이력 (DAR-002)
+- DAR-009 복구 시간: RTO ≤ 4시간 (목표값, 인프라 SPEC에서 사용자 협의 필요)
+
+### 17.4 품질 게이트 추가 (QUR-004)
+
+모든 child SPEC의 `acceptance.md` 5 Quality Gates 섹션에 다음을 추가한다.
+
+- **QG-COMMON-1**: 결함 발생률 시험 운영 기간 동안 5% 미만 (QUR-004)
+- **QG-COMMON-2**: P0 결함 지속시간 1시간 이내 (QUR-004)
+
+### 17.5 기술적용계획표 (COR-001 별첨)
+
+본 SPEC은 **비즈패스파인더와 무관한 자체 공공기관 CMS 프로젝트**이며, RFP는 기능 참고 자료로만 활용한다 (사용자 결정 2026-04-29). 본 절은 미래에 유사 RFP 응찰 또는 공공기관 도입 시 활용할 수 있는 기술 상향 사유 참고표이며, 본 프로젝트의 직접 산출물 범위는 아니다.
+
+| RFP 기술표 항목 | 본 프로젝트 적용 | 상향 사유 |
+|---|---|---|
+| JSP 2.1 | Vue 3.5 SPA | SPA 기반 모던 UX, 메인 시안 3종(INR-004) 충족, KWCAG 2.2 AA 자동 검사 가능 |
+| egovFrame v3 또는 v4 | egovFrame v5.0.0 | 최신 LTS, Spring Boot 3.2 / JDK 17 호환, 보안 패치 |
+| KWCAG 2.1 | KWCAG 2.2 AA | RFP 본문 COR-001 자체가 2.2이며 더 강한 표준 |
+
+---
+
+## 18. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Umbrella SPEC) |
+| v0.2 | 2026-04-29 | MoAI orchestrator | RFP 통합 amendment (§15~17 신설, RFP 69개 요구사항 매핑, 확장 SPEC 트리 SPEC-CMS-006~010 + 옵션 트랙 정의, 비기능 횡단 적용 정책 수립) |
