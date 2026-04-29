@@ -18,6 +18,13 @@ import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 public interface AuthService {
 
     /**
+     * 로그인 결과 — Access Token 응답 바디와 Set-Cookie용 Refresh Token을 함께 반환.
+     *
+     * <p>REQ-AUTH-001 — Controller가 LoginResponse는 바디로, refreshToken은 HttpOnly Cookie로 분리 처리.
+     */
+    record LoginOutcome(LoginResponse response, String refreshToken) {}
+
+    /**
      * 일반 로그인 (ID/비밀번호).
      *
      * <p>REQ-AUTH-001 — 자격증명 검증, JWT 발급, 실패 횟수 관리, 이력 기록.
@@ -26,11 +33,11 @@ public interface AuthService {
      * @param req 로그인 요청
      * @param ipAddress 클라이언트 IP
      * @param userAgent 클라이언트 User-Agent
-     * @return Access Token 정보 (Refresh Token은 Set-Cookie로 별도 처리)
+     * @return Access Token + Refresh Token (Rotation 후 새 값)
      * @throws InvalidCredentialsException 사용자 미존재 또는 비밀번호 불일치
      * @throws AccountLockedException 계정 잠금 상태
      */
-    LoginResponse login(LoginRequest req, String ipAddress, String userAgent)
+    LoginOutcome login(LoginRequest req, String ipAddress, String userAgent)
             throws InvalidCredentialsException, AccountLockedException;
 
     /**
