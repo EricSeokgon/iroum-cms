@@ -1,6 +1,6 @@
 # iroum-cms 백엔드
 
-egovFrame 5.0 + Spring Boot 3.2 기반 CMS API 서버 (Step 0 — Bootstrap)
+egovFrame 5.0 + Spring Boot 3.5 기반 CMS API 서버 (Step 0 — Bootstrap)
 
 ---
 
@@ -10,14 +10,14 @@ egovFrame 5.0 + Spring Boot 3.2 기반 CMS API 서버 (Step 0 — Bootstrap)
 |--------|------|------|
 | JDK | Eclipse Temurin (Adoptium) | 17 LTS (Gradle toolchain 자동 다운로드) |
 | 빌드 도구 | Gradle | 8.10 |
-| 프레임워크 | Spring Boot | 3.2.10 |
+| 프레임워크 | Spring Boot | 3.5.9 |
 | 표준 프레임워크 | egovFrame | 5.0.0 (SPEC-CMS-002에서 통합 예정) |
-| ORM | MyBatis Spring Boot Starter | 3.0.3 |
+| ORM | MyBatis Spring Boot Starter | 3.0.4 |
 | DB | PostgreSQL | 16 |
 | DB 마이그레이션 | Flyway | 10.x |
-| 인증 | Spring Security + jjwt | 6.x + 0.12.6 |
-| API 문서 | springdoc-openapi | 2.6.0 |
-| 테스트 | JUnit 5 + Mockito + Testcontainers | Spring Boot 내장 + 1.20.x |
+| 인증 | Spring Security + jjwt | 6.x + 0.12.7 |
+| API 문서 | springdoc-openapi | 2.8.17 |
+| 테스트 | JUnit 5 + Mockito + Testcontainers | Spring Boot 내장 + 1.20.4 |
 
 ---
 

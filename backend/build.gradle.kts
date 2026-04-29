@@ -3,8 +3,8 @@ import org.gradle.api.tasks.testing.logging.TestLogEvent
 
 plugins {
     java
-    id("org.springframework.boot") version "3.2.10"
-    id("io.spring.dependency-management") version "1.1.6"
+    id("org.springframework.boot") version "3.5.9"
+    id("io.spring.dependency-management") version "1.1.7"
     jacoco
 }
 
@@ -36,9 +36,9 @@ repositories {
 }
 
 // ─── 의존성 버전 상수 ─────────────────────────────────────────────────────
-val mybatisStarterVersion = "3.0.3"
-val jjwtVersion = "0.12.6"
-val springdocVersion = "2.6.0"
+val mybatisStarterVersion = "3.0.4"
+val jjwtVersion = "0.12.7"
+val springdocVersion = "2.8.17"
 val testcontainersVersion = "1.20.4"
 
 dependencies {
@@ -59,7 +59,7 @@ dependencies {
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
 
-    // ─── JWT (jjwt 0.12.6) ────────────────────────────────────────────────
+    // ─── JWT (jjwt 0.12.7) ────────────────────────────────────────────────
     implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:$jjwtVersion")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jjwtVersion")
@@ -118,7 +118,7 @@ tasks.test {
 
 // ─── JaCoCo 커버리지 ──────────────────────────────────────────────────────
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = "0.8.13"
 }
 
 tasks.jacocoTestReport {

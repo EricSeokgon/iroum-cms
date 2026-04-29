@@ -12,7 +12,7 @@
 | 표준 프레임워크 | egovframe | 5.0.0 | 전자정부 표준 의무 준수, 공통컴포넌트 v5 호환 |
 | JDK | OpenJDK | 17 LTS | LTS 장기 지원, Virtual Thread 지원, egovframe 5 공식 지원 버전 |
 | 어플리케이션 프레임워크 | Spring Framework | 6.x | egovframe 5.0이 Spring 6 기반, Jakarta EE 9+ 네임스페이스 |
-| 부트 레이어 | Spring Boot | 3.2.x (3.3.x 호환) | 자동 구성, 내장 Tomcat, Spring 6 대응 버전 |
+| 부트 레이어 | Spring Boot | 3.5.x (latest stable patch) | 자동 구성, 내장 Tomcat, Spring 6 대응 버전 |
 | 보안 | Spring Security | 6.x | Spring 6 네이티브, JWT + Refresh Token 필터 체인 구성 |
 | ORM | MyBatis | 3.5.x | egovframe 공통컴포넌트 SQL Mapper 표준 준수, XML 기반 쿼리 |
 | 데이터베이스 | PostgreSQL | 16 | JSONB, 고성능, 오픈소스, 공공기관 도입 사례 다수 |
@@ -256,19 +256,20 @@ Stage 2 (runtime): nginx:alpine — dist/ 정적 파일 serve
 | 라이브러리 | 버전 |
 |-----------|------|
 | OpenJDK | 17 LTS |
-| Spring Boot | 3.2.x |
+| Spring Boot | 3.5.9 |
 | Spring Framework | 6.x |
 | Spring Security | 6.x |
 | egovframe | 5.0.0 |
-| MyBatis Spring Boot Starter | 3.0.x |
+| MyBatis Spring Boot Starter | 3.0.4 |
 | PostgreSQL JDBC Driver | 42.7.x |
 | Flyway | 10.x |
 | HikariCP | Spring Boot 내장 |
-| springdoc-openapi-starter-webmvc-ui | 2.x |
-| jjwt (JWT) | 0.12.x |
+| springdoc-openapi-starter-webmvc-ui | 2.8.17 |
+| jjwt (JWT) | 0.12.7 |
+| JaCoCo | 0.8.13 |
 | JUnit 5 | Spring Boot 내장 |
 | Mockito | Spring Boot 내장 |
-| Testcontainers | 1.19.x |
+| Testcontainers | 1.20.4 |
 | Gradle | 8.x |
 | Node.js | 20 LTS |
 | Vue | 3.5+ |
@@ -322,6 +323,6 @@ Stage 2 (runtime): nginx:alpine — dist/ 정적 파일 serve
 
 ---
 
-_문서 버전: 초안 v0.1_
+_문서 버전: v0.2 (Spring Boot 3.5.9 업그레이드 — 2026-04-29)_
 _작성일: 2026-04-29_
 _스택 변경 시: 이 문서 §9 버전 표와 structure.md §6 동시 업데이트 필요_
