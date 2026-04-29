@@ -4,7 +4,70 @@
   },
   "nav": {
     "home": "홈",
-    "health": "서버 상태"
+    "health": "서버 상태",
+    "dashboard": "대시보드",
+    "users": "사용자 관리",
+    "logout": "로그아웃",
+    "sidebarLabel": "관리자 메뉴",
+    "mainMenu": "주요 메뉴"
+  },
+  "auth": {
+    "login": {
+      "title": "관리자 로그인",
+      "formLabel": "로그인 폼",
+      "username": "사용자명",
+      "usernamePlaceholder": "사용자명을 입력하세요",
+      "password": "비밀번호",
+      "passwordPlaceholder": "비밀번호를 입력하세요 (8자 이상)",
+      "submit": "로그인",
+      "submitting": "로그인 중...",
+      "error": {
+        "usernameRequired": "사용자명을 입력해 주세요",
+        "passwordRequired": "비밀번호를 입력해 주세요",
+        "passwordMin": "비밀번호는 8자 이상이어야 합니다",
+        "invalid": "사용자명 또는 비밀번호가 올바르지 않습니다",
+        "locked": "계정이 잠겼습니다. 30분 후 다시 시도하거나 관리자에게 문의하세요",
+        "network": "서버와 통신할 수 없습니다. 잠시 후 다시 시도해 주세요"
+      }
+    },
+    "logout": {
+      "success": "로그아웃되었습니다",
+      "error": "로그아웃 중 오류가 발생했습니다"
+    }
+  },
+  "dashboard": {
+    "title": "대시보드",
+    "userCount": "총 사용자",
+    "todayLogin": "오늘 로그인",
+    "systemStatus": "시스템 상태",
+    "recentActivity": "최근 활동",
+    "comingSoon": "다음 사이클에서 제공 예정",
+    "statusError": "오류"
+  },
+  "users": {
+    "title": "사용자 관리",
+    "empty": "사용자 데이터 없음",
+    "emptyDescription": "사용자 CRUD API는 SPEC-CMS-002 REQ-AUTH-006 다음 사이클에서 구현 예정입니다",
+    "search": "사용자명 또는 이메일 검색",
+    "filterStatus": "상태 필터",
+    "col": {
+      "username": "사용자명",
+      "email": "이메일",
+      "name": "이름",
+      "status": "상태",
+      "lastLogin": "마지막 로그인",
+      "actions": "액션"
+    },
+    "status": {
+      "all": "전체",
+      "active": "활성",
+      "inactive": "비활성",
+      "locked": "잠김",
+      "deleted": "삭제됨"
+    },
+    "action": {
+      "edit": "수정"
+    }
   },
   "health": {
     "title": "서버 상태 확인",
@@ -26,5 +89,11 @@
       "message": "요청하신 페이지가 존재하지 않습니다.",
       "goHome": "홈으로 돌아가기"
     }
+  },
+  "a11y": {
+    "skipNav": "본문 바로가기",
+    "languageSelect": "언어 선택",
+    "currentUser": "현재 사용자",
+    "pagination": "페이지 탐색"
   }
 }

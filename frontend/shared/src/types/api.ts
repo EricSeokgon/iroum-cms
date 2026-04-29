@@ -34,5 +34,47 @@ export interface PageMeta {
 /** 페이지네이션 응답 */
 export interface PageResponse<T> {
   content: T[]
-  meta: PageMeta
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+// ── Auth 타입 (SPEC-CMS-002) ──────────────────────────────────────────────────
+
+/** POST /api/v1/auth/login 요청 */
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+/** POST /api/v1/auth/login 200 응답 본문 */
+export interface LoginResponse {
+  accessToken: string
+  expiresInSeconds: number
+  tokenType: 'Bearer'
+}
+
+/** POST /api/v1/auth/refresh 200 응답 본문 */
+export interface RefreshResult {
+  accessToken: string
+  newRefreshToken: string
+  accessExpiresInSeconds: number
+  refreshExpiresInSeconds: number
+}
+
+// ── 사용자 타입 ──────────────────────────────────────────────────────────────
+
+/** 사용자 상태 코드 */
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'LOCKED' | 'DELETED'
+
+/** 사용자 목록용 요약 DTO */
+export interface UserSummary {
+  id: number
+  uuid: string
+  username: string
+  email: string
+  name: string
+  status: UserStatus
+  lastLoginAt?: string
 }

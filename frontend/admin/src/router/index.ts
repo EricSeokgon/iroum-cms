@@ -1,20 +1,50 @@
+// 라우터 설정 — SPEC-CMS-002 인증 가드 포함
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+// @MX:ANCHOR: [AUTO] router — router/index.ts는 main.ts, auth store, 모든 view에서 참조
+// @MX:REASON: fan_in >= 3: main.ts, auth store의 logout, 각 View 컴포넌트에서 push 호출
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    // ── 공개 라우트 ────────────────────────────────────────────────────────
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/auth/LoginView.vue'),
+      meta: { public: true, title: '로그인' },
+    },
+
+    // ── 인증 필요 라우트 ───────────────────────────────────────────────────
     {
       path: '/',
-      name: 'home',
-      component: () => import('@/views/HomeView.vue'),
-      meta: { title: '홈' },
+      component: () => import('@/layouts/AdminLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        { path: '', redirect: '/dashboard' },
+        {
+          path: 'dashboard',
+          name: 'dashboard',
+          component: () => import('@/views/DashboardView.vue'),
+          meta: { title: '대시보드' },
+        },
+        {
+          path: 'users',
+          name: 'user-list',
+          component: () => import('@/views/users/UserListView.vue'),
+          meta: { title: '사용자 관리' },
+        },
+        {
+          path: 'health',
+          name: 'health',
+          component: () => import('@/views/HealthView.vue'),
+          meta: { title: '서버 상태' },
+        },
+      ],
     },
-    {
-      path: '/health',
-      name: 'health',
-      component: () => import('@/views/HealthView.vue'),
-      meta: { title: '서버 상태' },
-    },
+
+    // ── 404 ────────────────────────────────────────────────────────────────
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -22,6 +52,25 @@ const router = createRouter({
       meta: { title: '페이지를 찾을 수 없습니다' },
     },
   ],
+})
+
+// ── 인증 가드 ──────────────────────────────────────────────────────────────
+router.beforeEach((to, _from, next) => {
+  const auth = useAuthStore()
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    // 인증 필요 → 로그인 페이지로, 원래 경로 저장
+    next({ name: 'login', query: { redirect: to.fullPath } })
+    return
+  }
+
+  if (to.name === 'login' && auth.isAuthenticated) {
+    // 이미 인증됨 → 대시보드로
+    next({ name: 'dashboard' })
+    return
+  }
+
+  next()
 })
 
 // 페이지 타이틀 업데이트

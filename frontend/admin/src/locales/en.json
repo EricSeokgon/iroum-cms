@@ -4,7 +4,70 @@
   },
   "nav": {
     "home": "Home",
-    "health": "Server Status"
+    "health": "Server Status",
+    "dashboard": "Dashboard",
+    "users": "User Management",
+    "logout": "Logout",
+    "sidebarLabel": "Admin Menu",
+    "mainMenu": "Main Menu"
+  },
+  "auth": {
+    "login": {
+      "title": "Admin Login",
+      "formLabel": "Login Form",
+      "username": "Username",
+      "usernamePlaceholder": "Enter your username",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password (min 8 chars)",
+      "submit": "Login",
+      "submitting": "Logging in...",
+      "error": {
+        "usernameRequired": "Please enter your username",
+        "passwordRequired": "Please enter your password",
+        "passwordMin": "Password must be at least 8 characters",
+        "invalid": "Invalid username or password",
+        "locked": "Your account is locked. Try again in 30 minutes or contact an administrator",
+        "network": "Unable to reach the server. Please try again later"
+      }
+    },
+    "logout": {
+      "success": "Successfully logged out",
+      "error": "An error occurred during logout"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "userCount": "Total Users",
+    "todayLogin": "Today's Logins",
+    "systemStatus": "System Status",
+    "recentActivity": "Recent Activity",
+    "comingSoon": "Coming in next cycle",
+    "statusError": "Error"
+  },
+  "users": {
+    "title": "User Management",
+    "empty": "No users",
+    "emptyDescription": "User CRUD API will be implemented in the next cycle (SPEC-CMS-002 REQ-AUTH-006)",
+    "search": "Search by username or email",
+    "filterStatus": "Filter by status",
+    "col": {
+      "username": "Username",
+      "email": "Email",
+      "name": "Name",
+      "status": "Status",
+      "lastLogin": "Last Login",
+      "actions": "Actions"
+    },
+    "status": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive",
+      "locked": "Locked",
+      "deleted": "Deleted"
+    },
+    "action": {
+      "edit": "Edit"
+    }
   },
   "health": {
     "title": "Server Health Check",
@@ -26,5 +89,11 @@
       "message": "The page you requested does not exist.",
       "goHome": "Go to Home"
     }
+  },
+  "a11y": {
+    "skipNav": "Skip to main content",
+    "languageSelect": "Select language",
+    "currentUser": "Current user",
+    "pagination": "Page navigation"
   }
 }

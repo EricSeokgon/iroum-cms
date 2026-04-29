@@ -1,0 +1,169 @@
+<template>
+  <!-- 스킵 내비게이션 — KWCAG 2.4.1 블록 건너뛰기 -->
+  <a
+    href="#main-content"
+    class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-white focus-visible:outline-none"
+  >
+    {{ t('a11y.skipNav') }}
+  </a>
+
+  <el-container class="min-h-screen">
+    <!-- 사이드바 -->
+    <el-aside
+      width="220px"
+      class="admin-sidebar border-r border-gray-200 bg-gray-900"
+      role="navigation"
+      :aria-label="t('nav.sidebarLabel')"
+    >
+      <!-- 로고 영역 -->
+      <div class="flex h-14 items-center px-5 border-b border-gray-700">
+        <span class="text-lg font-bold text-white">{{ t('app.title') }}</span>
+      </div>
+
+      <!-- 메뉴 -->
+      <el-menu
+        :router="true"
+        :default-active="currentPath"
+        background-color="#111827"
+        text-color="#d1d5db"
+        active-text-color="#ffffff"
+        class="border-none"
+        :aria-label="t('nav.mainMenu')"
+      >
+        <el-menu-item index="/dashboard">
+          <el-icon><i-ep-home-filled /></el-icon>
+          <span>{{ t('nav.dashboard') }}</span>
+        </el-menu-item>
+
+        <el-menu-item index="/users">
+          <el-icon><i-ep-user /></el-icon>
+          <span>{{ t('nav.users') }}</span>
+        </el-menu-item>
+
+        <el-menu-item index="/health">
+          <el-icon><i-ep-monitor /></el-icon>
+          <span>{{ t('nav.health') }}</span>
+        </el-menu-item>
+
+        <!-- 구분선 -->
+        <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
+
+        <!-- 로그아웃 -->
+        <el-menu-item
+          index=""
+          @click.prevent="handleLogout"
+          :aria-label="t('nav.logout')"
+        >
+          <el-icon><i-ep-switch-button /></el-icon>
+          <span>{{ t('nav.logout') }}</span>
+        </el-menu-item>
+      </el-menu>
+    </el-aside>
+
+    <!-- 오른쪽 메인 영역 -->
+    <el-container direction="vertical" class="flex-1">
+      <!-- 헤더 -->
+      <el-header
+        height="56px"
+        class="flex items-center justify-between border-b border-gray-200 bg-white px-6"
+        role="banner"
+      >
+        <h1 class="text-base font-semibold text-gray-800">{{ pageTitle }}</h1>
+
+        <div class="flex items-center gap-4">
+          <!-- 언어 전환 -->
+          <el-select
+            v-model="currentLocale"
+            size="small"
+            style="width: 90px"
+            :aria-label="t('a11y.languageSelect')"
+          >
+            <el-option label="한국어" value="ko" />
+            <el-option label="English" value="en" />
+          </el-select>
+
+          <!-- 사용자 표시 -->
+          <span
+            v-if="auth.user"
+            class="text-sm text-gray-600"
+            :aria-label="`${t('a11y.currentUser')}: ${auth.user.username}`"
+          >
+            {{ auth.user.username }}
+          </span>
+
+          <!-- 헤더 로그아웃 버튼 -->
+          <el-button
+            size="small"
+            type="danger"
+            plain
+            @click="handleLogout"
+            :loading="loggingOut"
+            :aria-label="t('nav.logout')"
+          >
+            {{ t('nav.logout') }}
+          </el-button>
+        </div>
+      </el-header>
+
+      <!-- 메인 콘텐츠 -->
+      <el-main id="main-content" role="main" class="bg-gray-50 p-6" tabindex="-1">
+        <router-view />
+      </el-main>
+    </el-container>
+  </el-container>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+
+const { t, locale } = useI18n()
+const route = useRoute()
+const auth = useAuthStore()
+
+const loggingOut = ref(false)
+const currentPath = computed(() => route.path)
+const pageTitle = computed(() => (route.meta.title as string | undefined) ?? t('app.title'))
+
+// 언어 전환 양방향 바인딩
+const currentLocale = computed({
+  get: () => locale.value,
+  set: (val: string) => { locale.value = val },
+})
+
+async function handleLogout(): Promise<void> {
+  loggingOut.value = true
+  try {
+    await auth.logout()
+    ElMessage.success(t('auth.logout.success'))
+  } catch {
+    ElMessage.error(t('auth.logout.error'))
+  } finally {
+    loggingOut.value = false
+  }
+}
+</script>
+
+<style scoped>
+/* Element Plus 사이드바 메뉴 오버라이드 */
+.admin-sidebar :deep(.el-menu) {
+  border-right: none;
+}
+
+.admin-sidebar :deep(.el-menu-item.is-active) {
+  background-color: #1d4ed8 !important;
+}
+
+.admin-sidebar :deep(.el-menu-item:hover) {
+  background-color: #1f2937 !important;
+}
+
+/* 포커스 가시성 보장 — KWCAG 2.4.7 */
+.admin-sidebar :deep(.el-menu-item:focus-visible) {
+  outline: 2px solid #60a5fa;
+  outline-offset: -2px;
+}
+</style>

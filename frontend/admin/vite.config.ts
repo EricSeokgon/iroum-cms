@@ -17,6 +17,8 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        // refresh_token Cookie의 path=/api/v1/auth 가 로컬 개발에서도 동작하도록
+        cookieDomainRewrite: 'localhost',
       },
     },
   },
