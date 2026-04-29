@@ -1,4 +1,4 @@
-# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.3.1 (2026-04-29 SMS 채널 v0.4+로 미룸)
+# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.3.2 (2026-04-29 SYSADMIN alias 정책 추가)
 
 ## 1. 개요
 
@@ -10,7 +10,7 @@
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
-| 버전 | v0.3.1 (운영 결정 Q-1 적용 — SMS 본인인증 채널을 v0.4+로 미루고 이메일 OTP만 1차 유지) |
+| 버전 | v0.3.2 (운영 결정 Q-4 적용 — SYSADMIN→SUPER_ADMIN alias 정책 명시화) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | uss/umt(사용자관리), sec/rmt(역할관리), sec/aut(권한관리), uat/uia(일반로그인), uss/olh(조직관리) |
@@ -196,20 +196,35 @@ COMMENT ON COLUMN users.password_hash IS 'BCrypt strength=12 해시';
 #### 4.2.2 `roles` (역할 마스터)
 
 ```sql
+-- v0.3.2 (사용자 결정 2026-04-29 Q-4 적용): aliased_to 컬럼 추가.
+-- SYSADMIN row와 SUPER_ADMIN row가 모두 존재하되 SYSADMIN.aliased_to='SUPER_ADMIN'으로 alias 관계 명시.
 CREATE TABLE roles (
     code        VARCHAR(50)  PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
     description TEXT,
     is_system   BOOLEAN NOT NULL DEFAULT FALSE,
+    aliased_to  VARCHAR(50)  NULL REFERENCES roles(code) ON DELETE RESTRICT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-COMMENT ON COLUMN roles.is_system IS '시스템 기본 역할(SYSADMIN/CONTENT_ADMIN/USER) — 삭제 금지';
+COMMENT ON COLUMN roles.is_system  IS '시스템 기본 역할(SUPER_ADMIN/SYSADMIN/CONTENT_ADMIN/USER) — 삭제 금지';
+COMMENT ON COLUMN roles.aliased_to IS 'NULL=실제 역할. NOT NULL=alias이며 본 코드의 권한은 aliased_to 코드와 동일하게 해석되어야 한다(REQ-AUTH-013-D-5, 사용자 결정 2026-04-29 Q-4 적용).';
+CREATE INDEX idx_roles_aliased_to ON roles(aliased_to) WHERE aliased_to IS NOT NULL;
 
-INSERT INTO roles (code, name, description, is_system) VALUES
-  ('SYSADMIN',      '시스템관리자', '모든 권한, 시스템 설정 가능',       TRUE),
-  ('CONTENT_ADMIN', '콘텐츠관리자', '게시판·콘텐츠 관리 권한',           TRUE),
-  ('USER',          '일반사용자',   '인증된 일반 사용자, 본인 정보만 수정', TRUE);
+-- v0.1 시드 (SYSADMIN/CONTENT_ADMIN/USER) — aliased_to 컬럼 추가 호환
+-- v0.3.2: SYSADMIN을 SUPER_ADMIN의 legacy alias로 명시 (Q-4 결정).
+--   - 기존 v0.1 환경에서 SYSADMIN으로 발급된 user_roles 매핑은 그대로 유지된다.
+--   - 신규 환경은 SUPER_ADMIN을 사용해야 한다(§14.1 v0.2 시드 참조).
+--   - 권한 검사는 aliased_to를 따라 SUPER_ADMIN 권한 집합으로 해석된다.
+INSERT INTO roles (code, name, description, is_system, aliased_to) VALUES
+  ('SYSADMIN',      '시스템관리자(legacy)', 'v0.1 alias for SUPER_ADMIN — Q-4 운영 결정 (2026-04-29)', TRUE, 'SUPER_ADMIN'),
+  ('CONTENT_ADMIN', '콘텐츠관리자',         '게시판·콘텐츠 관리 권한',                                    TRUE, NULL),
+  ('USER',          '일반사용자',           '인증된 일반 사용자, 본인 정보만 수정',                       TRUE, NULL);
+-- 주: SUPER_ADMIN row는 §14.1 v0.2 amendment 시드에서 INSERT된다(`('SUPER_ADMIN', ..., NULL)`).
+--     마이그레이션 순서: V1(roles+SYSADMIN/CONTENT_ADMIN/USER) → V2(SUPER_ADMIN INSERT) → V2.1(SYSADMIN.aliased_to='SUPER_ADMIN' UPDATE).
 ```
+
+> **NOTE — 사용자 결정 2026-04-29 Q-4 적용 (v0.3.2)**
+> SYSADMIN과 SUPER_ADMIN은 둘 다 `roles` 테이블에 row가 보존된다. 단순 alias 관계로 처리하며 데이터 마이그레이션은 강제하지 않는다. 권한 검사 시 SYSADMIN 코드를 만나면 `aliased_to='SUPER_ADMIN'`을 따라 SUPER_ADMIN 권한 집합으로 해석한다(REQ-AUTH-013-D-5).
 
 #### 4.2.3 `user_roles` (사용자-역할 N:M 매핑)
 
@@ -967,6 +982,8 @@ sequenceDiagram
   SUPER_ADMIN이 인증된 동안, 시스템은 SUPER_ADMIN이 DEPT_ADMIN·EDITOR·VIEWER를 부여·회수할 수 있도록 허용해야 한다. DEPT_ADMIN이 SUPER_ADMIN을 부여하거나 자기보다 상위 역할을 부여하려는 시도는 거부(403 + `AUTH_ROLE_ESCALATION_DENIED`)해야 한다 (역방향 위임 금지).
 - **REQ-AUTH-013-D-4 (메뉴 × 역할 × 액션 매트릭스 관리 화면 — Ubiquitous)**
   시스템은 SUPER_ADMIN에게 메뉴 × 역할 × 액션(C/R/U/D)을 시각화 매트릭스 화면으로 제공해야 한다 (`GET /api/v1/admin/permission-matrix`). 셀 단위 토글은 `role_permissions` 매핑을 추가·삭제하며, 변경 시 §13.4 권한 변경 이력에 자동 기록되어야 한다.
+- **REQ-AUTH-013-D-5 (역할 alias 해석 — Ubiquitous, v0.3.2 사용자 결정 2026-04-29 Q-4 적용)**
+  사용자가 alias 역할(예: SYSADMIN)로 로그인하거나 권한 검사가 alias 코드를 만났을 때, 시스템은 `roles.aliased_to`(§4.2.2) 컬럼이 NOT NULL이면 그 값을 따라 실제 역할(예: SUPER_ADMIN)의 권한 집합을 적용해야 한다. alias 해석은 한 단계만 허용되며(체이닝 금지 — `aliased_to`가 가리키는 row의 `aliased_to`는 무조건 NULL이어야 한다), 위반 시 `chk_roles_alias_no_chain` 제약(혹은 INSERT 트리거)으로 거부되어야 한다. alias 해석 결과는 §13.4 audit_log에 `event='role_alias_resolved', from_code='SYSADMIN', to_code='SUPER_ADMIN'`으로 기록되어야 한다 (REQ-AUTH-013-D-1과 호환, REQ-AUTH-016-D 권한 변경 이력과 분리). 본 sub-REQ는 v0.1 SYSADMIN 사용 환경의 비파괴 마이그레이션 경로를 보장한다.
 
 ### 13.2 REQ-AUTH-014-D: 부서·조직 관리 (SPEC-CMS-001 v0.2 §15.2 SFR-014 매핑)
 
@@ -1019,15 +1036,21 @@ v0.1 `audit_log`(REQ-CROSS-004)와 분리된 권한 전용 이력 테이블을 �
 ```sql
 -- v0.1 INSERT (SYSADMIN, CONTENT_ADMIN, USER)는 그대로 유지
 -- v0.2 4단계 표준 역할 alias 시드 추가
-INSERT INTO roles (code, name, description, is_system) VALUES
-  ('SUPER_ADMIN',  '최고관리자',   'SYSADMIN alias — RFP SFR-014 4단계 RBAC 표준', TRUE),
-  ('DEPT_ADMIN',   '부서관리자',   '자기 부서 사용자·콘텐츠 관리 권한',            TRUE),
-  ('EDITOR',       '편집자',       '게시판·콘텐츠 작성 권한',                       TRUE),
-  ('VIEWER',       '조회전용',     '읽기 전용',                                     TRUE)
+-- v0.3.2 (사용자 결정 2026-04-29 Q-4 적용): SUPER_ADMIN은 실제 역할(aliased_to=NULL),
+--   SYSADMIN은 §4.2.2 V2.1 마이그레이션에서 aliased_to='SUPER_ADMIN'으로 갱신된다.
+INSERT INTO roles (code, name, description, is_system, aliased_to) VALUES
+  ('SUPER_ADMIN',  '최고관리자',   'RFP SFR-014 4단계 RBAC 표준 — 실제 역할 (Q-4 alias parent)', TRUE, NULL),
+  ('DEPT_ADMIN',   '부서관리자',   '자기 부서 사용자·콘텐츠 관리 권한',                          TRUE, NULL),
+  ('EDITOR',       '편집자',       '게시판·콘텐츠 작성 권한',                                     TRUE, NULL),
+  ('VIEWER',       '조회전용',     '읽기 전용',                                                   TRUE, NULL)
 ON CONFLICT (code) DO NOTHING;
+
+-- v0.3.2 V2.1 (Q-4 적용): SYSADMIN row의 aliased_to를 SUPER_ADMIN으로 갱신 (idempotent).
+UPDATE roles SET aliased_to='SUPER_ADMIN'
+  WHERE code='SYSADMIN' AND aliased_to IS NULL;
 ```
 
-비고: SUPER_ADMIN은 운영 표준 명칭이며, 기존 SYSADMIN과 동일 권한이다. v0.2 신규 환경은 SUPER_ADMIN을 사용하고 v0.1 기존 환경은 SYSADMIN을 그대로 유지한다(데이터 마이그레이션은 옵션). `is_system=TRUE`로 보호되어 코드 변경·삭제 거부(REQ-AUTH-007-D-1).
+비고: SUPER_ADMIN은 운영 표준 명칭이며, 기존 SYSADMIN과 동일 권한이다(Q-4 alias 정책). v0.2 신규 환경은 SUPER_ADMIN을 사용하고 v0.1 기존 환경은 SYSADMIN을 그대로 유지하되 권한 검사는 alias 해석을 따른다. `is_system=TRUE`로 보호되어 코드 변경·삭제 거부(REQ-AUTH-007-D-1).
 
 ### 14.2 `organization` (조직 트리, 신규)
 
@@ -1317,3 +1340,4 @@ CREATE TRIGGER trg_pdal_archive_no_update
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 amendment. SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015 매핑. §13 신설(REQ-AUTH-013-D 4단계 RBAC, REQ-AUTH-014-D 부서·조직 관리, REQ-AUTH-015-D SSO 옵션 인터페이스, REQ-AUTH-016-D 권한 변경 이력 + 비인가 사전 차단). §14 신설(roles 시드 보강, organization·organization_history·permission_change_history DDL, users.organization_id FK 추가). §15 신설(RFP PER/SER/QUR 비기능 횡단 적용). v0.1 §1~§11 본문은 변경 없이 유지. |
 | v0.3 | 2026-04-29 | manager-spec | 홍익인간 CMS gap 통합 amendment (SPEC-CMS-001 v0.2 §17 비기능 횡단 + 홍익인간 CMS gap analysis 2026-04-29). §16 신설(REQ-AUTH-017-D 본인인증 휴대폰 OTP+이메일 5개 sub-REQ, REQ-AUTH-018-D 회원정보 접근 로그 4개 sub-REQ). §17 신설(verification_request·verification_history·personal_data_access_log 월별 PARTITION·personal_data_access_log_archive DDL + APPEND-ONLY 트리거). SmsProvider 인터페이스 추상화(NoOpSmsProvider 기본 + NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 자리표시자). 비기능: OTP 발송 < 3초, 검증 < 200ms, BCrypt(12) for OTP code hash, personal_data_access_log APPEND-ONLY 트리거. v0.1~v0.2 §1~§15 본문은 변경 없이 유지. |
 | v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-1 적용 (사용자 결정 2026-04-29) — SMS 본인인증 채널을 v0.4+ 후속 검토로 미루고 1차는 이메일 OTP만 유지. §16.1 REQ-AUTH-017-D 5개 sub-REQ 갱신: D-1 channel 파라미터 EMAIL만 허용(SMS 요청 시 400 + VERIFY_CHANNEL_NOT_SUPPORTED), D-2 SMS 발송 경로 비활성화·Spring Mail SMTP만 유지, D-3 그대로, D-4 SmsProvider 인터페이스 placeholder만 정의(NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton 1차 제외, NoOpSmsProvider만 wired)·v0.4+ 후속 표기, D-5 그대로. §17.1 verification_request DDL `chk_vreq_channel` 제약을 `(SMS,EMAIL)` → `(EMAIL only)`로 강화하고 channel 컬럼은 v0.4+ 호환 위해 보존. §16.3 PER 임계값을 이메일 채널 기준으로 갱신. v0.3 본문 §1~§15·§16.2 REQ-AUTH-018-D·§17.2~§17.5는 변경 없이 유지. |
+| v0.3.2 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-4 적용 (사용자 결정 2026-04-29) — SYSADMIN→SUPER_ADMIN 단순 alias 정책 명시화. 둘 다 `roles` 테이블에 row 보존하며 alias 관계는 `roles.aliased_to` 컬럼으로 표현. §4.2.2 `roles` DDL에 `aliased_to VARCHAR(50) NULL REFERENCES roles(code)` 컬럼 추가 + `idx_roles_aliased_to` 인덱스 + COMMENT. SYSADMIN row의 `aliased_to='SUPER_ADMIN'`로 V2.1 마이그레이션 적용(idempotent UPDATE). §14.1 v0.2 시드 SUPER_ADMIN/DEPT_ADMIN/EDITOR/VIEWER에 `aliased_to=NULL` 명시. §13.1 REQ-AUTH-013-D-5 신설 (역할 alias 해석 sub-REQ — Ubiquitous): 권한 검사 시 alias 코드는 `aliased_to`를 따라 실제 역할로 해석, 한 단계 chain 금지, audit_log에 `role_alias_resolved` 이벤트 기록. acceptance.md §H-007 신규 G/W/T 추가. v0.3.1 본문 §16~§17 SmsProvider/이메일 OTP·§14 organization/permission_change_history 등은 변경 없이 유지. |

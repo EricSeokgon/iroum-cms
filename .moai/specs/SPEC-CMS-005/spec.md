@@ -1,4 +1,4 @@
-# SPEC-CMS-005: 통계·로그·시스템관리 상세 (Bundle D)
+# SPEC-CMS-005: 통계·로그·시스템관리 상세 (Bundle D)  v0.2.1 (2026-04-29 Q-7 v_notification_history INNER JOIN 갱신)
 
 ## 1. 개요
 
@@ -974,8 +974,8 @@ SMTP_PASSWORD=
   시스템은 `integration_log(id, integration_type, target_system, request_id, status, duration_ms, response_code, error_message, payload_hash, occurred_at)` 테이블을 운영해야 한다. `integration_type`은 (`SSO_AUTH`, `KAKAO_NOTI`, `MAIL_SEND`, `EXTERNAL_API`, `PUBLIC_DATA`) 중 하나이며, `status`는 (`SUCCESS`, `FAILURE`, `TIMEOUT`)이다. 모든 외부 호출 클라이언트(WebClient, JavaMailSender 등)는 `IntegrationLogInterceptor`를 통해 자동 적재되어야 한다.
 - **REQ-SYSTEM-008-D-2 (월별 PARTITION — Ubiquitous)**
   `integration_log`는 access_log와 동일하게 `PARTITION BY RANGE (occurred_at)` 월별 파티션을 적용해야 하며, 월별 파티션 자동 생성은 REQ-SYSTEM-001-D-4 `@Scheduled`(매월 25일 02:00) 작업에 통합되어야 한다.
-- **REQ-SYSTEM-008-D-3 (알림·메일 발송 이력 view — Ubiquitous)**
-  시스템은 `integration_log`(KAKAO_NOTI/MAIL_SEND)와 `notification_send`(SPEC-CMS-002 §M)를 LEFT JOIN한 `v_notification_history` 뷰를 제공하여, 운영자가 `GET /api/v1/system/integration-logs/notifications?type=KAKAO|MAIL&from=...&to=...`로 발송 이력(수신자, 결과, 사유, 외부 응답코드)을 단일 응답으로 조회할 수 있어야 한다.
+- **REQ-SYSTEM-008-D-3 (알림·메일 발송 이력 view — Ubiquitous, v0.2.1 사용자 결정 2026-04-29 Q-7 적용)**
+  시스템은 `integration_log`(integration_type IN ('KAKAO_NOTI','MAIL_SEND'))와 `notification_send`(SPEC-CMS-004 v0.2.1 §14.2-1)를 **`notification_send.integration_log_id` FK 기반 INNER JOIN**으로 결합한 `v_notification_history` 뷰를 제공하여, 운영자가 `GET /api/v1/system/integration-logs/notifications?type=KAKAO|MAIL&from=...&to=...`로 발송 이력(수신자, 결과, 사유, 외부 응답코드)을 단일 응답으로 조회할 수 있어야 한다. INNER JOIN 채택 사유: 외부 채널 발송이 발생한 경우 반드시 양쪽 row가 동시 적재되도록 `IntegrationLogInterceptor`가 보증하므로(SPEC-CMS-004 v0.2.1 §14.2-1 NOTE), LEFT JOIN의 NULL row는 운영 정합성 위반으로 간주한다. INAPP 채널(외부 호출 없음)은 `integration_log_id IS NULL`이 정상이며 view 대상에서 자동 제외된다.
 - **REQ-SYSTEM-008-D-4 (6개월 보관 + 자동 폐기 — Event-driven)**
   매월 1일 04:00에 `IntegrationLogArchiveJob`은 6개월 초과 `integration_log` 파티션을 `integration_log_archive`(콜드 테이블, 같은 스키마, 인덱스 최소)로 이관 후 원본 파티션을 DROP해야 한다. `integration_log_archive`는 개인정보보호법 보존 기간(추가 0개월) 경과 후 폐기되며, 폐기 이벤트는 audit_log severity=INFO로 적재되어야 한다.
 
@@ -1096,30 +1096,46 @@ CREATE TABLE integration_log_archive (
 CREATE INDEX idx_intg_archive_occurred ON integration_log_archive(occurred_at DESC);
 ```
 
-`v_notification_history` 뷰(REQ-SYSTEM-008-D-3):
+`v_notification_history` 뷰(REQ-SYSTEM-008-D-3, v0.2.1 사용자 결정 2026-04-29 Q-7 적용 — INNER JOIN으로 갱신):
 
 ```sql
-CREATE OR REPLACE VIEW v_notification_history AS
+DROP VIEW IF EXISTS v_notification_history;
+CREATE VIEW v_notification_history AS
 SELECT
-    il.id            AS integration_log_id,
+    ns.id                AS notification_send_id,
+    ns.send_uuid,
+    ns.channel,
+    ns.recipient_user_id,
+    u.username,
+    ns.recipient,
+    ns.template_id,
+    ns.template_code,
+    ns.payload_summary,
+    ns.status            AS send_status,
+    ns.scheduled_at,
+    ns.sent_at,
+    ns.failed_reason,
+    ns.retry_count,
+    il.id                AS integration_log_id,
     il.integration_type,
     il.target_system,
-    il.status        AS delivery_status,
+    il.status            AS delivery_status,
+    il.duration_ms,
     il.response_code,
     il.error_message,
-    il.duration_ms,
-    il.occurred_at,
-    ns.id            AS notification_send_id,
-    ns.recipient,
-    ns.template_code,
-    ns.payload_summary
-FROM integration_log il
-LEFT JOIN notification_send ns
-       ON ns.integration_log_id = il.id
+    il.occurred_at       AS integration_at
+FROM notification_send ns
+INNER JOIN integration_log il
+        ON il.id = ns.integration_log_id
+LEFT JOIN users u
+        ON u.id = ns.recipient_user_id
 WHERE il.integration_type IN ('KAKAO_NOTI','MAIL_SEND');
+
+COMMENT ON VIEW v_notification_history IS
+  'v0.2.1 사용자 결정 2026-04-29 Q-7 적용: notification_send.integration_log_id logical FK 기반 INNER JOIN으로 갱신. KAKAO/MAIL 외부 채널 발송 이력만 노출(INAPP은 integration_log_id NULL이므로 자동 제외).';
 ```
 
-> 주: `notification_send.integration_log_id`는 SPEC-CMS-002 v0.2에서 추가될 FK 컬럼을 가정한다.
+> 주: `notification_send.integration_log_id`는 SPEC-CMS-004 v0.2.1 §14.2-1에서 추가된 logical FK 컬럼이다(integration_log가 월별 PARTITION이므로 PostgreSQL FK 한계로 logical FK; 적재 정합성은 `IntegrationLogInterceptor`가 보증).
 
 ### 14.3 `external_data_source` / `data_sync_history`
 
@@ -1183,3 +1199,4 @@ Prometheus 알람 룰 정의 위치: `deploy/prometheus/rules/{api.yml, batch.ym
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Bundle D 상세). REQ-SYSTEM-001~006 + REQ-CROSS-001/007/008 상세화. |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강. REQ-SYSTEM-007-D(KPI 통합 대시보드, SFR-013), 008-D(외부 연계 로그 분리, SFR-015), 009-D(외부 공공데이터 수집, SFR-001/011), 010-D(성능 임계값, PER-001~004) 4개 신규 부모 REQ + sub-REQ 18개 추가. §13 RFP 통합 보강, §14 추가 데이터 모델(kpi_definition/kpi_value/integration_log/external_data_source/data_sync_history DDL), §15 비기능 횡단 적용 매핑 신설. (SPEC-CMS-001 v0.2 §15.2 SFR-013/015 + §17.1 PER 임계값 매핑) |
+| v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-7 적용 (사용자 결정 2026-04-29) — `v_notification_history` 뷰를 LEFT JOIN → INNER JOIN으로 갱신. §13.2 REQ-SYSTEM-008-D-3 본문을 "별도 view (notification_send.integration_log_id FK 기반 INNER JOIN)"로 변경하고 INNER JOIN 채택 사유(IntegrationLogInterceptor 적재 보증)·INAPP 자동 제외 로직 명시. §14.2 view DDL을 DROP+CREATE로 갱신: `notification_send` driving table → `integration_log` INNER JOIN → `users` LEFT JOIN(수신자 username 노출), filter `integration_type IN ('KAKAO_NOTI','MAIL_SEND')`. COMMENT ON VIEW에 Q-7 결정 명시. acceptance.md J-RFP §REQ-SYSTEM-008-D-3-2 신규 G/W/T 추가(view 정합성 — 100건 INNER JOIN 무결성). v0.2 본문 §13.1·§13.3·§13.4·§14의 다른 테이블·§15는 변경 없이 유지. |

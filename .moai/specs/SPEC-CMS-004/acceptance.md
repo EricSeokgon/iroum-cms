@@ -509,6 +509,24 @@
 - **When** body_template 변경 PUT
 - **Then** 새 row INSERT (code 동일, version=2, status='DRAFT'), 기존 version=1 행은 그대로 유지.
 
+### AC-NOTIF-9 카카오 발급 운영 매뉴얼 참조 안내 (011-D-4, v0.2.1 사용자 결정 2026-04-29 Q-6 적용)
+- **Given** channel='KAKAO' template_id=42, status='DRAFT' 상태에서 admin 인증
+- **When** admin이 `POST /api/v1/content/notification-templates/42/submit-for-review`를 호출
+- **Then** 200 + status='PENDING_REVIEW' 전환되고 응답 body에 `{"operationsManual":"docs/operations/kakao-template.md","message":"카카오 비즈센터 검수 신청은 운영 매뉴얼을 따라 진행하세요"}` 안내가 포함된다.
+- **And** SPEC 본문은 시스템 인터페이스만 정의하며, 사람 검수 단계의 시스템 자동화는 본 SPEC v0.2.1 범위 외임이 매뉴얼 본문에 명시되어 있다.
+
+### AC-NOTIF-10 notification_send.integration_log_id FK 적재 (v0.2.1 사용자 결정 2026-04-29 Q-7 적용)
+- **Given** channel='KAKAO' template 발송 요청이 큐에 enqueue되고 외부 카카오 비즈메시지 API 호출이 성공한 상태에서
+- **When** `IntegrationLogInterceptor`가 `integration_log` row(integration_type='KAKAO_NOTI', status='SUCCESS')를 적재하고 동일 트랜잭션(또는 후속 콜백)에서 `notification_send` row가 INSERT된 직후
+- **Then** `notification_send.integration_log_id = integration_log.id` 정합성이 만족되고
+- **And** SPEC-CMS-005 §14.2 `v_notification_history` 뷰에 해당 row가 1건 노출된다(INNER JOIN 매칭).
+
+### AC-NOTIF-11 INAPP 채널 integration_log_id NULL 정상 (v0.2.1 사용자 결정 2026-04-29 Q-7 적용)
+- **Given** channel='INAPP' 알림 발송(외부 호출 없음)
+- **When** notification_send INSERT
+- **Then** `integration_log_id IS NULL`이 정상 상태이며
+- **And** SPEC-CMS-005 §14.2 `v_notification_history` 뷰는 INTEGRATION_TYPE 필터(KAKAO_NOTI/MAIL_SEND)와 INNER JOIN 조건으로 본 row를 제외한다(INAPP은 view 대상 아님).
+
 ---
 
 ## O. 메타데이터 표준 (REQ-CONTENT-012-D, v0.2 추가)

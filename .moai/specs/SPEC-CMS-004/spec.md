@@ -1,4 +1,4 @@
-# SPEC-CMS-004: 콘텐츠·메뉴·사이트관리 상세 (Bundle C — Content, Menu, Site Management)
+# SPEC-CMS-004: 콘텐츠·메뉴·사이트관리 상세 (Bundle C — Content, Menu, Site Management)  v0.2.1 (2026-04-29 Q-6 카카오 운영매뉴얼 분리 + Q-7 integration_log_id FK 추가)
 
 ## 1. 개요
 
@@ -982,6 +982,7 @@ og:title, og:description, og:locale, seo_title, seo_description은 i18n_resource
 
 - **REQ-CONTENT-011-D-4 (카카오 알림톡 검수 — State-driven)**
   channel='KAKAO'인 템플릿이 status='PENDING_REVIEW'인 동안, 시스템은 본문 수정 요청(`PUT`)을 거부(HTTP 409 + `{"code":"TEMPLATE_REVIEW_LOCKED"}`)하고, 검수 결과 등록 API(`POST /api/v1/content/notification-templates/{id}/review-result`, body: `{result: APPROVED|REJECTED, reviewed_at, reason}`)만 허용해야 한다. APPROVED 시 status='APPROVED', 본문 잠금 발효; REJECTED 시 status='DRAFT'로 환원.
+  **v0.2.1 (사용자 결정 2026-04-29 Q-6 적용) — 운영 매뉴얼 분리**: 검수 워크플로(카카오 비즈센터 접속·신청·심사 대응·승인 후 kakao_template_code 시스템 등록)의 사람·외부 시스템 단계 상세는 `docs/operations/kakao-template.md` 운영 매뉴얼을 따른다. 본 SPEC은 시스템 인터페이스(`notification_template` DDL의 channel/status/kakao_template_code 컬럼·상태 enum CHECK·관리자 화면 노출·review-result API)만 정의한다. 사람 검수 단계의 시스템 자동화(외부 비즈센터 API 연동 등)는 본 SPEC 범위 외이며 v0.4+ 후속 검토. PENDING_REVIEW 상태에서 admin이 검수 신청을 시도(`POST /api/v1/content/notification-templates/{id}/submit-for-review`)할 때, 시스템은 응답 body에 운영 매뉴얼 경로(`docs/operations/kakao-template.md`)를 안내 메시지로 포함해야 한다.
 
 - **REQ-CONTENT-011-D-5 (버전 관리 — Ubiquitous)**
   시스템은 status가 'APPROVED'로 전환되거나 본문 변경이 발생할 때마다 `notification_template_history`에 직전 스냅샷(template row + variables jsonb)을 INSERT하고 version을 단조 증가시켜야 한다. APPROVED 버전은 잠금되어 동일 row에 대한 추가 본문 수정 시 신규 row(code 동일, version+1)로 분기되어야 한다.
@@ -1068,6 +1069,45 @@ CREATE TABLE notification_template_history (
 );
 CREATE INDEX idx_notif_hist_tmpl ON notification_template_history(template_id, version DESC);
 ```
+
+### 14.2-1 `notification_send` (알림 발송 인스턴스 — v0.2.1 사용자 결정 2026-04-29 Q-7 적용)
+
+발송 인스턴스 단위로 채널·수신자·상태·재시도를 추적하며, SPEC-CMS-005 §14.2 `integration_log`(KAKAO_NOTI/MAIL_SEND)와 1:1 logical FK로 결합되어 §13.3 REQ-SYSTEM-008-D-3 `v_notification_history` 뷰의 INNER JOIN 정합성을 보장한다.
+
+```sql
+CREATE TABLE notification_send (
+    id                  BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    send_uuid           UUID         NOT NULL UNIQUE,
+    template_id         BIGINT       REFERENCES notification_template(id) ON DELETE SET NULL,
+    template_code       VARCHAR(100),                                 -- 발송 시점 코드 스냅샷 (template 삭제 후에도 보존)
+    channel             VARCHAR(20)  NOT NULL,
+    recipient_user_id   BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    recipient           VARCHAR(255),                                 -- 이메일 또는 전화번호 (마스킹 정책은 REQ-CROSS-002 준용)
+    payload_summary     VARCHAR(500),                                 -- 마스킹 후 요약(개인정보 평문 금지)
+    variables           JSONB        NOT NULL DEFAULT '{}'::jsonb,    -- 치환 변수 (개인정보 마스킹 후 저장)
+    status              VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    scheduled_at        TIMESTAMPTZ,
+    sent_at             TIMESTAMPTZ,
+    failed_reason       TEXT,
+    retry_count         INT          NOT NULL DEFAULT 0,
+    integration_log_id  BIGINT,                                       -- v0.2.1 Q-7: SPEC-CMS-005 integration_log(id) logical FK
+    created_at          TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_ns_channel CHECK (channel IN ('KAKAO','EMAIL','SMS','INAPP')),
+    CONSTRAINT chk_ns_status  CHECK (status  IN ('PENDING','SENDING','SENT','FAILED','RETRY','DEAD_LETTER'))
+);
+CREATE INDEX idx_ns_template      ON notification_send(template_id);
+CREATE INDEX idx_ns_status_sched  ON notification_send(status, scheduled_at);
+CREATE INDEX idx_ns_recipient     ON notification_send(recipient_user_id, sent_at DESC);
+CREATE INDEX idx_ns_int_log       ON notification_send(integration_log_id) WHERE integration_log_id IS NOT NULL;
+
+COMMENT ON TABLE  notification_send                     IS '다채널 알림 발송 인스턴스(REQ-CONTENT-011-D 보강, v0.2.1 Q-7).';
+COMMENT ON COLUMN notification_send.integration_log_id IS 'v0.2.1 사용자 결정 2026-04-29 Q-7 적용: SPEC-CMS-005 §14.2 integration_log(id)에 대한 logical FK. integration_log는 occurred_at 기반 월별 PARTITION이므로 PostgreSQL FK 제약 한계로 logical FK로 처리(애플리케이션 레이어 정합성 보장 + SPEC-CMS-005 §14.2 v_notification_history 뷰 INNER JOIN 활용).';
+COMMENT ON COLUMN notification_send.template_code      IS '발송 시점 template.code 스냅샷. notification_template 삭제 후에도 발송 이력 추적 가능.';
+COMMENT ON COLUMN notification_send.recipient          IS '평문 저장 금지. 이메일은 도메인 보존 마스킹(예: u***@example.com), 전화번호는 뒤 4자리 마스킹.';
+```
+
+> **NOTE — REQ-CONTENT-011-D 보강 (v0.2.1 Q-7 적용)**
+> `notification_send` 레코드 생성 시 외부 채널(KAKAO/EMAIL/SMS) 발송이 동시에 발생한 경우, 시스템은 SPEC-CMS-005 `IntegrationLogInterceptor`가 적재한 `integration_log.id`를 동일 트랜잭션 또는 후속 콜백에서 `notification_send.integration_log_id`에 기록해야 한다. INAPP 채널은 외부 호출이 없으므로 `integration_log_id IS NULL`이 정상이며 §13.3 REQ-SYSTEM-008-D-3 view 대상에서 자동 제외된다(view는 KAKAO_NOTI/MAIL_SEND만 필터).
 
 ### 14.3 `metadata_dictionary` (메타데이터 표준 사전)
 
@@ -1181,3 +1221,4 @@ ALTER TABLE banner            ADD COLUMN metadata_extra      JSONB;
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Bundle C 상세 분리, 11 테이블 DDL, 30+ sub-REQ, 30+ API, 5 시퀀스, 권한 매트릭스, 다국어/캐시 정책) |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강 — REQ-CONTENT-011-D~013-D 신설(sub-REQ 12건), notification_template/notification_template_history/metadata_dictionary/metadata_history/missing_translation 5개 테이블 추가, page/content_block/popup/banner 메타데이터 컬럼 확장, RFP 비기능(PER-002~004, DAR-007 의무, RFP-NF-NOTIF-001/I18N-001) 추가. (SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑) |
+| v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-6/Q-7 적용 (사용자 결정 2026-04-29). **Q-6**: 카카오 알림톡 템플릿 발급·검수 워크플로 상세를 운영 매뉴얼 `docs/operations/kakao-template.md`로 분리. 본 SPEC §13.1 REQ-CONTENT-011-D-4는 시스템 인터페이스(channel/status/kakao_template_code 컬럼·상태 enum·review-result API·submit-for-review 안내 메시지)만 유지. 사람 검수 단계의 시스템 자동화는 v0.4+ 후속 검토. **Q-7**: §14.2-1 `notification_send` 테이블 신설(send_uuid/template_id/channel/recipient/status/retry_count + integration_log_id BIGINT logical FK). SPEC-CMS-005 §14.2 integration_log는 월별 PARTITION 특성상 PostgreSQL FK 한계로 logical FK 채택, 애플리케이션 레이어 정합성 + SPEC-CMS-005 v_notification_history 뷰 INNER JOIN으로 보장. idx_ns_int_log partial index 추가. acceptance.md §N AC-NOTIF-9/10 신규 G/W/T 추가(카카오 매뉴얼 참조 안내 + integration_log_id FK 정합성). v0.2 본문 §1~§13의 다른 sub-REQ·§14.1~§14.5의 다른 테이블·§15 비기능은 변경 없이 유지. |

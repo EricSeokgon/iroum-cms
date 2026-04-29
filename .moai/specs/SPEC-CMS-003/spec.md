@@ -9,9 +9,9 @@
 | 부모 SPEC | SPEC-CMS-001 (Umbrella) |
 | 동급 SPEC | SPEC-CMS-002 (회원·권한 Bundle A) — 권한 검사 흐름 의존 |
 | 작성일 | 2026-04-29 |
-| 최종 수정 | 2026-04-29 (v0.2 — RFP §15.2/§17 통합) |
+| 최종 수정 | 2026-04-29 (v0.2.1 — Q-5 발간자료 zip 7일 보존 정책 추가) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft (v0.2) |
+| 상태 | Draft (v0.2.1) |
 | 우선순위 | P0 (A에 의존, A와 병렬로 C/D 진행 가능) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | cop/bbs(일반게시판), cop/ntc(공지사항), cop/com/faq(FAQ), cop/com/qna(Q&A), cop/cmm/fms(첨부파일) |
@@ -1141,6 +1141,9 @@ if (safe.isBlank()) throw new FileNameInvalidException();
   발간자료 첨부파일 다운로드가 성공했을 때, 시스템은 `publication_download_stat(post_id, attachment_id, day, month, download_count)` 테이블에 일별/월별 카운터를 UPSERT 갱신해야 한다(`ON CONFLICT (post_id, attachment_id, day) DO UPDATE`).
 - **REQ-BOARD-012-D-4 (압축 다운로드 — Event-driven)**
   사용자가 `POST /api/v1/posts/{id}/download-zip {attachmentIds:[...]}`을 호출하면, 시스템은 (a) 모든 첨부의 게시글 read 권한 + scan_status='CLEAN' 검증 (b) 합계 용량 ≤ 500MB 검증 (c) 합계 ≤ 50MB는 동기 zip 패키징 응답, > 50MB는 비동기 작업 큐에 enqueue하고 202 + `{jobId}`를 반환한 뒤 완료 시 서명 URL을 알림으로 발송해야 한다(research.md §9.2).
+  **v0.2.1 (사용자 결정 2026-04-29 Q-5 적용) — zip 보존 정책**: 생성된 zip 파일은 `publication_zip_archive` 디렉터리(LocalFileSystemStorage 경로 `${storage.publication-zip.root}` — SPEC-CMS-001 v0.3.1 Q-2 LocalFS 단일 결정과 정합)에 보관하며, **7일 후 자동 삭제** 정책을 적용한다(cron `0 0 * * *` 매일 0시 정리 배치 `PublicationZipExpireJob`). 사용자는 보존 기간 내에는 동일 `download_id`(UUID)로 재접근 가능하며 재접근 시 `download_count++` UPSERT 갱신된다. 만료 후 재접근 시 410 + `ZIP_EXPIRED`를 반환하고 사용자는 download-zip 엔드포인트로 재생성을 요청해야 한다.
+- **REQ-BOARD-012-D-4-2 (zip 만료 자동 삭제 — Event-driven, v0.2.1 사용자 결정 2026-04-29 Q-5 적용)**
+  매일 0시 정시 `PublicationZipExpireJob`(Spring `@Scheduled(cron="0 0 0 * * *")`)이 실행되었을 때, 시스템은 `publication_zip_archive` 테이블에서 `expires_at < NOW() AND deleted_at IS NULL` 조건의 row를 (a) 파일시스템에서 zip 파일 삭제 (b) `deleted_at=NOW()` UPDATE (c) `audit_log`에 `action='publication_zip_expired', entity_type='publication_zip_archive', entity_id=id, severity=INFO` 적재해야 한다. 배치 실패 시 SPEC-CMS-005 §13.2 integration_log 또는 audit_log severity=ERROR로 기록하고 다음 사이클 재시도(REQ-SYSTEM-002-D-3 정책 준용).
 - **REQ-BOARD-012-D-5 (발간자료 검색 — Event-driven)**
   사용자가 `GET /api/v1/publications?year=&month=&documentType=&categoryId=&keyword=` 를 호출하면, 시스템은 모든 파라미터를 AND 조건으로 결합하여 페이징 응답해야 한다(keyword는 §10.2 trigram + FTS 동일 정책).
 
@@ -1277,6 +1280,37 @@ CREATE TABLE publication_download_stat (
 );
 CREATE INDEX idx_pub_dl_stat_month ON publication_download_stat(stat_month, post_id);
 CREATE INDEX idx_pub_dl_stat_post  ON publication_download_stat(post_id, stat_date DESC);
+```
+
+### 15.4-1 `publication_zip_archive` (발간자료 zip 보존 — REQ-BOARD-012-D-4, v0.2.1 사용자 결정 2026-04-29 Q-5 적용)
+
+발간자료 압축 다운로드 산출물(zip 파일)의 메타데이터 추적 + 7일 보존 + 매일 0시 자동 삭제를 지원한다. 파일 본체는 LocalFileSystemStorage(SPEC-CMS-001 v0.3.1 Q-2 결정 — 단일 LocalFS) 경로 `${storage.publication-zip.root}/{yyyy}/{MM}/{download_id}.zip`에 저장된다.
+
+```sql
+CREATE TABLE publication_zip_archive (
+    id                  BIGINT      GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    download_id         UUID        NOT NULL UNIQUE,
+    requested_by        BIGINT      REFERENCES users(id) ON DELETE SET NULL,
+    post_id             BIGINT      NOT NULL REFERENCES bbs_post(id) ON DELETE CASCADE,
+    asset_uuids         UUID[]      NOT NULL,                            -- bbs_attachment.uuid 배열
+    zip_file_path       TEXT        NOT NULL,                            -- 절대 경로
+    size_bytes          BIGINT      NOT NULL,
+    mode                VARCHAR(10) NOT NULL,                            -- 'SYNC' (≤50MB) | 'ASYNC' (>50MB)
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at          TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '7 days'),
+    deleted_at          TIMESTAMPTZ,                                     -- 만료 정리 배치가 채움
+    download_count      INT         NOT NULL DEFAULT 0,
+    last_downloaded_at  TIMESTAMPTZ,
+    CONSTRAINT chk_pza_mode    CHECK (mode IN ('SYNC','ASYNC')),
+    CONSTRAINT chk_pza_expires CHECK (expires_at > created_at)
+);
+CREATE INDEX idx_pza_expires      ON publication_zip_archive(expires_at) WHERE deleted_at IS NULL;
+CREATE INDEX idx_pza_requester    ON publication_zip_archive(requested_by, created_at DESC);
+CREATE INDEX idx_pza_post         ON publication_zip_archive(post_id, created_at DESC);
+
+COMMENT ON TABLE  publication_zip_archive          IS '발간자료 압축 zip 메타 + 7일 보존 (사용자 결정 2026-04-29 Q-5 적용). 파일 본체는 LocalFileSystemStorage 경로(SPEC-CMS-001 v0.3.1 Q-2 결정).';
+COMMENT ON COLUMN publication_zip_archive.expires_at IS 'created_at + 7일 (Q-5 결정). PublicationZipExpireJob(매일 0시)이 만료 row를 정리.';
+COMMENT ON COLUMN publication_zip_archive.deleted_at IS '만료 정리 배치 실행 시각. NULL=활성, NOT NULL=파일+row 만료 처리됨.';
 ```
 
 ### 15.5 `survey` / `survey_question` / `survey_response` / `survey_answer` (설문조사 — REQ-BOARD-013-D-1~4)
@@ -1427,3 +1461,4 @@ COMMENT ON COLUMN bbs_master.taxonomy_code IS 'S-Meta 호환 분류체계 코드
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성. SPEC-CMS-001 §6.2 REQ-BOARD-001~010을 sub-REQ-D-* 형식(35개)으로 상세화. PostgreSQL 16 DDL 8개 테이블 + 인덱스·트리거. 35개 REST API. 4개 시퀀스 다이어그램. OWASP HTML Sanitizer 정책. ClamAV 비동기 스캔. 서명 URL TTL 15분. PostgreSQL FTS + pg_trgm 1차 검색 정책 확정. 한글 형태소 분석기는 후속(research.md §5). 본 SPEC의 권한 컬럼은 SPEC-CMS-002 `permissions` 테이블 참조. menu 테이블·`code` 테이블은 SPEC-CMS-004/005에서 정의 예정. |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강(SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-008 매핑). §14 신규 sub-REQ 4개 부모(011-D~014-D)·19개 자식 추가: 게시판 유형 enum 7종(NORMAL, NOTICE, QNA, FAQ, GALLERY, PUBLICATION, SURVEY) 및 type 변경 차단 게이트, 발간자료 메타·카테고리 트리(depth ≤ 3)·다운로드 통계·zip 압축 다운로드, 설문조사 5종 질문(SINGLE/MULTI/TEXT/RATING/DATE)·익명/식별 응답 분리·결과 통계 시각화, Q&A 답변 알림 멱등성·재시도 3회·옵트아웃. §15 신규 DDL 9개 테이블(bbs_type_template, bbs_post_publication_meta, publication_category, publication_download_stat, survey, survey_question, survey_response, survey_answer, qna_notification_optout, qna_notification_log) — Flyway V2_*. §16 RFP 비기능(PER-003 검색 < 3초, SER-004 강화 — 다운로드 매직넘버 재검사·권한 재검증·URL 변조 방지, DAR-007 S-Meta 분류체계). 기존 §1~§13은 보존. |
+| v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-5 적용 (사용자 결정 2026-04-29) — 발간자료 압축 zip 보존 정책 추가. §14.2 REQ-BOARD-012-D-4 본문 갱신: 7일 보존 + 매일 0시 정리 배치 명시 + 만료 후 410 ZIP_EXPIRED. REQ-BOARD-012-D-4-2 신설(zip 만료 자동 삭제 — Event-driven, PublicationZipExpireJob @Scheduled cron 0 0 0 * * *). §15.4-1 `publication_zip_archive` DDL 신규 테이블 추가(download_id UUID UNIQUE, expires_at default NOW()+7일, deleted_at, download_count, asset_uuids UUID[], mode SYNC/ASYNC, idx_pza_expires partial index). 파일 본체는 SPEC-CMS-001 v0.3.1 Q-2 결정 LocalFileSystemStorage에 보관. acceptance.md §I-RFP-09/10 신규 G/W/T 추가(만료 자동 삭제 + 보존 기간 내 재다운로드). v0.2 본문 §1~§14의 다른 sub-REQ·§15 다른 테이블·§16 비기능은 변경 없이 유지. |

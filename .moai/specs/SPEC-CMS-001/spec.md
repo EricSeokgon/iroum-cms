@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
-| 버전 | v0.3.1 (2026-04-29 운영 결정 Q-1/2/3 적용 — SMS·MinIO·AV 스캔 v0.4+로 미룸) |
+| 버전 | v0.3.2 (2026-04-29 운영 결정 Q-4/5/6/7 적용 — SYSADMIN alias·zip 7일·카카오 매뉴얼 분리·integration_log FK) |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
 | 우선순위 | P0 |
@@ -654,3 +654,4 @@ SPEC-CMS-001 [umbrella v0.2]
 | v0.2 | 2026-04-29 | MoAI orchestrator | RFP 통합 amendment (§15~17 신설, RFP 69개 요구사항 매핑, 확장 SPEC 트리 SPEC-CMS-006~010 + 옵션 트랙 정의, 비기능 횡단 적용 정책 수립) |
 | v0.3 | 2026-04-29 | MoAI orchestrator | 홍익인간 CMS gap 분석 통합 (§18 부록 신설), SPEC-CMS-MEDIA-001 트리 추가, SPEC-CMS-002 v0.3 reference (REQ-AUTH-017/018-D) |
 | v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-1/2/3 적용 (사용자 결정 2026-04-29): SMS 본인인증 채널 제거(이메일 OTP만 1차 유지 — Q-1), MinIO 저장소 옵션 제거(LocalFileSystemStorage 단일 — Q-2), ClamAV AV 스캔 제거(매직넘버·MIME·확장자 3중 방어 — Q-3). 모두 v0.4+ 후속 검토(MEDIA의 경우 v0.2+). 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.1 (REQ-AUTH-017-D 갱신·SmsProvider placeholder), SPEC-CMS-MEDIA-001 v0.2 (AV 스캔 NOTE·MinIO v0.2+·LocalFS 단일 확정). |
+| v0.3.2 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-4/5/6/7 적용 (사용자 결정 2026-04-29). **Q-4** SYSADMIN→SUPER_ADMIN 단순 alias 정책: SPEC-CMS-002 v0.3.2에 `roles.aliased_to` 컬럼 추가 + REQ-AUTH-013-D-5 alias 해석 sub-REQ 신설 + V2.1 마이그레이션. **Q-5** 발간자료 압축 zip 7일 보존 + 매일 0시 정리 배치: SPEC-CMS-003 v0.2.1에 publication_zip_archive DDL 신규 + REQ-BOARD-012-D-4 본문 갱신 + REQ-BOARD-012-D-4-2 신설(PublicationZipExpireJob). **Q-6** 카카오 알림톡 발급 워크플로 운영 매뉴얼 분리: 신규 파일 docs/operations/kakao-template.md 작성 + SPEC-CMS-004 v0.2.1 REQ-CONTENT-011-D-4 본문에 매뉴얼 참조 + submit-for-review API 안내 메시지. **Q-7** notification_send.integration_log_id FK + view INNER JOIN: SPEC-CMS-004 v0.2.1 §14.2-1 notification_send 신규 테이블(logical FK) + SPEC-CMS-005 v0.2.1 §13.2 REQ-SYSTEM-008-D-3 본문 갱신 + §14.2 v_notification_history 뷰 INNER JOIN으로 갱신. 본 SPEC 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.2, SPEC-CMS-003 v0.2.1, SPEC-CMS-004 v0.2.1, SPEC-CMS-005 v0.2.1. |

@@ -478,6 +478,13 @@
 **When** 운영자가 `GET /api/v1/system/integration-logs/notifications?type=KAKAO&from=2026-04-01&to=2026-04-29` 를 호출하면
 **Then** v_notification_history 뷰 결과가 (수신자, 결과, 응답코드, 사유, 외부 응답시각) 단일 JSON 페이지로 반환된다.
 
+### REQ-SYSTEM-008-D-3-2 — view 정합성 INNER JOIN (v0.2.1 사용자 결정 2026-04-29 Q-7 적용)
+
+**Given** 동일 시간대에 KAKAO 채널 발송 100건이 발생했고 `IntegrationLogInterceptor`가 모두 적재 완료(notification_send 100건 + integration_log 100건, 모두 `notification_send.integration_log_id`에 매칭 id 적재됨)
+**When** `SELECT COUNT(*) FROM v_notification_history WHERE channel='KAKAO' AND scheduled_at BETWEEN ... AND ...` 실행
+**Then** 100건이 정확히 반환되며(integration_log 누락으로 인한 NULL row 0건, INNER JOIN 무결성 만족)
+**And** 동일 기간에 INAPP 채널 발송 50건(`integration_log_id IS NULL` 정상)이 추가로 존재해도 view 결과에는 포함되지 않는다(view INTEGRATION_TYPE 필터 + INNER JOIN 결합 효과).
+
 ### REQ-SYSTEM-008-D-4 — 6개월 보관 + 자동 폐기
 
 **Given** 7개월 이전의 integration_log 파티션이 존재하고

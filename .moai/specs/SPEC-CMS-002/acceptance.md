@@ -521,6 +521,19 @@
 **Then** 200 + role_permissions에 매핑 추가
 **And** permission_change_history에 (change_type='PERM_ATTACH', target_resource='BOARD:DELETE', after_value='EDITOR') 자동 기록.
 
+### H-007 — 역할 alias 해석 (REQ-AUTH-013-D-5, v0.3.2 사용자 결정 2026-04-29 Q-4 적용)
+
+**Given** Flyway V2.1 마이그레이션 후 `roles` 테이블에 SYSADMIN row의 `aliased_to='SUPER_ADMIN'`이 설정되어 있고, SUPER_ADMIN 전용 메뉴 `/admin/system-config`가 `role_permissions(role_code='SUPER_ADMIN', permission_code='SYSTEM:WRITE')` 시드를 보유하며, 사용자 'legacy_admin'이 user_roles에 SYSADMIN 역할만 매핑된 상태에서
+**When** legacy_admin이 인증 후 `GET /admin/system-config`(SUPER_ADMIN 전용)에 접근
+**Then** 200 OK가 반환되고(권한 검사 통과 — alias 해석 결과 SUPER_ADMIN 권한 집합으로 평가)
+**And** audit_log에 (event='role_alias_resolved', from_code='SYSADMIN', to_code='SUPER_ADMIN', user_id=legacy_admin.id) 행이 1건 적재된다.
+
+### H-008 — alias 체인 금지 (REQ-AUTH-013-D-5, v0.3.2)
+
+**Given** SYSADMIN.aliased_to='SUPER_ADMIN' 상태에서
+**When** 운영자가 `UPDATE roles SET aliased_to='SOMETHING_ELSE' WHERE code='SUPER_ADMIN'`을 시도(SUPER_ADMIN을 다시 alias로 만드는 시도)
+**Then** `chk_roles_alias_no_chain` 제약(또는 BEFORE UPDATE 트리거)에 의해 거부되며, SQLSTATE 23514 또는 동급 오류가 반환된다.
+
 ---
 
 ## I. 부서·조직 관리 (REQ-AUTH-014-D-*, v0.2)

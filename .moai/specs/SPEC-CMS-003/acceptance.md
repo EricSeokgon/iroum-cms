@@ -650,6 +650,27 @@
 **When** `GET /api/v1/publications?year=2025&documentType=REPORT&keyword=정책`을 호출하면
 **Then** 200 + 2025년 REPORT 중 keyword 매치 결과만 페이징 응답된다.
 
+### I-RFP-09 (REQ-BOARD-012-D-4-2) zip 만료 자동 삭제 (v0.2.1 사용자 결정 2026-04-29 Q-5 적용)
+
+**Given** `publication_zip_archive`에 `created_at='2026-04-21 09:00', expires_at='2026-04-28 09:00', deleted_at IS NULL` row가 1건 존재(현재 시각 2026-04-29 00:00, 만료 1일 경과)
+**When** `PublicationZipExpireJob`(`@Scheduled(cron="0 0 0 * * *")`)이 0시 정시 실행되면
+**Then** (a) 파일시스템에서 해당 zip 파일이 삭제되고
+**And** (b) 동일 row의 `deleted_at`이 NOW()로 UPDATE되며
+**And** (c) `audit_log`에 `(action='publication_zip_expired', entity_type='publication_zip_archive', entity_id=<id>, severity='INFO')` 행이 1건 적재된다.
+
+### I-RFP-10 (REQ-BOARD-012-D-4) 보존 기간 내 재다운로드 (v0.2.1 사용자 결정 2026-04-29 Q-5 적용)
+
+**Given** `publication_zip_archive`에 `expires_at > NOW()` 활성 row(`download_id=<uuid>, download_count=2`)가 존재하고 zip 파일이 LocalFS에 존재하는 상태에서
+**When** 동일 사용자가 `GET /api/v1/publications/zip/{download_id}` 호출
+**Then** 200 + Content-Type=application/zip + zip 스트림이 응답되고
+**And** `publication_zip_archive.download_count=3`로 UPSERT 갱신되며 `last_downloaded_at=NOW()`로 갱신된다.
+
+### I-RFP-11 (REQ-BOARD-012-D-4) 만료 후 재접근 거부 (v0.2.1 사용자 결정 2026-04-29 Q-5 적용)
+
+**Given** `expires_at < NOW()` 또는 `deleted_at IS NOT NULL`인 download_id로
+**When** `GET /api/v1/publications/zip/{download_id}` 호출
+**Then** 410 + `{"code":"ZIP_EXPIRED"}`가 반환되고, 응답 body에 download-zip 엔드포인트로 재생성을 안내하는 메시지가 포함된다.
+
 ---
 
 ## J-RFP. 설문조사 (REQ-BOARD-013-D-*)
