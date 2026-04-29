@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    콘텐츠 블록 매퍼 XML.
+    REQ-CONTENT-006-D: Step 2 GREEN 단계에서 실제 SQL 구현
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.page.mapper.ContentBlockMapper">
+
+    <resultMap id="blockResultMap" type="kr.co.ircp.cms.domain.content.page.entity.ContentBlock">
+        <id     property="id"         column="id"/>
+        <result property="pageId"     column="page_id"/>
+        <result property="blockType"  column="block_type"/>
+        <result property="sortOrder"  column="sort_order"/>
+        <result property="payload"    column="payload"/>
+        <result property="version"    column="version"/>
+        <result property="createdAt"  column="created_at"/>
+        <result property="updatedAt"  column="updated_at"/>
+    </resultMap>
+
+    <select id="findByPageId" resultMap="blockResultMap">
+        SELECT * FROM content_block WHERE page_id = #{pageId} ORDER BY sort_order
+    </select>
+
+    <select id="findById" resultMap="blockResultMap">
+        SELECT * FROM content_block WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.content.page.entity.ContentBlock"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO content_block (page_id, block_type, sort_order, payload)
+        VALUES (#{pageId}, #{blockType}, #{sortOrder}, #{payload}::jsonb)
+    </insert>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.page.entity.ContentBlock">
+        UPDATE content_block SET block_type = #{blockType}, sort_order = #{sortOrder},
+                                 payload = #{payload}::jsonb, version = version + 1,
+                                 updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM content_block WHERE id = #{id}
+    </delete>
+
+    <update id="updateSortOrder">
+        UPDATE content_block SET sort_order = #{sortOrder}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+</mapper>

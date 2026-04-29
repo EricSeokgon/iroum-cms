@@ -140,7 +140,7 @@ class JwtAuthenticationFilterTest {
         MockHttpServletResponse res = new MockHttpServletResponse();
 
         JwtTokenProvider.JwtClaims claims = new JwtTokenProvider.JwtClaims(
-                42L, "testuser", Set.of("EDITOR"), Instant.now().plusSeconds(900));
+                42L, "testuser", Set.of("EDITOR"), Set.of("EDITOR"), Instant.now().plusSeconds(900));
 
         when(tokenBlacklistMapper.exists(anyString())).thenReturn(false);
         when(jwtTokenProvider.validateAccessToken(token)).thenReturn(Optional.of(claims));

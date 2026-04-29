@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    템플릿 매퍼 XML.
+    REQ-CONTENT-004-D: Step 2 GREEN 단계에서 실제 SQL 구현
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.template.mapper.TemplateMapper">
+
+    <resultMap id="templateResultMap" type="kr.co.ircp.cms.domain.content.template.entity.Template">
+        <id     property="id"           column="id"/>
+        <result property="code"         column="code"/>
+        <result property="name"         column="name"/>
+        <result property="layoutType"   column="layout_type"/>
+        <result property="htmlTemplate" column="html_template"/>
+        <result property="cssAssets"    column="css_assets"/>
+        <result property="jsAssets"     column="js_assets"/>
+        <result property="description"  column="description"/>
+        <result property="status"       column="status"/>
+        <result property="createdAt"    column="created_at"/>
+        <result property="updatedAt"    column="updated_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="templateResultMap">
+        SELECT * FROM template ORDER BY id
+    </select>
+
+    <select id="findById" resultMap="templateResultMap">
+        SELECT * FROM template WHERE id = #{id}
+    </select>
+
+    <select id="countPagesByTemplateId" resultType="long">
+        SELECT COUNT(*) FROM page WHERE template_id = #{templateId} AND deleted_at IS NULL
+    </select>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.content.template.entity.Template"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO template (code, name, layout_type, html_template, css_assets, js_assets, description, status)
+        VALUES (#{code}, #{name}, #{layoutType}, #{htmlTemplate}, #{cssAssets}::jsonb, #{jsAssets}::jsonb, #{description}, #{status})
+    </insert>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.template.entity.Template">
+        UPDATE template SET name = #{name}, layout_type = #{layoutType}, html_template = #{htmlTemplate},
+                            css_assets = #{cssAssets}::jsonb, js_assets = #{jsAssets}::jsonb,
+                            description = #{description}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE template SET status = #{status}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+</mapper>

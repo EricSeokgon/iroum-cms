@@ -93,7 +93,7 @@ class SecurityConfigIntegrationTest {
     @DisplayName("유효한 Bearer 토큰으로 요청 → 404 (엔드포인트 미존재, 하지만 401 아님)")
     void protectedEndpoint_notForbidden_withValidToken() throws Exception {
         JwtTokenProvider.JwtClaims claims = new JwtTokenProvider.JwtClaims(
-                1L, "testuser", Set.of("EDITOR"), Instant.now().plusSeconds(900));
+                1L, "testuser", Set.of("EDITOR"), Set.of("EDITOR"), Instant.now().plusSeconds(900));
 
         when(tokenBlacklistMapper.exists(anyString())).thenReturn(false);
         when(jwtTokenProvider.validateAccessToken(VALID_TOKEN)).thenReturn(Optional.of(claims));

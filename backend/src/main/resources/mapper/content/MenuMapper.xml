@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    메뉴 트리 매퍼 XML.
+    REQ-CONTENT-001-D / REQ-CONTENT-002-D: Step 2 GREEN 단계에서 실제 SQL 구현
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.menu.mapper.MenuMapper">
+
+    <resultMap id="menuResultMap" type="kr.co.ircp.cms.domain.content.menu.entity.Menu">
+        <id     property="id"         column="id"/>
+        <result property="siteId"     column="site_id"/>
+        <result property="parentId"   column="parent_id"/>
+        <result property="code"       column="code"/>
+        <result property="name"       column="name"/>
+        <result property="url"        column="url"/>
+        <result property="target"     column="target"/>
+        <result property="icon"       column="icon"/>
+        <result property="sortOrder"  column="sort_order"/>
+        <result property="depth"      column="depth"/>
+        <result property="path"       column="path"/>
+        <result property="isVisible"  column="is_visible"/>
+        <result property="status"     column="status"/>
+        <result property="metadata"   column="metadata"/>
+        <result property="createdAt"  column="created_at"/>
+        <result property="updatedAt"  column="updated_at"/>
+    </resultMap>
+
+    <!-- Step 2 GREEN에서 실제 SQL 구현 예정 -->
+    <select id="findBySiteId" resultMap="menuResultMap">
+        SELECT * FROM menu
+        WHERE site_id = #{siteId} AND status = 'ACTIVE'
+        ORDER BY path, sort_order
+    </select>
+
+    <select id="findById" resultMap="menuResultMap">
+        SELECT * FROM menu WHERE id = #{id}
+    </select>
+
+    <select id="findDescendants" resultMap="menuResultMap">
+        SELECT * FROM menu WHERE path LIKE #{pathPrefix} || '%' AND id != (
+            SELECT id FROM menu WHERE path = #{pathPrefix}
+        )
+        ORDER BY path, sort_order
+    </select>
+
+    <select id="existsBySiteIdAndCode" resultType="boolean">
+        SELECT COUNT(*) > 0 FROM menu WHERE site_id = #{siteId} AND code = #{code}
+    </select>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.content.menu.entity.Menu"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO menu (site_id, parent_id, code, name, url, target, icon, sort_order, depth, path, is_visible, status, metadata)
+        VALUES (#{siteId}, #{parentId}, #{code}, #{name}, #{url}, #{target}, #{icon}, #{sortOrder}, #{depth}, #{path}, #{isVisible}, #{status}, #{metadata}::jsonb)
+    </insert>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.menu.entity.Menu">
+        UPDATE menu SET name = #{name}, url = #{url}, target = #{target}, icon = #{icon},
+                        sort_order = #{sortOrder}, is_visible = #{isVisible}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <update id="updatePathAndDepth">
+        UPDATE menu SET path = #{path}, depth = #{depth}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+    <update id="updateVisibility">
+        UPDATE menu SET is_visible = #{isVisible}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+    <update id="updateSortOrder">
+        UPDATE menu SET sort_order = #{sortOrder}, updated_at = CURRENT_TIMESTAMP WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM menu WHERE id = #{id}
+    </delete>
+
+    <!-- 메뉴-권한 매핑 -->
+    <select id="findPermissionCodesByMenuId" resultType="string">
+        SELECT permission_code FROM menu_permissions WHERE menu_id = #{menuId}
+    </select>
+
+    <delete id="deletePermissionsByMenuId">
+        DELETE FROM menu_permissions WHERE menu_id = #{menuId}
+    </delete>
+
+    <insert id="insertPermissions">
+        INSERT INTO menu_permissions (menu_id, permission_code) VALUES
+        <foreach collection="permissions" item="p" separator=",">
+            (#{p.menuId}, #{p.permissionCode})
+        </foreach>
+    </insert>
+
+</mapper>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    사이트 마스터 매퍼 XML.
+    REQ-CONTENT-003-D: Step 2 GREEN 단계에서 실제 SQL 구현
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.site.mapper.SiteMapper">
+
+    <resultMap id="siteResultMap" type="kr.co.ircp.cms.domain.content.site.entity.Site">
+        <id     property="id"              column="id"/>
+        <result property="code"            column="code"/>
+        <result property="name"            column="name"/>
+        <result property="domain"          column="domain"/>
+        <result property="defaultLanguage" column="default_language"/>
+        <result property="supportedLanguages" column="supported_languages"/>
+        <result property="status"          column="status"/>
+        <result property="metadata"        column="metadata"/>
+        <result property="createdAt"       column="created_at"/>
+        <result property="updatedAt"       column="updated_at"/>
+    </resultMap>
+
+    <!-- Step 2 GREEN에서 실제 SQL 구현 예정 -->
+    <select id="findAll" resultMap="siteResultMap">
+        SELECT * FROM site ORDER BY id
+    </select>
+
+    <select id="findById" resultMap="siteResultMap">
+        SELECT * FROM site WHERE id = #{id}
+    </select>
+
+    <select id="findByDomain" resultMap="siteResultMap">
+        SELECT * FROM site WHERE domain = #{domain} AND status = 'ACTIVE' LIMIT 1
+    </select>
+
+    <select id="findByCode" resultMap="siteResultMap">
+        SELECT * FROM site WHERE code = #{code} LIMIT 1
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM site
+    </select>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.site.entity.Site">
+        UPDATE site
+        SET name = #{name},
+            domain = #{domain},
+            default_language = #{defaultLanguage},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>
