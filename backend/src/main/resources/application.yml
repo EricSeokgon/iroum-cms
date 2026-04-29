@@ -69,6 +69,8 @@ mybatis:
     cache-enabled: false
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: kr.co.ircp.cms.domain
+  # REQ-AUTH-018 — JSONB ↔ List<String> 변환 TypeHandler 등록
+  type-handlers-package: kr.co.ircp.cms.domain.auth.repository.typehandler
 
 # iroum CMS JWT 설정 (SPEC-CMS-002 REQ-AUTH-001/002)
 iroum:

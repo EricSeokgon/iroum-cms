@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.auth.service;
 
+import kr.co.ircp.cms.domain.auth.annotation.PersonalDataAccess;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -438,6 +439,34 @@ class UserServiceTest {
 
         verify(permissionChangeHistoryService).recordRoleAssignment(eq(1L), eq("VIEWER"), eq(99L), anyString());
         verify(permissionChangeHistoryService).recordRoleUnassignment(eq(1L), eq("EDITOR"), eq(99L), anyString());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // 헬퍼
+    // ──────────────────────────────────────────────────────────────
+
+    // ──────────────────────────────────────────────────────────────
+    // REQ-AUTH-018 @PersonalDataAccess 어노테이션 존재 검증
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findById — @PersonalDataAccess 어노테이션이 선언되어 있다 (REQ-AUTH-018)")
+    void findById_hasPersonalDataAccessAnnotation() throws Exception {
+        var method = UserServiceImpl.class.getMethod("findById", long.class);
+        assertThat(method.isAnnotationPresent(PersonalDataAccess.class)).isTrue();
+        PersonalDataAccess ann = method.getAnnotation(PersonalDataAccess.class);
+        assertThat(ann.purpose()).isEqualTo("BUSINESS_INQUIRY");
+        assertThat(ann.fields()).contains("email", "name");
+    }
+
+    @Test
+    @DisplayName("getMe — @PersonalDataAccess selfAccessOnly=true로 선언되어 있다 (REQ-AUTH-018)")
+    void getMe_hasPersonalDataAccessAnnotation_withSelfAccessOnly() throws Exception {
+        var method = UserServiceImpl.class.getMethod("getMe", long.class);
+        assertThat(method.isAnnotationPresent(PersonalDataAccess.class)).isTrue();
+        PersonalDataAccess ann = method.getAnnotation(PersonalDataAccess.class);
+        assertThat(ann.selfAccessOnly()).isTrue();
+        assertThat(ann.purpose()).isEqualTo("SELF_VIEW");
     }
 
     // ──────────────────────────────────────────────────────────────

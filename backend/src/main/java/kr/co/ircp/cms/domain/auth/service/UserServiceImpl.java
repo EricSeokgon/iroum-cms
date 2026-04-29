@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.auth.service;
 
 import kr.co.ircp.cms.domain.audit.annotation.AuditLog;
+import kr.co.ircp.cms.domain.auth.annotation.PersonalDataAccess;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -106,8 +107,11 @@ public class UserServiceImpl implements UserService {
         return PageResponse.of(content, page, size, total);
     }
 
+    // @MX:WARN: [AUTO] findById — @PersonalDataAccess AOP 적재; N+1 주의: detail 조회는 단건이므로 허용
+    // @MX:REASON: REQ-AUTH-018 PIA 추적 목적. 대량 list 호출 시에는 AOP 적재 생략 (설계 결정: detail/edit/me만 추적)
     @Override
     @Transactional(readOnly = true)
+    @PersonalDataAccess(fields = {"email", "name", "phone"}, purpose = "BUSINESS_INQUIRY", targetUserIdParam = "id")
     public UserDetail findById(long id) {
         User user = userMapper.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
@@ -162,6 +166,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     @AuditLog(action = "UPDATE", entityType = "User")
+    @PersonalDataAccess(fields = {"email", "name"}, purpose = "ADMIN_USER_EDIT", targetUserIdParam = "id")
     public UserDetail update(long id, UserUpdateRequest req, long updatedBy) {
         // 존재 확인
         userMapper.findById(id).orElseThrow(() -> new UserNotFoundException(id));
@@ -235,6 +240,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
+    @PersonalDataAccess(fields = {"email", "phone"}, purpose = "SELF_VIEW",
+                        targetUserIdParam = "currentUserId", selfAccessOnly = true)
     public UserSelf getMe(long currentUserId) {
         User user = userMapper.findById(currentUserId)
                 .orElseThrow(() -> new UserNotFoundException(currentUserId));

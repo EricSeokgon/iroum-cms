@@ -78,6 +78,18 @@ const router = createRouter({
           component: () => import('@/views/audit/PermissionChangeHistoryView.vue'),
           meta: { title: '권한 변경 이력' },
         },
+        {
+          path: 'audit/personal-data-access',
+          name: 'personal-data-access-log',
+          component: () => import('@/views/audit/PersonalDataAccessLogView.vue'),
+          meta: { title: '회원정보 접근 이력' },
+        },
+        {
+          path: 'account/personal-data-access',
+          name: 'my-personal-data-access',
+          component: () => import('@/views/account/MyPersonalDataAccessView.vue'),
+          meta: { title: '내 회원정보 접근 이력' },
+        },
       ],
     },
 

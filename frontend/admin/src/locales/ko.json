@@ -11,6 +11,8 @@
     "roles": "역할/권한 관리",
     "audit": "감사",
     "permissionChanges": "권한 변경 이력",
+    "personalDataAccess": "회원정보 접근 이력",
+    "myPersonalData": "내 회원정보 접근 이력",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
     "mainMenu": "주요 메뉴"
@@ -383,6 +385,44 @@
     "alias": "{aliasedTo} 의 별칭"
   },
   "audit": {
+    "personalDataAccess": {
+      "title": "회원정보 접근 이력",
+      "description": "관리자 또는 다른 사용자가 회원 개인정보를 조회한 기록입니다",
+      "filter": {
+        "targetUser": "대상 사용자 ID",
+        "viewer": "조회자 ID",
+        "purpose": "조회 목적",
+        "period": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "field": {
+        "accessedAt": "발생일시",
+        "viewer": "조회자",
+        "viewerRole": "조회자 역할",
+        "targetUser": "대상 사용자",
+        "accessedFields": "접근 필드",
+        "purpose": "목적",
+        "ipAddress": "IP",
+        "userAgent": "User-Agent"
+      },
+      "purpose": {
+        "BUSINESS_INQUIRY": "업무 문의",
+        "SUPPORT": "지원",
+        "AUDIT": "감사",
+        "SELF_VIEW": "본인 조회",
+        "ADMIN_USER_LIST": "관리자 목록 조회",
+        "ADMIN_USER_EDIT": "관리자 수정",
+        "EXPORT": "내보내기"
+      },
+      "empty": "조회된 이력이 없습니다",
+      "my": {
+        "title": "내 회원정보 접근 이력",
+        "description": "누가 내 정보를 조회했는지 확인할 수 있습니다 (개인정보보호법 사용자 권리)",
+        "warning": "비정상적인 접근이 의심되면 관리자에게 문의해 주세요.",
+        "empty": "아직 다른 사용자가 회원님의 정보를 조회한 기록이 없습니다."
+      }
+    },
     "permissionChanges": {
       "title": "권한 변경 이력",
       "filter": {

@@ -69,6 +69,13 @@
           <el-menu-item index="/audit/permission-changes">
             <span>{{ t('nav.permissionChanges') }}</span>
           </el-menu-item>
+          <!-- 회원정보 접근 이력 — AUDIT:READ + USER:READ 권한 필요 -->
+          <el-menu-item
+            v-if="hasPermission(auth, 'AUDIT:READ')"
+            index="/audit/personal-data-access"
+          >
+            <span>{{ t('nav.personalDataAccess') }}</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <!-- 구분선 -->
@@ -126,6 +133,9 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="password-change">
                   {{ t('account.password.title') }}
+                </el-dropdown-item>
+                <el-dropdown-item command="my-personal-data-access">
+                  {{ t('nav.myPersonalData') }}
                 </el-dropdown-item>
                 <el-dropdown-item command="logout" divided :loading="loggingOut">
                   {{ t('nav.logout') }}
@@ -189,6 +199,8 @@ async function handleLogout(): Promise<void> {
 async function handleUserCommand(command: string): Promise<void> {
   if (command === 'password-change') {
     router.push({ name: 'password-change' })
+  } else if (command === 'my-personal-data-access') {
+    router.push({ name: 'my-personal-data-access' })
   } else if (command === 'logout') {
     await handleLogout()
   }

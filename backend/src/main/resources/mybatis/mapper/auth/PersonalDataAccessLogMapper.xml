@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.PersonalDataAccessLogMapper">
+
+    <!--
+        개인정보 접근 로그 삽입 (APPEND-ONLY).
+        REQ-AUTH-018-D-1 — accessed_fields는 JSON 배열을 ::jsonb로 캐스팅하여 저장.
+        DB 트리거(pda_no_update / pda_no_delete)로 수정·삭제 차단.
+    -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessLog">
+        INSERT INTO personal_data_access_log (
+            viewer_id, viewer_role, target_user_id,
+            accessed_fields, purpose,
+            ip_address, user_agent, trace_id
+        ) VALUES (
+            #{viewerId}, #{viewerRole}, #{targetUserId},
+            #{accessedFields, typeHandler=kr.co.ircp.cms.domain.auth.repository.typehandler.JsonListTypeHandler}::jsonb,
+            #{purpose},
+            #{ipAddress}, #{userAgent}, #{traceId}
+        )
+    </insert>
+
+    <!--
+        공통 ResultMap — users JOIN으로 username 조회.
+    -->
+    <resultMap id="entryMap" type="kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry">
+        <constructor>
+            <idArg column="id"              javaType="long"/>
+            <arg  column="viewer_id"        javaType="long"/>
+            <arg  column="viewer_username"  javaType="String"/>
+            <arg  column="viewer_role"      javaType="String"/>
+            <arg  column="target_user_id"   javaType="long"/>
+            <arg  column="target_username"  javaType="String"/>
+            <arg  column="accessed_fields"
+                  javaType="java.util.List"
+                  typeHandler="kr.co.ircp.cms.domain.auth.repository.typehandler.JsonListTypeHandler"/>
+            <arg  column="purpose"          javaType="String"/>
+            <arg  column="ip_address"       javaType="String"/>
+            <arg  column="user_agent"       javaType="String"/>
+            <arg  column="accessed_at"      javaType="java.time.Instant"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 동적 WHERE 절 재사용 -->
+    <sql id="filterWhere">
+        <where>
+            <if test="targetUserId != null">AND p.target_user_id = #{targetUserId}</if>
+            <if test="viewerId != null">AND p.viewer_id = #{viewerId}</if>
+            <if test="purpose != null and purpose != ''">AND p.purpose = #{purpose}</if>
+            <if test="from != null">AND p.accessed_at &gt;= #{from}</if>
+            <if test="to != null">AND p.accessed_at &lt;= #{to}</if>
+        </where>
+    </sql>
+
+    <!--
+        관리자용 페이징 조회 — 동적 조건 + viewer/target username JOIN.
+        REQ-AUTH-018-D-2: hasAuthority('AUDIT:READ') + hasAuthority('USER:READ') 검증은 Controller 층.
+    -->
+    <select id="findPage" resultMap="entryMap">
+        SELECT
+            p.id,
+            p.viewer_id,
+            v.username AS viewer_username,
+            p.viewer_role,
+            p.target_user_id,
+            t.username AS target_username,
+            p.accessed_fields,
+            p.purpose,
+            p.ip_address,
+            p.user_agent,
+            p.accessed_at
+        FROM personal_data_access_log p
+        JOIN users v ON v.id = p.viewer_id
+        JOIN users t ON t.id = p.target_user_id
+        <include refid="filterWhere"/>
+        ORDER BY p.accessed_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM personal_data_access_log p
+        <include refid="filterWhere"/>
+    </select>
+
+    <!--
+        본인 열람 이력 조회 — target_user_id 고정, viewer/target username JOIN.
+        REQ-AUTH-018-D-4: actor.userId == targetUserId 검증은 Service 층.
+    -->
+    <select id="findByTarget" resultMap="entryMap">
+        SELECT
+            p.id,
+            p.viewer_id,
+            v.username AS viewer_username,
+            p.viewer_role,
+            p.target_user_id,
+            t.username AS target_username,
+            p.accessed_fields,
+            p.purpose,
+            p.ip_address,
+            p.user_agent,
+            p.accessed_at
+        FROM personal_data_access_log p
+        JOIN users v ON v.id = p.viewer_id
+        JOIN users t ON t.id = p.target_user_id
+        WHERE p.target_user_id = #{targetUserId}
+        ORDER BY p.accessed_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByTarget" resultType="long">
+        SELECT COUNT(*)
+        FROM personal_data_access_log
+        WHERE target_user_id = #{targetUserId}
+    </select>
+
+</mapper>

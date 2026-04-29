@@ -299,6 +299,33 @@ export interface SimpleMessageResponse {
   message: string
 }
 
+// ── 개인정보 접근 이력 타입 (REQ-AUTH-018) ────────────────────────────────────
+
+/** 개인정보 접근 목적 코드 */
+export type PersonalDataAccessPurpose =
+  | 'BUSINESS_INQUIRY'
+  | 'SUPPORT'
+  | 'AUDIT'
+  | 'SELF_VIEW'
+  | 'ADMIN_USER_LIST'
+  | 'ADMIN_USER_EDIT'
+  | 'EXPORT'
+
+/** 개인정보 접근 이력 항목 */
+export interface PersonalDataAccessEntry {
+  id: number
+  viewerId: number
+  viewerUsername: string
+  viewerRole?: string
+  targetUserId: number
+  targetUsername: string
+  accessedFields: string[]
+  purpose: PersonalDataAccessPurpose
+  ipAddress?: string
+  userAgent?: string
+  accessedAt: string  // ISO 8601
+}
+
 // ── 감사 로그 타입 (REQ-AUTH-016) ─────────────────────────────────────────────
 
 /** 권한 변경 유형 */

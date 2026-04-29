@@ -107,6 +107,12 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
     archiveFileName.set("iroum-cms.jar")
 }
 
+// REQ-AUTH-018 — @PersonalDataAccess AOP: AspectJ 파라미터명 추출을 위해 -parameters 옵션 필요
+// PersonalDataAccessAspect.extractTargetUserId()가 Parameter.getName()을 사용함
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-parameters")
+}
+
 // ─── 테스트 설정 ──────────────────────────────────────────────────────────
 tasks.test {
     useJUnitPlatform()

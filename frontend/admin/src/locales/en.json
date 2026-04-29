@@ -11,6 +11,8 @@
     "roles": "Roles & Permissions",
     "audit": "Audit",
     "permissionChanges": "Permission Change History",
+    "personalDataAccess": "Personal Data Access Log",
+    "myPersonalData": "My Personal Data Access",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu"
@@ -384,6 +386,44 @@
     "alias": "Alias of {aliasedTo}"
   },
   "audit": {
+    "personalDataAccess": {
+      "title": "Personal Data Access Log",
+      "description": "Records of administrators or other users accessing member personal data",
+      "filter": {
+        "targetUser": "Target User ID",
+        "viewer": "Viewer ID",
+        "purpose": "Purpose",
+        "period": "Period",
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "field": {
+        "accessedAt": "Timestamp",
+        "viewer": "Viewer",
+        "viewerRole": "Viewer Role",
+        "targetUser": "Target User",
+        "accessedFields": "Accessed Fields",
+        "purpose": "Purpose",
+        "ipAddress": "IP Address",
+        "userAgent": "User-Agent"
+      },
+      "purpose": {
+        "BUSINESS_INQUIRY": "Business Inquiry",
+        "SUPPORT": "Support",
+        "AUDIT": "Audit",
+        "SELF_VIEW": "Self View",
+        "ADMIN_USER_LIST": "Admin User List",
+        "ADMIN_USER_EDIT": "Admin User Edit",
+        "EXPORT": "Export"
+      },
+      "empty": "No access history found",
+      "my": {
+        "title": "My Personal Data Access History",
+        "description": "You can check who accessed your information (User rights under Personal Information Protection Act)",
+        "warning": "If you suspect unauthorized access, please contact your administrator.",
+        "empty": "No one has accessed your personal data yet."
+      }
+    },
     "permissionChanges": {
       "title": "Permission Change History",
       "filter": {
