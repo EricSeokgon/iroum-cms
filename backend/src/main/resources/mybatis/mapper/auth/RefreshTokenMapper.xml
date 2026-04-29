@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  RefreshTokenMapper SQL 정의 (RED 단계 — 구문만 선언, 테스트는 Mock 사용).
+  SPEC-CMS-002 REQ-AUTH-002 Refresh Token Rotation
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper">
+
+    <resultMap id="refreshTokenResultMap" type="kr.co.ircp.cms.domain.auth.entity.RefreshToken">
+        <id     property="id"         column="id"/>
+        <result property="tokenHash"  column="token_hash"/>
+        <result property="userId"     column="user_id"/>
+        <result property="expiresAt"  column="expires_at"/>
+        <result property="revokedAt"  column="revoked_at"/>
+        <result property="ipAddress"  column="ip_address"/>
+        <result property="userAgent"  column="user_agent"/>
+        <result property="createdAt"  column="created_at"/>
+    </resultMap>
+
+    <!-- Refresh Token 삽입 -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.auth.entity.RefreshToken">
+        INSERT INTO refresh_tokens (token_hash, user_id, expires_at, ip_address, user_agent, created_at)
+        VALUES (#{tokenHash}, #{userId}, #{expiresAt}, #{ipAddress}, #{userAgent}, NOW())
+    </insert>
+
+    <!-- 토큰 해시로 조회 -->
+    <select id="findByTokenHash" parameterType="string" resultMap="refreshTokenResultMap">
+        SELECT id, token_hash, user_id, expires_at, revoked_at, ip_address, user_agent, created_at
+        FROM refresh_tokens
+        WHERE token_hash = #{hash}
+    </select>
+
+    <!-- 단건 회수 -->
+    <update id="revoke">
+        UPDATE refresh_tokens
+        SET revoked_at = #{revokedAt}
+        WHERE token_hash = #{hash}
+          AND revoked_at IS NULL
+    </update>
+
+    <!-- 사용자의 모든 유효 토큰 회수 -->
+    <update id="revokeAllForUser">
+        UPDATE refresh_tokens
+        SET revoked_at = #{revokedAt}
+        WHERE user_id  = #{userId}
+          AND revoked_at IS NULL
+    </update>
+
+    <!-- 만료된 토큰 GC -->
+    <delete id="deleteExpired">
+        DELETE FROM refresh_tokens
+        WHERE expires_at &lt; #{now}
+    </delete>
+
+</mapper>

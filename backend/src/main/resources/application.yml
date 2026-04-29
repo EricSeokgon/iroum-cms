@@ -70,6 +70,15 @@ mybatis:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: kr.co.ircp.cms.domain
 
+# iroum CMS JWT 설정 (SPEC-CMS-002 REQ-AUTH-001/002)
+iroum:
+  jwt:
+    # 운영 환경에서 반드시 JWT_SECRET 환경변수로 재정의 (최소 256비트)
+    secret: ${JWT_SECRET:changeme-256-bits-min-replace-in-prod-aaaaaaaaaaaaaaaaaaaaa}
+    access-token-ttl: PT15M
+    refresh-token-ttl: P7D
+    issuer: iroum-cms
+
 logging:
   level:
     root: INFO

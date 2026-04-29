@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  LoginHistoryMapper SQL 정의 (RED 단계 — 구문만 선언, 테스트는 Mock 사용).
+  SPEC-CMS-002 REQ-AUTH-011 로그인 이력 기록
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.LoginHistoryMapper">
+
+    <resultMap id="loginHistoryResultMap" type="kr.co.ircp.cms.domain.auth.entity.LoginHistory">
+        <id     property="id"            column="id"/>
+        <result property="userId"        column="user_id"/>
+        <result property="username"      column="username"/>
+        <result property="ipAddress"     column="ip_address"/>
+        <result property="userAgent"     column="user_agent"/>
+        <result property="success"       column="success"/>
+        <result property="failureReason" column="failure_reason"/>
+        <result property="createdAt"     column="created_at"/>
+    </resultMap>
+
+    <!-- 로그인 이력 삽입 -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.auth.entity.LoginHistory">
+        INSERT INTO login_history (user_id, username, ip_address, user_agent, success, failure_reason, created_at)
+        VALUES (#{userId}, #{username}, #{ipAddress}, #{userAgent}, #{success}, #{failureReason}, NOW())
+    </insert>
+
+    <!-- 최근 이력 조회 -->
+    <select id="findRecentByUsername" resultMap="loginHistoryResultMap">
+        SELECT id, user_id, username, ip_address, user_agent, success, failure_reason, created_at
+        FROM login_history
+        WHERE username = #{username}
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

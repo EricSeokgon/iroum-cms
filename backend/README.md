@@ -149,4 +149,57 @@ SPEC-CMS-002 구현 단계에서 저장소 접근이 가능하다면 주석을 �
 
 ---
 
-_Step 0 — Bootstrap | iroum-cms v0.1.0-SNAPSHOT_
+---
+
+## SPEC-CMS-002 Step 1 — TDD RED 단계
+
+**현재 상태**: SPEC-CMS-002 REQ-AUTH-001~005, 011 RED 단계 진입 완료 (2026-04-29)
+
+### RED 단계 정의
+
+모든 인증 관련 테스트는 실행 시 **의도적으로 실패**한다.
+서비스 구현체(`AuthServiceImpl`, `JwtTokenProviderImpl`, `PasswordPolicyServiceImpl`)는
+`UnsupportedOperationException("RED — Step 2 GREEN에서 구현")`을 던진다.
+
+컴파일은 성공하고, 기존 Health 테스트와 ApplicationTests는 정상 PASS된다.
+
+### 테스트 실행
+
+```bash
+cd backend
+./gradlew test
+```
+
+예상 결과:
+- `JwtTokenProviderTest` — **전체 실패** (RED 의도: UOE)
+- `PasswordPolicyServiceTest` — **전체 실패** (RED 의도: UOE)
+- `AuthServiceTest` — **전체 실패** (RED 의도: UOE)
+- `AuthControllerTest` — **전체 실패** (RED 의도: UOE → HTTP 500)
+- `HealthControllerTest` — **PASS** (변경 없음)
+- `IroumCmsApplicationTests` — **PASS** (변경 없음)
+
+### RED 범위 파일 목록
+
+| 레이어 | 파일 수 |
+|--------|---------|
+| Entity | 6 (User, UserStatus, Role, RefreshToken, LoginHistory, TokenBlacklist) |
+| DTO | 3 (LoginRequest, LoginResponse, RefreshResult) |
+| Exception | 6 (AuthException + 5 서브클래스) |
+| Repository (Mapper) | 4 (UserMapper, RefreshTokenMapper, LoginHistoryMapper, TokenBlacklistMapper) |
+| Service (인터페이스+구현) | 6 (JwtTokenProvider/Impl, PasswordPolicyService/Impl, AuthService/Impl) |
+| Controller | 1 (AuthController) |
+| Config | 1 (JwtProperties) |
+| Flyway Migration | 1 (V2__auth_schema.sql) |
+| MyBatis XML | 4 (auth/*.xml) |
+| Test | 4 (Jwt/Password/Auth/Controller 테스트) |
+
+### 다음 단계 (Step 2 GREEN)
+
+`UnsupportedOperationException`을 실제 구현으로 교체:
+1. `JwtTokenProviderImpl` — jjwt 0.12.6으로 JWT 생성/검증
+2. `PasswordPolicyServiceImpl` — BCrypt strength=12 + 8자/3종 정책
+3. `AuthServiceImpl` — 로그인·토큰 갱신·로그아웃 전체 흐름
+
+---
+
+_Step 1 (RED) — SPEC-CMS-002 | iroum-cms v0.1.0-SNAPSHOT_

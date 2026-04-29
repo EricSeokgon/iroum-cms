@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  UserMapper SQL 정의 (RED 단계 — 구문만 선언, 테스트는 Mock 사용).
+  SPEC-CMS-002 REQ-AUTH-001~006
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.UserMapper">
+
+    <resultMap id="userResultMap" type="kr.co.ircp.cms.domain.auth.entity.User">
+        <id     property="id"                column="id"/>
+        <result property="username"          column="username"/>
+        <result property="email"             column="email"/>
+        <result property="passwordHash"      column="password_hash"/>
+        <result property="name"              column="name"/>
+        <result property="status"            column="status"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="failCount"         column="fail_count"/>
+        <result property="lockedUntil"       column="locked_until"/>
+        <result property="lastLoginAt"       column="last_login_at"/>
+        <result property="passwordChangedAt" column="password_changed_at"/>
+        <result property="createdAt"         column="created_at"/>
+        <result property="updatedAt"         column="updated_at"/>
+        <result property="deletedAt"         column="deleted_at"/>
+    </resultMap>
+
+    <!-- username으로 사용자 조회 (소프트 삭제 제외) -->
+    <select id="findByUsername" parameterType="string" resultMap="userResultMap">
+        SELECT id, username, email_enc AS email, password_hash, name,
+               status, fail_count, locked_until, last_login_at,
+               password_changed_at, created_at, updated_at, deleted_at
+        FROM users
+        WHERE username = #{username}
+          AND deleted_at IS NULL
+    </select>
+
+    <!-- 로그인 실패 횟수 증가 -->
+    <update id="incrementFailCount">
+        UPDATE users
+        SET fail_count = fail_count + 1,
+            updated_at = #{now}
+        WHERE username = #{username}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 로그인 성공 시 실패 횟수 초기화 및 마지막 로그인 갱신 -->
+    <update id="resetFailCount">
+        UPDATE users
+        SET fail_count   = 0,
+            last_login_at = #{now},
+            updated_at   = #{now}
+        WHERE username = #{username}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 계정 잠금 처리 -->
+    <update id="lockAccount">
+        UPDATE users
+        SET status       = 'LOCKED',
+            locked_until = #{until},
+            updated_at   = NOW()
+        WHERE username = #{username}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 마지막 로그인 시각 갱신 -->
+    <update id="updateLastLoginAt">
+        UPDATE users
+        SET last_login_at = #{now},
+            updated_at    = #{now}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
