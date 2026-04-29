@@ -1,4 +1,4 @@
-# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.3 (2026-04-29 홍익인간 CMS gap 통합)
+# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.3.1 (2026-04-29 SMS 채널 v0.4+로 미룸)
 
 ## 1. 개요
 
@@ -10,7 +10,7 @@
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
-| 버전 | v0.3 (홍익인간 CMS gap 통합 amendment) |
+| 버전 | v0.3.1 (운영 결정 Q-1 적용 — SMS 본인인증 채널을 v0.4+로 미루고 이메일 OTP만 1차 유지) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | uss/umt(사용자관리), sec/rmt(역할관리), sec/aut(권한관리), uat/uia(일반로그인), uss/olh(조직관리) |
@@ -1129,21 +1129,28 @@ v0.1 §9 보안 정책은 그대로 유지되며, 본 절은 RFP §17 PER/SER/QU
 
 본 절은 홍익인간 CMS gap analysis(2026-04-29)에서 식별된 사용자 본인인증·개인정보 접근 추적 요구를 v0.2 기준선에 추가 적용한다. v0.1~v0.2의 §1~§15 기존 요구사항·DDL·API는 변경 없이 유지된다. 본 절의 모든 신규 sub-REQ는 acceptance.md §L, §M에 G/W/T로 매핑된다.
 
-### 16.1 REQ-AUTH-017-D: 본인인증 (휴대폰 OTP + 이메일)
+### 16.1 REQ-AUTH-017-D: 본인인증 (이메일 OTP)
 
-회원가입·비밀번호 재설정·중요 정보 변경 등 신원 확인이 필요한 시점에 휴대폰 SMS 또는 이메일을 통한 OTP(One-Time Password) 본인인증을 제공한다. v0.1 §5.9 비밀번호 재설정(이메일 토큰)과 별개의 일반화된 본인인증 채널이며, 향후 SPEC-CMS-003(게시판 실명 인증)·SPEC-CMS-AI-001(통합) 등에서 재사용된다.
+회원가입·비밀번호 재설정·중요 정보 변경 등 신원 확인이 필요한 시점에 이메일을 통한 OTP(One-Time Password) 본인인증을 제공한다. v0.1 §5.9 비밀번호 재설정(이메일 토큰)과 별개의 일반화된 본인인증 채널이며, 향후 SPEC-CMS-003(게시판 실명 인증)·SPEC-CMS-AI-001(통합) 등에서 재사용된다.
+
+> **NOTE — 사용자 결정 2026-04-29 Q-1 적용 (v0.3.1)**
+> SMS 본인인증 채널은 v0.4+ 후속 검토로 미룬다. 1차 v0.3.1 출시는 **이메일 OTP만 유지**한다. 사유: NHN Cloud SmsProvider 등 외부 SMS 게이트웨이 운영 인력·계약·발신 번호 등록 절차 부담을 1차에서 제거. SmsProvider 인터페이스 정의는 placeholder로 남겨 v0.4+ 시 어댑터 추가만으로 활성화 가능하도록 한다.
 
 - **REQ-AUTH-017-D-1 (인증 요청 API — Event-driven)**
-  사용자가 `POST /api/v1/auth/verify/request`에 `{ "channel": "SMS|EMAIL", "target": "01012345678 또는 user@x.com", "purpose": "SIGNUP|PASSWORD_RESET|IMPORTANT_CHANGE" }`를 보냈을 때, 시스템은 (a) target 형식 검증 (휴대폰: 한국 010-XXXX-XXXX 정규화, 이메일: RFC 5322) (b) purpose 화이트리스트 검증 (c) 요청자 식별(인증된 사용자는 user_id, 익명은 IP) 후 `verification_request` 행을 INSERT하고 `request_id`(UUID)를 응답해야 한다.
+  사용자가 `POST /api/v1/auth/verify/request`에 `{ "channel": "EMAIL", "target": "user@x.com", "purpose": "SIGNUP|PASSWORD_RESET|IMPORTANT_CHANGE" }`를 보냈을 때, 시스템은 (a) target 형식 검증 (이메일: RFC 5322) (b) channel 화이트리스트 검증 — 1차 v0.3.1은 `EMAIL`만 허용하며 `SMS` 또는 그 외 값 수신 시 400 + `VERIFY_CHANNEL_NOT_SUPPORTED` 반환 (c) purpose 화이트리스트 검증 (d) 요청자 식별(인증된 사용자는 user_id, 익명은 IP) 후 `verification_request` 행을 INSERT하고 `request_id`(UUID)를 응답해야 한다. (사용자 결정 2026-04-29 Q-1 적용 — SMS 채널은 v0.4+ 후속)
 - **REQ-AUTH-017-D-2 (OTP 발송 — Event-driven)**
-  REQ-AUTH-017-D-1 처리 직후 시스템은 (a) 6자리 숫자 OTP 무작위 생성(`SecureRandom`, 000000~999999) (b) 5분 만료 (`expires_at = now + 5m`) (c) 동일 target에 대해 최근 1분 이내 발송 이력이 있으면 429 + `VERIFY_RESEND_COOLDOWN` 반환(재발송 쿨다운) (d) channel='SMS'이면 `SmsProvider.sendOtp(target, code)` 호출, channel='EMAIL'이면 Spring Mail로 발송해야 한다. OTP 평문은 발송 직후 폐기되며, DB에는 §17.1 `verification_request.code_hash`(BCrypt strength=12 해시)만 저장한다.
+  REQ-AUTH-017-D-1 처리 직후 시스템은 (a) 6자리 숫자 OTP 무작위 생성(`SecureRandom`, 000000~999999) (b) 5분 만료 (`expires_at = now + 5m`) (c) 동일 target에 대해 최근 1분 이내 발송 이력이 있으면 429 + `VERIFY_RESEND_COOLDOWN` 반환(재발송 쿨다운) (d) Spring Mail(SMTP)로 이메일을 발송해야 한다. OTP 평문은 발송 직후 폐기되며, DB에는 §17.1 `verification_request.code_hash`(BCrypt strength=12 해시)만 저장한다. SMS 발송 경로는 v0.3.1에서 비활성화되며 v0.4+ 후속 검토 시 활성화 예정.
 - **REQ-AUTH-017-D-3 (OTP 검증 API — Event-driven)**
   사용자가 `POST /api/v1/auth/verify/confirm`에 `{ "request_id": "uuid", "code": "123456" }`를 보냈을 때, 시스템은 (a) `verification_request` 조회 + status='PENDING' + expires_at > now 검증 (b) `BCrypt.matches(code, code_hash)` 비교 (c) 일치 시 status='VERIFIED', verified_at=now 갱신 후 200 + `{ "verified": true }` 응답 (d) 불일치 시 attempts 1 증가, attempts ≥ max_attempts(3)이면 status='FAILED'로 차단하고 401 + `VERIFY_CODE_INVALID` 또는 423 + `VERIFY_BLOCKED` 반환해야 한다. (e) verification_history에 (target, success, ip_address, user_agent, occurred_at) 1행 적재.
-- **REQ-AUTH-017-D-4 (SmsProvider 인터페이스 추상화 — Ubiquitous)**
-  시스템은 다음 2개 메서드를 가지는 `SmsProvider` 인터페이스를 정의해야 한다:
-  (a) `sendOtp(target: String, code: String): SmsResult` — 단건 OTP 발송
-  (b) `sendBulk(messages: List<SmsMessage>): List<SmsResult>` — 다건 일괄 발송 (운영 알림·공지용 자리표시)
-  1차 빌드는 `NoOpSmsProvider`(stdout 로깅만 + `SmsResult.success("noop")` 반환) 빈을 default 등록하고, `NhnCloudSmsProvider`·`NaverCloudSmsProvider`·`AwsSnsSmsProvider`·`AligoSmsProvider` 어댑터 자리표시자(skeleton)를 패키지 트리에 포함하되 모든 메서드는 `throw UnsupportedOperationException("SMS provider not configured")`로 1차 빌드 실동작 금지(`@ConditionalOnProperty("auth.sms.provider")` 비활성). 실제 어댑터 구현 채택은 별도 SPEC(예: `SPEC-CMS-SMS-001`)로 위임.
+- **REQ-AUTH-017-D-4 (SmsProvider 인터페이스 placeholder — Ubiquitous, v0.4+ 후속 검토)**
+  > **NOTE — v0.4+ 후속 검토 (사용자 결정 2026-04-29 Q-1)**
+  > 본 sub-REQ는 미래 SMS 채널 추가 시 활성화한다. v0.3.1 1차 빌드에서는 **`SmsProvider` 인터페이스 정의만 placeholder로 남기되 default `NoOpSmsProvider`만 wired**한다. `NhnCloudSmsProvider`·`NaverCloudSmsProvider`·`AwsSnsSmsProvider`·`AligoSmsProvider` 어댑터 skeleton은 패키지 트리에 포함하지 않으며, 본 sub-REQ의 어댑터 구현 채택은 별도 SPEC(예: `SPEC-CMS-SMS-001`)으로 위임한다. 인터페이스 시그니처는 v0.4+ 활성화 시점에 확정한다 (sendOtp + sendBulk 후보).
+  
+  v0.3.1 placeholder 구현:
+  - `SmsProvider` 인터페이스를 패키지 트리에 정의 (메서드 시그니처는 v0.4+ 시 확정)
+  - `NoOpSmsProvider`만 default 빈으로 등록 (모든 메서드는 `SmsResult.success("noop-v0.3.1")` 반환 또는 no-op 동작)
+  - `auth.sms.provider` 프로퍼티는 v0.3.1에서 무시되며 v0.4+ 활성화 시 `@ConditionalOnProperty`로 분기
+  - 1차 본인인증 흐름(REQ-AUTH-017-D-1~3)은 SmsProvider를 호출하지 않는다 (EMAIL 채널만 처리)
 - **REQ-AUTH-017-D-5 (verification_history 모니터링 + 부정 시도 차단 — Unwanted)**
   시스템은 모든 `/auth/verify/confirm` 시도(성공·실패 무관)를 `verification_history`(§17.2)에 적재해야 하며, 동일 IP에서 시간당 10회 초과 발송 또는 검증 시도가 감지된 경우 즉시 해당 IP를 1시간 차단(429 + `VERIFY_RATE_LIMIT_EXCEEDED`)하고 audit_log에 severity=CRITICAL로 기록해야 한다. 차단 정책은 Bucket4j(§9.4) 라이브러리를 재사용한다.
 
@@ -1162,7 +1169,7 @@ v0.1 §9 보안 정책은 그대로 유지되며, 본 절은 RFP §17 PER/SER/QU
 
 ### 16.3 비기능 임계값 (PER/SER 보강)
 
-- **PER**: OTP 발송 응답 p95 < 3초 (외부 SMS 게이트웨이 의존, NoOpSmsProvider 시 < 100ms). OTP 검증 p95 < 200ms (BCrypt.matches strength=12 비용 포함).
+- **PER**: OTP 발송(이메일) 응답 p95 < 3초 (Spring Mail SMTP 발송 비용 포함). OTP 검증 p95 < 200ms (BCrypt.matches strength=12 비용 포함). SMS 채널 PER 임계값은 v0.4+ 활성화 시 추가 정의.
 - **SER**: OTP code는 평문 저장 금지. `verification_request.code_hash`에 BCrypt strength=12 해시만 저장. 검증은 `BCrypt.matches(plain, hash)`로 수행. 평문 OTP는 발송 직후 메모리에서 폐기.
 - **개인정보보호법 강화**: `personal_data_access_log`·`personal_data_access_log_archive`는 §17.5 APPEND-ONLY 트리거로 UPDATE/DELETE를 차단해 위변조 방지. SUPER_ADMIN의 보존기간 경과 폐기 batch만 예외(트리거 우회 권한 부여).
 
@@ -1190,7 +1197,10 @@ CREATE TABLE verification_request (
     max_attempts  INT          NOT NULL DEFAULT 3,
     status        VARCHAR(15)  NOT NULL DEFAULT 'PENDING',
     verified_at   TIMESTAMPTZ,
-    CONSTRAINT chk_vreq_channel CHECK (channel IN ('SMS','EMAIL')),
+    -- v0.3.1 (사용자 결정 2026-04-29 Q-1 적용): SMS 채널은 v0.4+ 후속.
+    -- channel 컬럼은 v0.4+ 호환을 위해 보존하되, 1차 v0.3.1에서는 EMAIL만 허용.
+    -- v0.4+ SMS 채널 활성화 시 본 CHECK 제약을 제거하고 ('SMS','EMAIL')로 확장 (Flyway 별도 마이그레이션).
+    CONSTRAINT chk_vreq_channel CHECK (channel = 'EMAIL'),
     CONSTRAINT chk_vreq_purpose CHECK (purpose IN ('SIGNUP','PASSWORD_RESET','IMPORTANT_CHANGE')),
     CONSTRAINT chk_vreq_status  CHECK (status IN ('PENDING','VERIFIED','EXPIRED','FAILED'))
 );
@@ -1198,7 +1208,8 @@ CREATE INDEX idx_vreq_request_id     ON verification_request(request_id);
 CREATE INDEX idx_vreq_target_created ON verification_request(target, created_at DESC);
 CREATE INDEX idx_vreq_status_expires ON verification_request(status, expires_at) WHERE status = 'PENDING';
 COMMENT ON COLUMN verification_request.code_hash IS 'BCrypt strength=12 해시 (REQ-AUTH-017-D-2 SER)';
-COMMENT ON COLUMN verification_request.target    IS '휴대폰 번호 또는 이메일 주소 (channel에 따라)';
+COMMENT ON COLUMN verification_request.target    IS '이메일 주소 (v0.3.1 1차는 EMAIL만, SMS는 v0.4+ 후속)';
+COMMENT ON COLUMN verification_request.channel   IS '인증 채널. v0.3.1 1차는 EMAIL만 허용 (CHECK 제약). 컬럼 자체는 v0.4+ SMS 추가 호환 위해 보존.';
 ```
 
 비고: `request_id`(UUID)는 외부 노출용, internal id는 BIGINT IDENTITY. 재발송 쿨다운 검사는 `idx_vreq_target_created` 인덱스로 동일 target의 직전 INSERT 시각 비교(now - 1분).
@@ -1305,3 +1316,4 @@ CREATE TRIGGER trg_pdal_archive_no_update
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성. SPEC-CMS-001 §6.1 REQ-AUTH-001~012를 sub-REQ-D-* 형식으로 상세화. REQ-AUTH-010의 재사용 금지 범위를 부모 SPEC의 "직전 3회"에서 "직전 5개"로 보안 강화 변경(상세 SPEC 단계 결정). 비밀번호 재설정(이메일 토큰), refresh_tokens DB 저장(해시), Caffeine 권한 캐시(TTL 5분), Refresh Rotation + 탈취 감지를 신규로 명시. menu 테이블은 SPEC-CMS-004에서 정의 예정으로 표시. |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 amendment. SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015 매핑. §13 신설(REQ-AUTH-013-D 4단계 RBAC, REQ-AUTH-014-D 부서·조직 관리, REQ-AUTH-015-D SSO 옵션 인터페이스, REQ-AUTH-016-D 권한 변경 이력 + 비인가 사전 차단). §14 신설(roles 시드 보강, organization·organization_history·permission_change_history DDL, users.organization_id FK 추가). §15 신설(RFP PER/SER/QUR 비기능 횡단 적용). v0.1 §1~§11 본문은 변경 없이 유지. |
 | v0.3 | 2026-04-29 | manager-spec | 홍익인간 CMS gap 통합 amendment (SPEC-CMS-001 v0.2 §17 비기능 횡단 + 홍익인간 CMS gap analysis 2026-04-29). §16 신설(REQ-AUTH-017-D 본인인증 휴대폰 OTP+이메일 5개 sub-REQ, REQ-AUTH-018-D 회원정보 접근 로그 4개 sub-REQ). §17 신설(verification_request·verification_history·personal_data_access_log 월별 PARTITION·personal_data_access_log_archive DDL + APPEND-ONLY 트리거). SmsProvider 인터페이스 추상화(NoOpSmsProvider 기본 + NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 자리표시자). 비기능: OTP 발송 < 3초, 검증 < 200ms, BCrypt(12) for OTP code hash, personal_data_access_log APPEND-ONLY 트리거. v0.1~v0.2 §1~§15 본문은 변경 없이 유지. |
+| v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-1 적용 (사용자 결정 2026-04-29) — SMS 본인인증 채널을 v0.4+ 후속 검토로 미루고 1차는 이메일 OTP만 유지. §16.1 REQ-AUTH-017-D 5개 sub-REQ 갱신: D-1 channel 파라미터 EMAIL만 허용(SMS 요청 시 400 + VERIFY_CHANNEL_NOT_SUPPORTED), D-2 SMS 발송 경로 비활성화·Spring Mail SMTP만 유지, D-3 그대로, D-4 SmsProvider 인터페이스 placeholder만 정의(NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton 1차 제외, NoOpSmsProvider만 wired)·v0.4+ 후속 표기, D-5 그대로. §17.1 verification_request DDL `chk_vreq_channel` 제약을 `(SMS,EMAIL)` → `(EMAIL only)`로 강화하고 channel 컬럼은 v0.4+ 호환 위해 보존. §16.3 PER 임계값을 이메일 채널 기준으로 갱신. v0.3 본문 §1~§15·§16.2 REQ-AUTH-018-D·§17.2~§17.5는 변경 없이 유지. |

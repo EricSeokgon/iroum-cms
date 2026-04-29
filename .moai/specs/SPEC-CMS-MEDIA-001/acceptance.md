@@ -70,6 +70,9 @@
 
 ## 2. 자동 후처리 (REQ-MEDIA-002-D)
 
+> **NOTE — v0.2 (사용자 결정 2026-04-29 Q-3 적용)**
+> AV 스캔(REQ-MEDIA-002-D-4) 시나리오는 v0.2+ 후속 검토. 1차 v0.2 후처리 파이프라인은 EXIF_STRIP → WEBP_CONVERT → THUMBNAIL 3단계로 종료된다. 본 §2의 AV_SCAN 관련 시나리오(AC-002-4.1~4.3)는 v0.2+ ClamAV 도입 시 재도입한다.
+
 ### REQ-MEDIA-002-D-1 EXIF 제거
 
 - **AC-002-1.1**
@@ -111,22 +114,34 @@
   - When 썸네일 생성
   - Then small/medium/large는 모두 원본 크기로 복사되며 너비 정보를 보존한다.
 
-### REQ-MEDIA-002-D-4 AV 스캔
+### REQ-MEDIA-002-D-4 AV 스캔 (v0.2+ 후속 검토 — 사용자 결정 2026-04-29 Q-3)
 
-- **AC-002-4.1 (CLEAN)**
+> **SKIP — v0.2 1차 미도입**
+> v0.2 1차는 ClamAV AV 스캔을 도입하지 않으며, 후처리 파이프라인은 THUMBNAIL 단계 종료 후 status=READY로 전이된다. 다음 시나리오(AC-002-4.1~4.3)는 v0.2+ 활성화 시 재도입한다. v0.2 1차의 악성 파일 방어는 §1 REQ-MEDIA-001-D-5 매직넘버 검증(AC-001-5.1~5.2) + MIME 화이트리스트 + 확장자 화이트리스트로 대응한다.
+
+- **AC-002-4.1 (CLEAN — v0.2+ 후속)**
   - Given 정상 자산
   - When AV_SCAN 워커가 ClamAV 데몬에 INSTREAM 전송
   - Then 응답이 CLEAN이면 자산 status=READY로 전이.
 
-- **AC-002-4.2 (INFECTED)**
+- **AC-002-4.2 (INFECTED — v0.2+ 후속)**
   - Given EICAR 테스트 시그니처 포함 파일
   - When AV_SCAN 실행
   - Then 자산 status=DELETED, 파일은 `quarantine/{yyyy}/{uuid}`로 이동, 관리자 알림 발송.
 
-- **AC-002-4.3 (ClamAV 다운)**
+- **AC-002-4.3 (ClamAV 다운 — v0.2+ 후속)**
   - Given ClamAV 데몬 응답 없음
   - When 워커가 5회 지수 백오프 재시도
   - Then 최종 실패 시 자산 PROCESSING 유지, 후속 워커는 작업 중단.
+
+### v0.2 보완 시나리오 — 매크로 포함 가능 형식 (AC-002-MACRO, 신규)
+
+- **AC-002-MACRO.1 (매크로 위협 안내)**
+  - Given EDITOR 권한 사용자가 .docx 또는 .xlsx 파일 업로드
+  - When complete 호출
+  - Then 자산 등록은 정상 진행되며 status=READY로 전이
+  - And 운영자 화면 또는 응답에 "매크로 포함 가능 형식 — v0.2+ AV 스캔 도입 권고" 안내 표시 (구현 옵션)
+  - **참고**: v0.2+ ClamAV 도입 시 매크로 검출 시그니처 추가 적용 권고.
 
 ---
 
@@ -318,20 +333,28 @@
 
 ## 7. Quality Gates
 
-### QG-MEDIA-1 보안
+### QG-MEDIA-1 보안 (v0.2 — 3중 방어 강조)
 
-- 매직넘버 검증 통과율 100% (Apache Tika 사용 검증)
+> **v0.2 (사용자 결정 2026-04-29 Q-3 적용)**: ClamAV AV 스캔 항목은 v0.2+ 후속. 1차는 매직넘버 + MIME + 확장자 화이트리스트 3중 방어로 대응.
+
+- **3중 방어 검증 (1차 핵심)**:
+  - 매직넘버 검증 통과율 100% (Apache Tika 사용 검증)
+  - MIME 화이트리스트 검증: §9의 5개 도메인(IMAGE/VIDEO/DOCUMENT/AUDIO) 외 MIME은 415 거부 100%
+  - 확장자 화이트리스트 검증: jpg/jpeg/png/webp/gif/svg/mp4/webm/mov/pdf/doc/docx/xls/xlsx/ppt/pptx/hwp/hwpx/mp3/wav 외 확장자(예: .exe, .sh, .php) 100% 차단
 - EXIF 제거 검증: READY 상태 모든 이미지의 EXIF 재추출 시 비어 있어야 함
-- AV 스캔 통과율 100% (EICAR 시그니처는 INFECTED로 정확히 차단)
 - 서명 URL TTL 15분 정확 적용 (TTL+1초 후 410 응답)
 - stored_path 응답 미노출 (응답 스키마 화이트리스트 검사)
+- **다운로드 시 권한 재검증**: 서명 URL 발급 후에도 다운로드 endpoint에서 viewer 권한 재확인 100%
+- **업로더 권한 EDITOR+ 제한**: ANONYMOUS 401, MEMBER 403 응답 검증 (REQ-MEDIA-004-D-1)
+
+> **AV 스캔 통과율 (v0.2+ 후속)**: ClamAV 도입 시 EICAR 시그니처는 INFECTED로 정확히 차단 100%, quarantine 이관 100% 항목을 재도입.
 
 ### QG-MEDIA-2 성능
 
 - 업로드 동시 50건 처리, p95 응답 < 500ms
 - 미디어 목록 검색 p95 < 300ms (10만 건 시드 환경)
 - 썸네일 후처리 p95 < 5분 (10MB 이미지 기준)
-- AV 스캔 p95 < 3분 (10MB 자산 기준)
+- AV 스캔 p95 < 3분 (10MB 자산 기준) — **v0.2+ 후속 (사용자 결정 2026-04-29 Q-3)**. v0.2+ ClamAV 도입 시 재적용.
 
 ### QG-MEDIA-3 데이터
 
@@ -361,16 +384,20 @@
 
 ---
 
-## 8. Definition of Done
+## 8. Definition of Done (v0.2)
 
-본 SPEC은 다음 모든 조건이 충족되어야 완료된다.
+본 SPEC v0.2는 다음 모든 조건이 충족되어야 완료된다.
 
-- [ ] 모든 sub-REQ (5 parents × 평균 4 = 22개)에 대응되는 acceptance 시나리오가 통과
-- [ ] 5개 QG-MEDIA + 2개 QG-COMMON 통과
-- [ ] Flyway 마이그레이션 V{nnn}__media_library.sql 생성 및 정합성 검증
-- [ ] `kr.co.ircp.cms.domain.media.*` 패키지 구조 완성 (controller/service/mapper/domain/dto)
+- [ ] **v0.2 운영 결정 적용 (사용자 2026-04-29)**: AV 스캔 시나리오(AC-002-4.1~4.3) v0.2+ 후속, MinIO/S3 빌드 미포함 (LocalFileSystemStorage 단일), media_processing_job CHECK 제약 EXIF_STRIP/WEBP_CONVERT/THUMBNAIL 3종만
+- [ ] 모든 v0.2 1차 sub-REQ (REQ-MEDIA-001-D-1~5, 002-D-1~3, 003-D-1~5, 004-D-1~5, 005-D-1~3)에 대응되는 acceptance 시나리오가 통과 (REQ-MEDIA-002-D-4 AV 스캔은 v0.2+ 후속)
+- [ ] 5개 QG-MEDIA + 2개 QG-COMMON 통과 (QG-MEDIA-1은 3중 방어 강조 버전, AV 스캔 통과율은 v0.2+ 후속)
+- [ ] Flyway 마이그레이션 V{nnn}__media_library.sql 생성 및 정합성 검증 (chk_job_type CHECK 제약: AV_SCAN 미포함)
+- [ ] `kr.co.ircp.cms.domain.media.*` 패키지 구조 완성 (controller/service/mapper/domain/dto). MediaScanService·ClamAV 클라이언트 의존성은 v0.2+ 후속.
+- [ ] LocalFileSystemStorage 단일 구현 + MediaStorage 인터페이스 정의 (S3MediaStorage·MinioMediaStorage skeleton 미포함)
 - [ ] OpenAPI 3.0 명세 (`docs/api/media.yaml`) 생성
 - [ ] Vue 3.5 + Element Plus 기반 미디어 라이브러리 화면 (목록/업로드/상세/컬렉션) 구현
+- [ ] 매크로 포함 가능 형식(docx/xlsx/hwp) 운영자 안내 메시지 구현 (AC-002-MACRO.1)
 - [ ] Testcontainers 기반 통합 테스트 + 단위 테스트 커버리지 ≥ 85%
 - [ ] SPEC-CMS-001 v0.3 amendment에 본 SPEC을 §16 트리에 등재
 - [ ] SPEC-CMS-003 §4.2.4 `bbs_attachment` 마이그레이션 가이드 부록 추가 (점진 통합)
+- [ ] 운영 매뉴얼: AV 스캔 v0.2+ 도입 권고 + MinIO/S3 v0.2+ 검토 항목 + 매크로 위협 안내 한국어로 명시

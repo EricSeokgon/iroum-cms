@@ -17,9 +17,19 @@
 | presigned URL | 구현 필요 (HMAC) | 표준 지원 | 표준 지원 |
 | 백업 | rsync 일배치 | erasure coding | 자동 복제 |
 
-### 권장
+### 권장 (v0.2 갱신 — 사용자 결정 2026-04-29 Q-2 적용)
 
-**1차: Local FS** + `MediaStorage` 인터페이스 추상화로 2차 마이그레이션 여지 확보. 공공기관 망분리 환경 적합, 즉시 도입 가능, 운영 비용 최저. 디스크 사용률 90% 도달 또는 다중 노드 요구 발생 시 **2차: MinIO** (외부 클라우드 정책 우회 가능). AWS S3는 본 프로젝트 범위 외 (사용자 협의 후 결정).
+**1차 v0.2: LocalFileSystemStorage 단일 구현 확정**. MinIO/S3는 **v0.2+ 후속 검토**로 미룬다. `MediaStorage` 인터페이스는 v0.2 1차에서 유지하여 v0.2+ 시 `S3MediaStorage`·`MinioMediaStorage` 어댑터를 추가하는 방식으로 확장 가능하도록 한다.
+
+사용자 결정(2026-04-29 Q-2) 사유:
+- 1차 v0.2 출시 시점에 MinIO 운영 인력·HW 자원·망분리 환경 검토가 충분히 진행되지 않음
+- LocalFS 단일 구현으로 1차 디스크 용량(수백 GB~TB 규모)·동시 사용자 1,000명·동시 업로드 50건 요구를 충족 가능
+- 디스크 사용률 90% 도달, 다중 노드 요구, 고가용성 SLA 요구 중 1개 이상 발생 시 v0.2+에서 별도 SPEC(예: SPEC-CMS-MEDIA-S3-001)으로 도입 검토
+
+v0.2+ 활성화 시 권장:
+- 망분리 환경: MinIO(자체 호스팅) 우선 검토 — 외부 클라우드 정책 우회
+- 외부 클라우드 허용 환경: AWS S3 + presigned URL 또는 MinIO 모두 가능
+- erasure coding·자동 복제로 R-MEDIA-7(LocalFS SPOF) 위험 완화
 
 ---
 
@@ -78,9 +88,28 @@
 | Java 통합 | TCP/UNIX 소켓 직접 접근 | ProcessBuilder |
 | 동시성 | 데몬이 처리 | OS fork 한계 |
 
-### 권장
+### 권장 (v0.2 갱신 — 사용자 결정 2026-04-29 Q-3 적용)
 
-**clamd 데몬 + Spring 비동기 큐**. clamscan CLI는 시그니처 로딩(약 1억건) 비용으로 자산당 수초 추가. clamd는 시그니처 메모리 상주로 응답 < 1초. Java에서는 `clamav-client` (4j) 또는 직접 INSTREAM 프로토콜 구현 (소켓 4바이트 헤더 + 데이터). 데몬 다운 시 5회 지수 백오프 재시도, 최종 실패는 관리자 알림.
+**1차 v0.2: ClamAV AV 스캔 미도입**. v0.2+ 후속 검토로 미루며, **보안 측면에서 v0.2+ ClamAV 도입을 강력 권고**한다. 1차는 매직넘버(Apache Tika §6) + MIME 화이트리스트 + 확장자 화이트리스트 3중 방어로 대응한다.
+
+사용자 결정(2026-04-29 Q-3) 사유:
+- 1차 v0.2 ClamAV 데몬 운영 부담(시그니처 업데이트·메모리 상주·다운 시 후처리 정체 위험)을 1차에서 제거
+- 매직넘버·MIME·확장자 3중 방어 + 업로더 권한 EDITOR+ 제한 + 다운로드 시 권한 재검증 + Content-Disposition: attachment + webroot 외부 저장으로 1차 위험 수준 수용 가능
+- 다만 폴리글로트 파일·매크로 위협(docx/xlsx/hwp) 등은 매직넘버만으로 차단 불가 — v0.2+ ClamAV 도입 의무 권고
+
+v0.2+ 활성화 시 채택 (clamd 데몬 + Spring 비동기 큐 권장):
+- clamscan CLI는 시그니처 로딩(약 1억건) 비용으로 자산당 수초 추가 — 거부
+- clamd는 시그니처 메모리 상주로 응답 < 1초 — 채택
+- Java에서는 `xyz.capybara:clamav-client` 또는 직접 INSTREAM 프로토콜 구현 (소켓 4바이트 헤더 + 데이터)
+- 데몬 다운 시 5회 지수 백오프 재시도, 최종 실패는 관리자 알림
+- INFECTED 시 자산 status=DELETED + quarantine 디렉터리 이관 + audit_log severity=CRITICAL 기록
+- `media_processing_job` CHECK 제약을 ('WEBP_CONVERT','THUMBNAIL','EXIF_STRIP','AV_SCAN')로 확장 (Flyway 별도 마이그레이션)
+- acceptance.md AC-002-4.1~4.3 시나리오 재도입
+
+v0.2 1차 보완 정책:
+- 업로더 권한 EDITOR+ 제한 (REQ-MEDIA-004-D-1)
+- 매크로 포함 가능 형식(docx/xlsx/hwp) 운영자 안내 메시지 (AC-002-MACRO.1)
+- 다운로드 시 권한 재검증 (서명 URL TTL 15분 + endpoint viewer 재검증)
 
 ---
 
@@ -154,18 +183,34 @@ WITH actual_usage AS (
 
 ---
 
-## 부록: 1차 의존성 체크리스트
+## 부록: 1차 v0.2 의존성 체크리스트
 
 - `org.apache.commons:commons-imaging:1.0-alpha5` (EXIF 제거)
 - `org.imgscalr:imgscalr-lib:4.2` (리사이즈)
 - `org.apache.tika:tika-core:2.x` (매직넘버)
-- 시스템 패키지: `webp-tools` (cwebp), `clamav` + `clamav-daemon`
-- `xyz.capybara:clamav-client:2.x` (Java ClamAV INSTREAM 클라이언트, 또는 직접 구현)
+- 시스템 패키지: `webp-tools` (cwebp)
 - 기존 스택 재사용: Spring Boot 3.2.x, MyBatis, PostgreSQL 16 JSONB/TEXT[]/GIN, Flyway 10
+
+**v0.2+ 후속 추가 의존성 (사용자 결정 2026-04-29 Q-3, 강력 권고)**:
+- 시스템 패키지: `clamav` + `clamav-daemon`
+- `xyz.capybara:clamav-client:2.x` (Java ClamAV INSTREAM 클라이언트, 또는 직접 구현)
+
+**v0.2+ 후속 추가 의존성 (사용자 결정 2026-04-29 Q-2, 망분리·운영 검토 후)**:
+- MinIO 도입 시: `io.minio:minio:8.x` 또는 AWS S3 SDK (`software.amazon.awssdk:s3:2.x`) — 어댑터 단위 추가
 
 ---
 
-## 부록: 미해결 질문 (사용자 협의 필요)
+## 부록: 사용자 결정 완료 (2026-04-29)
 
-1. **저장소 1차 결정**: Local FS만 1차로 확정할 것인가, 아니면 1차부터 MinIO를 도입할 것인가? (운영 인력·HW·망분리 정책 확인 필요)
-2. **AV 스캔 도입 시점**: 1차에 ClamAV 데몬을 도입할 것인가, 아니면 매직넘버 검증만으로 1차 출시 후 2차에서 도입할 것인가? (운영 인프라 결정 종속)
+v0.2 amendment 시점에 다음 미해결 질문이 사용자 결정으로 종결되었다:
+
+1. **저장소 1차 결정 (Q-2)**: → **LocalFileSystemStorage 단일 구현 1차 확정**. MinIO/S3는 v0.2+ 후속 검토. MediaStorage 인터페이스는 유지하여 v0.2+ 시 어댑터 추가만으로 확장 가능.
+2. **AV 스канание 도입 시점 (Q-3)**: → **1차 ClamAV 미도입**. 매직넘버 + MIME + 확장자 화이트리스트 3중 방어로 대응. **v0.2+ ClamAV 도입 강력 권고** (보안 측면).
+
+## 부록: v0.2+ 후속 검토 항목 (장기)
+
+1. MinIO/S3 도입 시점 — 디스크 사용률 90% 도달, 다중 노드 요구, 고가용성 SLA 요구 중 1개 이상 발생 시
+2. ClamAV 도입 시점 — v0.2 1차 출시 후 보안 검토 우선 (강력 권고)
+3. 영상 트랜스코딩 (FFmpeg 다중 비트레이트, 별도 SPEC)
+4. tus.io 청크 업로드 프로토콜 (1GB 초과 자산 빈도 모니터링 후 결정)
+5. AI 자동 태깅 (옵션 트랙 SPEC-CMS-AI-001 범위)

@@ -464,40 +464,44 @@ _v0.2 amendment 결정 사항은 spec.md §13~§15, acceptance.md H~L에 반영�
 - 검증 시 timing attack 방지: `BCrypt.matches`는 상수 시간 비교 보장
 - 5분 만료 단축 검토: 5분이 산업 표준, 더 짧으면 SMS 도달 지연 시 UX 저하
 
-### 10.2 SMS 게이트웨이 — 한국 친화 + 알림톡 연계 가능성
+### 10.2 SMS 게이트웨이 — v0.4+ 후속 검토 (사용자 결정 2026-04-29 Q-1 적용)
 
-#### 의사결정
+#### 의사결정 (v0.3.1 갱신)
 
-**SmsProvider 인터페이스 추상화 + NoOpSmsProvider 기본 채택.** 1차 출시 어댑터 권장 1순위는 **NHN Cloud Notification (NHN Cloud Outbound Mailer + SMS)**.
+**1차 v0.3.1은 이메일 OTP만 유지하며, SMS 채널은 v0.4+ 후속 검토로 미룬다.** 본 절은 v0.4+ 활성화 시점의 우선 검토 어댑터 후보 기록 목적으로만 보존된다.
 
-#### 근거 — NHN Cloud 권장 사유
+사용자 결정(2026-04-29 Q-1) 사유:
+- 1차 운영 인력·외부 SMS 게이트웨이 계약·발신 번호 등록 절차 부담 제거
+- 본인인증 흐름은 회원가입·비밀번호 재설정 위주이며 EMAIL 채널만으로도 1차 보안 임계 충족 (BCrypt(12) code_hash + 5분 만료 + 3회 시도 + IP 시간당 10회 차단)
+- SMS 게이트웨이 도입은 운영 도메인이 안정화되고 SMS·알림톡 통합 알림 요건이 명확해진 이후 별도 SPEC(예: SPEC-CMS-SMS-001)으로 진행
 
-- 한국 친화: 한국어 발신 번호 등록·전송, 한국 통신 3사 직접 연동, KT 알림톡(카카오 연계) 동일 콘솔에서 함께 운영 가능
-- 공공기관 도입 사례 다수 (중앙행정기관 클라우드 전환 가이드라인 호환)
-- API: REST 단순, JSON 요청, 프로젝트별 appKey 인증 (Spring `@Value` 주입 용이)
-- 가격: 건당 8~10원 (2026년 시점), 초기 무료 크레딧 제공
-- 미래 확장: SMS → 알림톡(카카오톡) 자동 fallback 정책을 동일 NHN Cloud 콘솔에서 구성 가능 (REQ-AUTH-017-D-4 sendBulk 진화 경로)
+#### v0.4+ 우선 검토 어댑터 후보 (참고만)
 
-#### 대안 검토
+향후 SMS 채널 활성화 시 다음 후보 중 선정한다:
 
-| 옵션 | 거부 사유 / 보류 사유 |
-|------|----------------------|
-| Naver Cloud Platform SENS | NHN과 유사한 한국 친화도, 가격도 비슷. 2순위 후보 (SmsProvider 어댑터로 동등 등록 가능) |
-| AWS SNS | 글로벌 친화이나 한국 발신 번호 등록 절차 복잡, 한국 통신사 호환 이슈, 알림톡 연계 불가 |
-| Aligo | 저렴하고 한국 특화이나 공공기관 보안 검토·SLA 부족, 1차 비추천 (개인 사이트·중소기업용) |
-| 직접 통신사 연동 (KT/SKT) | 별도 계약·법인 인증 필요, 1차 출시 일정 부담 |
+| 어댑터 | 한국 친화도 | 알림톡 연계 | 공공기관 사례 | 비고 |
+|------|-----------|-----------|-------------|------|
+| NHN Cloud Notification | 매우 높음 | 동일 콘솔 가능 | 다수 | v0.4+ 활성화 시 1순위 후보 (가격 8~10원/건, 한국 통신 3사 직접 연동, 카카오 알림톡 fallback) |
+| Naver Cloud Platform SENS | 높음 | 가능 | 다수 | 2순위 후보 (NHN과 유사) |
+| AWS SNS | 중간 | 불가 | 일부 | 한국 발신 번호 등록 절차 복잡, 보류 |
+| Aligo | 중간 | 제한적 | 적음 | 공공기관 보안 검토·SLA 부족, 비추천 |
+| 직접 통신사 연동 | 낮음 | — | — | 별도 계약·법인 인증 부담, 비추천 |
 
-#### 어댑터 등록 전략
+#### v0.4+ 활성화 시 작업 항목
 
-- 1차 빌드: NoOpSmsProvider만 활성, 나머지는 패키지 트리 skeleton (`@ConditionalOnProperty("auth.sms.provider", havingValue="...")`)
-- 운영 도입 시 `application-prod.yml`에 `auth.sms.provider: nhn-cloud` 설정 + 환경변수로 appKey/secret 주입
-- 추상화 인터페이스 덕분에 후속 SPEC(`SPEC-CMS-SMS-001`)에서 어댑터 단위 구현·테스트 격리 가능
+- `SmsProvider` 인터페이스 시그니처 확정 (sendOtp + sendBulk 후보)
+- 어댑터 skeleton 추가 (NhnCloud 우선)
+- `auth.sms.provider` 프로퍼티 + `@ConditionalOnProperty` 분기 활성화
+- `verification_request.chk_vreq_channel` 제약을 `(EMAIL)` → `(SMS,EMAIL)`로 확장 (Flyway 별도 마이그레이션)
+- §16.1 REQ-AUTH-017-D-1 channel 검증 로직 SMS 허용
+- acceptance.md L-001 SMS 차단 검증을 SMS 정상 발송 시나리오로 복원
 
-#### 알림톡 연계 진화 경로 (참고)
+#### v0.3.1 placeholder 구현 메모
 
-- 1차: SMS 발송 (REQ-AUTH-017-D-2)
-- 후속: SMS → 카카오 알림톡 우선 발송 시도 → 실패 시 SMS fallback (NHN Cloud 단일 API로 가능)
-- SmsProvider.sendOtp 시그니처는 동일 유지, 내부 구현이 fallback 분기
+- `SmsProvider` 인터페이스 정의만 패키지 트리에 둔다 (메서드 시그니처 v0.4+ 확정)
+- `NoOpSmsProvider`만 default 빈으로 wired (SmsResult.success("noop-v0.3.1") 반환)
+- NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton은 v0.3.1에서 패키지 트리에 포함하지 않음
+- 1차 본인인증 흐름은 SmsProvider를 호출하지 않으며 Spring Mail SMTP만 사용
 
 ### 10.3 personal_data_access_log 자동 적재 — AOP vs Repository 어드바이스
 

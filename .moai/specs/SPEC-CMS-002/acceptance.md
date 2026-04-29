@@ -622,16 +622,22 @@
 
 ---
 
-## L. 본인인증 (REQ-AUTH-017-D-*, v0.3)
+## L. 본인인증 (REQ-AUTH-017-D-*, v0.3.1 — 이메일 OTP 전용)
 
-### L-001 — 인증 요청 — SMS 채널 정상
+> **NOTE — v0.4+ 후속 검토 (사용자 결정 2026-04-29 Q-1 적용)**
+> v0.3.1 1차는 **이메일 OTP만 유지**한다. SMS 채널 시나리오(L-001 원본, L-003 재발송 쿨다운의 SMS 케이스, L-009 SmsProvider Bean 검증)는 v0.4+ 후속 검토로 미룬다. 본 §L의 L-001은 v0.3.1에서 SMS 채널 차단 검증으로 대체되었으며, L-002 이후 시나리오는 EMAIL 채널 기준으로 동작한다.
 
-**Given** 인증된 사용자 'alice'가 휴대폰 번호 '01012345678'을 보유하고
+### L-001 — SMS 채널 차단 검증 (v0.3.1, REQ-AUTH-017-D-1)
+
+**Given** 인증된 사용자 'alice'가 v0.3.1 1차 환경(EMAIL 채널만 허용)에서
 **When** alice가 `POST /api/v1/auth/verify/request {channel:'SMS', target:'01012345678', purpose:'IMPORTANT_CHANGE'}` 호출
-**Then** 200 + `{ "request_id":"<uuid>", "expires_in":300 }`가 반환되고
-**And** verification_request에 (request_id, channel='SMS', target='01012345678', purpose='IMPORTANT_CHANGE', code_hash=BCrypt(6자리), expires_at=now+5m, status='PENDING', attempts=0, max_attempts=3, requester_id=alice) 1행 INSERT
-**And** SmsProvider.sendOtp('01012345678', code) 1회 호출 (NoOpSmsProvider 환경에서는 stdout 로깅만 검증)
-**And** 평문 OTP는 응답·로그에 노출되지 않는다.
+**Then** 400 Bad Request + `{ "code":"VERIFY_CHANNEL_NOT_SUPPORTED" }`가 반환되고
+**And** verification_request에 행이 INSERT되지 않으며
+**And** 어떤 외부 발송 경로(SMS/EMAIL)도 호출되지 않는다.
+**And** 응답 메시지에는 "SMS 채널은 v0.4+ 후속 검토 — 현재 EMAIL만 지원"이라는 안내가 포함될 수 있다 (구현 옵션).
+
+> **L-001-Original (v0.4+ 후속 검토)**
+> v0.3 원본 SMS 정상 발송 시나리오(SmsProvider.sendOtp 호출 검증)는 v0.4+ SMS 채널 활성화 시 재도입 예정.
 
 ### L-002 — 인증 요청 — EMAIL 채널 정상
 
@@ -641,13 +647,15 @@
 **And** verification_request 행 INSERT (channel='EMAIL', requester_id=NULL, requester_ip=요청 IP)
 **And** Spring Mail로 'new@x.com' 주소에 6자리 OTP가 포함된 메일 발송된다.
 
-### L-003 — 재발송 쿨다운 (1분 이내)
+### L-003 — 재발송 쿨다운 (1분 이내, EMAIL 기준)
 
-**Given** L-001이 방금 처리되어 verification_request에 alice의 행이 1건 존재 (created_at=now-30s)
-**When** alice가 동일 target='01012345678'으로 즉시 재요청
+**Given** L-002가 방금 처리되어 verification_request에 'new@x.com' 행이 1건 존재 (created_at=now-30s)
+**When** 동일 target='new@x.com'으로 즉시 재요청
 **Then** 429 + `VERIFY_RESEND_COOLDOWN`이 반환되고
 **And** verification_request에 신규 행이 INSERT되지 않으며
-**And** SmsProvider.sendOtp는 호출되지 않는다.
+**And** Spring Mail 발송도 호출되지 않는다.
+
+> **L-003-SMS (v0.4+ 후속 검토)**: SMS target('01012345678') 기준 쿨다운 검증은 v0.4+ SMS 채널 활성화 시 재도입.
 
 ### L-004 — OTP 검증 정상
 
@@ -687,12 +695,16 @@
 **And** audit_log에 (severity=CRITICAL, action='VERIFY_RATE_LIMIT', ip_address='203.0.113.10') 기록
 **And** 1시간 동안 동일 IP의 verify 계열 호출이 차단된다.
 
-### L-009 — SmsProvider 인터페이스 — NoOpSmsProvider 기본 동작
+### L-009 — SmsProvider placeholder 검증 (v0.3.1)
 
-**Given** 1차 빌드 (`auth.sms.provider` 미설정)
+**Given** v0.3.1 1차 빌드 (`auth.sms.provider` 무시됨, EMAIL 채널만 허용)
 **When** ApplicationContext에서 `SmsProvider` 빈 조회
-**Then** `NoOpSmsProvider` 인스턴스 1개만 등록 (NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 빈 미등록)
-**And** L-001 시나리오 실행 시 SmsProvider.sendOtp 호출이 stdout 로그 1행만 출력하고 SmsResult.success("noop")를 반환해 정상 흐름 유지.
+**Then** `NoOpSmsProvider` 인스턴스 1개만 등록되어 있고 (NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton은 패키지 트리에 포함되지 않음)
+**And** 일반 본인인증 흐름(L-002 EMAIL 정상)에서는 `SmsProvider`가 전혀 호출되지 않는다 (EMAIL 채널은 Spring Mail만 사용)
+**And** L-001 SMS 차단 검증에서도 channel 검증 단계에서 즉시 거부되어 `SmsProvider`까지 도달하지 않는다.
+
+> **L-009-Adapters (v0.4+ 후속 검토 — 사용자 결정 2026-04-29 Q-1)**
+> NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton + ConditionalOnProperty 분기 + 실제 sendOtp 호출 검증은 v0.4+ SMS 채널 활성화 시 별도 SPEC(예: SPEC-CMS-SMS-001)로 위임.
 
 ---
 
@@ -761,23 +773,24 @@
 
 ---
 
-## L. Definition of Done (Bundle A 완료 기준, v0.3)
+## L. Definition of Done (Bundle A 완료 기준, v0.3.1)
 
-본 SPEC-CMS-002 v0.3는 다음을 모두 만족할 때 완료된 것으로 간주한다.
+본 SPEC-CMS-002 v0.3.1은 다음을 모두 만족할 때 완료된 것으로 간주한다.
 
 - v0.1 기준: 모든 REQ-AUTH-001-D ~ REQ-AUTH-012-D sub-requirement가 구현되고 acceptance.md A~G의 모든 시나리오가 자동화 테스트로 통과
 - v0.2 추가: REQ-AUTH-013-D ~ REQ-AUTH-016-D sub-requirement가 구현되고 H~K의 모든 시나리오가 통과
 - v0.3 추가: REQ-AUTH-017-D ~ REQ-AUTH-018-D sub-requirement가 구현되고 §L(본인인증) + §M(개인정보 접근 로그)의 모든 시나리오가 통과
+- v0.3.1 운영 결정 Q-1 (사용자 2026-04-29): SMS 채널은 v0.4+ 후속. §L은 EMAIL 채널 기준으로 동작하며 L-001은 SMS 차단 검증, L-009는 SmsProvider placeholder 검증으로 갱신. SMS 정상 발송·재발송 쿨다운·어댑터 검증은 v0.4+ 활성화 시 재도입.
 - QG-A-1~7의 7개 품질 게이트가 CI에서 모두 PASS (QG-A-6는 v0.2, QG-A-7은 v0.3 신규)
-- Flyway V1 + V2 + V3 마이그레이션이 PostgreSQL 16에서 0 오류 순차 적용
+- Flyway V1 + V2 + V3 마이그레이션이 PostgreSQL 16에서 0 오류 순차 적용. V3의 verification_request `chk_vreq_channel` 제약은 EMAIL only.
 - JaCoCo 커버리지: domain.auth + domain.organization + domain.verification + domain.privacy 패키지 line/branch 모두 ≥ 85%
 - Vitest 커버리지: Admin SPA의 인증·권한 매트릭스·조직·본인인증·개인정보 접근 화면 컴포넌트 line ≥ 85%
-- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 §6 + §13 + §16 신규 엔드포인트(`/auth/verify/request`, `/auth/verify/confirm`, `/admin/personal-data-access-log`, `/me/personal-data-access-log`) 모두 노출됨
-- 보안 담당자 검수: JWT/BCrypt/Refresh + 4단계 RBAC + 권한 변경 이력 + OTP 본인인증(SmsProvider 추상화) + 개인정보 접근 로그 정책 검증 완료 서명
-- 운영 매뉴얼: 사용자·역할·잠금 해제·조직 트리·권한 매트릭스·OTP 본인인증·개인정보 접근 추적·본인 조회 권리 절차가 한국어로 문서화됨
+- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 §6 + §13 + §16 신규 엔드포인트(`/auth/verify/request`, `/auth/verify/confirm`, `/admin/personal-data-access-log`, `/me/personal-data-access-log`) 모두 노출됨. `/auth/verify/request`의 channel 파라미터는 EMAIL만 enum 정의.
+- 보안 담당자 검수: JWT/BCrypt/Refresh + 4단계 RBAC + 권한 변경 이력 + OTP 본인인증(EMAIL 채널 + SmsProvider placeholder) + 개인정보 접근 로그 정책 검증 완료 서명
+- 운영 매뉴얼: 사용자·역할·잠금 해제·조직 트리·권한 매트릭스·OTP 본인인증(EMAIL)·개인정보 접근 추적·본인 조회 권리 절차가 한국어로 문서화됨. SMS 채널은 v0.4+ 후속 검토 안내 명시.
 
 ---
 
-_문서 버전: v0.3 (2026-04-29 홍익인간 CMS gap 통합 amendment)_
+_문서 버전: v0.3.1 (2026-04-29 SMS 채널 v0.4+로 미룸 — 사용자 결정 Q-1 적용)_
 _작성일: 2026-04-29_
-_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + H 6 + I 5 + J 3 + K 5 + L 9 + M 6 + Quality Gate 7 = 99개 (v0.1 63개 + v0.2 추가 20개 + v0.3 추가 16개)_
+_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + H 6 + I 5 + J 3 + K 5 + L 9 (L-001 SMS 차단 + L-002~L-008 EMAIL + L-009 placeholder; SMS 정상 발송 시나리오는 v0.4+ 후속) + M 6 + Quality Gate 7 = 99개_

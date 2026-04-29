@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
-| 버전 | v0.3 (2026-04-29 RFP 통합 + 홍익인간 CMS gap 분석 통합) |
+| 버전 | v0.3.1 (2026-04-29 운영 결정 Q-1/2/3 적용 — SMS·MinIO·AV 스캔 v0.4+로 미룸) |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
 | 우선순위 | P0 |
@@ -653,3 +653,4 @@ SPEC-CMS-001 [umbrella v0.2]
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Umbrella SPEC) |
 | v0.2 | 2026-04-29 | MoAI orchestrator | RFP 통합 amendment (§15~17 신설, RFP 69개 요구사항 매핑, 확장 SPEC 트리 SPEC-CMS-006~010 + 옵션 트랙 정의, 비기능 횡단 적용 정책 수립) |
 | v0.3 | 2026-04-29 | MoAI orchestrator | 홍익인간 CMS gap 분석 통합 (§18 부록 신설), SPEC-CMS-MEDIA-001 트리 추가, SPEC-CMS-002 v0.3 reference (REQ-AUTH-017/018-D) |
+| v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-1/2/3 적용 (사용자 결정 2026-04-29): SMS 본인인증 채널 제거(이메일 OTP만 1차 유지 — Q-1), MinIO 저장소 옵션 제거(LocalFileSystemStorage 단일 — Q-2), ClamAV AV 스캔 제거(매직넘버·MIME·확장자 3중 방어 — Q-3). 모두 v0.4+ 후속 검토(MEDIA의 경우 v0.2+). 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.1 (REQ-AUTH-017-D 갱신·SmsProvider placeholder), SPEC-CMS-MEDIA-001 v0.2 (AV 스캔 NOTE·MinIO v0.2+·LocalFS 단일 확정). |
