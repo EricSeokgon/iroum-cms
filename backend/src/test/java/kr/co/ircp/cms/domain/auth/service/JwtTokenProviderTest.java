@@ -118,4 +118,29 @@ class JwtTokenProviderTest {
         String refresh = provider.generateRefreshToken(12345L);
         assertThat(provider.extractUserId(refresh)).contains(12345L);
     }
+
+    @Test
+    @DisplayName("REQ-AUTH-013: Access Token 생성 시 permissions 클레임 포함")
+    void generateAccessToken_includesPermissions() {
+        Set<String> permissions = Set.of("USER:READ", "USER:WRITE");
+        String token = provider.generateAccessToken(10L, "manager", Set.of("DEPT_ADMIN"), permissions);
+
+        var claims = provider.validateAccessToken(token);
+        assertThat(claims).isPresent();
+        assertThat(claims.get().permissions()).containsExactlyInAnyOrder("USER:READ", "USER:WRITE");
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-013: validateAccessToken — permissions 클레임 정상 추출")
+    void validateAccessToken_returnsPermissionsInClaims() {
+        Set<String> perms = Set.of("ORGANIZATION:READ", "ROLE:READ", "AUDIT:READ");
+        String token = provider.generateAccessToken(20L, "editor", Set.of("EDITOR"), perms);
+
+        var claims = provider.validateAccessToken(token);
+        assertThat(claims).isPresent();
+        assertThat(claims.get().userId()).isEqualTo(20L);
+        assertThat(claims.get().roles()).containsExactly("EDITOR");
+        assertThat(claims.get().permissions()).containsExactlyInAnyOrder(
+                "ORGANIZATION:READ", "ROLE:READ", "AUDIT:READ");
+    }
 }

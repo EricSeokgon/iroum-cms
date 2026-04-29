@@ -10,20 +10,36 @@ import java.util.Set;
  * JWT 토큰 생성·검증 서비스 인터페이스.
  *
  * <p>SPEC-CMS-002 REQ-AUTH-001/002/003 — jjwt 0.12.6 기반 구현 (Step 2 GREEN에서).
+ * REQ-AUTH-013 — permissions 클레임 추가 (4단계 RBAC).
  */
 // @MX:ANCHOR: [AUTO] JwtTokenProvider — Access/Refresh Token 생명주기의 핵심 계약
 // @MX:REASON: AuthService, AuthController, SecurityFilter 등 fan_in >= 3 참조
 public interface JwtTokenProvider {
 
     /**
-     * Access Token 생성.
+     * Access Token 생성 (permissions 포함).
      *
-     * @param userId 사용자 ID
-     * @param username 로그인 ID
-     * @param roles 부여된 역할 코드 집합
+     * @param userId      사용자 ID
+     * @param username    로그인 ID
+     * @param roles       부여된 역할 코드 집합
+     * @param permissions 실질 권한 코드 집합 (REQ-AUTH-013)
      * @return JWT 문자열 (유효기간 15분)
      */
-    String generateAccessToken(long userId, String username, Set<String> roles);
+    String generateAccessToken(long userId, String username, Set<String> roles, Set<String> permissions);
+
+    /**
+     * Access Token 생성 (기존 호환 — permissions 빈 Set으로 위임).
+     *
+     * <p>기존 호출부 (테스트 등) 호환을 위한 default 메서드.
+     *
+     * @param userId   사용자 ID
+     * @param username 로그인 ID
+     * @param roles    부여된 역할 코드 집합
+     * @return JWT 문자열 (유효기간 15분)
+     */
+    default String generateAccessToken(long userId, String username, Set<String> roles) {
+        return generateAccessToken(userId, username, roles, Set.of());
+    }
 
     /**
      * Refresh Token 생성.
@@ -60,5 +76,14 @@ public interface JwtTokenProvider {
      * @param roles 역할 코드 집합
      * @param expiresAt 만료 시각
      */
-    record JwtClaims(long userId, String username, Set<String> roles, Instant expiresAt) {}
+    /**
+     * Access Token 파싱 결과 클레임.
+     *
+     * @param userId      사용자 ID
+     * @param username    로그인 ID
+     * @param roles       역할 코드 집합
+     * @param permissions 권한 코드 집합 (REQ-AUTH-013)
+     * @param expiresAt   만료 시각
+     */
+    record JwtClaims(long userId, String username, Set<String> roles, Set<String> permissions, Instant expiresAt) {}
 }

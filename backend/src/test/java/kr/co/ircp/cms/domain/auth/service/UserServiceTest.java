@@ -7,11 +7,15 @@ import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserSummary;
 import kr.co.ircp.cms.domain.auth.dto.UserUpdateRequest;
+import kr.co.ircp.cms.domain.auth.entity.Organization;
+import kr.co.ircp.cms.domain.auth.entity.OrganizationStatus;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
+import kr.co.ircp.cms.domain.auth.repository.OrganizationMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,12 +55,14 @@ class UserServiceTest {
     @Mock private UserMapper userMapper;
     @Mock private RefreshTokenMapper refreshTokenMapper;
     @Mock private PasswordPolicyService passwordPolicyService;
+    @Mock private OrganizationMapper organizationMapper;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(userMapper, refreshTokenMapper, passwordPolicyService);
+        userService = new UserServiceImpl(userMapper, refreshTokenMapper,
+                passwordPolicyService, organizationMapper);
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -309,6 +315,77 @@ class UserServiceTest {
         verify(userMapper).update(any(User.class));
         // insertRole·deleteRoles 비호출 검증 (역할 변경 없음)
         verify(userMapper, never()).deleteRolesByUserId(anyLong());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // findPage(actor) — Q-24 DEPT_ADMIN 범위 제한
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findPage(actor) — SUPER_ADMIN은 orgPathPrefix 없이 전체 조회")
+    void findPage_actor_superAdmin_noOrgPathPrefix() {
+        JwtPrincipal superAdmin = new JwtPrincipal(1L, "admin", Set.of("SUPER_ADMIN"), Set.of());
+        List<UserSummary> rows = List.of(
+                new UserSummary(1L, "uuid-1", "admin", "admin@test.com",
+                        "관리자", "ACTIVE", null, Instant.now())
+        );
+        when(userMapper.findPageWithScope(anyInt(), anyInt(), isNull(), isNull(), anyString(), isNull()))
+                .thenReturn(rows);
+        when(userMapper.countAllWithScope(isNull(), isNull(), isNull())).thenReturn(1L);
+
+        PageResponse<UserSummary> result = userService.findPage(0, 20, "createdAt,desc", null, null, superAdmin);
+
+        assertThat(result.content()).hasSize(1);
+        // orgPathPrefix=null (전체 조회) 검증
+        verify(userMapper).findPageWithScope(0, 20, null, null, "createdAt,desc", null);
+        verify(userMapper).countAllWithScope(null, null, null);
+    }
+
+    @Test
+    @DisplayName("findPage(actor) — DEPT_ADMIN은 소속 조직 path 접두사로 범위 제한")
+    void findPage_actor_deptAdmin_appliesOrgPathPrefix() {
+        // DEPT_ADMIN actor, org=/1/3/
+        User actorUser = User.builder().id(2L).username("deptmgr")
+                .organizationId(3L).status(UserStatus.ACTIVE)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        Organization actorOrg = Organization.builder().id(3L).path("/1/3/")
+                .status(OrganizationStatus.ACTIVE).build();
+
+        JwtPrincipal deptAdmin = new JwtPrincipal(2L, "deptmgr", Set.of("DEPT_ADMIN"), Set.of());
+
+        when(userMapper.findById(2L)).thenReturn(Optional.of(actorUser));
+        when(organizationMapper.findById(3L)).thenReturn(Optional.of(actorOrg));
+        when(userMapper.findPageWithScope(anyInt(), anyInt(), isNull(), isNull(), anyString(), eq("/1/3/")))
+                .thenReturn(List.of());
+        when(userMapper.countAllWithScope(isNull(), isNull(), eq("/1/3/"))).thenReturn(0L);
+
+        PageResponse<UserSummary> result = userService.findPage(0, 20, "createdAt,desc", null, null, deptAdmin);
+
+        assertThat(result.totalElements()).isEqualTo(0);
+        verify(userMapper).findPageWithScope(0, 20, null, null, "createdAt,desc", "/1/3/");
+        verify(userMapper).countAllWithScope(null, null, "/1/3/");
+    }
+
+    @Test
+    @DisplayName("findPage(actor) — DEPT_ADMIN이 조직 미배정 시 orgPathPrefix=null (전체 조회 차단 방지 — 조직 배정 필수)")
+    void findPage_actor_deptAdmin_noOrg_orgPathPrefixNull() {
+        // organization_id가 null인 DEPT_ADMIN
+        User actorUser = User.builder().id(3L).username("deptmgr_noorg")
+                .organizationId(null).status(UserStatus.ACTIVE)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+
+        JwtPrincipal deptAdmin = new JwtPrincipal(3L, "deptmgr_noorg", Set.of("DEPT_ADMIN"), Set.of());
+
+        when(userMapper.findById(3L)).thenReturn(Optional.of(actorUser));
+        when(userMapper.findPageWithScope(anyInt(), anyInt(), isNull(), isNull(), anyString(), isNull()))
+                .thenReturn(List.of());
+        when(userMapper.countAllWithScope(isNull(), isNull(), isNull())).thenReturn(0L);
+
+        PageResponse<UserSummary> result = userService.findPage(0, 20, "createdAt,desc", null, null, deptAdmin);
+
+        // orgPathPrefix=null — organizationMapper.findById 미호출 (actorOrgId가 null)
+        verify(organizationMapper, never()).findById(anyLong());
+        verify(userMapper).findPageWithScope(0, 20, null, null, "createdAt,desc", null);
     }
 
     // ──────────────────────────────────────────────────────────────

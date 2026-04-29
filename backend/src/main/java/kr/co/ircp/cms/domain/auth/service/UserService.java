@@ -33,6 +33,23 @@ public interface UserService {
     PageResponse<UserSummary> findPage(int page, int size, String sort, String search, String status);
 
     /**
+     * 사용자 목록 페이징 조회 (Q-24 DEPT_ADMIN 범위 제한 적용).
+     *
+     * <p>DEPT_ADMIN 액터는 자기 부서·자손 부서의 사용자만 조회.
+     * SUPER_ADMIN은 전체 조회.
+     *
+     * @param page   페이지 번호 (0-based)
+     * @param size   페이지 크기
+     * @param sort   정렬
+     * @param search 검색어
+     * @param status 상태 필터
+     * @param actor  처리자 Principal (범위 제한 결정에 사용)
+     * @return 페이징 결과
+     */
+    PageResponse<UserSummary> findPage(int page, int size, String sort, String search, String status,
+                                       kr.co.ircp.cms.domain.auth.security.JwtPrincipal actor);
+
+    /**
      * 사용자 단건 상세 조회.
      *
      * @param id 사용자 PK

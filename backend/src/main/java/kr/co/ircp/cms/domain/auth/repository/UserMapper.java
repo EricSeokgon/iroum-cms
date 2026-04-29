@@ -61,6 +61,37 @@ public interface UserMapper {
     long countAll(@Param("search") String search, @Param("status") String status);
 
     /**
+     * 사용자 목록 페이징 조회 (Q-24 조직 범위 제한).
+     *
+     * <p>DEPT_ADMIN 범위 제한 — orgPathPrefix 가 null이면 전체 조회.
+     * orgPathPrefix가 설정된 경우 소속 조직의 path LIKE '{orgPathPrefix}%' 필터 적용.
+     *
+     * @param offset        시작 오프셋
+     * @param limit         페이지 크기
+     * @param search        검색어 (null이면 전체)
+     * @param status        상태 필터 (null이면 전체)
+     * @param sort          정렬 컬럼 (화이트리스트 검증 후 전달)
+     * @param orgPathPrefix 조직 경로 접두사 (null이면 전체 조회)
+     */
+    List<UserSummary> findPageWithScope(
+            @Param("offset") int offset,
+            @Param("limit") int limit,
+            @Param("search") String search,
+            @Param("status") String status,
+            @Param("sort") String sort,
+            @Param("orgPathPrefix") String orgPathPrefix);
+
+    /**
+     * 조건부 전체 행 수 조회 (Q-24 조직 범위 제한).
+     *
+     * <p>페이징 totalElements 계산용. orgPathPrefix 가 null이면 전체 집계.
+     */
+    long countAllWithScope(
+            @Param("search") String search,
+            @Param("status") String status,
+            @Param("orgPathPrefix") String orgPathPrefix);
+
+    /**
      * 사용자 신규 삽입.
      *
      * <p>REQ-AUTH-006 — id는 BIGSERIAL 자동 생성, useGeneratedKeys로 채움.

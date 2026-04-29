@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  PermissionMapper SQL 정의.
+  SPEC-CMS-002 REQ-AUTH-013-D-2 — 권한 카탈로그 접근
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.PermissionMapper">
+
+    <resultMap id="permissionResultMap" type="kr.co.ircp.cms.domain.auth.entity.Permission">
+        <id     property="code"        column="code"/>
+        <result property="resource"    column="resource"/>
+        <result property="action"      column="action"/>
+        <result property="description" column="description"/>
+        <result property="createdAt"   column="created_at"/>
+    </resultMap>
+
+    <!-- 전체 권한 목록 조회 (resource, action 오름차순) -->
+    <select id="findAll" resultMap="permissionResultMap">
+        SELECT code, resource, action, description, created_at
+        FROM permissions
+        ORDER BY resource, action
+    </select>
+
+    <!-- 코드로 권한 단건 조회 -->
+    <select id="findByCode" resultMap="permissionResultMap">
+        SELECT code, resource, action, description, created_at
+        FROM permissions
+        WHERE code = #{code}
+    </select>
+
+</mapper>

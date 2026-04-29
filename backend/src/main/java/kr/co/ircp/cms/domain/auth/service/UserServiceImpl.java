@@ -8,12 +8,15 @@ import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserSummary;
 import kr.co.ircp.cms.domain.auth.dto.UserUpdateRequest;
+import kr.co.ircp.cms.domain.auth.entity.Organization;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
+import kr.co.ircp.cms.domain.auth.repository.OrganizationMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +46,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final RefreshTokenMapper refreshTokenMapper;
     private final PasswordPolicyService passwordPolicyService;
+    private final OrganizationMapper organizationMapper;
 
     // @MX:ANCHOR: [AUTO] findPage — 사용자 목록 API 진입점, UserController.list 호출
     // @MX:REASON: 페이징·검색·정렬 복합 쿼리; sort 파라미터 화이트리스트 검증 포함 (fan_in >= 3)
@@ -56,6 +60,39 @@ public class UserServiceImpl implements UserService {
 
         List<UserSummary> content = userMapper.findPage(offset, size, search, status, safeSort);
         long total = userMapper.countAll(search, status);
+
+        return PageResponse.of(content, page, size, total);
+    }
+
+    // @MX:WARN: [AUTO] findPage(actor) — DEPT_ADMIN 범위 제한 쿼리; 조직 경로 미설정 시 전체 노출 위험
+    // @MX:REASON: Q-24 — actor 조직 path가 null이면 orgPathPrefix 필터 미적용, DEPT_ADMIN이 전체 조회 가능해짐
+    @Override
+    @Transactional(readOnly = true)
+    public PageResponse<UserSummary> findPage(int page, int size, String sort,
+                                              String search, String status,
+                                              JwtPrincipal actor) {
+        String safeSort = VALID_SORT_COLUMNS.contains(sort) ? sort : "createdAt,desc";
+        int offset = page * size;
+
+        // SUPER_ADMIN: 전체 조회 (orgPathPrefix 없음)
+        // DEPT_ADMIN: 자기 부서·자손 부서 사용자만 조회
+        String orgPathPrefix = null;
+        boolean isSuperAdmin = actor.roles().contains("SUPER_ADMIN");
+        boolean isDeptAdmin = actor.roles().contains("DEPT_ADMIN");
+
+        if (!isSuperAdmin && isDeptAdmin) {
+            Long actorOrgId = userMapper.findById(actor.userId())
+                    .map(User::getOrganizationId)
+                    .orElse(null);
+            if (actorOrgId != null) {
+                orgPathPrefix = organizationMapper.findById(actorOrgId)
+                        .map(Organization::getPath)
+                        .orElse(null);
+            }
+        }
+
+        List<UserSummary> content = userMapper.findPageWithScope(offset, size, search, status, safeSort, orgPathPrefix);
+        long total = userMapper.countAllWithScope(search, status, orgPathPrefix);
 
         return PageResponse.of(content, page, size, total);
     }

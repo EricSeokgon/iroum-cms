@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.config;
 
+import kr.co.ircp.cms.domain.auth.exception.AccessOutOfScopeException;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.CyclicReferenceException;
 import kr.co.ircp.cms.domain.auth.exception.DepthExceededException;
@@ -11,6 +12,8 @@ import kr.co.ircp.cms.domain.auth.exception.OrganizationHasUsersException;
 import kr.co.ircp.cms.domain.auth.exception.OrganizationNotFoundException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
+import kr.co.ircp.cms.domain.auth.exception.RoleHasUsersException;
+import kr.co.ircp.cms.domain.auth.exception.SystemRoleProtectedException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
@@ -221,6 +224,48 @@ public class GlobalExceptionHandler {
                 HttpStatus.CONFLICT, ex.getMessage());
         detail.setTitle("Organization Has Users");
         detail.setProperty("code", "ORG_HAS_USERS");
+        return detail;
+    }
+
+    /**
+     * 시스템 역할 보호 위반 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-AUTH-013 — is_system=true 역할 수정·삭제 시도.
+     */
+    @ExceptionHandler(SystemRoleProtectedException.class)
+    public ProblemDetail handleSystemRoleProtected(SystemRoleProtectedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("System Role Protected");
+        detail.setProperty("code", "ROLE_SYSTEM_PROTECTED");
+        return detail;
+    }
+
+    /**
+     * 역할에 사용자 존재 → HTTP 409 Conflict.
+     *
+     * <p>REQ-AUTH-013 — 역할을 사용 중인 사용자가 있어 삭제 불가.
+     */
+    @ExceptionHandler(RoleHasUsersException.class)
+    public ProblemDetail handleRoleHasUsers(RoleHasUsersException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Role Has Users");
+        detail.setProperty("code", "ROLE_HAS_USERS");
+        return detail;
+    }
+
+    /**
+     * 접근 범위 초과 → HTTP 403 Forbidden.
+     *
+     * <p>Q-24 — DEPT_ADMIN이 자기 부서·자손 외 사용자/조직 접근 시도.
+     */
+    @ExceptionHandler(AccessOutOfScopeException.class)
+    public ProblemDetail handleAccessOutOfScope(AccessOutOfScopeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Access Out Of Scope");
+        detail.setProperty("code", "ACCESS_OUT_OF_SCOPE");
         return detail;
     }
 }

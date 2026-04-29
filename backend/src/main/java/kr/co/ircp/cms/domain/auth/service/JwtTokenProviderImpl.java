@@ -65,7 +65,7 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     // @MX:ANCHOR: [AUTO] generateAccessToken — Access Token 생성 계약 (fan_in >= 3: AuthService, 필터, 테스트)
     // @MX:REASON: 인증·재발급·테스트 등 다수 호출 지점 — 클레임 구조 변경 시 전 흐름 영향
     @Override
-    public String generateAccessToken(long userId, String username, Set<String> roles) {
+    public String generateAccessToken(long userId, String username, Set<String> roles, Set<String> permissions) {
         Instant now = Instant.now();
         Instant exp = now.plus(jwtProperties.accessTokenTtl());
 
@@ -73,6 +73,7 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
                 .subject(username)
                 .claim("uid", userId)
                 .claim("roles", roles)
+                .claim("permissions", permissions != null ? permissions : Set.of())
                 .issuer(jwtProperties.issuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
@@ -112,9 +113,14 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
             List<String> roleList = claims.get("roles", List.class);
             Set<String> roles = (roleList == null) ? Set.of() : new HashSet<>(roleList);
 
+            // permissions 클레임 추출 (REQ-AUTH-013)
+            @SuppressWarnings("unchecked")
+            List<String> permList = claims.get("permissions", List.class);
+            Set<String> permissions = (permList == null) ? Set.of() : new HashSet<>(permList);
+
             Instant expiresAt = claims.getExpiration().toInstant();
 
-            return Optional.of(new JwtClaims(uid, username, roles, expiresAt));
+            return Optional.of(new JwtClaims(uid, username, roles, permissions, expiresAt));
 
         } catch (ExpiredJwtException e) {
             // 만료된 토큰 — TokenExpiredException으로 변환

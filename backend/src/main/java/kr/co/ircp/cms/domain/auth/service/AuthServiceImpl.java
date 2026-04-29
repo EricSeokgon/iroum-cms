@@ -20,6 +20,7 @@ import kr.co.ircp.cms.domain.auth.repository.PasswordHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
+import kr.co.ircp.cms.domain.auth.service.PermissionService;
 import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordPolicyService passwordPolicyService;
     private final PasswordHistoryMapper passwordHistoryMapper;
     private final JwtProperties jwtProperties;
+    private final PermissionService permissionService;
 
     public AuthServiceImpl(
             UserMapper userMapper,
@@ -59,7 +61,8 @@ public class AuthServiceImpl implements AuthService {
             JwtTokenProvider jwtTokenProvider,
             PasswordPolicyService passwordPolicyService,
             PasswordHistoryMapper passwordHistoryMapper,
-            JwtProperties jwtProperties) {
+            JwtProperties jwtProperties,
+            PermissionService permissionService) {
         this.userMapper = userMapper;
         this.refreshTokenMapper = refreshTokenMapper;
         this.loginHistoryMapper = loginHistoryMapper;
@@ -68,6 +71,7 @@ public class AuthServiceImpl implements AuthService {
         this.passwordPolicyService = passwordPolicyService;
         this.passwordHistoryMapper = passwordHistoryMapper;
         this.jwtProperties = jwtProperties;
+        this.permissionService = permissionService;
     }
 
     /**
@@ -143,8 +147,13 @@ public class AuthServiceImpl implements AuthService {
         userMapper.resetFailCount(req.username(), now);
         userMapper.updateLastLoginAt(user.getId(), now);
 
-        // 6. 토큰 발급
-        String accessToken = jwtTokenProvider.generateAccessToken(user.getId(), req.username(), Set.of());
+        // 6. 토큰 발급 (REQ-AUTH-013: permissions 클레임 포함)
+        // @MX:WARN: [AUTO] login — permissions 조회 추가로 DB 쿼리 증가 (성능 영향)
+        // @MX:REASON: 역할 수만큼 N+1 권한 조회 발생. 트래픽 증가 시 Redis 캐싱 도입 필요.
+        Set<String> userRoles = userMapper.findRoleCodesByUserId(user.getId());
+        Set<String> userPermissions = permissionService.findEffectivePermissionsForUser(user.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                user.getId(), req.username(), userRoles, userPermissions);
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
 
         // 7. Refresh Token 저장 (해시)

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  RolePermissionMapper SQL 정의.
+  SPEC-CMS-002 REQ-AUTH-013-D-4 — 역할별 권한 매핑 접근
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.RolePermissionMapper">
+
+    <!-- 역할에 직접 매핑된 권한 코드 집합 조회 -->
+    <select id="findPermissionCodesByRole" resultType="string">
+        SELECT permission_code
+        FROM role_permissions
+        WHERE role_code = #{roleCode}
+    </select>
+
+    <!--
+      실질 권한 코드 조회 (alias 처리).
+      aliased_to가 NOT NULL이면 aliased_to 역할의 권한 반환 (1단계 alias만 지원).
+    -->
+    <select id="findEffectivePermissionCodes" resultType="string">
+        SELECT rp.permission_code
+        FROM role_permissions rp
+        WHERE rp.role_code = COALESCE(
+            (SELECT r.aliased_to FROM roles r WHERE r.code = #{roleCode} AND r.aliased_to IS NOT NULL),
+            #{roleCode}
+        )
+    </select>
+
+    <!-- 역할-권한 매핑 일괄 삽입 (충돌 무시) -->
+    <insert id="insertBatch">
+        INSERT INTO role_permissions (role_code, permission_code, granted_at, granted_by)
+        VALUES
+        <foreach collection="permissionCodes" item="perm" separator=",">
+            (#{roleCode}, #{perm}, #{now}, #{grantedBy})
+        </foreach>
+        ON CONFLICT (role_code, permission_code) DO NOTHING
+    </insert>
+
+    <!-- 역할의 모든 권한 매핑 삭제 -->
+    <delete id="deleteByRole">
+        DELETE FROM role_permissions
+        WHERE role_code = #{roleCode}
+    </delete>
+
+    <!-- 특정 권한 코드를 사용하는 역할 수 조회 -->
+    <select id="countByPermission" resultType="int">
+        SELECT COUNT(*)
+        FROM role_permissions
+        WHERE permission_code = #{permissionCode}
+    </select>
+
+</mapper>

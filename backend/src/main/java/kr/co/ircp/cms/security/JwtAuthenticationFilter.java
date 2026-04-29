@@ -17,9 +17,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * JWT Bearer Token 인증 필터.
@@ -91,13 +92,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         // 4. SecurityContext 설정
+        // @MX:WARN: [AUTO] authorities 폭증 방지 — roles + permissions 합산 시 토큰 크기 주의
+        // @MX:REASON: 권한 수가 많아지면 JWT 크기 및 SecurityContext 메모리 증가. 현재 15개 권한으로 허용 범위.
         JwtTokenProvider.JwtClaims claims = claimsOpt.get();
         Set<String> roles = claims.roles();
-        JwtPrincipal principal = new JwtPrincipal(claims.userId(), claims.username(), roles);
+        Set<String> permissions = claims.permissions();
+        JwtPrincipal principal = new JwtPrincipal(claims.userId(), claims.username(), roles, permissions);
 
-        var authorities = roles.stream()
-                .map(r -> new SimpleGrantedAuthority("ROLE_" + r))
-                .collect(Collectors.toList());
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        // ROLE_ 접두사 역할 권한 (hasRole, hasAnyRole 패턴 호환)
+        for (String role : roles) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+        }
+        // 권한 코드 직접 등록 (hasAuthority 패턴 사용 가능 — REQ-AUTH-013)
+        for (String perm : permissions) {
+            authorities.add(new SimpleGrantedAuthority(perm));
+        }
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(principal, null, authorities);

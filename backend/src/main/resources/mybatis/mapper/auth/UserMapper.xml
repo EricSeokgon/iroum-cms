@@ -133,6 +133,71 @@
         </where>
     </select>
 
+    <!--
+      Q-24: DEPT_ADMIN 범위 제한 사용자 목록 페이징 조회.
+      orgPathPrefix가 설정되면 해당 조직 path LIKE '{orgPathPrefix}%' 필터 적용.
+      sort 컬럼은 Java 측에서 화이트리스트 검증 후 전달 (SQL Injection 방지).
+    -->
+    <select id="findPageWithScope" resultType="kr.co.ircp.cms.domain.auth.dto.UserSummary">
+        SELECT u.id, u.uuid, u.username, u.email AS email, u.name,
+               u.status, u.last_login_at AS lastLoginAt, u.created_at AS createdAt
+        FROM users u
+        <if test="orgPathPrefix != null">
+            JOIN organization o ON o.id = u.organization_id
+        </if>
+        <where>
+            u.deleted_at IS NULL
+            <if test="search != null and search != ''">
+                AND (u.username ILIKE '%' || #{search} || '%'
+                  OR u.name     ILIKE '%' || #{search} || '%'
+                  OR u.email    ILIKE '%' || #{search} || '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND u.status = #{status}
+            </if>
+            <if test="orgPathPrefix != null">
+                AND o.path LIKE #{orgPathPrefix} || '%'
+                AND o.deleted_at IS NULL
+            </if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test="sort == 'updatedAt,desc'">u.updated_at DESC</when>
+            <when test="sort == 'updatedAt,asc'">u.updated_at ASC</when>
+            <when test="sort == 'username,asc'">u.username ASC</when>
+            <when test="sort == 'username,desc'">u.username DESC</when>
+            <when test="sort == 'lastLoginAt,desc'">u.last_login_at DESC NULLS LAST</when>
+            <when test="sort == 'lastLoginAt,asc'">u.last_login_at ASC NULLS LAST</when>
+            <when test="sort == 'createdAt,asc'">u.created_at ASC</when>
+            <otherwise>u.created_at DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- Q-24: 조직 범위 제한 전체 행 수 조회 -->
+    <select id="countAllWithScope" resultType="long">
+        SELECT COUNT(*)
+        FROM users u
+        <if test="orgPathPrefix != null">
+            JOIN organization o ON o.id = u.organization_id
+        </if>
+        <where>
+            u.deleted_at IS NULL
+            <if test="search != null and search != ''">
+                AND (u.username ILIKE '%' || #{search} || '%'
+                  OR u.name     ILIKE '%' || #{search} || '%'
+                  OR u.email    ILIKE '%' || #{search} || '%')
+            </if>
+            <if test="status != null and status != ''">
+                AND u.status = #{status}
+            </if>
+            <if test="orgPathPrefix != null">
+                AND o.path LIKE #{orgPathPrefix} || '%'
+                AND o.deleted_at IS NULL
+            </if>
+        </where>
+    </select>
+
     <!-- 사용자 신규 삽입 (useGeneratedKeys로 id 채움) -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (username, email, password_hash, name, status,

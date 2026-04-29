@@ -39,7 +39,7 @@ public class UserController {
     /**
      * 사용자 목록 조회 (페이징·검색·정렬).
      *
-     * <p>권한: SUPER_ADMIN, DEPT_ADMIN.
+     * <p>권한: SUPER_ADMIN(전체), DEPT_ADMIN(소속 부서·자손 부서 사용자만 조회 — Q-24).
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')")
@@ -48,8 +48,9 @@ public class UserController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String status) {
-        return userService.findPage(page, size, sort, search, status);
+            @RequestParam(required = false) String status,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        return userService.findPage(page, size, sort, search, status, principal);
     }
 
     /**

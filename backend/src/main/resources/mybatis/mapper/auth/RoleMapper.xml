@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  RoleMapper SQL 정의.
+  SPEC-CMS-002 REQ-AUTH-013 — 역할 마스터 접근
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.RoleMapper">
+
+    <resultMap id="roleResultMap" type="kr.co.ircp.cms.domain.auth.entity.Role">
+        <id     property="code"        column="code"/>
+        <result property="name"        column="name"/>
+        <result property="description" column="description"/>
+        <result property="isSystem"    column="is_system"/>
+        <result property="aliasedTo"   column="aliased_to"/>
+        <result property="createdAt"   column="created_at"/>
+    </resultMap>
+
+    <!--
+      전체 역할 목록 조회 (user_count, permission_count 포함).
+      alias 역할은 aliased_to 역할의 permission 수를 표시.
+    -->
+    <select id="findAll" resultType="kr.co.ircp.cms.domain.auth.dto.RoleSummary">
+        SELECT
+            r.code,
+            r.name,
+            r.description,
+            r.is_system    AS isSystem,
+            r.aliased_to   AS aliasedTo,
+            r.created_at   AS createdAt,
+            COALESCE(uc.cnt, 0) AS userCount,
+            COALESCE(pc.cnt, 0) AS permissionCount
+        FROM roles r
+        LEFT JOIN (
+            SELECT role_code, COUNT(*) AS cnt
+            FROM user_roles
+            GROUP BY role_code
+        ) uc ON uc.role_code = r.code
+        LEFT JOIN (
+            SELECT rp.role_code, COUNT(*) AS cnt
+            FROM role_permissions rp
+            GROUP BY rp.role_code
+        ) pc ON pc.role_code = COALESCE(r.aliased_to, r.code)
+        ORDER BY r.is_system DESC, r.code
+    </select>
+
+    <!-- 코드로 역할 단건 조회 -->
+    <select id="findByCode" resultMap="roleResultMap">
+        SELECT code, name, description, is_system, aliased_to, created_at
+        FROM roles
+        WHERE code = #{code}
+    </select>
+
+    <!-- 역할 신규 삽입 -->
+    <insert id="insert">
+        INSERT INTO roles (code, name, description, is_system, aliased_to, created_at)
+        VALUES (#{code}, #{name}, #{description}, #{isSystem}, #{aliasedTo}, NOW())
+    </insert>
+
+    <!-- 역할 정보 수정 (name, description만 변경 허용) -->
+    <update id="update">
+        UPDATE roles
+        SET name        = COALESCE(#{name}, name),
+            description = COALESCE(#{description}, description)
+        WHERE code = #{code}
+    </update>
+
+    <!-- 역할 삭제 -->
+    <delete id="delete">
+        DELETE FROM roles WHERE code = #{code}
+    </delete>
+
+    <!-- 역할 코드 존재 여부 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM roles
+        WHERE code = #{code}
+    </select>
+
+    <!-- 역할에 배정된 사용자 수 조회 -->
+    <select id="countUsers" resultType="int">
+        SELECT COUNT(*)
+        FROM user_roles
+        WHERE role_code = #{roleCode}
+    </select>
+
+</mapper>

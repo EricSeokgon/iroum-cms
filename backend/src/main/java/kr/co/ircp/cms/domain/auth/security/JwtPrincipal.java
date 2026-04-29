@@ -16,5 +16,14 @@ import java.util.Set;
  */
 // @MX:ANCHOR: [AUTO] JwtPrincipal — SecurityContext Principal 계약; 변경 시 모든 컨트롤러 영향
 // @MX:REASON: JwtAuthenticationFilter, AuditLogAspect, 컨트롤러 @AuthenticationPrincipal 참조 (fan_in >= 3)
-public record JwtPrincipal(long userId, String username, Set<String> roles) {
+public record JwtPrincipal(long userId, String username, Set<String> roles, Set<String> permissions) {
+
+    /**
+     * 기존 호환 생성자 (permissions 빈 Set).
+     *
+     * <p>REQ-AUTH-013 이전 코드와의 호환성 유지.
+     */
+    public JwtPrincipal(long userId, String username, Set<String> roles) {
+        this(userId, username, roles, Set.of());
+    }
 }

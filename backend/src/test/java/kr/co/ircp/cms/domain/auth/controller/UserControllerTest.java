@@ -76,7 +76,9 @@ class UserControllerTest {
                 new UserSummary(1L, "uuid-1", "admin", "admin@test.com",
                         "관리자", "ACTIVE", null, Instant.now())
         );
-        when(userService.findPage(anyInt(), anyInt(), anyString(), isNull(), isNull()))
+        // Security 비활성화 시 @AuthenticationPrincipal은 null — any() 매처 사용
+        when(userService.findPage(anyInt(), anyInt(), anyString(), isNull(), isNull(),
+                any()))
                 .thenReturn(PageResponse.of(rows, 0, 20, 1L));
 
         mockMvc.perform(get("/api/v1/users")
@@ -90,7 +92,8 @@ class UserControllerTest {
     @Test
     @DisplayName("GET /api/v1/users — search 파라미터 전달 시 200")
     void list_withSearch_returns200() throws Exception {
-        when(userService.findPage(anyInt(), anyInt(), anyString(), anyString(), isNull()))
+        when(userService.findPage(anyInt(), anyInt(), anyString(), anyString(), isNull(),
+                any()))
                 .thenReturn(PageResponse.of(List.of(), 0, 20, 0L));
 
         mockMvc.perform(get("/api/v1/users")

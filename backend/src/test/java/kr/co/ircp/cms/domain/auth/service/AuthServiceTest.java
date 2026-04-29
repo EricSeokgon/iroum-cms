@@ -58,6 +58,7 @@ class AuthServiceTest {
     @Mock private JwtTokenProvider jwtTokenProvider;
     @Mock private PasswordPolicyService passwordPolicyService;
     @Mock private PasswordHistoryMapper passwordHistoryMapper;
+    @Mock private PermissionService permissionService;
 
     private JwtProperties jwtProperties;
     private AuthService authService;
@@ -72,7 +73,7 @@ class AuthServiceTest {
         authService = new AuthServiceImpl(
                 userMapper, refreshTokenMapper, loginHistoryMapper,
                 tokenBlacklistMapper, jwtTokenProvider, passwordPolicyService,
-                passwordHistoryMapper, jwtProperties);
+                passwordHistoryMapper, jwtProperties, permissionService);
     }
 
     // ============================================================
@@ -85,7 +86,9 @@ class AuthServiceTest {
         User user = activeUser(1L, "admin", 0);
         when(userMapper.findByUsername("admin")).thenReturn(Optional.of(user));
         when(passwordPolicyService.matches("ValidP@ss123", user.getPasswordHash())).thenReturn(true);
-        when(jwtTokenProvider.generateAccessToken(eq(1L), eq("admin"), any(Set.class)))
+        when(userMapper.findRoleCodesByUserId(1L)).thenReturn(Set.of("SUPER_ADMIN"));
+        when(permissionService.findEffectivePermissionsForUser(1L)).thenReturn(Set.of("USER:READ"));
+        when(jwtTokenProvider.generateAccessToken(eq(1L), eq("admin"), any(Set.class), any(Set.class)))
                 .thenReturn("access-jwt");
         when(jwtTokenProvider.generateRefreshToken(1L)).thenReturn("refresh-jwt");
 
@@ -114,7 +117,7 @@ class AuthServiceTest {
 
         verify(loginHistoryMapper).insert(argThat(h ->
                 !h.isSuccess() && "USER_NOT_FOUND".equals(h.getFailureReason())));
-        verify(jwtTokenProvider, never()).generateAccessToken(any(), any(), any());
+        verify(jwtTokenProvider, never()).generateAccessToken(any(), any(), any(), any());
     }
 
     @Test
@@ -197,7 +200,9 @@ class AuthServiceTest {
         User user = activeUser(6L, "admin", 0);
         when(userMapper.findByUsername("admin")).thenReturn(Optional.of(user));
         when(passwordPolicyService.matches(any(), any())).thenReturn(true);
-        when(jwtTokenProvider.generateAccessToken(any(), any(), any())).thenReturn("at");
+        when(userMapper.findRoleCodesByUserId(6L)).thenReturn(Set.of());
+        when(permissionService.findEffectivePermissionsForUser(6L)).thenReturn(Set.of());
+        when(jwtTokenProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("at");
         when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("rt");
 
         authService.login(new LoginRequest("admin", "ValidP@ss123"), "1.2.3.4", "agent");
