@@ -352,3 +352,17 @@ export interface PermissionChangeEntry {
   severity: AuditSeverity
   reason?: string
 }
+
+// ── 로그인 이력 타입 (REQ-AUTH-011) ──────────────────────────────────────────
+
+/** 로그인 이력 항목 (login_history 테이블 대응) */
+export interface LoginHistoryEntry {
+  id: number
+  userId: number | null
+  username: string
+  ipAddress?: string
+  userAgent?: string
+  success: boolean
+  failureReason?: string
+  createdAt: string  // ISO 8601
+}

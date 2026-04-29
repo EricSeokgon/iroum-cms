@@ -13,6 +13,8 @@
     "permissionChanges": "권한 변경 이력",
     "personalDataAccess": "회원정보 접근 이력",
     "myPersonalData": "내 회원정보 접근 이력",
+    "myLoginHistory": "내 로그인 이력",
+    "loginHistoryAudit": "로그인 이력",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
     "mainMenu": "주요 메뉴"
@@ -385,6 +387,38 @@
     "alias": "{aliasedTo} 의 별칭"
   },
   "audit": {
+    "loginHistory": {
+      "title": "로그인 이력",
+      "filter": {
+        "username": "사용자명",
+        "success": "결과",
+        "period": "기간",
+        "ipAddress": "IP 주소",
+        "all": "전체",
+        "successOnly": "성공만",
+        "failureOnly": "실패만"
+      },
+      "field": {
+        "createdAt": "발생일시",
+        "username": "사용자명",
+        "success": "결과",
+        "failureReason": "실패 사유",
+        "ipAddress": "IP",
+        "userAgent": "User-Agent"
+      },
+      "result": {
+        "success": "성공",
+        "failure": "실패"
+      },
+      "empty": "조회된 이력이 없습니다",
+      "apiPending": "백엔드 로그인 이력 조회 API는 다음 단계에서 추가될 예정입니다.",
+      "my": {
+        "title": "내 로그인 이력",
+        "description": "최근 로그인 시도 기록을 확인하세요",
+        "warning": "비정상적인 로그인 시도가 보이면 즉시 비밀번호를 변경하세요.",
+        "empty": "로그인 이력이 없습니다."
+      }
+    },
     "personalDataAccess": {
       "title": "회원정보 접근 이력",
       "description": "관리자 또는 다른 사용자가 회원 개인정보를 조회한 기록입니다",

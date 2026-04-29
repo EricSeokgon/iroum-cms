@@ -13,6 +13,8 @@
     "permissionChanges": "Permission Change History",
     "personalDataAccess": "Personal Data Access Log",
     "myPersonalData": "My Personal Data Access",
+    "myLoginHistory": "My Login History",
+    "loginHistoryAudit": "Login History",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu"
@@ -386,6 +388,38 @@
     "alias": "Alias of {aliasedTo}"
   },
   "audit": {
+    "loginHistory": {
+      "title": "Login History",
+      "filter": {
+        "username": "Username",
+        "success": "Result",
+        "period": "Period",
+        "ipAddress": "IP Address",
+        "all": "All",
+        "successOnly": "Success only",
+        "failureOnly": "Failure only"
+      },
+      "field": {
+        "createdAt": "Timestamp",
+        "username": "Username",
+        "success": "Result",
+        "failureReason": "Failure Reason",
+        "ipAddress": "IP",
+        "userAgent": "User-Agent"
+      },
+      "result": {
+        "success": "Success",
+        "failure": "Failure"
+      },
+      "empty": "No login history found",
+      "apiPending": "Backend login history API will be added in the next phase.",
+      "my": {
+        "title": "My Login History",
+        "description": "Check your recent login attempts",
+        "warning": "If you see suspicious login attempts, change your password immediately.",
+        "empty": "No login history found."
+      }
+    },
     "personalDataAccess": {
       "title": "Personal Data Access Log",
       "description": "Records of administrators or other users accessing member personal data",

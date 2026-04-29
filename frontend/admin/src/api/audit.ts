@@ -1,9 +1,9 @@
-// 감사 로그 API — REQ-AUTH-016, REQ-AUTH-018
-// @MX:ANCHOR: [AUTO] auditApi — PermissionChangeHistoryView, PersonalDataAccessLogView, UserDetailView에서 공통 참조
-// @MX:REASON: fan_in >= 3: PermissionChangeHistoryView, PersonalDataAccessLogView, UserDetailView, 테스트 mock에서 참조
+// 감사 로그 API — REQ-AUTH-016, REQ-AUTH-018, REQ-AUTH-011
+// @MX:ANCHOR: [AUTO] auditApi — PermissionChangeHistoryView, PersonalDataAccessLogView, LoginHistoryView, UserDetailView에서 공통 참조
+// @MX:REASON: fan_in >= 3: PermissionChangeHistoryView, PersonalDataAccessLogView, LoginHistoryView, UserDetailView, 테스트 mock에서 참조
 
 import { apiClient } from '@iroum/shared/api/client'
-import type { PageResponse, PermissionChangeEntry, PersonalDataAccessEntry } from '@iroum/shared/types/api'
+import type { PageResponse, PermissionChangeEntry, PersonalDataAccessEntry, LoginHistoryEntry } from '@iroum/shared/types/api'
 
 /** 권한 변경 이력 조회 파라미터 */
 export interface PermissionChangeParams {
@@ -60,6 +60,30 @@ export const auditApi = {
   }) {
     return apiClient.get<PageResponse<PersonalDataAccessEntry>>(
       '/audit/personal-data-access',
+      { params },
+    )
+  },
+
+  /**
+   * 로그인 이력 조회 (관리자)
+   * GET /api/v1/audit/login-history
+   * 권한: AUDIT:READ
+   * REQ-AUTH-011
+   * @MX:TODO: [AUTO] 백엔드 미구현 — Phase R-15에서 추가 예정
+   */
+  loginHistory(params: {
+    page?: number
+    size?: number
+    sort?: string
+    userId?: number
+    username?: string
+    success?: boolean
+    from?: string
+    to?: string
+    ipAddress?: string
+  }) {
+    return apiClient.get<PageResponse<LoginHistoryEntry>>(
+      '/audit/login-history',
       { params },
     )
   },

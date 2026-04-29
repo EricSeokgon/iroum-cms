@@ -246,7 +246,7 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.findById(currentUserId)
                 .orElseThrow(() -> new UserNotFoundException(currentUserId));
         Set<String> roles = userMapper.findRoleCodesByUserId(currentUserId);
-        return new UserSelf(user.getId(), null, user.getUsername(),
+        return new UserSelf(user.getId(), user.getUuid(), user.getUsername(),
                 user.getEmail(), user.getName(), roles);
     }
 
@@ -272,7 +272,7 @@ public class UserServiceImpl implements UserService {
     private UserDetail toDetail(User u, Set<String> roles) {
         return new UserDetail(
                 u.getId(),
-                null,            // uuid 컬럼 — User 엔티티 확장 후 매핑 (현재 RED 단계 유보)
+                u.getUuid(),
                 u.getUsername(),
                 u.getEmail(),
                 u.getName(),

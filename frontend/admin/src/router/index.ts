@@ -90,6 +90,18 @@ const router = createRouter({
           component: () => import('@/views/account/MyPersonalDataAccessView.vue'),
           meta: { title: '내 회원정보 접근 이력' },
         },
+        {
+          path: 'audit/login-history',
+          name: 'login-history',
+          component: () => import('@/views/audit/LoginHistoryView.vue'),
+          meta: { title: '로그인 이력' },
+        },
+        {
+          path: 'account/login-history',
+          name: 'my-login-history',
+          component: () => import('@/views/account/MyLoginHistoryView.vue'),
+          meta: { title: '내 로그인 이력' },
+        },
       ],
     },
 

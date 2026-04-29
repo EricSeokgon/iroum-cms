@@ -1,0 +1,28 @@
+spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+  mail:
+    host: localhost
+    port: 25
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+    cache-enabled: false
+  mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: kr.co.ircp.cms.domain
+  type-handlers-package: kr.co.ircp.cms.domain.auth.repository.typehandler
+
+logging:
+  level:
+    root: WARN
+    kr.co.ircp.cms: INFO
+    org.testcontainers: INFO
+    org.flywaydb: INFO
+    org.springframework.test: WARN

@@ -96,6 +96,8 @@ dependencies {
     // Testcontainers — 실제 PostgreSQL 컨테이너 기반 통합 테스트
     testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
     testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+    // @ServiceConnection 자동 DataSource 주입 (Spring Boot 3.1+, SPEC-CMS-002 IT)
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
 
     // Lombok (테스트 코드에서도 사용)
     testCompileOnly("org.projectlombok:lombok")

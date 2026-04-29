@@ -18,6 +18,9 @@ public class User {
     /** 내부 기본키 (BIGSERIAL) */
     private Long id;
 
+    /** 외부 노출용 UUID (DDL: UUID NOT NULL DEFAULT gen_random_uuid()) */
+    private String uuid;
+
     /** 로그인 ID (unique) */
     private String username;
 

@@ -9,6 +9,7 @@
 
     <resultMap id="userResultMap" type="kr.co.ircp.cms.domain.auth.entity.User">
         <id     property="id"                column="id"/>
+        <result property="uuid"              column="uuid"/>
         <result property="username"          column="username"/>
         <result property="email"             column="email"/>
         <result property="passwordHash"      column="password_hash"/>
@@ -27,7 +28,7 @@
 
     <!-- username으로 사용자 조회 (소프트 삭제 제외) -->
     <select id="findByUsername" parameterType="string" resultMap="userResultMap">
-        SELECT id, username, email_enc AS email, password_hash, name,
+        SELECT id, uuid, username, email_enc AS email, password_hash, name,
                status, fail_count, locked_until, last_login_at,
                password_changed_at, created_at, updated_at, deleted_at
         FROM users
@@ -37,7 +38,7 @@
 
     <!-- email_hash로 사용자 조회 (REQ-AUTH-017-D-3 비밀번호 재설정) -->
     <select id="findByEmailHash" resultMap="userResultMap">
-        SELECT id, username, email_enc AS email, password_hash, name,
+        SELECT id, uuid, username, email_enc AS email, password_hash, name,
                status, fail_count, locked_until, last_login_at,
                password_changed_at, created_at, updated_at, deleted_at
         FROM users
@@ -85,7 +86,7 @@
 
     <!-- PK로 사용자 단건 조회 (소프트 삭제 제외) -->
     <select id="findById" resultMap="userResultMap">
-        SELECT id, username, email AS email, password_hash, name,
+        SELECT id, uuid, username, email AS email, password_hash, name,
                status, fail_count, locked_until, last_login_at,
                password_changed_at, created_at, updated_at, deleted_at,
                organization_id

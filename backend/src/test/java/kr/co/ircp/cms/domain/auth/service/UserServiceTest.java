@@ -476,6 +476,7 @@ class UserServiceTest {
     private User activeUser(long id, String username) {
         return User.builder()
                 .id(id)
+                .uuid("test-uuid-" + id)
                 .username(username)
                 .email(username + "@test.com")
                 .passwordHash("$2a$12$hash")

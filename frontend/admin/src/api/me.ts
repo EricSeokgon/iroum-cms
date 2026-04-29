@@ -1,9 +1,9 @@
-// 본인 정보 API — REQ-AUTH-018 (사용자 권리: 개인정보 접근 이력 자기 조회)
-// @MX:ANCHOR: [AUTO] meApi — MyPersonalDataAccessView, 테스트 mock에서 참조
-// @MX:REASON: fan_in >= 3: MyPersonalDataAccessView, 라우터 가드, 테스트 mock에서 참조
+// 본인 정보 API — REQ-AUTH-018 (사용자 권리: 개인정보 접근 이력 자기 조회), REQ-AUTH-011
+// @MX:ANCHOR: [AUTO] meApi — MyPersonalDataAccessView, MyLoginHistoryView, 테스트 mock에서 참조
+// @MX:REASON: fan_in >= 3: MyPersonalDataAccessView, MyLoginHistoryView, AdminLayout 라우터 명령, 테스트 mock에서 참조
 
 import { apiClient } from '@iroum/shared/api/client'
-import type { PageResponse, PersonalDataAccessEntry } from '@iroum/shared/types/api'
+import type { PageResponse, PersonalDataAccessEntry, LoginHistoryEntry } from '@iroum/shared/types/api'
 
 export const meApi = {
   /**
@@ -14,6 +14,20 @@ export const meApi = {
   myPersonalDataAccess(params: { page?: number; size?: number }) {
     return apiClient.get<PageResponse<PersonalDataAccessEntry>>(
       '/me/personal-data-access',
+      { params },
+    )
+  },
+
+  /**
+   * 본인 로그인 이력 조회
+   * GET /api/v1/me/login-history
+   * 권한: 인증된 모든 사용자 (자기 데이터)
+   * REQ-AUTH-011
+   * @MX:TODO: [AUTO] 백엔드 미구현 — Phase R-15에서 추가 예정
+   */
+  myLoginHistory(params: { page?: number; size?: number }) {
+    return apiClient.get<PageResponse<LoginHistoryEntry>>(
+      '/me/login-history',
       { params },
     )
   },
