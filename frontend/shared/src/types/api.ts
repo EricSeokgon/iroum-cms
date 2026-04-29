@@ -78,6 +78,8 @@ export interface UserSummary {
   status: UserStatus
   lastLoginAt?: string  // ISO 8601
   createdAt: string
+  organizationId?: number | null
+  organizationName?: string | null
 }
 
 /** 사용자 상세 DTO */
@@ -134,4 +136,68 @@ export interface PasswordChangeRequest {
 /** POST /api/v1/auth/password/change 200 응답 */
 export interface PasswordChangeResponse {
   message: string
+}
+
+// ── 조직 타입 (REQ-AUTH-014) ──────────────────────────────────────────────────
+
+/** 조직 상태 코드 */
+export type OrganizationStatus = 'ACTIVE' | 'INACTIVE' | 'DELETED'
+
+/** 조직 트리 노드 (GET /api/v1/organizations/tree) */
+export interface OrganizationTreeNode {
+  id: number
+  code: string
+  name: string
+  depth: number
+  sortOrder: number
+  status: OrganizationStatus
+  children: OrganizationTreeNode[]
+}
+
+/** 조직 목록용 요약 DTO */
+export interface OrganizationSummary {
+  id: number
+  code: string
+  name: string
+  parentId: number | null
+  depth: number
+  sortOrder: number
+  status: OrganizationStatus
+}
+
+/** 조직 상세 DTO */
+export interface OrganizationDetail extends OrganizationSummary {
+  description?: string
+  path: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** 조직 생성 요청 */
+export interface OrganizationCreateRequest {
+  code: string
+  name: string
+  description?: string
+  parentId?: number | null
+  sortOrder: number
+}
+
+/** 조직 수정 요청 */
+export interface OrganizationUpdateRequest {
+  name?: string
+  description?: string
+  parentId?: number | null
+  sortOrder?: number
+  status?: OrganizationStatus
+}
+
+/** 조직 변경 이력 항목 */
+export interface OrganizationHistoryEntry {
+  id: number
+  orgId: number
+  version: number
+  snapshot: Record<string, unknown>
+  changedBy: number | null
+  changedAt: string
+  changeSummary?: string
 }

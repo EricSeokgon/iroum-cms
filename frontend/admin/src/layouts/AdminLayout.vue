@@ -40,6 +40,11 @@
           <span>{{ t('nav.users') }}</span>
         </el-menu-item>
 
+        <el-menu-item index="/organizations">
+          <el-icon><i-ep-office-building /></el-icon>
+          <span>{{ t('nav.organizations') }}</span>
+        </el-menu-item>
+
         <el-menu-item index="/health">
           <el-icon><i-ep-monitor /></el-icon>
           <span>{{ t('nav.health') }}</span>

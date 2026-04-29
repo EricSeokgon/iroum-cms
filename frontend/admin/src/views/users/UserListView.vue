@@ -35,6 +35,22 @@
         <el-option :label="t('users.status.LOCKED')" value="LOCKED" />
         <el-option :label="t('users.status.DELETED')" value="DELETED" />
       </el-select>
+
+      <el-select
+        v-model="orgFilter"
+        :placeholder="t('users.filterOrganization')"
+        clearable
+        style="width: 200px"
+        :aria-label="t('users.filterOrganization')"
+        @change="onFilterChange"
+      >
+        <el-option
+          v-for="org in orgOptions"
+          :key="org.id"
+          :label="org.name"
+          :value="org.id"
+        />
+      </el-select>
     </div>
 
     <!-- 사용자 테이블 -->
@@ -83,6 +99,18 @@
       >
         <template #default="{ row }">
           {{ row.lastLoginAt ? formatDate(row.lastLoginAt) : '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="organizationName"
+        :label="t('users.field.organization')"
+        min-width="130"
+      >
+        <template #default="{ row }">
+          <span v-if="row.organizationName" class="text-sm text-gray-700">
+            {{ row.organizationName }}
+          </span>
+          <span v-else class="text-xs text-gray-400">-</span>
         </template>
       </el-table-column>
       <el-table-column
@@ -189,9 +217,10 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usersApi } from '@/api/users'
+import { organizationsApi } from '@/api/organizations'
 import { useDebounce } from '@/composables/useDebounce'
 import UserFormView from './UserFormView.vue'
-import type { UserSummary, UserStatus } from '@iroum/shared/types/api'
+import type { UserSummary, UserStatus, OrganizationSummary } from '@iroum/shared/types/api'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -204,8 +233,12 @@ const currentPage = ref(1)
 const pageSize = ref(20)
 const searchQuery = ref('')
 const statusFilter = ref('')
+const orgFilter = ref<number | ''>('')
 const sortProp = ref('createdAt')
 const sortOrder = ref<'ascending' | 'descending'>('descending')
+
+// 부서 필터 옵션
+const orgOptions = ref<OrganizationSummary[]>([])
 
 // 폼 모달 상태
 const showForm = ref(false)
@@ -227,6 +260,7 @@ async function loadUsers(): Promise<void> {
       sort: sortStr,
       search: debouncedSearch.value,
       status: statusFilter.value,
+      organizationId: orgFilter.value !== '' ? orgFilter.value : undefined,
     })
     users.value = res.data.content
     totalElements.value = res.data.totalElements
@@ -342,5 +376,17 @@ function formatDate(iso: string): string {
   })
 }
 
-onMounted(loadUsers)
+async function loadOrgOptions(): Promise<void> {
+  try {
+    const res = await organizationsApi.list('ACTIVE')
+    orgOptions.value = res.data
+  } catch {
+    // 부서 필터 옵션 로드 실패는 사용자 목록에 영향 없음
+  }
+}
+
+onMounted(() => {
+  loadUsers()
+  loadOrgOptions()
+})
 </script>

@@ -54,6 +54,12 @@ const router = createRouter({
           component: () => import('@/views/account/PasswordChangeView.vue'),
           meta: { title: '비밀번호 변경' },
         },
+        {
+          path: 'organizations',
+          name: 'organization-tree',
+          component: () => import('@/views/organizations/OrganizationTreeView.vue'),
+          meta: { title: '조직 관리' },
+        },
       ],
     },
 

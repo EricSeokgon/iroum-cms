@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  OrganizationHistoryMapper SQL 정의.
+  SPEC-CMS-002 REQ-AUTH-014-D-4 — organization_history 테이블 접근
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.OrganizationHistoryMapper">
+
+    <resultMap id="histResultMap" type="kr.co.ircp.cms.domain.auth.entity.OrganizationHistory">
+        <id     property="id"            column="id"/>
+        <result property="orgId"         column="org_id"/>
+        <result property="version"       column="version"/>
+        <result property="snapshot"      column="snapshot"/>
+        <result property="changedBy"     column="changed_by"/>
+        <result property="changedAt"     column="changed_at"/>
+        <result property="changeSummary" column="change_summary"/>
+    </resultMap>
+
+    <!-- 이력 항목 삽입 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO organization_history
+               (org_id, version, snapshot, changed_by, changed_at, change_summary)
+        VALUES (#{orgId}, #{version}, #{snapshot}::jsonb, #{changedBy}, NOW(), #{changeSummary})
+    </insert>
+
+    <!-- 조직별 이력 목록 (버전 내림차순) -->
+    <select id="findByOrgId" resultMap="histResultMap">
+        SELECT id, org_id, version, snapshot::text AS snapshot,
+               changed_by, changed_at, change_summary
+        FROM organization_history
+        WHERE org_id = #{orgId}
+        ORDER BY version DESC
+    </select>
+
+    <!-- 조직의 현재 최대 버전 번호 (이력 없으면 0) -->
+    <select id="findMaxVersion" resultType="int">
+        SELECT COALESCE(MAX(version), 0)
+        FROM organization_history
+        WHERE org_id = #{orgId}
+    </select>
+
+</mapper>

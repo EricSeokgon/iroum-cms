@@ -167,4 +167,14 @@ public interface UserMapper {
      * @param now  변경 시각
      */
     void updatePassword(@Param("id") long id, @Param("hash") String hash, @Param("now") Instant now);
+
+    /**
+     * 사용자의 소속 조직 갱신.
+     *
+     * <p>REQ-AUTH-014-D-2 — organizationId가 null이면 조직 배정 해제.
+     */
+    void updateOrganization(
+            @Param("id") long id,
+            @Param("organizationId") Long organizationId,
+            @Param("now") Instant now);
 }

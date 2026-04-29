@@ -53,4 +53,7 @@ public class User {
 
     /** 소프트 삭제 시각 (NULL = 정상) */
     private Instant deletedAt;
+
+    /** 소속 조직 PK (NULL이면 미배정 — REQ-AUTH-014-D-2) */
+    private Long organizationId;
 }

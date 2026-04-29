@@ -19,6 +19,7 @@ export interface UserListParams {
   sort?: string
   search?: string
   status?: string
+  organizationId?: number
 }
 
 export const usersApi = {
@@ -31,6 +32,7 @@ export const usersApi = {
         sort: params.sort ?? 'createdAt,desc',
         search: params.search ?? '',
         status: params.status ?? '',
+        ...(params.organizationId !== undefined ? { organizationId: params.organizationId } : {}),
       },
     })
   },

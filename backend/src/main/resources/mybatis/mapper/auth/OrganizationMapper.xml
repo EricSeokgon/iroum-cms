@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  OrganizationMapper SQL 정의.
+  SPEC-CMS-002 REQ-AUTH-014-D-1 — organization 테이블 접근
+-->
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.OrganizationMapper">
+
+    <resultMap id="orgResultMap" type="kr.co.ircp.cms.domain.auth.entity.Organization">
+        <id     property="id"          column="id"/>
+        <result property="code"        column="code"/>
+        <result property="name"        column="name"/>
+        <result property="description" column="description"/>
+        <result property="parentId"    column="parent_id"/>
+        <result property="depth"       column="depth"/>
+        <result property="path"        column="path"/>
+        <result property="sortOrder"   column="sort_order"/>
+        <result property="status"      column="status"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="createdAt"   column="created_at"/>
+        <result property="updatedAt"   column="updated_at"/>
+        <result property="deletedAt"   column="deleted_at"/>
+    </resultMap>
+
+    <!-- PK로 단건 조회 (소프트 삭제 제외) -->
+    <select id="findById" resultMap="orgResultMap">
+        SELECT id, code, name, description, parent_id, depth, path,
+               sort_order, status, created_at, updated_at, deleted_at
+        FROM organization
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </select>
+
+    <!-- 코드로 단건 조회 (소프트 삭제 제외) -->
+    <select id="findByCode" resultMap="orgResultMap">
+        SELECT id, code, name, description, parent_id, depth, path,
+               sort_order, status, created_at, updated_at, deleted_at
+        FROM organization
+        WHERE code = #{code}
+          AND deleted_at IS NULL
+    </select>
+
+    <!-- 전체 목록 조회 (flat, status 필터) -->
+    <select id="findAll" resultMap="orgResultMap">
+        SELECT id, code, name, description, parent_id, depth, path,
+               sort_order, status, created_at, updated_at, deleted_at
+        FROM organization
+        <where>
+            deleted_at IS NULL
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY depth ASC, sort_order ASC, name ASC
+    </select>
+
+    <!-- 직접 자식 목록 조회 (소프트 삭제 제외) -->
+    <select id="findChildren" resultMap="orgResultMap">
+        SELECT id, code, name, description, parent_id, depth, path,
+               sort_order, status, created_at, updated_at, deleted_at
+        FROM organization
+        WHERE parent_id = #{parentId}
+          AND deleted_at IS NULL
+        ORDER BY sort_order ASC, name ASC
+    </select>
+
+    <!-- 자손 목록 조회 (materialized path prefix 검색) -->
+    <select id="findDescendants" resultMap="orgResultMap">
+        SELECT id, code, name, description, parent_id, depth, path,
+               sort_order, status, created_at, updated_at, deleted_at
+        FROM organization
+        WHERE path LIKE #{path} || '%'
+          AND deleted_at IS NULL
+        ORDER BY depth ASC, sort_order ASC
+    </select>
+
+    <!-- 조직 신규 삽입 (id BIGSERIAL 자동 생성) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO organization (code, name, description, parent_id, depth, path,
+                                  sort_order, status, created_at, updated_at)
+        VALUES (#{code}, #{name}, #{description}, #{parentId}, #{depth},
+                #{path}, #{sortOrder},
+                COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
+                NOW(), NOW())
+    </insert>
+
+    <!-- path 컬럼만 갱신 (insert 후 id 확정 후 path 재설정) -->
+    <update id="updatePath">
+        UPDATE organization
+        SET path = #{path}, updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 조직 정보 수정 -->
+    <update id="update">
+        UPDATE organization
+        SET name        = COALESCE(#{name}, name),
+            description = COALESCE(#{description}, description),
+            parent_id   = #{parentId},
+            depth       = #{depth},
+            path        = #{path},
+            sort_order  = COALESCE(#{sortOrder}, sort_order),
+            status      = COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, status),
+            updated_at  = NOW()
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
+    <!--
+      자손 경로 일괄 갱신 (노드 이동 시 서브트리 전체 path 치환).
+      REGEXP_REPLACE로 path의 oldPrefix 부분을 newPrefix로 교체.
+    -->
+    <update id="updateDescendantPaths">
+        UPDATE organization
+        SET path       = #{newPrefix} || SUBSTRING(path FROM LENGTH(#{oldPrefix}) + 1),
+            updated_at = NOW()
+        WHERE path LIKE #{oldPrefix} || '%'
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 소프트 삭제 (deleted_at + status='DELETED' 동시 갱신) -->
+    <update id="softDelete">
+        UPDATE organization
+        SET status     = 'DELETED',
+            deleted_at = #{deletedAt},
+            updated_at = #{deletedAt}
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
+    <!-- 코드 중복 여부 확인 (소프트 삭제 포함) -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM organization
+        WHERE code = #{code}
+    </select>
+
+    <!-- 직접 자식 수 조회 (ACTIVE, 소프트 삭제 제외) -->
+    <select id="countActiveChildren" resultType="int">
+        SELECT COUNT(*)
+        FROM organization
+        WHERE parent_id = #{parentId}
+          AND deleted_at IS NULL
+          AND status != 'DELETED'
+    </select>
+
+    <!-- 소속 활성 사용자 수 조회 -->
+    <select id="countAttachedUsers" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE organization_id = #{orgId}
+          AND deleted_at IS NULL
+    </select>
+
+</mapper>

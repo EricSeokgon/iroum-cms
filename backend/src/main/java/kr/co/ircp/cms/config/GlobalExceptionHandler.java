@@ -1,8 +1,14 @@
 package kr.co.ircp.cms.config;
 
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
+import kr.co.ircp.cms.domain.auth.exception.CyclicReferenceException;
+import kr.co.ircp.cms.domain.auth.exception.DepthExceededException;
+import kr.co.ircp.cms.domain.auth.exception.DuplicateOrganizationCodeException;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.OrganizationHasChildrenException;
+import kr.co.ircp.cms.domain.auth.exception.OrganizationHasUsersException;
+import kr.co.ircp.cms.domain.auth.exception.OrganizationNotFoundException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
@@ -131,6 +137,90 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Password Reuse Prohibited");
         detail.setProperty("code", "PASSWORD_REUSE");
+        return detail;
+    }
+
+    /**
+     * 조직 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-AUTH-014 — id에 해당하는 조직이 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(OrganizationNotFoundException.class)
+    public ProblemDetail handleOrganizationNotFound(OrganizationNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Organization Not Found");
+        detail.setProperty("code", "ORG_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 조직 코드 중복 → HTTP 409 Conflict.
+     *
+     * <p>REQ-AUTH-014 — 이미 사용 중인 조직 코드로 생성 시도.
+     */
+    @ExceptionHandler(DuplicateOrganizationCodeException.class)
+    public ProblemDetail handleDuplicateOrgCode(DuplicateOrganizationCodeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate Organization Code");
+        detail.setProperty("code", "ORG_CODE_DUPLICATE");
+        return detail;
+    }
+
+    /**
+     * 조직 트리 순환 참조 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-AUTH-014 — 자신의 자손을 부모로 이동 시도.
+     */
+    @ExceptionHandler(CyclicReferenceException.class)
+    public ProblemDetail handleCyclicReference(CyclicReferenceException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Cyclic Reference Detected");
+        detail.setProperty("code", "ORG_CYCLIC_REFERENCE");
+        return detail;
+    }
+
+    /**
+     * 조직 트리 깊이 초과 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-AUTH-014 — 최대 깊이 5를 초과하는 조직 생성/이동 시도.
+     */
+    @ExceptionHandler(DepthExceededException.class)
+    public ProblemDetail handleDepthExceeded(DepthExceededException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Organization Depth Exceeded");
+        detail.setProperty("code", "ORG_DEPTH_EXCEEDED");
+        return detail;
+    }
+
+    /**
+     * 자식 조직 존재로 인한 삭제 불가 → HTTP 409 Conflict.
+     *
+     * <p>REQ-AUTH-014 — 자식 노드를 먼저 이동 또는 삭제해야 함.
+     */
+    @ExceptionHandler(OrganizationHasChildrenException.class)
+    public ProblemDetail handleOrgHasChildren(OrganizationHasChildrenException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Organization Has Children");
+        detail.setProperty("code", "ORG_HAS_CHILDREN");
+        return detail;
+    }
+
+    /**
+     * 소속 사용자 존재로 인한 삭제 불가 → HTTP 409 Conflict.
+     *
+     * <p>REQ-AUTH-014 — 사용자 조직 이동 후 삭제해야 함.
+     */
+    @ExceptionHandler(OrganizationHasUsersException.class)
+    public ProblemDetail handleOrgHasUsers(OrganizationHasUsersException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Organization Has Users");
+        detail.setProperty("code", "ORG_HAS_USERS");
         return detail;
     }
 }

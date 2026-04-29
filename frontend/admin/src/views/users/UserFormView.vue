@@ -88,6 +88,22 @@
         </el-select>
       </el-form-item>
 
+      <!-- 부서 (조직) -->
+      <el-form-item :label="t('users.field.organization')" prop="organizationId">
+        <el-tree-select
+          id="form-organization"
+          v-model="form.organizationId"
+          :data="orgTreeData"
+          :props="orgTreeProps"
+          node-key="id"
+          clearable
+          check-strictly
+          style="width: 100%"
+          :placeholder="t('users.field.organizationPlaceholder')"
+          :aria-label="t('users.field.organization')"
+        />
+      </el-form-item>
+
       <!-- 역할 -->
       <el-form-item :label="t('users.field.roleCodes')" prop="roleCodes">
         <el-select
@@ -128,12 +144,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { usersApi } from '@/api/users'
-import type { UserSummary, UserStatus } from '@iroum/shared/types/api'
+import { organizationsApi } from '@/api/organizations'
+import type { UserSummary, UserStatus, OrganizationTreeNode } from '@iroum/shared/types/api'
 import axios from 'axios'
 
 const props = defineProps<{
@@ -153,6 +170,20 @@ const formRef = ref<FormInstance>()
 const submitting = ref(false)
 const submitError = ref('')
 
+// ── 조직 트리 ──────────────────────────────────────────────────────────────────
+const orgTreeData = ref<OrganizationTreeNode[]>([])
+const orgTreeProps = { children: 'children', label: 'name', value: 'id' }
+const originalOrgId = ref<number | null | undefined>(undefined)
+
+onMounted(async () => {
+  try {
+    const res = await organizationsApi.tree()
+    orgTreeData.value = res.data
+  } catch {
+    // 조직 트리 로드 실패는 폼 동작에 영향 없음
+  }
+})
+
 // ── 폼 상태 ────────────────────────────────────────────────────────────────────
 interface FormState {
   username: string
@@ -161,6 +192,7 @@ interface FormState {
   name: string
   status: UserStatus
   roleCodes: string[]
+  organizationId: number | null
 }
 
 const form = reactive<FormState>({
@@ -170,6 +202,7 @@ const form = reactive<FormState>({
   name: '',
   status: 'ACTIVE',
   roleCodes: [],
+  organizationId: null,
 })
 
 // 편집 모드 진입 시 기존 값 채우기
@@ -182,6 +215,8 @@ watch(
       form.name = u.name
       form.status = u.status
       form.roleCodes = []  // 상세 조회 없이 목록에서는 roleCodes 없음
+      form.organizationId = u.organizationId ?? null
+      originalOrgId.value = u.organizationId ?? null
     }
   },
   { immediate: true },
@@ -224,8 +259,8 @@ const rules: FormRules = {
 
 // ── 제출 ────────────────────────────────────────────────────────────────────────
 
-// @MX:WARN: [AUTO] handleSubmit — 409/400 에러를 사용자 친화적 메시지로 분기
-// @MX:REASON: HTTP 상태 코드별 분기 처리 누락 시 백엔드 에러 메시지가 그대로 노출됨
+// @MX:WARN: [AUTO] handleSubmit — 409/400 에러를 사용자 친화적 메시지로 분기 + 부서 변경 별도 API 호출
+// @MX:REASON: PUT /users/{id}는 organizationId를 받지 않으므로 POST /users/{id}/organization 분리 호출 필요
 async function handleSubmit(): Promise<void> {
   await formRef.value?.validate(async (valid) => {
     if (!valid) return
@@ -233,7 +268,7 @@ async function handleSubmit(): Promise<void> {
     submitError.value = ''
     try {
       if (props.mode === 'create') {
-        await usersApi.create({
+        const created = await usersApi.create({
           username: form.username,
           email: form.email,
           password: form.password,
@@ -241,6 +276,10 @@ async function handleSubmit(): Promise<void> {
           status: form.status,
           roleCodes: form.roleCodes,
         })
+        // 생성 후 부서 배정
+        if (form.organizationId !== null) {
+          await organizationsApi.assignUser(created.data.id, form.organizationId)
+        }
         ElMessage.success(t('users.success.created'))
       } else {
         if (!props.user) return
@@ -250,6 +289,10 @@ async function handleSubmit(): Promise<void> {
           status: form.status,
           roleCodes: form.roleCodes,
         })
+        // 부서가 변경된 경우 별도 API 호출
+        if (form.organizationId !== originalOrgId.value) {
+          await organizationsApi.assignUser(props.user.id, form.organizationId)
+        }
         ElMessage.success(t('users.success.updated'))
       }
       emit('saved')

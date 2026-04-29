@@ -7,6 +7,7 @@
     "health": "서버 상태",
     "dashboard": "대시보드",
     "users": "사용자 관리",
+    "organizations": "조직 관리",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
     "mainMenu": "주요 메뉴"
@@ -108,6 +109,7 @@
       "lastLogin": "마지막 로그인",
       "actions": "액션"
     },
+    "filterOrganization": "부서 필터",
     "field": {
       "username": "사용자명",
       "email": "이메일",
@@ -115,6 +117,8 @@
       "name": "이름",
       "status": "상태",
       "roleCodes": "역할",
+      "organization": "부서",
+      "organizationPlaceholder": "부서를 선택하세요",
       "lastLoginAt": "마지막 로그인",
       "createdAt": "가입일",
       "updatedAt": "수정일",
@@ -180,6 +184,80 @@
       "activity": "활동 정보",
       "loginHistory": "로그인 이력",
       "loginHistoryPlaceholder": "로그인 이력 조회는 SPEC-CMS-005에서 구현 예정입니다"
+    }
+  },
+  "organizations": {
+    "title": "조직 관리",
+    "tree": {
+      "empty": "등록된 조직이 없습니다. 루트 조직을 추가하세요."
+    },
+    "detail": {
+      "title": "조직 상세",
+      "selectHint": "트리에서 조직을 선택하세요"
+    },
+    "history": {
+      "empty": "변경 이력이 없습니다",
+      "versionList": "버전 목록",
+      "summary": "변경 사유",
+      "changedBy": "변경자",
+      "changedAt": "변경일시",
+      "snapshot": "스냅샷",
+      "selectVersion": "버전을 선택하세요"
+    },
+    "field": {
+      "code": "코드",
+      "codePlaceholder": "영숫자, 하이픈, 언더스코어만 허용",
+      "codeHint": "영숫자/하이픈/언더스코어만 입력 가능하며, 생성 후 변경 불가합니다",
+      "name": "이름",
+      "description": "설명",
+      "parentId": "상위 조직",
+      "sortOrder": "정렬 순서",
+      "status": "상태",
+      "depth": "깊이",
+      "path": "경로",
+      "createdAt": "생성일",
+      "updatedAt": "수정일"
+    },
+    "action": {
+      "addRoot": "루트 조직 추가",
+      "addChild": "하위 조직 추가",
+      "edit": "수정",
+      "delete": "삭제",
+      "viewHistory": "변경 이력",
+      "assignUser": "사용자 배정"
+    },
+    "confirm": {
+      "delete": "'{name}' 조직을 삭제하시겠습니까?",
+      "deleteHasChildren": "하위 조직이 있으면 삭제할 수 없습니다",
+      "deleteHasUsers": "소속 사용자가 있으면 삭제할 수 없습니다"
+    },
+    "status": {
+      "ACTIVE": "활성",
+      "INACTIVE": "비활성",
+      "DELETED": "삭제됨"
+    },
+    "error": {
+      "loadFailed": "조직 목록을 불러오지 못했습니다",
+      "saveFailed": "저장 중 오류가 발생했습니다",
+      "deleteFailed": "삭제 중 오류가 발생했습니다",
+      "historyFailed": "변경 이력을 불러오지 못했습니다",
+      "duplicateCode": "이미 사용 중인 코드입니다",
+      "depthExceeded": "조직 깊이는 최대 5단계까지 허용됩니다",
+      "cyclicReference": "순환 참조가 발생했습니다",
+      "hasChildren": "하위 조직이 있어 삭제할 수 없습니다. 먼저 하위 조직을 삭제해 주세요.",
+      "hasUsers": "소속 사용자가 있어 삭제할 수 없습니다. 먼저 사용자 부서를 변경해 주세요.",
+      "notFound": "조직을 찾을 수 없습니다",
+      "codeRequired": "코드를 입력해 주세요",
+      "codePattern": "영숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다",
+      "nameRequired": "이름을 입력해 주세요",
+      "nameLength": "이름은 1~100자 사이여야 합니다",
+      "sortOrderRequired": "정렬 순서를 입력해 주세요"
+    },
+    "success": {
+      "created": "조직이 생성되었습니다",
+      "updated": "조직 정보가 수정되었습니다",
+      "deleted": "조직이 삭제되었습니다",
+      "userAssigned": "사용자 부서가 배정되었습니다"
     }
   },
   "health": {

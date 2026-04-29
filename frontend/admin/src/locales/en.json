@@ -7,6 +7,7 @@
     "health": "Server Status",
     "dashboard": "Dashboard",
     "users": "User Management",
+    "organizations": "Organization",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
     "mainMenu": "Main Menu"
@@ -108,6 +109,7 @@
       "lastLogin": "Last Login",
       "actions": "Actions"
     },
+    "filterOrganization": "Filter by department",
     "field": {
       "username": "Username",
       "email": "Email",
@@ -115,6 +117,8 @@
       "name": "Name",
       "status": "Status",
       "roleCodes": "Roles",
+      "organization": "Department",
+      "organizationPlaceholder": "Select department",
       "lastLoginAt": "Last Login",
       "createdAt": "Registered",
       "updatedAt": "Updated",
@@ -180,6 +184,80 @@
       "activity": "Activity",
       "loginHistory": "Login History",
       "loginHistoryPlaceholder": "Login history will be available in SPEC-CMS-005"
+    }
+  },
+  "organizations": {
+    "title": "Organization Management",
+    "tree": {
+      "empty": "No organizations found. Add a root organization."
+    },
+    "detail": {
+      "title": "Organization Detail",
+      "selectHint": "Select an organization from the tree"
+    },
+    "history": {
+      "empty": "No history found",
+      "versionList": "Version list",
+      "summary": "Change summary",
+      "changedBy": "Changed by",
+      "changedAt": "Changed at",
+      "snapshot": "Snapshot",
+      "selectVersion": "Select a version"
+    },
+    "field": {
+      "code": "Code",
+      "codePlaceholder": "Alphanumeric, hyphens, underscores only",
+      "codeHint": "Only alphanumeric, hyphens, underscores allowed. Cannot be changed after creation.",
+      "name": "Name",
+      "description": "Description",
+      "parentId": "Parent organization",
+      "sortOrder": "Sort order",
+      "status": "Status",
+      "depth": "Depth",
+      "path": "Path",
+      "createdAt": "Created at",
+      "updatedAt": "Updated at"
+    },
+    "action": {
+      "addRoot": "Add root org",
+      "addChild": "Add child org",
+      "edit": "Edit",
+      "delete": "Delete",
+      "viewHistory": "Change history",
+      "assignUser": "Assign user"
+    },
+    "confirm": {
+      "delete": "Delete organization '{name}'?",
+      "deleteHasChildren": "Cannot delete — child organizations exist",
+      "deleteHasUsers": "Cannot delete — users are assigned to this organization"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "DELETED": "Deleted"
+    },
+    "error": {
+      "loadFailed": "Failed to load organizations",
+      "saveFailed": "An error occurred while saving",
+      "deleteFailed": "An error occurred while deleting",
+      "historyFailed": "Failed to load change history",
+      "duplicateCode": "This code is already in use",
+      "depthExceeded": "Organization depth cannot exceed 5 levels",
+      "cyclicReference": "A cyclic reference was detected",
+      "hasChildren": "Cannot delete — child organizations exist. Remove them first.",
+      "hasUsers": "Cannot delete — users are assigned here. Reassign users first.",
+      "notFound": "Organization not found",
+      "codeRequired": "Please enter a code",
+      "codePattern": "Only alphanumeric characters, hyphens (-) and underscores (_) are allowed",
+      "nameRequired": "Please enter a name",
+      "nameLength": "Name must be 1–100 characters",
+      "sortOrderRequired": "Please enter a sort order"
+    },
+    "success": {
+      "created": "Organization created successfully",
+      "updated": "Organization updated successfully",
+      "deleted": "Organization deleted successfully",
+      "userAssigned": "User department assigned successfully"
     }
   },
   "health": {
