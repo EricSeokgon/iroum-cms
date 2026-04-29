@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    게시글 변경 이력 매퍼 XML.
+    REQ-BOARD-002-D-4: 수정 직전 본문 보존
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper">
+
+    <resultMap id="bbsPostHistoryResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPostHistory">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="version" column="version"/>
+        <result property="title" column="title"/>
+        <result property="contentHtml" column="content_html"/>
+        <result property="editedBy" column="edited_by"/>
+        <result property="editReason" column="edit_reason"/>
+        <result property="editedAt" column="edited_at"/>
+    </resultMap>
+
+    <select id="findByPostId" resultMap="bbsPostHistoryResultMap">
+        SELECT * FROM bbs_post_history WHERE post_id = #{postId} ORDER BY version DESC
+    </select>
+
+    <select id="nextVersionByPostId" resultType="int">
+        SELECT COALESCE(MAX(version), 0) + 1 FROM bbs_post_history WHERE post_id = #{postId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_post_history (post_id, version, title, content_html, edited_by, edit_reason)
+        VALUES (#{postId}, #{version}, #{title}, #{contentHtml}, #{editedBy}, #{editReason})
+    </insert>
+
+</mapper>

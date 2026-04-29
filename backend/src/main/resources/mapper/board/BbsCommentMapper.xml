@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    댓글 매퍼 XML.
+    REQ-BOARD-003: 댓글 CRUD (1-depth 계층형)
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsCommentMapper">
+
+    <resultMap id="bbsCommentResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsComment">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="parentCommentId" column="parent_comment_id"/>
+        <result property="authorId" column="author_id"/>
+        <result property="anonymousName" column="anonymous_name"/>
+        <result property="anonymousPwdHash" column="anonymous_pwd_hash"/>
+        <result property="content" column="content"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByPostId" resultMap="bbsCommentResultMap">
+        SELECT * FROM bbs_comment
+        WHERE post_id = #{postId} AND status != 'DELETED'
+        ORDER BY COALESCE(parent_comment_id, id), id
+    </select>
+
+    <select id="findById" resultMap="bbsCommentResultMap">
+        SELECT * FROM bbs_comment WHERE id = #{id} AND status != 'DELETED'
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_comment (post_id, parent_comment_id, author_id,
+            anonymous_name, anonymous_pwd_hash, content, ip_address, status)
+        VALUES (#{postId}, #{parentCommentId}, #{authorId},
+            #{anonymousName}, #{anonymousPwdHash}, #{content}, #{ipAddress}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE bbs_comment SET
+            content = #{content},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="deleteById">
+        UPDATE bbs_comment SET status = 'DELETED', updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

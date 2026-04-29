@@ -58,6 +58,11 @@ public class SecurityConfig {
                     "/actuator/health",
                     "/actuator/info"
                 ).permitAll()
+                // REQ-BOARD-001~003: 게시판·게시글·댓글 목록·상세 공개 조회 허용
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/boards/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입

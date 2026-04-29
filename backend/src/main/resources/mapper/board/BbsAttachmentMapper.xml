@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    첨부파일 매퍼 XML.
+    REQ-BOARD-004: 첨부파일 업로드
+    REQ-BOARD-005: 첨부파일 보안 다운로드
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsAttachmentMapper">
+
+    <resultMap id="bbsAttachmentResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsAttachment">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="commentId" column="comment_id"/>
+        <result property="fileName" column="file_name"/>
+        <result property="storedPath" column="stored_path"/>
+        <result property="mimeType" column="mime_type"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="checksumSha256" column="checksum_sha256"/>
+        <result property="scanStatus" column="scan_status"/>
+        <result property="scanCompletedAt" column="scan_completed_at"/>
+        <result property="downloadCount" column="download_count"/>
+        <result property="uploadedBy" column="uploaded_by"/>
+        <result property="uploadedAt" column="uploaded_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <select id="findByPostId" resultMap="bbsAttachmentResultMap">
+        SELECT * FROM bbs_attachment
+        WHERE post_id = #{postId} AND deleted_at IS NULL
+        ORDER BY uploaded_at
+    </select>
+
+    <select id="findById" resultMap="bbsAttachmentResultMap">
+        SELECT * FROM bbs_attachment WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <select id="countByPostId" resultType="int">
+        SELECT COUNT(*) FROM bbs_attachment WHERE post_id = #{postId} AND deleted_at IS NULL
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_attachment (post_id, comment_id, file_name, stored_path,
+            mime_type, size_bytes, checksum_sha256, scan_status, uploaded_by)
+        VALUES (#{postId}, #{commentId}, #{fileName}, #{storedPath},
+            #{mimeType}, #{sizeBytes}, #{checksumSha256}, #{scanStatus}, #{uploadedBy})
+    </insert>
+
+    <update id="incrementDownloadCount">
+        UPDATE bbs_attachment SET download_count = download_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="deleteById">
+        UPDATE bbs_attachment SET deleted_at = NOW() WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    Q&A 매퍼 XML.
+    REQ-BOARD-008: Q&A 질문/답변 워크플로
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.QnaMapper">
+
+    <resultMap id="qnaResultMap" type="kr.co.ircp.cms.domain.board.entity.Qna">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="questionHtml" column="question_html"/>
+        <result property="questionText" column="question_text"/>
+        <result property="questionerId" column="questioner_id"/>
+        <result property="answererId" column="answerer_id"/>
+        <result property="answerHtml" column="answer_html"/>
+        <result property="answerText" column="answer_text"/>
+        <result property="answeredAt" column="answered_at"/>
+        <result property="isPrivate" column="is_private"/>
+        <result property="status" column="status"/>
+        <result property="metadata" column="metadata"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <select id="findByQuestionerId" resultMap="qnaResultMap">
+        SELECT * FROM qna WHERE questioner_id = #{questionerId} AND deleted_at IS NULL
+        ORDER BY id DESC
+    </select>
+
+    <select id="findAll" resultMap="qnaResultMap">
+        SELECT * FROM qna WHERE deleted_at IS NULL ORDER BY id DESC
+    </select>
+
+    <select id="findById" resultMap="qnaResultMap">
+        SELECT * FROM qna WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO qna (title, question_html, question_text, questioner_id, is_private, status, metadata)
+        VALUES (#{title}, #{questionHtml}, #{questionText}, #{questionerId}, #{isPrivate}, #{status}, #{metadata}::jsonb)
+    </insert>
+
+    <update id="update">
+        UPDATE qna SET
+            answer_html = #{answerHtml},
+            answer_text = #{answerText},
+            answerer_id = #{answererId},
+            answered_at = #{answeredAt},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="deleteById">
+        UPDATE qna SET deleted_at = NOW(), updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>

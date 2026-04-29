@@ -33,4 +33,56 @@
         LIMIT #{limit}
     </select>
 
+    <!-- 관리자용 전체 이력 페이징 조회 (동적 WHERE + 정렬 화이트리스트) -->
+    <select id="findPage" resultType="kr.co.ircp.cms.domain.auth.dto.LoginHistoryEntry">
+        SELECT id, user_id AS userId, username, ip_address AS ipAddress, user_agent AS userAgent,
+               success, failure_reason AS failureReason, created_at AS createdAt
+        FROM login_history
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="username != null and username != ''">AND username ILIKE '%' || #{username} || '%'</if>
+            <if test="success != null">AND success = #{success}</if>
+            <if test="from != null">AND created_at &gt;= #{from}</if>
+            <if test="to != null">AND created_at &lt; #{to}</if>
+            <if test="ipAddress != null and ipAddress != ''">AND ip_address = #{ipAddress}</if>
+        </where>
+        ORDER BY
+        <choose>
+            <when test='sort == "createdAt,asc"'>created_at ASC</when>
+            <when test='sort == "username,asc"'>username ASC</when>
+            <when test='sort == "username,desc"'>username DESC</when>
+            <otherwise>created_at DESC</otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 관리자용 전체 이력 건수 -->
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*)
+        FROM login_history
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="username != null and username != ''">AND username ILIKE '%' || #{username} || '%'</if>
+            <if test="success != null">AND success = #{success}</if>
+            <if test="from != null">AND created_at &gt;= #{from}</if>
+            <if test="to != null">AND created_at &lt; #{to}</if>
+            <if test="ipAddress != null and ipAddress != ''">AND ip_address = #{ipAddress}</if>
+        </where>
+    </select>
+
+    <!-- 본인 이력 페이징 조회 -->
+    <select id="findByUserId" resultType="kr.co.ircp.cms.domain.auth.dto.LoginHistoryEntry">
+        SELECT id, user_id AS userId, username, ip_address AS ipAddress, user_agent AS userAgent,
+               success, failure_reason AS failureReason, created_at AS createdAt
+        FROM login_history
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 본인 이력 전체 건수 -->
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM login_history WHERE user_id = #{userId}
+    </select>
+
 </mapper>

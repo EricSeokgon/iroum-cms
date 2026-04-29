@@ -80,6 +80,29 @@ iroum:
     access-token-ttl: PT15M
     refresh-token-ttl: P7D
     issuer: iroum-cms
+  # 첨부파일 설정 (REQ-BOARD-004, REQ-BOARD-005)
+  board:
+    attachment:
+      # 첨부파일 저장 기본 경로 (운영: S3 경로 또는 마운트 경로로 재정의)
+      storage-path: ${ATTACHMENT_STORAGE_PATH:/tmp/iroum-cms/attachments}
+      # 허용 MIME 타입 목록
+      allowed-mime-types:
+        - image/jpeg
+        - image/png
+        - image/gif
+        - image/webp
+        - application/pdf
+        - application/msword
+        - application/vnd.openxmlformats-officedocument.wordprocessingml.document
+        - application/vnd.ms-excel
+        - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        - text/plain
+      # 전역 최대 파일 크기 (KB) — 게시판별 maxAttachmentSizeKb로 추가 제한 가능
+      global-max-size-kb: 51200
+      # HMAC-SHA256 서명 키 (운영: 환경변수 ATTACHMENT_HMAC_SECRET으로 반드시 재정의)
+      hmac-secret: ${ATTACHMENT_HMAC_SECRET:changeme-hmac-secret-replace-in-prod}
+      # 다운로드 URL TTL (초, 기본 900 = 15분)
+      download-ttl-seconds: 900
 
 logging:
   level:

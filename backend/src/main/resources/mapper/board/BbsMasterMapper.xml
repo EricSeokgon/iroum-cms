@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    게시판 마스터 매퍼 XML.
+    REQ-BOARD-001: 게시판 마스터 CRUD
+    Step 2 GREEN에서 실제 SQL 구현 예정.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsMasterMapper">
+
+    <resultMap id="bbsMasterResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsMaster">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="useComment" column="use_comment"/>
+        <result property="useAttachment" column="use_attachment"/>
+        <result property="maxAttachmentCount" column="max_attachment_count"/>
+        <result property="maxAttachmentSizeKb" column="max_attachment_size_kb"/>
+        <result property="allowAnonymous" column="allow_anonymous"/>
+        <result property="allowSecret" column="allow_secret"/>
+        <result property="pageSize" column="page_size"/>
+        <result property="roleRequiredRead" column="role_required_read"/>
+        <result property="roleRequiredWrite" column="role_required_write"/>
+        <result property="status" column="status"/>
+        <result property="metadata" column="metadata"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- Step 2 GREEN에서 SQL 구현 -->
+    <select id="findAll" resultMap="bbsMasterResultMap">
+        SELECT * FROM bbs_master WHERE deleted_at IS NULL ORDER BY id
+    </select>
+
+    <select id="findById" resultMap="bbsMasterResultMap">
+        SELECT * FROM bbs_master WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <select id="findByCode" resultMap="bbsMasterResultMap">
+        SELECT * FROM bbs_master WHERE code = #{code} AND deleted_at IS NULL
+    </select>
+
+    <select id="existsByCode" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM bbs_master WHERE code = #{code} AND deleted_at IS NULL)
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_master (code, name, description, type, use_comment, use_attachment,
+            max_attachment_count, max_attachment_size_kb, allow_anonymous, allow_secret,
+            page_size, role_required_read, role_required_write, status, metadata)
+        VALUES (#{code}, #{name}, #{description}, #{type}, #{useComment}, #{useAttachment},
+            #{maxAttachmentCount}, #{maxAttachmentSizeKb}, #{allowAnonymous}, #{allowSecret},
+            #{pageSize}, #{roleRequiredRead}, #{roleRequiredWrite}, #{status}, #{metadata}::jsonb)
+    </insert>
+
+    <update id="update">
+        UPDATE bbs_master SET
+            name = #{name},
+            description = #{description},
+            use_comment = #{useComment},
+            use_attachment = #{useAttachment},
+            max_attachment_count = #{maxAttachmentCount},
+            max_attachment_size_kb = #{maxAttachmentSizeKb},
+            allow_anonymous = #{allowAnonymous},
+            allow_secret = #{allowSecret},
+            page_size = #{pageSize},
+            role_required_read = #{roleRequiredRead},
+            role_required_write = #{roleRequiredWrite},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="deleteById">
+        UPDATE bbs_master SET deleted_at = NOW(), updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>

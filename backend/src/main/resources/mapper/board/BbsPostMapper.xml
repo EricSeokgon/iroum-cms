@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    게시글 매퍼 XML.
+    REQ-BOARD-002: 게시글 CRUD + 페이징·검색
+    Step 2 GREEN에서 TSVECTOR 전문검색 포함 SQL 구현 예정.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsPostMapper">
+
+    <resultMap id="bbsPostResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPost">
+        <id property="id" column="id"/>
+        <result property="bbsMasterId" column="bbs_master_id"/>
+        <result property="title" column="title"/>
+        <result property="contentHtml" column="content_html"/>
+        <result property="contentText" column="content_text"/>
+        <result property="authorId" column="author_id"/>
+        <result property="anonymousName" column="anonymous_name"/>
+        <result property="anonymousPwdHash" column="anonymous_pwd_hash"/>
+        <result property="isNotice" column="is_notice"/>
+        <result property="noticeFrom" column="notice_from"/>
+        <result property="noticeUntil" column="notice_until"/>
+        <result property="isSecret" column="is_secret"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="commentCount" column="comment_count"/>
+        <result property="status" column="status"/>
+        <result property="metadata" column="metadata"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <select id="findByBbsMasterIdPaged" resultMap="bbsPostResultMap">
+        SELECT * FROM bbs_post
+        WHERE bbs_master_id = #{bbsMasterId} AND deleted_at IS NULL
+        ORDER BY is_notice DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="searchByKeywordPaged" resultMap="bbsPostResultMap">
+        SELECT * FROM bbs_post
+        WHERE bbs_master_id = #{bbsMasterId}
+          AND deleted_at IS NULL
+          AND search_vector @@ plainto_tsquery('korean', #{keyword})
+        ORDER BY ts_rank(search_vector, plainto_tsquery('korean', #{keyword})) DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByBbsMasterId" resultType="long">
+        SELECT COUNT(*) FROM bbs_post WHERE bbs_master_id = #{bbsMasterId} AND deleted_at IS NULL
+    </select>
+
+    <select id="countSearchByKeyword" resultType="long">
+        SELECT COUNT(*) FROM bbs_post
+        WHERE bbs_master_id = #{bbsMasterId}
+          AND deleted_at IS NULL
+          AND search_vector @@ plainto_tsquery('korean', #{keyword})
+    </select>
+
+    <select id="findById" resultMap="bbsPostResultMap">
+        SELECT * FROM bbs_post WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_post (bbs_master_id, title, content_html, content_text,
+            author_id, anonymous_name, anonymous_pwd_hash,
+            is_notice, notice_from, notice_until, is_secret, status, metadata)
+        VALUES (#{bbsMasterId}, #{title}, #{contentHtml}, #{contentText},
+            #{authorId}, #{anonymousName}, #{anonymousPwdHash},
+            #{isNotice}, #{noticeFrom}, #{noticeUntil}, #{isSecret}, #{status}, #{metadata}::jsonb)
+    </insert>
+
+    <update id="update">
+        UPDATE bbs_post SET
+            title = #{title},
+            content_html = #{contentHtml},
+            content_text = #{contentText},
+            is_notice = #{isNotice},
+            notice_from = #{noticeFrom},
+            notice_until = #{noticeUntil},
+            is_secret = #{isSecret},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="incrementViewCount">
+        UPDATE bbs_post SET view_count = view_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="deleteById">
+        UPDATE bbs_post SET deleted_at = NOW(), status = 'DELETED', updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>
