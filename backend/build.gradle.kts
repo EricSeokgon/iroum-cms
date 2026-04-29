@@ -48,6 +48,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+    // AOP — AspectJ 위빙 지원 (@AuditLog Aspect, SPEC-CMS-005 §7)
+    implementation("org.springframework.boot:spring-boot-starter-aop")
 
     // ─── MyBatis ──────────────────────────────────────────────────────────
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:$mybatisStarterVersion")

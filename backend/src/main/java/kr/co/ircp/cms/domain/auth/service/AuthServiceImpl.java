@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.auth.service;
 
 import kr.co.ircp.cms.config.JwtProperties;
+import kr.co.ircp.cms.domain.audit.annotation.AuditLog;
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
@@ -17,11 +18,9 @@ import kr.co.ircp.cms.domain.auth.repository.LoginHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
+import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Set;
 
@@ -69,6 +68,7 @@ public class AuthServiceImpl implements AuthService {
      * <p>REQ-AUTH-001, 005, 011 통합 흐름:
      * 사용자 조회 → 잠금 확인 → 비밀번호 검증 → 실패 횟수 관리 → 토큰 발급 → 이력 기록.
      */
+    @AuditLog(action = "LOGIN", entityType = "User")
     @Override
     public LoginOutcome login(LoginRequest req, String ipAddress, String userAgent) {
         Instant now = Instant.now();
@@ -171,6 +171,7 @@ public class AuthServiceImpl implements AuthService {
      *
      * <p>REQ-AUTH-002 — 기존 토큰 회수 + 새 토큰 쌍 발급 + Token Reuse Detection.
      */
+    @AuditLog(action = "TOKEN_REFRESH", entityType = "User")
     @Override
     public RefreshResult refresh(String refreshTokenCookie, String ipAddress, String userAgent) {
         Instant now = Instant.now();
@@ -228,6 +229,7 @@ public class AuthServiceImpl implements AuthService {
      *
      * <p>REQ-AUTH-003 — Refresh Token 회수 + Access Token 블랙리스트 등록.
      */
+    @AuditLog(action = "LOGOUT", entityType = "User")
     @Override
     public void logout(String accessToken, String refreshTokenCookie) {
         Instant now = Instant.now();
@@ -251,19 +253,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * SHA-256 해시 (Hex 64자).
+     * SHA-256 해시 (Hex 64자) — HashUtil 위임.
      *
-     * <p>Refresh Token / Access Token 을 DB에 저장하기 전 해시화.
+     * <p>Step 3 REFACTOR: JwtAuthenticationFilter와 DRY 제거를 위해 HashUtil로 추출.
      */
     private String sha256Hex(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(64);
-            for (byte b : digest) sb.append(String.format("%02x", b));
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 unavailable", e);
-        }
+        return HashUtil.sha256Hex(input);
     }
 }

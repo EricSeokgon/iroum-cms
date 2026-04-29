@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.co.ircp.cms.domain.audit.repository.AuditLogMapper">
+
+    <!--
+        감사 로그 삽입 (APPEND-ONLY).
+        SPEC-CMS-005 §4.2 — before_value / after_value는 ::jsonb 캐스팅으로 JSONB 타입으로 저장.
+    -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.audit.entity.AuditLog">
+        INSERT INTO audit_log (
+            event_time, actor_id, actor_role, action,
+            entity_type, entity_id,
+            before_value, after_value,
+            ip_address, user_agent, trace_id,
+            severity, result, failure_reason, duration_ms
+        ) VALUES (
+            #{eventTime}, #{actorId}, #{actorRole}, #{action},
+            #{entityType}, #{entityId},
+            #{beforeValue}::jsonb, #{afterValue}::jsonb,
+            #{ipAddress}, #{userAgent}, #{traceId},
+            #{severity}, #{result}, #{failureReason}, #{durationMs}
+        )
+    </insert>
+
+</mapper>
