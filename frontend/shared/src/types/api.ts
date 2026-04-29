@@ -366,3 +366,115 @@ export interface LoginHistoryEntry {
   failureReason?: string
   createdAt: string  // ISO 8601
 }
+
+// ── 게시판 타입 (SPEC-CMS-003) ────────────────────────────────────────────────
+
+/** 게시판 유형 */
+export type BbsType = 'NORMAL' | 'NOTICE' | 'QNA' | 'FAQ' | 'GALLERY' | 'PUBLICATION' | 'SURVEY'
+
+/** 게시글 상태 */
+export type BbsPostStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'DELETED'
+
+/** 게시판 마스터 목록용 요약 DTO */
+export interface BbsMasterSummary {
+  id: number
+  code: string
+  name: string
+  type: BbsType
+  useComment: boolean
+  useAttachment: boolean
+  status: string
+  createdAt: string
+}
+
+/** 게시판 마스터 상세 DTO */
+export interface BbsMasterDetail extends BbsMasterSummary {
+  description?: string
+  maxAttachmentCount: number
+  maxAttachmentSizeKb: number
+  allowAnonymous: boolean
+}
+
+/** 게시판 마스터 생성 요청 */
+export interface BbsMasterCreateRequest {
+  code: string
+  name: string
+  description?: string
+  type: BbsType
+  useComment: boolean
+  useAttachment: boolean
+  maxAttachmentCount: number
+  maxAttachmentSizeKb: number
+  allowAnonymous: boolean
+}
+
+/** 게시글 목록용 요약 DTO */
+export interface PostSummary {
+  id: number
+  bbsId: number
+  title: string
+  authorUsername: string
+  viewCount: number
+  likeCount: number
+  status: BbsPostStatus
+  isNotice: boolean
+  publishedAt?: string
+  createdAt: string
+}
+
+/** 게시글 상세 DTO */
+export interface PostDetail extends PostSummary {
+  contentHtml: string
+  categoryCode?: string
+  attachments: AttachmentSummary[]
+  updatedAt: string
+}
+
+/** 게시글 생성 요청 */
+export interface PostCreateRequest {
+  title: string
+  contentHtml: string
+  categoryCode?: string
+  isNotice: boolean
+}
+
+/** 게시글 수정 요청 */
+export interface PostUpdateRequest {
+  title?: string
+  contentHtml?: string
+  categoryCode?: string
+  isNotice?: boolean
+  status?: BbsPostStatus
+}
+
+/** 댓글 목록용 요약 DTO (1단계 대댓글 포함) */
+export interface CommentSummary {
+  id: number
+  parentCommentId?: number | null
+  authorUsername: string
+  content: string
+  createdAt: string
+  children?: CommentSummary[]
+}
+
+/** 댓글 작성 요청 */
+export interface CommentCreateRequest {
+  content: string
+  parentCommentId?: number | null
+}
+
+/** 첨부파일 요약 DTO */
+export interface AttachmentSummary {
+  id: number
+  fileName: string
+  mimeType: string
+  sizeBytes: number
+  downloadCount: number
+  uploadedAt: string
+}
+
+/** 첨부파일 서명 다운로드 URL 응답 */
+export interface AttachmentDownloadUrl {
+  signedUrl: string
+  expiresAt: string
+}

@@ -3,6 +3,8 @@ package kr.co.ircp.cms.domain.board.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.board.dto.BbsMasterCreateRequest;
+import kr.co.ircp.cms.domain.board.dto.BbsMasterDetail;
+import kr.co.ircp.cms.domain.board.dto.BbsMasterSummary;
 import kr.co.ircp.cms.domain.board.entity.BbsType;
 import kr.co.ircp.cms.domain.board.service.BbsMasterService;
 import org.junit.jupiter.api.DisplayName;
@@ -16,24 +18,26 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * BbsMasterController RED 단계 테스트.
+ * BbsMasterController GREEN 단계 테스트.
  * REQ-BOARD-001: 게시판 마스터 CRUD API HTTP 계층 검증.
- *
- * <p>Step 2 GREEN 전까지 서비스가 UnsupportedOperationException을 던지므로
- * 모든 요청은 500 또는 해당 상태로 응답한다.
  */
 @WebMvcTest(BbsMasterController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
 @Import(GlobalExceptionHandler.class)
-@DisplayName("BbsMasterController RED 테스트 (REQ-BOARD-001)")
+@DisplayName("BbsMasterController GREEN 테스트 (REQ-BOARD-001)")
 class BbsMasterControllerTest {
 
     @Autowired
@@ -46,30 +50,43 @@ class BbsMasterControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/boards — 서비스 스텁 상태 500 반환 (RED)")
-    void listBoards_serviceStub_returns500() throws Exception {
-        when(bbsMasterService.listBoards())
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("GET /api/v1/boards — 200 OK, 목록 반환")
+    void listBoards_returns200WithList() throws Exception {
+        BbsMasterSummary summary = new BbsMasterSummary(
+                1L, "NOTICE", "공지사항", BbsType.NOTICE,
+                false, false, "ACTIVE", Instant.now()
+        );
+        when(bbsMasterService.listBoards()).thenReturn(List.of(summary));
 
         mockMvc.perform(get("/api/v1/boards"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").value("NOTICE"));
     }
 
     @Test
-    @DisplayName("GET /api/v1/boards/{id} — 서비스 스텁 상태 500 반환 (RED)")
-    void getBoard_serviceStub_returns500() throws Exception {
-        when(bbsMasterService.getBoard(1L))
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("GET /api/v1/boards/{id} — 200 OK, 단건 반환")
+    void getBoard_returns200WithDetail() throws Exception {
+        BbsMasterDetail detail = new BbsMasterDetail(
+                1L, "NOTICE", "공지사항", null, BbsType.NOTICE,
+                false, false, 0, 0L, false, false, 20, null, null,
+                "ACTIVE", null, Instant.now(), Instant.now()
+        );
+        when(bbsMasterService.getBoard(1L)).thenReturn(detail);
 
         mockMvc.perform(get("/api/v1/boards/1"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
-    @DisplayName("POST /api/v1/boards — 서비스 스텁 상태 500 반환 (RED)")
-    void createBoard_serviceStub_returns500() throws Exception {
-        when(bbsMasterService.createBoard(any()))
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("POST /api/v1/boards — 201 Created, Location 헤더 포함")
+    void createBoard_returns201WithBody() throws Exception {
+        BbsMasterDetail created = new BbsMasterDetail(
+                2L, "NOTICE", "공지사항", null, BbsType.NOTICE,
+                true, false, 0, 0L, false, false, 20, null, null,
+                "ACTIVE", null, Instant.now(), Instant.now()
+        );
+        when(bbsMasterService.createBoard(any())).thenReturn(created);
 
         BbsMasterCreateRequest request = new BbsMasterCreateRequest(
                 "NOTICE", "공지사항", null, BbsType.NOTICE,
@@ -79,6 +96,7 @@ class BbsMasterControllerTest {
         mockMvc.perform(post("/api/v1/boards")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(2));
     }
 }

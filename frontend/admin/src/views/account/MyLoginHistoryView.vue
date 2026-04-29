@@ -10,16 +10,6 @@
       </p>
     </div>
 
-    <!-- API 미구현 안내 박스 -->
-    <el-alert
-      :title="t('audit.loginHistory.apiPending')"
-      type="warning"
-      :closable="false"
-      show-icon
-      class="mb-4"
-      role="note"
-    />
-
     <!-- 보안 경고 박스 — KWCAG: role="note"로 보조기술에 전달 -->
     <div
       role="note"
@@ -180,7 +170,6 @@ async function loadEntries(): Promise<void> {
     totalElements.value = res.data.totalElements
     liveAnnouncement.value = `${t('audit.loginHistory.my.empty')} (${res.data.totalElements})`
   } catch {
-    // 백엔드 미구현 상태 — 빈 결과 표시
     entries.value = []
     totalElements.value = 0
   } finally {

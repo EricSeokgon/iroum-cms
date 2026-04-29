@@ -7,16 +7,6 @@
       </h2>
     </div>
 
-    <!-- API 미구현 안내 박스 -->
-    <el-alert
-      :title="t('audit.loginHistory.apiPending')"
-      type="warning"
-      :closable="false"
-      show-icon
-      class="mb-4"
-      role="note"
-    />
-
     <!-- 검색 결과 갱신 알림 (스크린 리더 — KWCAG aria-live) -->
     <div
       aria-live="polite"
@@ -343,10 +333,9 @@ async function loadEntries(): Promise<void> {
     totalElements.value = res.data.totalElements
     liveAnnouncement.value = `${t('audit.loginHistory.empty')} (${res.data.totalElements})`
   } catch {
-    // 백엔드 미구현 상태 — 빈 결과 표시
+    ElMessage.error(t('audit.loginHistory.empty'))
     entries.value = []
     totalElements.value = 0
-    ElMessage.warning(t('audit.loginHistory.apiPending'))
   } finally {
     loading.value = false
   }

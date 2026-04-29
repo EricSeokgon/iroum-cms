@@ -85,6 +85,21 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 콘텐츠 그룹 — 게시판 관리 -->
+        <el-sub-menu index="board" :aria-label="t('nav.board')">
+          <template #title>
+            <el-icon><i-ep-document /></el-icon>
+            <span>{{ t('nav.board') }}</span>
+          </template>
+          <!-- 게시판 마스터 관리 — SUPER_ADMIN만 -->
+          <el-menu-item
+            v-if="hasPermission(auth, 'ROLE:READ')"
+            index="/board/masters"
+          >
+            <span>{{ t('nav.boardMasters') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 

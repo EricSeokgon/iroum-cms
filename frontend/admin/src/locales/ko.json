@@ -17,7 +17,9 @@
     "loginHistoryAudit": "로그인 이력",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
-    "mainMenu": "주요 메뉴"
+    "mainMenu": "주요 메뉴",
+    "board": "콘텐츠",
+    "boardMasters": "게시판 관리"
   },
   "auth": {
     "login": {
@@ -132,6 +134,10 @@
   "common": {
     "cancel": "취소",
     "back": "뒤로",
+    "save": "저장",
+    "yes": "예",
+    "no": "아니오",
+    "actions": "액션",
     "loading": "불러오는 중...",
     "error": {
       "network": "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
@@ -411,7 +417,6 @@
         "failure": "실패"
       },
       "empty": "조회된 이력이 없습니다",
-      "apiPending": "백엔드 로그인 이력 조회 API는 다음 단계에서 추가될 예정입니다.",
       "my": {
         "title": "내 로그인 이력",
         "description": "최근 로그인 시도 기록을 확인하세요",
@@ -493,6 +498,134 @@
       "userSection": {
         "title": "최근 권한 변경 이력",
         "viewAllLink": "전체 이력 보기"
+      }
+    }
+  },
+  "board": {
+    "masters": {
+      "title": "게시판 관리",
+      "add": "게시판 추가",
+      "edit": "수정",
+      "delete": "삭제",
+      "empty": "등록된 게시판이 없습니다",
+      "loaded": "{count}개 게시판 로드됨",
+      "field": {
+        "code": "코드",
+        "codePlaceholder": "영숫자, 하이픈, 언더스코어",
+        "name": "이름",
+        "description": "설명",
+        "type": "유형",
+        "useComment": "댓글 허용",
+        "useAttachment": "첨부 허용",
+        "maxAttachmentCount": "최대 첨부 수",
+        "maxAttachmentSizeKb": "최대 파일 크기",
+        "allowAnonymous": "익명 허용",
+        "status": "상태",
+        "createdAt": "생성일"
+      },
+      "type": {
+        "NORMAL": "일반",
+        "NOTICE": "공지",
+        "QNA": "Q&A",
+        "FAQ": "FAQ",
+        "GALLERY": "갤러리",
+        "PUBLICATION": "발간자료",
+        "SURVEY": "설문"
+      },
+      "confirm": {
+        "delete": "'{name}' 게시판을 삭제하시겠습니까?"
+      },
+      "error": {
+        "loadFailed": "게시판 목록을 불러오지 못했습니다",
+        "saveFailed": "저장 중 오류가 발생했습니다",
+        "deleteFailed": "삭제 중 오류가 발생했습니다",
+        "codeRequired": "코드를 입력해 주세요",
+        "codePattern": "영숫자, 하이픈(-), 언더스코어(_)만 사용 가능합니다",
+        "nameRequired": "이름을 입력해 주세요",
+        "nameLength": "이름은 1~100자 사이여야 합니다"
+      },
+      "success": {
+        "created": "게시판이 생성되었습니다",
+        "updated": "게시판이 수정되었습니다",
+        "deleted": "게시판이 삭제되었습니다"
+      }
+    },
+    "posts": {
+      "title": "게시글 목록",
+      "write": "글쓰기",
+      "edit": "수정",
+      "delete": "삭제",
+      "download": "다운로드",
+      "notice": "공지",
+      "search": "제목 또는 내용 검색",
+      "searchBtn": "검색",
+      "sort": "정렬",
+      "sortOptions": {
+        "latest": "최신순",
+        "oldest": "오래된순",
+        "viewCount": "조회수순"
+      },
+      "empty": "게시글이 없습니다",
+      "resultCount": "총 {count}건",
+      "content": "게시글 본문",
+      "uploadFile": "파일 첨부",
+      "uploadTip": "파일 1개당 최대 10MB, 최대 5개",
+      "field": {
+        "no": "번호",
+        "title": "제목",
+        "titlePlaceholder": "제목을 입력하세요",
+        "author": "작성자",
+        "viewCount": "조회수",
+        "createdAt": "작성일",
+        "content": "본문",
+        "contentPlaceholder": "내용을 입력하세요",
+        "isNotice": "공지",
+        "isNoticeLabel": "상단 공지로 설정",
+        "categoryCode": "카테고리",
+        "categoryPlaceholder": "카테고리 (선택)",
+        "attachments": "첨부파일"
+      },
+      "confirm": {
+        "delete": "게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+      },
+      "error": {
+        "loadFailed": "게시글을 불러오지 못했습니다",
+        "saveFailed": "저장 중 오류가 발생했습니다",
+        "deleteFailed": "삭제 중 오류가 발생했습니다",
+        "notFound": "게시글을 찾을 수 없습니다",
+        "downloadFailed": "다운로드 중 오류가 발생했습니다",
+        "uploadFailed": "업로드에 실패했습니다",
+        "fileLimit": "최대 5개 파일까지 첨부 가능합니다",
+        "titleRequired": "제목을 입력해 주세요",
+        "titleLength": "제목은 500자 이하여야 합니다",
+        "contentRequired": "본문을 입력해 주세요"
+      },
+      "success": {
+        "created": "게시글이 등록되었습니다",
+        "updated": "게시글이 수정되었습니다",
+        "deleted": "게시글이 삭제되었습니다",
+        "uploaded": "업로드되었습니다"
+      }
+    },
+    "comments": {
+      "title": "댓글",
+      "placeholder": "댓글을 입력하세요",
+      "replyPlaceholder": "답글을 입력하세요",
+      "writeNew": "새 댓글 작성",
+      "delete": "삭제",
+      "empty": "댓글이 없습니다",
+      "editNotImplemented": "댓글 수정은 준비 중입니다",
+      "confirm": {
+        "delete": "댓글을 삭제하시겠습니까?"
+      },
+      "error": {
+        "loadFailed": "댓글을 불러오지 못했습니다",
+        "saveFailed": "댓글 등록 중 오류가 발생했습니다",
+        "deleteFailed": "댓글 삭제 중 오류가 발생했습니다"
+      },
+      "success": {
+        "created": "댓글이 등록되었습니다",
+        "deleted": "댓글이 삭제되었습니다"
       }
     }
   },

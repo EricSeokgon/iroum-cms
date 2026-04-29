@@ -102,6 +102,41 @@ const router = createRouter({
           component: () => import('@/views/account/MyLoginHistoryView.vue'),
           meta: { title: '내 로그인 이력' },
         },
+        // ── 게시판 라우트 (SPEC-CMS-003) ────────────────────────────────────
+        {
+          path: 'board/masters',
+          name: 'board-masters',
+          component: () => import('@/views/board/BoardListView.vue'),
+          meta: { title: '게시판 관리' },
+        },
+        {
+          path: 'board/:bbsId/posts',
+          name: 'board-posts',
+          component: () => import('@/views/board/PostListView.vue'),
+          props: true,
+          meta: { title: '게시글 목록' },
+        },
+        {
+          path: 'board/posts/:id',
+          name: 'board-post-detail',
+          component: () => import('@/views/board/PostDetailView.vue'),
+          props: true,
+          meta: { title: '게시글 상세' },
+        },
+        {
+          path: 'board/:bbsId/posts/new',
+          name: 'board-post-create',
+          component: () => import('@/views/board/PostFormView.vue'),
+          props: true,
+          meta: { title: '게시글 작성' },
+        },
+        {
+          path: 'board/posts/:id/edit',
+          name: 'board-post-edit',
+          component: () => import('@/views/board/PostFormView.vue'),
+          props: true,
+          meta: { title: '게시글 수정' },
+        },
       ],
     },
 

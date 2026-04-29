@@ -2,7 +2,10 @@ package kr.co.ircp.cms.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
+import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
+import kr.co.ircp.cms.domain.board.dto.PostDetail;
+import kr.co.ircp.cms.domain.board.dto.PostSummary;
 import kr.co.ircp.cms.domain.board.service.PostService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +18,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Instant;
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -23,19 +29,17 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * PostController RED 단계 테스트.
+ * PostController GREEN 단계 테스트.
  * REQ-BOARD-002: 게시글 CRUD + 검색 API HTTP 계층 검증.
- *
- * <p>Step 2 GREEN 전까지 서비스가 UnsupportedOperationException을 던지므로
- * 모든 요청은 500 상태로 응답한다.
  */
 @WebMvcTest(PostController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
 @Import(GlobalExceptionHandler.class)
-@DisplayName("PostController RED 테스트 (REQ-BOARD-002)")
+@DisplayName("PostController GREEN 테스트 (REQ-BOARD-002)")
 class PostControllerTest {
 
     @Autowired
@@ -48,31 +52,43 @@ class PostControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts — 서비스 스텁 500 (RED)")
-    void listPosts_serviceStub_returns500() throws Exception {
-        when(postService.listPosts(anyLong(), anyInt(), anyInt()))
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts — 200 OK, 페이징 응답")
+    void listPosts_returns200WithPage() throws Exception {
+        PostSummary summary = new PostSummary(
+                1L, 1L, "NOTICE", "공지 제목", 10L, "관리자",
+                false, false, 0L, 0L, 0L, Instant.now()
+        );
+        PageResponse<PostSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
+        when(postService.listPosts(anyLong(), anyInt(), anyInt())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/boards/1/posts"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].id").value(1))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
-    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts/search — 서비스 스텁 500 (RED)")
-    void searchPosts_serviceStub_returns500() throws Exception {
-        when(postService.searchPosts(anyLong(), anyString(), anyInt(), anyInt()))
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts/search — 200 OK, 검색 결과")
+    void searchPosts_returns200WithResults() throws Exception {
+        PageResponse<PostSummary> empty = PageResponse.of(List.of(), 0, 20, 0L);
+        when(postService.searchPosts(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(empty);
 
         mockMvc.perform(get("/api/v1/boards/1/posts/search")
                         .param("keyword", "공지"))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test
-    @DisplayName("POST /api/v1/boards/{bbsMasterId}/posts — 서비스 스텁 500 (RED)")
-    void createPost_serviceStub_returns500() throws Exception {
-        when(postService.createPost(any(), isNull()))
-                .thenThrow(new UnsupportedOperationException("Step 2 GREEN 대기"));
+    @DisplayName("POST /api/v1/boards/{bbsMasterId}/posts — 201 Created, 게시글 반환")
+    void createPost_returns201WithDetail() throws Exception {
+        PostDetail created = new PostDetail(
+                5L, 1L, "NOTICE", "테스트 제목", "<p>내용</p>",
+                null, null, false, null, null, false,
+                0L, 0L, "ACTIVE", null, List.of(),
+                Instant.now(), Instant.now()
+        );
+        when(postService.createPost(any(), isNull())).thenReturn(created);
 
         PostCreateRequest request = new PostCreateRequest(
                 1L, "테스트 제목", "<p>내용</p>", "내용",
@@ -82,6 +98,7 @@ class PostControllerTest {
         mockMvc.perform(post("/api/v1/boards/1/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().is5xxServerError());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(5));
     }
 }

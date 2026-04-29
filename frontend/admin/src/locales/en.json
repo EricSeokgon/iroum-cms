@@ -17,7 +17,9 @@
     "loginHistoryAudit": "Login History",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
-    "mainMenu": "Main Menu"
+    "mainMenu": "Main Menu",
+    "board": "Content",
+    "boardMasters": "Board Management"
   },
   "auth": {
     "login": {
@@ -133,6 +135,10 @@
   "common": {
     "cancel": "Cancel",
     "back": "Back",
+    "save": "Save",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
     "loading": "Loading...",
     "error": {
       "network": "Unable to connect to server. Please try again later.",
@@ -412,7 +418,6 @@
         "failure": "Failure"
       },
       "empty": "No login history found",
-      "apiPending": "Backend login history API will be added in the next phase.",
       "my": {
         "title": "My Login History",
         "description": "Check your recent login attempts",
@@ -494,6 +499,134 @@
       "userSection": {
         "title": "Recent Permission Changes",
         "viewAllLink": "View All History"
+      }
+    }
+  },
+  "board": {
+    "masters": {
+      "title": "Board Management",
+      "add": "Add Board",
+      "edit": "Edit",
+      "delete": "Delete",
+      "empty": "No boards found",
+      "loaded": "{count} boards loaded",
+      "field": {
+        "code": "Code",
+        "codePlaceholder": "Alphanumeric, hyphens, underscores",
+        "name": "Name",
+        "description": "Description",
+        "type": "Type",
+        "useComment": "Allow Comments",
+        "useAttachment": "Allow Attachments",
+        "maxAttachmentCount": "Max Attachments",
+        "maxAttachmentSizeKb": "Max File Size",
+        "allowAnonymous": "Allow Anonymous",
+        "status": "Status",
+        "createdAt": "Created"
+      },
+      "type": {
+        "NORMAL": "General",
+        "NOTICE": "Notice",
+        "QNA": "Q&A",
+        "FAQ": "FAQ",
+        "GALLERY": "Gallery",
+        "PUBLICATION": "Publication",
+        "SURVEY": "Survey"
+      },
+      "confirm": {
+        "delete": "Delete board '{name}'?"
+      },
+      "error": {
+        "loadFailed": "Failed to load boards",
+        "saveFailed": "An error occurred while saving",
+        "deleteFailed": "An error occurred while deleting",
+        "codeRequired": "Please enter a code",
+        "codePattern": "Only alphanumeric, hyphens (-) and underscores (_) are allowed",
+        "nameRequired": "Please enter a name",
+        "nameLength": "Name must be 1–100 characters"
+      },
+      "success": {
+        "created": "Board created successfully",
+        "updated": "Board updated successfully",
+        "deleted": "Board deleted successfully"
+      }
+    },
+    "posts": {
+      "title": "Posts",
+      "write": "Write Post",
+      "edit": "Edit",
+      "delete": "Delete",
+      "download": "Download",
+      "notice": "Notice",
+      "search": "Search title or content",
+      "searchBtn": "Search",
+      "sort": "Sort",
+      "sortOptions": {
+        "latest": "Latest",
+        "oldest": "Oldest",
+        "viewCount": "Most Viewed"
+      },
+      "empty": "No posts found",
+      "resultCount": "Total {count}",
+      "content": "Post content",
+      "uploadFile": "Attach File",
+      "uploadTip": "Max 10MB per file, up to 5 files",
+      "field": {
+        "no": "No.",
+        "title": "Title",
+        "titlePlaceholder": "Enter title",
+        "author": "Author",
+        "viewCount": "Views",
+        "createdAt": "Created",
+        "content": "Content",
+        "contentPlaceholder": "Enter content",
+        "isNotice": "Notice",
+        "isNoticeLabel": "Pin as notice",
+        "categoryCode": "Category",
+        "categoryPlaceholder": "Category (optional)",
+        "attachments": "Attachments"
+      },
+      "confirm": {
+        "delete": "Delete this post? This action cannot be undone."
+      },
+      "error": {
+        "loadFailed": "Failed to load post",
+        "saveFailed": "An error occurred while saving",
+        "deleteFailed": "An error occurred while deleting",
+        "notFound": "Post not found",
+        "downloadFailed": "An error occurred while downloading",
+        "uploadFailed": "Upload failed",
+        "fileLimit": "You can attach up to 5 files",
+        "titleRequired": "Please enter a title",
+        "titleLength": "Title must be 500 characters or less",
+        "contentRequired": "Please enter content"
+      },
+      "success": {
+        "created": "Post created successfully",
+        "updated": "Post updated successfully",
+        "deleted": "Post deleted successfully",
+        "uploaded": "uploaded"
+      }
+    },
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Write a comment",
+      "replyPlaceholder": "Write a reply",
+      "writeNew": "New Comment",
+      "delete": "Delete",
+      "empty": "No comments yet",
+      "editNotImplemented": "Comment editing is coming soon",
+      "confirm": {
+        "delete": "Delete this comment?"
+      },
+      "error": {
+        "loadFailed": "Failed to load comments",
+        "saveFailed": "An error occurred while saving the comment",
+        "deleteFailed": "An error occurred while deleting the comment"
+      },
+      "success": {
+        "created": "Comment posted",
+        "deleted": "Comment deleted"
       }
     }
   },
