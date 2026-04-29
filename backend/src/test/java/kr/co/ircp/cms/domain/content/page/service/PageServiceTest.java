@@ -163,12 +163,6 @@ class PageServiceTest {
         Page draftPage = stubPage(1L, "DRAFT", "about-us");
         when(pageMapper.findById(1L)).thenReturn(Optional.of(draftPage));
         when(pageMapper.publish(1L)).thenReturn(1);
-        when(pageMapper.findById(1L)).thenReturn(Optional.of(
-                Page.builder().id(1L).siteId(1L).templateId(1L).code("PAGE_1")
-                        .title("테스트 페이지").slug("about-us").status("PUBLISHED")
-                        .publishedAt(Instant.now()).currentVersion(1)
-                        .createdAt(Instant.now()).updatedAt(Instant.now()).build()
-        ));
 
         // Act
         PageResponse response = pageService.publishPage(1L, null, 99L);

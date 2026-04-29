@@ -104,6 +104,10 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 
+    // ─── HTML Sanitizer (SPEC-CMS-004, REQ-CONTENT-006-D-1) ──────────────────
+    // OWASP XSS 방어: RICH_TEXT / MARKDOWN / IMAGE 블록 payload sanitize용
+    implementation("org.jsoup:jsoup:1.17.2")
+
     // ─── 미디어 라이브러리 (SPEC-CMS-MEDIA-001) ───────────────────────────────
     // Apache Tika: 매직넘버 기반 MIME 검증 (REQ-MEDIA-001-D-5)
     implementation("org.apache.tika:tika-core:2.9.2")
