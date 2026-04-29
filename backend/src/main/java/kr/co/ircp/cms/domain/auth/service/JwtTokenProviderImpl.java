@@ -144,7 +144,7 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
             String subject = claims.getSubject();
             return Optional.of(Long.parseLong(subject));
 
-        } catch (JwtException | IllegalArgumentException | NumberFormatException e) {
+        } catch (JwtException | IllegalArgumentException e) {
             return Optional.empty();
         }
     }

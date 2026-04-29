@@ -11,21 +11,23 @@
 
     <resultMap id="bbsPostResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPost">
         <id property="id" column="id"/>
-        <result property="bbsMasterId" column="bbs_master_id"/>
+        <result property="bbsId" column="bbs_id"/>
         <result property="title" column="title"/>
         <result property="contentHtml" column="content_html"/>
         <result property="contentText" column="content_text"/>
+        <result property="categoryCode" column="category_code"/>
         <result property="authorId" column="author_id"/>
-        <result property="anonymousName" column="anonymous_name"/>
-        <result property="anonymousPwdHash" column="anonymous_pwd_hash"/>
+        <result property="authorName" column="author_name"/>
         <result property="isNotice" column="is_notice"/>
         <result property="noticeFrom" column="notice_from"/>
         <result property="noticeUntil" column="notice_until"/>
         <result property="isSecret" column="is_secret"/>
         <result property="viewCount" column="view_count"/>
+        <result property="likeCount" column="like_count"/>
         <result property="commentCount" column="comment_count"/>
+        <result property="attachmentCount" column="attachment_count"/>
         <result property="status" column="status"/>
-        <result property="metadata" column="metadata"/>
+        <result property="publishedAt" column="published_at"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deletedAt" column="deleted_at"/>
@@ -33,29 +35,29 @@
 
     <select id="findByBbsMasterIdPaged" resultMap="bbsPostResultMap">
         SELECT * FROM bbs_post
-        WHERE bbs_master_id = #{bbsMasterId} AND deleted_at IS NULL
+        WHERE bbs_id = #{bbsMasterId} AND deleted_at IS NULL
         ORDER BY is_notice DESC, id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <select id="searchByKeywordPaged" resultMap="bbsPostResultMap">
         SELECT * FROM bbs_post
-        WHERE bbs_master_id = #{bbsMasterId}
+        WHERE bbs_id = #{bbsMasterId}
           AND deleted_at IS NULL
-          AND search_vector @@ plainto_tsquery('korean', #{keyword})
-        ORDER BY ts_rank(search_vector, plainto_tsquery('korean', #{keyword})) DESC
+          AND search_vector @@ plainto_tsquery('simple', #{keyword})
+        ORDER BY ts_rank(search_vector, plainto_tsquery('simple', #{keyword})) DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <select id="countByBbsMasterId" resultType="long">
-        SELECT COUNT(*) FROM bbs_post WHERE bbs_master_id = #{bbsMasterId} AND deleted_at IS NULL
+        SELECT COUNT(*) FROM bbs_post WHERE bbs_id = #{bbsMasterId} AND deleted_at IS NULL
     </select>
 
     <select id="countSearchByKeyword" resultType="long">
         SELECT COUNT(*) FROM bbs_post
-        WHERE bbs_master_id = #{bbsMasterId}
+        WHERE bbs_id = #{bbsMasterId}
           AND deleted_at IS NULL
-          AND search_vector @@ plainto_tsquery('korean', #{keyword})
+          AND search_vector @@ plainto_tsquery('simple', #{keyword})
     </select>
 
     <select id="findById" resultMap="bbsPostResultMap">
@@ -63,12 +65,12 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO bbs_post (bbs_master_id, title, content_html, content_text,
-            author_id, anonymous_name, anonymous_pwd_hash,
-            is_notice, notice_from, notice_until, is_secret, status, metadata)
-        VALUES (#{bbsMasterId}, #{title}, #{contentHtml}, #{contentText},
-            #{authorId}, #{anonymousName}, #{anonymousPwdHash},
-            #{isNotice}, #{noticeFrom}, #{noticeUntil}, #{isSecret}, #{status}, #{metadata}::jsonb)
+        INSERT INTO bbs_post (bbs_id, title, content_html, content_text,
+            author_id, author_name,
+            is_notice, notice_from, notice_until, is_secret, status)
+        VALUES (#{bbsId}, #{title}, #{contentHtml}, #{contentText},
+            #{authorId}, #{authorName},
+            #{isNotice}, #{noticeFrom}, #{noticeUntil}, #{isSecret}, #{status})
     </insert>
 
     <update id="update">

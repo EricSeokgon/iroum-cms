@@ -23,6 +23,16 @@ import kr.co.ircp.cms.domain.auth.exception.SystemRoleProtectedException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.AttachmentDownloadDeniedException;
+import kr.co.ircp.cms.domain.board.exception.AttachmentNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.AttachmentTooLargeException;
+import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.BoardAttachmentDisabledException;
+import kr.co.ircp.cms.domain.board.exception.BoardCommentDisabledException;
+import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
+import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
+import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -362,6 +372,148 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 인증 토큰입니다. 다시 인증해 주세요.");
         detail.setTitle("Invalid Verified Token");
         detail.setProperty("code", "VERIFICATION_TOKEN_INVALID");
+        return detail;
+    }
+
+    // ─── REQ-BOARD-001~005 게시판 예외 핸들러 ──────────────────────────────────
+
+    /**
+     * 게시판 마스터 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-001 — id 또는 code에 해당하는 게시판이 없는 경우.
+     */
+    @ExceptionHandler(BbsMasterNotFoundException.class)
+    public ProblemDetail handleBbsMasterNotFound(BbsMasterNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Board Not Found");
+        detail.setProperty("code", "BOARD_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 게시판 코드 중복 → HTTP 409 Conflict.
+     *
+     * <p>REQ-BOARD-001 — 이미 사용 중인 게시판 코드로 생성 시도.
+     */
+    @ExceptionHandler(DuplicateBbsCodeException.class)
+    public ProblemDetail handleDuplicateBbsCode(DuplicateBbsCodeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate Board Code");
+        detail.setProperty("code", "BOARD_CODE_DUPLICATE");
+        return detail;
+    }
+
+    /**
+     * 게시글 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-002 — id에 해당하는 게시글이 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(PostNotFoundException.class)
+    public ProblemDetail handlePostNotFound(PostNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Post Not Found");
+        detail.setProperty("code", "POST_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 댓글 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-003 — id에 해당하는 댓글이 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(CommentNotFoundException.class)
+    public ProblemDetail handleCommentNotFound(CommentNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Comment Not Found");
+        detail.setProperty("code", "COMMENT_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 첨부파일 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-004 — id에 해당하는 첨부파일이 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(AttachmentNotFoundException.class)
+    public ProblemDetail handleAttachmentNotFound(AttachmentNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Attachment Not Found");
+        detail.setProperty("code", "ATTACHMENT_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 첨부파일 크기 초과 → HTTP 413 Content Too Large.
+     *
+     * <p>REQ-BOARD-004 — 업로드 파일이 게시판 최대 크기를 초과하는 경우.
+     */
+    @ExceptionHandler(AttachmentTooLargeException.class)
+    public ProblemDetail handleAttachmentTooLarge(AttachmentTooLargeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage());
+        detail.setTitle("Attachment Too Large");
+        detail.setProperty("code", "ATTACHMENT_TOO_LARGE");
+        return detail;
+    }
+
+    /**
+     * 허용되지 않는 첨부파일 타입 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-BOARD-004 — 게시판 allowedMimeTypes 외 파일 업로드 시도.
+     */
+    @ExceptionHandler(InvalidAttachmentTypeException.class)
+    public ProblemDetail handleInvalidAttachmentType(InvalidAttachmentTypeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Invalid Attachment Type");
+        detail.setProperty("code", "ATTACHMENT_TYPE_INVALID");
+        return detail;
+    }
+
+    /**
+     * 첨부파일 다운로드 거부 → HTTP 403 Forbidden.
+     *
+     * <p>REQ-BOARD-005 — HMAC 서명 불일치, 토큰 만료, 또는 형식 오류.
+     */
+    @ExceptionHandler(AttachmentDownloadDeniedException.class)
+    public ProblemDetail handleAttachmentDownloadDenied(AttachmentDownloadDeniedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Attachment Download Denied");
+        detail.setProperty("code", "ATTACHMENT_DOWNLOAD_DENIED");
+        return detail;
+    }
+
+    /**
+     * 댓글 기능 비활성 게시판 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-BOARD-003 — useComment=false 게시판에 댓글 작성 시도.
+     */
+    @ExceptionHandler(BoardCommentDisabledException.class)
+    public ProblemDetail handleBoardCommentDisabled(BoardCommentDisabledException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Board Comment Disabled");
+        detail.setProperty("code", "BOARD_COMMENT_DISABLED");
+        return detail;
+    }
+
+    /**
+     * 첨부파일 기능 비활성 게시판 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-BOARD-004 — useAttachment=false 게시판에 첨부파일 업로드 시도.
+     */
+    @ExceptionHandler(BoardAttachmentDisabledException.class)
+    public ProblemDetail handleBoardAttachmentDisabled(BoardAttachmentDisabledException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Board Attachment Disabled");
+        detail.setProperty("code", "BOARD_ATTACHMENT_DISABLED");
         return detail;
     }
 }

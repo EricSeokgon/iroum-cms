@@ -55,7 +55,8 @@ dependencies {
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:$mybatisStarterVersion")
 
     // ─── PostgreSQL JDBC ───────────────────────────────────────────────────
-    runtimeOnly("org.postgresql:postgresql")
+    // PGobject 등 컴파일 타임 사용 클래스가 있으므로 implementation
+    implementation("org.postgresql:postgresql")
 
     // ─── Flyway ───────────────────────────────────────────────────────────
     implementation("org.flywaydb:flyway-core")
