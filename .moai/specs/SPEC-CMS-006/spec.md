@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-006 |
 | 제목 | 안전경영 가이드라인 + 사고사례 매칭 (Safety Management + Incident Matching) |
 | 상위 SPEC | SPEC-CMS-001 v0.3.2 (iroum-cms 통합 SPEC) |
-| 상태 | Draft v0.1 |
+| 상태 | Draft v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 우선순위 | P0 (RFP SFR-005, SFR-006 직접 대응) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec |
@@ -752,3 +752,4 @@ DEPT_ADMIN 분기 키: SPEC-CMS-002의 `department_code` (SAFETY / CONTENT / GEN
 | 버전 | 날짜 | 작성자 | 변경 내용 |
 |---|---|---|---|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 — RFP SFR-005/006 매핑, 9개 테이블 DDL, 5 parent REQ × 23 sub REQ, 28 endpoint, 4 시퀀스, 매칭 알고리즘 1차 keyword 기반 정의, AI/벡터는 SPEC-CMS-AI-001 옵션 분리 |
+| v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |

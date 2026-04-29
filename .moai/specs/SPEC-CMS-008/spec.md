@@ -1,12 +1,12 @@
 ---
 id: SPEC-CMS-008
-version: 0.1.0
+version: 0.4.0
 status: Draft
 created: 2026-04-29
 updated: 2026-04-29
 author: manager-spec
 priority: P0
-parent: SPEC-CMS-001 v0.3.2
+parent: SPEC-CMS-001 v0.4
 related:
   - SPEC-CMS-005 (KPI 정의/값 모델 v0.2.1)
   - SPEC-CMS-007 (정책 매칭 KPI 공급)
@@ -25,6 +25,7 @@ issue_number: TBD
 ## HISTORY
 
 - v0.1 / 2026-04-29 / manager-spec / 신규 작성. RFP SFR-009/013 충족을 위한 위젯·대시보드·차트·필터·캐시·내보내기 6개 부모 REQ 정의. SPEC-CMS-005 v0.2.1 의 `kpi_definition`/`kpi_value` 모델을 데이터 소스로 활용하고, 시각화 + 사용자 맞춤 대시보드 + 비동기 엑셀 스트리밍 레이어를 본 SPEC 에서 신규 정의.
+- v0.4 / 2026-04-29 / MoAI orchestrator / Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·HISTORY만 갱신.
 
 ---
 
@@ -727,3 +728,4 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 요약 |
 |---|---|---|---|
 | 0.1 | 2026-04-29 | manager-spec | 초안. 6 부모 REQ × 27 sub-REQ, 6 테이블, 25 endpoint, 4 시퀀스, KWCAG 2.2 AA + 색약 + 비동기 엑셀 100만 행. SPEC-CMS-005 v0.2.1 KPI 모델 데이터 소스 활용. |
+| 0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |

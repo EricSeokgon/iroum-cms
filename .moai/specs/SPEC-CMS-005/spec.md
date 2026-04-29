@@ -1,4 +1,4 @@
-# SPEC-CMS-005: 통계·로그·시스템관리 상세 (Bundle D)  v0.2.1 (2026-04-29 Q-7 v_notification_history INNER JOIN 갱신)
+# SPEC-CMS-005: 통계·로그·시스템관리 상세 (Bundle D)  v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조)
 
 ## 1. 개요
 
@@ -1200,3 +1200,4 @@ Prometheus 알람 룰 정의 위치: `deploy/prometheus/rules/{api.yml, batch.ym
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Bundle D 상세). REQ-SYSTEM-001~006 + REQ-CROSS-001/007/008 상세화. |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강. REQ-SYSTEM-007-D(KPI 통합 대시보드, SFR-013), 008-D(외부 연계 로그 분리, SFR-015), 009-D(외부 공공데이터 수집, SFR-001/011), 010-D(성능 임계값, PER-001~004) 4개 신규 부모 REQ + sub-REQ 18개 추가. §13 RFP 통합 보강, §14 추가 데이터 모델(kpi_definition/kpi_value/integration_log/external_data_source/data_sync_history DDL), §15 비기능 횡단 적용 매핑 신설. (SPEC-CMS-001 v0.2 §15.2 SFR-013/015 + §17.1 PER 임계값 매핑) |
 | v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-7 적용 (사용자 결정 2026-04-29) — `v_notification_history` 뷰를 LEFT JOIN → INNER JOIN으로 갱신. §13.2 REQ-SYSTEM-008-D-3 본문을 "별도 view (notification_send.integration_log_id FK 기반 INNER JOIN)"로 변경하고 INNER JOIN 채택 사유(IntegrationLogInterceptor 적재 보증)·INAPP 자동 제외 로직 명시. §14.2 view DDL을 DROP+CREATE로 갱신: `notification_send` driving table → `integration_log` INNER JOIN → `users` LEFT JOIN(수신자 username 노출), filter `integration_type IN ('KAKAO_NOTI','MAIL_SEND')`. COMMENT ON VIEW에 Q-7 결정 명시. acceptance.md J-RFP §REQ-SYSTEM-008-D-3-2 신규 G/W/T 추가(view 정합성 — 100건 INNER JOIN 무결성). v0.2 본문 §13.1·§13.3·§13.4·§14의 다른 테이블·§15는 변경 없이 유지. |
+| v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 부분 인프라 (audit_log, integration_log) 적용 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |

@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
-| 버전 | v0.3.2 (2026-04-29 운영 결정 Q-4/5/6/7 적용 — SYSADMIN alias·zip 7일·카카오 매뉴얼 분리·integration_log FK) |
+| 버전 | v0.4 (2026-04-29 Bundle A 완성 + 운영 결정 통합) |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
 | 우선순위 | P0 |
@@ -505,24 +505,23 @@ iroum-cms는 다음을 목표로 설계된다.
 ### 16.1 트리 구조
 
 ```
-SPEC-CMS-001 [umbrella v0.2]
-├─ 기존 (1차 출시 핵심) — Bundle A/B/C/D 상세 SPEC
-│  ├─ SPEC-CMS-002 회원·권한·로그인 [+ amendment v0.2: 4단계 RBAC, 부서 권한, SSO 옵션 인터페이스]
-│  ├─ SPEC-CMS-003 게시판·공지·Q&A·FAQ [+ amendment v0.2: 다중 게시판 유형, 설문조사 연계]
-│  ├─ SPEC-CMS-004 콘텐츠·메뉴·사이트관리 [+ amendment v0.2: 알림 템플릿, 메타데이터 항목 확장]
-│  └─ SPEC-CMS-005 통계·로그·시스템관리 [+ amendment v0.2: KPI 대시보드, SSO 로그, 성능 임계값]
-├─ RFP 신규 P0 (사용자 가시성 큰 도메인)
-│  ├─ SPEC-CMS-006 안전경영 + 사고사례 매칭 [SFR-005, SFR-006]
-│  ├─ SPEC-CMS-007 정책사업 매칭 + 적기 알림 [SFR-007, SFR-008]
-│  └─ SPEC-CMS-008 시각화 대시보드 + KPI [SFR-009, SFR-013]
-├─ RFP 신규 P1 (운영·확장)
-│  ├─ SPEC-CMS-009 데이터 거버넌스 [SFR-001, SFR-011, DAR 전체]
-│  └─ SPEC-CMS-010 통합 검색 엔진 [INR + SFR-009 자동완성·인기검색어]
+SPEC-CMS-001 [umbrella v0.4]
+├─ SPEC-CMS-002 회원·권한·로그인 [v0.4 — Bundle A 완성, 16/18 풀스택 GREEN]
+├─ SPEC-CMS-003 게시판·공지·Q&A·FAQ [v0.4 — Step 1 RED 완료, GREEN 대기]
+├─ SPEC-CMS-004 콘텐츠·메뉴·사이트관리 [v0.4 — 구현 대기]
+├─ SPEC-CMS-005 통계·로그·시스템관리 [v0.4 — 부분 인프라 (audit_log, integration_log)]
+├─ RFP 신규 P0
+│  ├─ SPEC-CMS-006 안전경영 + 사고사례 [v0.4 — SPEC 작성됨, 구현 대기]
+│  ├─ SPEC-CMS-007 정책사업 매칭 + 알림 [v0.4 — SPEC 작성됨, 구현 대기]
+│  └─ SPEC-CMS-008 시각화 대시보드 + KPI [v0.4 — SPEC 작성됨, 구현 대기]
+├─ RFP 신규 P1
+│  ├─ SPEC-CMS-009 데이터 거버넌스 [SPEC 미작성]
+│  └─ SPEC-CMS-010 통합 검색 [SPEC 미작성]
 ├─ 홍익인간 CMS gap 신규 P0
-│  └─ SPEC-CMS-MEDIA-001 통합 미디어 라이브러리 [홍익 #5]
-└─ 옵션 트랙 (별도 일정/리소스 결정 필요)
-   ├─ SPEC-CMS-AI-001 AI/ML + Milvus + 알고리즘 모니터링 [SFR-002, 003, 004, 012]
-   └─ SPEC-CMS-MIG-001 통합 홈페이지 이관 + SSO [SFR-010] — DEPRECATED (자체 프로젝트로 확정, 비즈패스파인더 응찰 시나리오 외에는 불필요)
+│  └─ SPEC-CMS-MEDIA-001 통합 미디어 라이브러리 [v0.4 — SPEC 작성됨, 구현 대기]
+└─ 옵션 트랙
+   ├─ SPEC-CMS-AI-001 AI/ML + Milvus [SPEC 미작성, 별도 130일]
+   └─ SPEC-CMS-MIG-001 [DEPRECATED — 자체 프로젝트로 확정]
 ```
 
 ### 16.2 amendment 영향 추정 (LOC)
@@ -655,3 +654,71 @@ SPEC-CMS-001 [umbrella v0.2]
 | v0.3 | 2026-04-29 | MoAI orchestrator | 홍익인간 CMS gap 분석 통합 (§18 부록 신설), SPEC-CMS-MEDIA-001 트리 추가, SPEC-CMS-002 v0.3 reference (REQ-AUTH-017/018-D) |
 | v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-1/2/3 적용 (사용자 결정 2026-04-29): SMS 본인인증 채널 제거(이메일 OTP만 1차 유지 — Q-1), MinIO 저장소 옵션 제거(LocalFileSystemStorage 단일 — Q-2), ClamAV AV 스캔 제거(매직넘버·MIME·확장자 3중 방어 — Q-3). 모두 v0.4+ 후속 검토(MEDIA의 경우 v0.2+). 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.1 (REQ-AUTH-017-D 갱신·SmsProvider placeholder), SPEC-CMS-MEDIA-001 v0.2 (AV 스캔 NOTE·MinIO v0.2+·LocalFS 단일 확정). |
 | v0.3.2 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-4/5/6/7 적용 (사용자 결정 2026-04-29). **Q-4** SYSADMIN→SUPER_ADMIN 단순 alias 정책: SPEC-CMS-002 v0.3.2에 `roles.aliased_to` 컬럼 추가 + REQ-AUTH-013-D-5 alias 해석 sub-REQ 신설 + V2.1 마이그레이션. **Q-5** 발간자료 압축 zip 7일 보존 + 매일 0시 정리 배치: SPEC-CMS-003 v0.2.1에 publication_zip_archive DDL 신규 + REQ-BOARD-012-D-4 본문 갱신 + REQ-BOARD-012-D-4-2 신설(PublicationZipExpireJob). **Q-6** 카카오 알림톡 발급 워크플로 운영 매뉴얼 분리: 신규 파일 docs/operations/kakao-template.md 작성 + SPEC-CMS-004 v0.2.1 REQ-CONTENT-011-D-4 본문에 매뉴얼 참조 + submit-for-review API 안내 메시지. **Q-7** notification_send.integration_log_id FK + view INNER JOIN: SPEC-CMS-004 v0.2.1 §14.2-1 notification_send 신규 테이블(logical FK) + SPEC-CMS-005 v0.2.1 §13.2 REQ-SYSTEM-008-D-3 본문 갱신 + §14.2 v_notification_history 뷰 INNER JOIN으로 갱신. 본 SPEC 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.2, SPEC-CMS-003 v0.2.1, SPEC-CMS-004 v0.2.1, SPEC-CMS-005 v0.2.1. |
+| v0.4 | 2026-04-29 | MoAI orchestrator | Bundle A 완성 + 운영 결정 통합 (§20 신설), Spring Boot 3.5.9 갱신 (§20.4), Bundle B Step 1 RED + LoginHistory API 반영. §16.1 트리에 [구현 상태] 표기 추가. 9개 child SPEC 일괄 v0.4 헤더 갱신. |
+
+---
+
+## 20. 운영 결정 부록 (Q-1 ~ Q-37, 2026-04-29 통합)
+
+본 부록은 SPEC v0.1~v0.3.x 작성 과정에서 누적된 사용자 운영 결정사항을 단일 위치에 통합한다.
+각 Q-ID는 결정 시점·반영 SPEC·잔여 작업을 명시한다.
+
+### 20.1 결정 완료 (반영됨)
+
+| ID | 결정 | 반영 SPEC |
+|---|---|---|
+| Q-1 | SMS 본인인증 → 이메일 OTP만 (v0.4+ SMS) | SPEC-CMS-002 v0.3.1 + REQ-AUTH-017 NoOpSmsProvider |
+| Q-2 | MinIO 옵션 → Local FS 단일 (MediaStorage 인터페이스 유지) | SPEC-CMS-MEDIA-001 v0.2 |
+| Q-3 | ClamAV AV 스캔 → 1차 미도입 (매직넘버+MIME+확장자 3중 방어) | SPEC-CMS-MEDIA-001 v0.2 |
+| Q-4 | SYSADMIN → SUPER_ADMIN 단순 alias (roles.aliased_to) | SPEC-CMS-002 v0.3.2, V2 시드 |
+| Q-5 | 발간자료 zip 7일 보존 + 매일 0시 정리 | SPEC-CMS-003 v0.2.1 |
+| Q-6 | 카카오 알림톡 발급 워크플로 → docs/operations/kakao-template.md | SPEC-CMS-004 v0.2.1, 운영 매뉴얼 분리 |
+| Q-7 | notification_send.integration_log_id FK + view INNER JOIN | SPEC-CMS-004/005 v0.2.1 |
+| Q-17 | refresh_token cookie path = /api/v1/auth (제한적) | AuthController |
+| Q-18 | traceId = 자체 UUID 16자 | RequestContextFilter |
+| Q-19 | 비밀번호 변경 후 즉시 리다이렉트 (토스트 X) | PasswordChangeView |
+| Q-20 | User 엔티티 uuid String 필드 보강 | UserMapper.xml + Entity |
+| Q-23 | 비번 변경 후 3초 타이머 success alert | PasswordChangeView |
+| Q-24 | DEPT_ADMIN 자기 부서·자손만 (UserService.findPageWithScope + PermissionScopeService) | SPEC-CMS-002 v0.3.2 |
+
+### 20.2 운영 단계 결정 보류 (배포 시점에 확정)
+
+| ID | 항목 | 권고 |
+|---|---|---|
+| Q-22 | password_history GC 정책 | 무삭제 (감사 보관) — 운영 시 N개 한도 도입 검토 |
+| Q-26 | @PreAuthorize 일괄 hasAuthority 마이그레이션 | 점진적, hasAnyRole + hasAuthority 병용 OK |
+| Q-27 | menu_permissions (REQ-AUTH-008-D-4) | SPEC-CMS-004 menu 구현 시 추가 |
+| Q-32 | 운영 SMTP (SendGrid/SES vs 사내) | 발주처 인프라 결정 후 |
+| Q-34 | list endpoint 자동 personal_data_access 적재 | 1차는 detail/edit/me만, 운영 검토 후 list 도입 |
+| Q-35 | useAuthStore에 authorities 필드 (사이드바 정밀 권한) | Frontend 다음 사이클 보강 |
+| Q-38 | 첨부 저장 경로 (Local FS 단일 vs MediaStorage 추상화) | SPEC-CMS-MEDIA-001 v0.2 결정 따름 (Local + 인터페이스) |
+| Q-39 | 매직넘버 검증 라이브러리 (Apache Tika 도입 시점) | Bundle B GREEN 단계에서 결정 |
+
+### 20.3 UX 미세 결정 (Frontend 후속)
+
+| ID | 항목 | 현재 |
+|---|---|---|
+| Q-28 | 역할 aliasedTo 표시 (헤더 태그 vs 컬럼 vs 인라인) | 헤더 태그 |
+| Q-29 | @Async vs ApplicationEventPublisher (CRITICAL 알림) | @Async + auditExecutor |
+| Q-30 | 사용자 검색 자동완성 vs userId 직접 입력 | userId 직접 입력 |
+| Q-31 | CSV 다운로드 구현 | Placeholder |
+| Q-33 | aria-live 카운트다운 주기 (5초 vs 1분 변화 시점만) | 5초 |
+| Q-36 | LoginHistoryView targetUserId 쿼리 파라미터 초기화 | 미적용 |
+| Q-37 | 사용자 검색 자동완성 (PermissionChangeHistoryView 동일) | userId 직접 입력 |
+
+### 20.4 기술 스택 갱신 (Phase R-3, 2026-04-29)
+
+- Spring Boot 3.2.10 → **3.5.9** (latest stable patch)
+- jjwt 0.12.6 → 0.12.7 (minor)
+- mybatis-spring-boot-starter 3.0.3 → 3.0.4
+- springdoc-openapi 2.6.0 → 2.8.17 (3.5.x NoSuchMethodError 회피)
+- jacoco 0.8.12 → 0.8.13
+- Java 17 toolchain (foojay-resolver) — 그대로
+- Spring Boot 4.0 마이그레이션은 별도 SPEC (Java 21 + Spring Framework 7 + Jackson 3 큰 변경)
+
+### 20.5 Bundle A 완성 메트릭 (2026-04-29)
+
+- Backend: V1~V10 마이그레이션, 213 unit tests + 23 IT tests = 236 GREEN, ~227 source files
+- Frontend: 85 GREEN tests, ~127 source files (admin SPA)
+- 누적 25 commits + Phase R-15 commit
+- 종단 동작: 로그인·사용자관리·조직트리·역할매트릭스·비번변경·OTP재설정·권한이력·접근로그·로그인이력 모두 풀스택 동작
