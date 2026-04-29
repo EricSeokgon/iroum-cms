@@ -29,6 +29,17 @@ public interface UserMapper {
     Optional<User> findByUsername(String username);
 
     /**
+     * email_hash로 사용자 조회.
+     *
+     * <p>REQ-AUTH-017-D-3 — 비밀번호 재설정 시 이메일로 사용자 확인.
+     * email_hash는 AES-256-GCM 암호화 전 SHA-256 해시값.
+     * deleted_at IS NULL 조건 포함.
+     *
+     * @param emailHash SHA-256(이메일) 해시값
+     */
+    Optional<User> findByEmailHash(@Param("emailHash") String emailHash);
+
+    /**
      * PK로 사용자 조회.
      *
      * <p>REQ-AUTH-006 — CRUD 조회 시 사용. deleted_at IS NULL 조건 포함.

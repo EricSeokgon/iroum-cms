@@ -94,6 +94,16 @@
           >
             {{ loading ? t('auth.login.submitting') : t('auth.login.submit') }}
           </el-button>
+
+          <!-- 비밀번호 찾기 링크 — KWCAG 2.4.4 링크 목적 -->
+          <div class="mt-4 text-center">
+            <router-link
+              to="/forgot-password"
+              class="text-sm text-blue-600 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+            >
+              {{ t('auth.login.forgotPassword') }}
+            </router-link>
+          </div>
         </el-form>
       </div>
     </div>
@@ -119,17 +129,19 @@ const formRef = ref<FormInstance>()
 const loading = ref(false)
 const errorMessage = ref('')
 
-// ── URL query reason 처리 — 비밀번호 변경·세션 만료 후 리다이렉트 안내 ─────────
+// ── URL query reason 처리 — 비밀번호 변경·재설정·세션 만료 후 리다이렉트 안내 ─
 const noticeMessage = computed<string>(() => {
   const reason = route.query.reason as string | undefined
   if (reason === 'password_changed') return t('login.notice.passwordChanged')
+  if (reason === 'password_reset') return t('auth.forgotPassword.success')
   if (reason === 'session_expired') return t('login.notice.sessionExpired')
   return ''
 })
 
 const noticeType = computed<'success' | 'info'>(() => {
   const reason = route.query.reason as string | undefined
-  return reason === 'password_changed' ? 'success' : 'info'
+  if (reason === 'password_changed' || reason === 'password_reset') return 'success'
+  return 'info'
 })
 
 const form = reactive({ username: '', password: '' })

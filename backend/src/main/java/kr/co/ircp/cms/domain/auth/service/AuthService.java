@@ -7,13 +7,14 @@ import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
+import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 
 /**
  * 인증 서비스 인터페이스.
  *
- * <p>SPEC-CMS-002 REQ-AUTH-001~003, 011 — 로그인·토큰 갱신·로그아웃 핵심 흐름.
+ * <p>SPEC-CMS-002 REQ-AUTH-001~003, 011, REQ-AUTH-017 — 로그인·토큰 갱신·로그아웃·비밀번호 재설정.
  */
 // @MX:ANCHOR: [AUTO] AuthService — 인증 흐름 전체의 진입점 인터페이스
 // @MX:REASON: Controller, SecurityFilter, 관리자 서비스 등 fan_in >= 3 예상
@@ -84,4 +85,31 @@ public interface AuthService {
      */
     void changePassword(long userId, String currentPassword, String newPassword)
             throws InvalidCredentialsException, PasswordPolicyViolationException, PasswordReuseException;
+
+    /**
+     * 비밀번호 재설정 이메일 발송 요청.
+     *
+     * <p>REQ-AUTH-017-D-3 — 이메일이 등록되어 있으면 OTP를 발송한다.
+     * 사용자 미존재여도 동일 응답 반환 (enumeration 방지).
+     *
+     * @param email      재설정 대상 이메일
+     * @param ipAddress  요청자 IP
+     * @param userAgent  요청자 User-Agent
+     */
+    void requestPasswordReset(String email, String ipAddress, String userAgent);
+
+    /**
+     * 비밀번호 재설정 확인.
+     *
+     * <p>REQ-AUTH-017-D-4 — verifiedToken 검증 후 새 비밀번호로 변경.
+     * 성공 시 모든 Refresh Token 무효화 + 안내 이메일 발송.
+     *
+     * @param verifiedToken  confirm 단계에서 발급받은 단기 토큰
+     * @param newPassword    변경할 새 비밀번호
+     * @throws InvalidVerifiedTokenException  토큰 무효 또는 만료
+     * @throws PasswordPolicyViolationException 새 비밀번호 정책 위반
+     * @throws PasswordReuseException          직전 5개 재사용
+     */
+    void confirmPasswordReset(String verifiedToken, String newPassword)
+            throws InvalidVerifiedTokenException, PasswordPolicyViolationException, PasswordReuseException;
 }

@@ -25,6 +25,7 @@
       "passwordPlaceholder": "비밀번호를 입력하세요 (8자 이상)",
       "submit": "로그인",
       "submitting": "로그인 중...",
+      "forgotPassword": "비밀번호를 잊으셨나요?",
       "error": {
         "usernameRequired": "사용자명을 입력해 주세요",
         "passwordRequired": "비밀번호를 입력해 주세요",
@@ -37,6 +38,46 @@
     "logout": {
       "success": "로그아웃되었습니다",
       "error": "로그아웃 중 오류가 발생했습니다"
+    },
+    "forgotPassword": {
+      "title": "비밀번호 재설정",
+      "step1": {
+        "title": "이메일 입력",
+        "label": "이메일 주소",
+        "submit": "인증 코드 받기",
+        "emailRequired": "이메일 주소를 입력해 주세요",
+        "emailInvalid": "올바른 이메일 형식이 아닙니다"
+      },
+      "step2": {
+        "title": "인증 코드 확인",
+        "label": "6자리 인증 코드",
+        "submit": "확인",
+        "resend": "재발송",
+        "cooldown": "{seconds}초 후 재발송 가능",
+        "expires": "{minutes}분 {seconds}초 후 만료",
+        "attemptsLeft": "{n}회 남음",
+        "codeRequired": "인증 코드를 입력해 주세요",
+        "codePattern": "6자리 숫자를 입력해 주세요"
+      },
+      "step3": {
+        "title": "새 비밀번호",
+        "label": "새 비밀번호",
+        "confirmLabel": "비밀번호 확인",
+        "submit": "비밀번호 재설정",
+        "passwordRequired": "새 비밀번호를 입력해 주세요",
+        "confirmRequired": "비밀번호 확인을 입력해 주세요"
+      },
+      "success": "비밀번호가 재설정되었습니다. 다시 로그인해 주세요.",
+      "error": {
+        "cooldown": "재발송 쿨다운 중입니다. {seconds}초 후 다시 시도해 주세요.",
+        "ipBlocked": "비정상적인 시도가 감지되어 일시 차단되었습니다.",
+        "codeMismatch": "인증 코드가 일치하지 않습니다 ({n}회 남음).",
+        "attemptExceeded": "시도 횟수를 초과했습니다. 처음부터 다시 진행해 주세요.",
+        "expired": "인증 시간이 만료되었습니다.",
+        "tokenInvalid": "인증 정보가 만료되어 처음부터 다시 진행해 주세요.",
+        "policy": "비밀번호 정책을 충족하지 않습니다",
+        "reuse": "최근 5회 사용한 비밀번호입니다"
+      }
     }
   },
   "dashboard": {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.VerificationHistoryMapper">
+
+    <!-- 이력 삽입 -->
+    <insert id="insert">
+        INSERT INTO verification_history
+            (target, channel, purpose, success, failure_reason,
+             requester_ip_hash, user_agent, occurred_at)
+        VALUES
+            (#{target}, #{channel}, #{purpose}, #{success}, #{failureReason},
+             #{requesterIpHash}, #{userAgent}, #{occurredAt})
+    </insert>
+
+    <!-- 지정 시각 이후 동일 IP에서 발생한 모든 요청 건수 -->
+    <select id="countRecentByIp" resultType="int">
+        SELECT COUNT(*)
+        FROM verification_history
+        WHERE requester_ip_hash = #{ipHash}
+          AND occurred_at >= #{from}
+    </select>
+
+</mapper>

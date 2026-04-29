@@ -47,6 +47,11 @@ public class SecurityConfig {
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/logout",
+                    // REQ-AUTH-017 — 본인인증 및 비밀번호 재설정 (anonymous)
+                    "/api/v1/auth/verify/request",
+                    "/api/v1/auth/verify/confirm",
+                    "/api/v1/auth/password/reset-request",
+                    "/api/v1/auth/password/reset-confirm",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
                     "/swagger-ui.html",

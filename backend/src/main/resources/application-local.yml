@@ -1,6 +1,20 @@
 # 로컬 개발 환경 설정
 # docker-compose의 postgres:16-alpine 서비스와 연동
 spring:
+  mail:
+    # 로컬 개발: MailHog (docker-compose mailhog 서비스)
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:false}
+          starttls:
+            enable: ${SMTP_STARTTLS:false}
+        debug: false
+
   datasource:
     url: jdbc:postgresql://localhost:5432/iroum_cms_local
     username: ${DB_USERNAME:iroum_cms}

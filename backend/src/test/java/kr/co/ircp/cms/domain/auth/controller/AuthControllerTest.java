@@ -7,13 +7,21 @@ import kr.co.ircp.cms.config.JwtProperties;
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
 import kr.co.ircp.cms.domain.auth.dto.PasswordChangeRequest;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetConfirmDto;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetRequestDto;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
+import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmRequest;
+import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmResponse;
+import kr.co.ircp.cms.domain.auth.dto.VerifyRequestRequest;
+import kr.co.ircp.cms.domain.auth.dto.VerifyRequestResponse;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationCooldownException;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
+import kr.co.ircp.cms.domain.auth.service.VerificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,8 +38,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -65,6 +75,9 @@ class AuthControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private VerificationService verificationService;
 
     @MockBean
     private JwtProperties jwtProperties;
@@ -228,5 +241,82 @@ class AuthControllerTest {
                                 new PasswordChangeRequest("OldP@ss123", "OldP@ss123"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("PASSWORD_REUSE"));
+    }
+
+    // ============================================================
+    // REQ-AUTH-017: 본인인증 (OTP) + 비밀번호 재설정
+    // ============================================================
+
+    @Test
+    @DisplayName("POST /verify/request — 200 OK: requestId + cooldownSeconds 반환")
+    void postVerifyRequest_returns200_withRequestIdAndCooldown() throws Exception {
+        UUID requestId = UUID.randomUUID();
+        when(verificationService.request(any(), anyString(), anyString()))
+                .thenReturn(new VerifyRequestResponse(requestId.toString(), Instant.now().plusSeconds(300), 60L));
+
+        mockMvc.perform(post("/api/v1/auth/verify/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new VerifyRequestRequest("EMAIL", "user@example.com", "PASSWORD_RESET"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestId").value(requestId.toString()))
+                .andExpect(jsonPath("$.cooldownSeconds").value(60));
+    }
+
+    @Test
+    @DisplayName("POST /verify/request — 429 Too Many Requests: 쿨다운 내 재요청")
+    void postVerifyRequest_returns429_onCooldown() throws Exception {
+        when(verificationService.request(any(), anyString(), anyString()))
+                .thenThrow(new VerificationCooldownException(30L));
+
+        mockMvc.perform(post("/api/v1/auth/verify/request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new VerifyRequestRequest("EMAIL", "user@example.com", "PASSWORD_RESET"))))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", "30"))
+                .andExpect(jsonPath("$.code").value("VERIFY_COOLDOWN"));
+    }
+
+    @Test
+    @DisplayName("POST /verify/confirm — 200 OK: verifiedToken + purpose 반환")
+    void postVerifyConfirm_returns200_withVerifiedToken() throws Exception {
+        String token = "a".repeat(64);
+        when(verificationService.confirm(any(), anyString()))
+                .thenReturn(new VerifyConfirmResponse(token, "PASSWORD_RESET"));
+
+        mockMvc.perform(post("/api/v1/auth/verify/confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new VerifyConfirmRequest(UUID.randomUUID().toString(), "123456"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.verifiedToken").value(token))
+                .andExpect(jsonPath("$.purpose").value("PASSWORD_RESET"));
+    }
+
+    @Test
+    @DisplayName("POST /password/reset-request — 200 OK: 사용자 존재 여부 무관하게 동일 메시지 반환 (enumeration 방지)")
+    void postPasswordResetRequest_returns200_always() throws Exception {
+        doNothing().when(authService).requestPasswordReset(anyString(), anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/reset-request")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordResetRequestDto("user@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value(containsString("이메일")));
+    }
+
+    @Test
+    @DisplayName("POST /password/reset-confirm — 200 OK: 새 비밀번호로 재설정 성공")
+    void postPasswordResetConfirm_returns200_onSuccess() throws Exception {
+        doNothing().when(authService).confirmPasswordReset(anyString(), anyString());
+
+        mockMvc.perform(post("/api/v1/auth/password/reset-confirm")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new PasswordResetConfirmDto("a".repeat(64), "NewP@ss456!"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").isNotEmpty());
     }
 }

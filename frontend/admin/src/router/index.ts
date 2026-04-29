@@ -15,6 +15,12 @@ const router = createRouter({
       component: () => import('@/views/auth/LoginView.vue'),
       meta: { public: true, title: '로그인' },
     },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/auth/ForgotPasswordView.vue'),
+      meta: { public: true, title: '비밀번호 재설정' },
+    },
 
     // ── 인증 필요 라우트 ───────────────────────────────────────────────────
     {

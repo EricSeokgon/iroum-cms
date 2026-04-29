@@ -25,6 +25,7 @@
       "passwordPlaceholder": "Enter your password (min 8 chars)",
       "submit": "Login",
       "submitting": "Logging in...",
+      "forgotPassword": "Forgot your password?",
       "error": {
         "usernameRequired": "Please enter your username",
         "passwordRequired": "Please enter your password",
@@ -37,6 +38,46 @@
     "logout": {
       "success": "Successfully logged out",
       "error": "An error occurred during logout"
+    },
+    "forgotPassword": {
+      "title": "Reset Password",
+      "step1": {
+        "title": "Enter Email",
+        "label": "Email Address",
+        "submit": "Send Verification Code",
+        "emailRequired": "Please enter your email address",
+        "emailInvalid": "Please enter a valid email address"
+      },
+      "step2": {
+        "title": "Verify Code",
+        "label": "6-digit Verification Code",
+        "submit": "Verify",
+        "resend": "Resend",
+        "cooldown": "Resend in {seconds}s",
+        "expires": "Expires in {minutes}m {seconds}s",
+        "attemptsLeft": "{n} attempt(s) remaining",
+        "codeRequired": "Please enter the verification code",
+        "codePattern": "Please enter a 6-digit number"
+      },
+      "step3": {
+        "title": "New Password",
+        "label": "New Password",
+        "confirmLabel": "Confirm Password",
+        "submit": "Reset Password",
+        "passwordRequired": "Please enter a new password",
+        "confirmRequired": "Please confirm your new password"
+      },
+      "success": "Password reset successfully. Please log in again.",
+      "error": {
+        "cooldown": "Resend is on cooldown. Please try again in {seconds} seconds.",
+        "ipBlocked": "Suspicious activity detected. Your access has been temporarily blocked.",
+        "codeMismatch": "Verification code does not match ({n} attempt(s) remaining).",
+        "attemptExceeded": "Too many failed attempts. Please start over.",
+        "expired": "Verification session has expired.",
+        "tokenInvalid": "Verification token has expired. Please start over.",
+        "policy": "Password does not meet the policy requirements",
+        "reuse": "You have used this password recently"
+      }
     }
   },
   "dashboard": {
@@ -81,7 +122,8 @@
   "login": {
     "notice": {
       "passwordChanged": "Password changed successfully. Please log in again.",
-      "sessionExpired": "Your session has expired. Please log in again."
+      "sessionExpired": "Your session has expired. Please log in again.",
+      "passwordReset": "Password reset successfully. Please log in again."
     }
   },
   "common": {

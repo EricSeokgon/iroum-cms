@@ -1,6 +1,12 @@
 package kr.co.ircp.cms.config;
 
 import kr.co.ircp.cms.domain.auth.exception.AccessOutOfScopeException;
+import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationAttemptExceededException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationCodeMismatchException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationCooldownException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationExpiredException;
+import kr.co.ircp.cms.domain.auth.exception.VerificationIpBlockedException;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.CyclicReferenceException;
 import kr.co.ircp.cms.domain.auth.exception.DepthExceededException;
@@ -19,6 +25,7 @@ import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -266,6 +273,95 @@ public class GlobalExceptionHandler {
                 HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Access Out Of Scope");
         detail.setProperty("code", "ACCESS_OUT_OF_SCOPE");
+        return detail;
+    }
+
+    // ─── REQ-AUTH-017 본인인증 예외 핸들러 ────────────────────────────────────
+
+    /**
+     * OTP 쿨다운 → HTTP 429 Too Many Requests + Retry-After 헤더.
+     *
+     * <p>REQ-AUTH-017-D-1 — 동일 대상에 1분 이내 재요청 시.
+     */
+    @ExceptionHandler(VerificationCooldownException.class)
+    public ResponseEntity<ProblemDetail> handleVerificationCooldown(VerificationCooldownException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.TOO_MANY_REQUESTS, "인증 요청 쿨다운 중입니다. 잠시 후 재시도해 주세요.");
+        detail.setTitle("Verification Cooldown");
+        detail.setProperty("code", "VERIFICATION_COOLDOWN");
+        detail.setProperty("retryAfterSeconds", ex.getRetryAfterSeconds());
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(detail);
+    }
+
+    /**
+     * IP 차단 → HTTP 423 Locked.
+     *
+     * <p>REQ-AUTH-017-D-5 — 시간당 10회 초과 요청.
+     */
+    @ExceptionHandler(VerificationIpBlockedException.class)
+    public ProblemDetail handleVerificationIpBlocked(VerificationIpBlockedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.LOCKED, "IP가 일시 차단되었습니다. 1시간 후 재시도해 주세요.");
+        detail.setTitle("IP Blocked");
+        detail.setProperty("code", "VERIFICATION_IP_BLOCKED");
+        return detail;
+    }
+
+    /**
+     * 인증 요청 만료 / 이미 사용된 requestId → HTTP 403 Forbidden.
+     *
+     * <p>REQ-AUTH-017-D-2 — expires_at 초과 또는 PENDING 외 상태.
+     */
+    @ExceptionHandler(VerificationExpiredException.class)
+    public ProblemDetail handleVerificationExpired(VerificationExpiredException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "인증 요청이 만료되었거나 이미 사용되었습니다.");
+        detail.setTitle("Verification Expired");
+        detail.setProperty("code", "VERIFICATION_EXPIRED");
+        return detail;
+    }
+
+    /**
+     * 시도 횟수 초과 → HTTP 403 Forbidden.
+     *
+     * <p>REQ-AUTH-017-D-2 — 3회 초과.
+     */
+    @ExceptionHandler(VerificationAttemptExceededException.class)
+    public ProblemDetail handleVerificationAttemptExceeded(VerificationAttemptExceededException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "인증 시도 횟수를 초과했습니다. 새로운 인증 코드를 요청해 주세요.");
+        detail.setTitle("Verification Attempt Exceeded");
+        detail.setProperty("code", "VERIFICATION_ATTEMPT_EXCEEDED");
+        return detail;
+    }
+
+    /**
+     * OTP 코드 불일치 → HTTP 401 Unauthorized.
+     *
+     * <p>REQ-AUTH-017-D-2 — 입력한 OTP가 저장된 코드와 다를 때.
+     */
+    @ExceptionHandler(VerificationCodeMismatchException.class)
+    public ProblemDetail handleVerificationCodeMismatch(VerificationCodeMismatchException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "인증 코드가 일치하지 않습니다.");
+        detail.setTitle("Verification Code Mismatch");
+        detail.setProperty("code", "VERIFICATION_CODE_MISMATCH");
+        return detail;
+    }
+
+    /**
+     * 유효하지 않은 verifiedToken → HTTP 401 Unauthorized.
+     *
+     * <p>REQ-AUTH-017-D-4 — 토큰 무효, 만료, 또는 목적 불일치.
+     */
+    @ExceptionHandler(InvalidVerifiedTokenException.class)
+    public ProblemDetail handleInvalidVerifiedToken(InvalidVerifiedTokenException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 인증 토큰입니다. 다시 인증해 주세요.");
+        detail.setTitle("Invalid Verified Token");
+        detail.setProperty("code", "VERIFICATION_TOKEN_INVALID");
         return detail;
     }
 }

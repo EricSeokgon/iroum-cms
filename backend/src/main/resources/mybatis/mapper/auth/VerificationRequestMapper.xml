@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.auth.repository.VerificationRequestMapper">
+
+    <resultMap id="verificationRequestMap"
+               type="kr.co.ircp.cms.domain.auth.entity.VerificationRequest">
+        <id property="id" column="id"/>
+        <result property="requestId" column="request_id"
+                typeHandler="org.apache.ibatis.type.UUIDTypeHandler"/>
+        <result property="channel" column="channel"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="target" column="target"/>
+        <result property="purpose" column="purpose"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="codeHash" column="code_hash"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="attempts" column="attempts"/>
+        <result property="maxAttempts" column="max_attempts"/>
+        <result property="status" column="status"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="verifiedAt" column="verified_at"/>
+        <result property="verifiedToken" column="verified_token"/>
+        <result property="requesterIpHash" column="requester_ip_hash"/>
+        <result property="userAgent" column="user_agent"/>
+    </resultMap>
+
+    <!-- 인증 요청 삽입 (request_id는 DB DEFAULT 사용) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO verification_request
+            (channel, target, purpose, code_hash, created_at, expires_at,
+             attempts, max_attempts, status, requester_ip_hash, user_agent)
+        VALUES
+            (#{channel}, #{target}, #{purpose}, #{codeHash}, #{createdAt}, #{expiresAt},
+             0, #{maxAttempts}, 'PENDING', #{requesterIpHash}, #{userAgent})
+        RETURNING id, request_id
+    </insert>
+
+    <!-- requestId(UUID)로 단건 조회 -->
+    <select id="findByRequestId" resultMap="verificationRequestMap">
+        SELECT *
+        FROM verification_request
+        WHERE request_id = #{requestId}::uuid
+    </select>
+
+    <!-- verifiedToken으로 단건 조회 -->
+    <select id="findByVerifiedToken" resultMap="verificationRequestMap">
+        SELECT *
+        FROM verification_request
+        WHERE verified_token = #{token}
+    </select>
+
+    <!-- 시도 횟수 증가 -->
+    <update id="incrementAttempts">
+        UPDATE verification_request
+        SET attempts = attempts + 1
+        WHERE request_id = #{requestId}::uuid
+    </update>
+
+    <!-- VERIFIED 전환 + verifiedToken 설정 -->
+    <update id="markVerified">
+        UPDATE verification_request
+        SET status         = 'VERIFIED',
+            verified_at    = #{now},
+            verified_token = #{verifiedToken}
+        WHERE request_id = #{requestId}::uuid
+    </update>
+
+    <!-- FAILED 전환 -->
+    <update id="markFailed">
+        UPDATE verification_request
+        SET status = 'FAILED'
+        WHERE request_id = #{requestId}::uuid
+    </update>
+
+    <!-- 동일 target+purpose 최근 PENDING 요청 (쿨다운 검사) -->
+    <select id="findLatestActiveByTarget" resultMap="verificationRequestMap">
+        SELECT *
+        FROM verification_request
+        WHERE target  = #{target}
+          AND purpose = #{purpose}
+          AND status  = 'PENDING'
+          AND expires_at > #{now}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+</mapper>

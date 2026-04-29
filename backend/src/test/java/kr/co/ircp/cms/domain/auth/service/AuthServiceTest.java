@@ -5,8 +5,12 @@ import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.entity.RefreshToken;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
+import kr.co.ircp.cms.domain.auth.entity.VerificationPurpose;
+import kr.co.ircp.cms.domain.auth.entity.VerificationRequest;
+import kr.co.ircp.cms.domain.auth.entity.VerificationStatus;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
@@ -59,6 +63,8 @@ class AuthServiceTest {
     @Mock private PasswordPolicyService passwordPolicyService;
     @Mock private PasswordHistoryMapper passwordHistoryMapper;
     @Mock private PermissionService permissionService;
+    @Mock private VerificationService verificationService;
+    @Mock private EmailService emailService;
 
     private JwtProperties jwtProperties;
     private AuthService authService;
@@ -73,7 +79,8 @@ class AuthServiceTest {
         authService = new AuthServiceImpl(
                 userMapper, refreshTokenMapper, loginHistoryMapper,
                 tokenBlacklistMapper, jwtTokenProvider, passwordPolicyService,
-                passwordHistoryMapper, jwtProperties, permissionService);
+                passwordHistoryMapper, jwtProperties, permissionService,
+                verificationService, emailService);
     }
 
     // ============================================================
@@ -443,6 +450,84 @@ class AuthServiceTest {
         assertThat(annotation).isNotNull();
         assertThat(annotation.action()).isEqualTo("PASSWORD_CHANGE");
         assertThat(annotation.entityType()).isEqualTo("User");
+    }
+
+    // ============================================================
+    // REQ-AUTH-017: 비밀번호 재설정
+    // ============================================================
+
+    @Test
+    @DisplayName("REQ-AUTH-017-D-3: requestPasswordReset — 등록된 이메일이면 VerificationService.request 호출")
+    void requestPasswordReset_invokesVerification() {
+        // given
+        String email = "user@example.com";
+        String emailHash = sha256Hex(email);
+        User user = activeUser(100L, "user", 0);
+        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.of(user));
+
+        // when
+        authService.requestPasswordReset(email, "127.0.0.1", "JUnit");
+
+        // then
+        verify(verificationService).request(any(), eq("127.0.0.1"), eq("JUnit"));
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-017-D-3: requestPasswordReset — 미등록 이메일이면 VerificationService 미호출 (enumeration 방지)")
+    void requestPasswordReset_returnsSameMessage_forNonExistentEmail() {
+        // given
+        String email = "unknown@example.com";
+        String emailHash = sha256Hex(email);
+        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.empty());
+
+        // when — 예외 없이 정상 반환
+        authService.requestPasswordReset(email, "127.0.0.1", "JUnit");
+
+        // then — verificationService는 호출되지 않음
+        verify(verificationService, never()).request(any(), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-017-D-4: confirmPasswordReset — 성공 시 비밀번호 변경 + 세션 무효화")
+    void confirmPasswordReset_appliesNewPassword_andRevokesRefresh() {
+        // given
+        String token = "a".repeat(64);
+        String email = "user@example.com";
+        String emailHash = sha256Hex(email);
+        VerificationRequest vr = VerificationRequest.builder()
+            .status(VerificationStatus.VERIFIED)
+            .verifiedAt(Instant.now().minusSeconds(10))
+            .purpose(VerificationPurpose.PASSWORD_RESET)
+            .target(email)
+            .build();
+        when(verificationService.validateVerifiedToken(token, VerificationPurpose.PASSWORD_RESET))
+            .thenReturn(Optional.of(vr));
+        User user = activeUser(101L, "user", 0);
+        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.of(user));
+        when(passwordHistoryMapper.findRecentHashes(101L, 5)).thenReturn(List.of());
+        when(passwordPolicyService.matches(eq("NewP@ss789!"), any())).thenReturn(false);
+        when(passwordPolicyService.hash("NewP@ss789!")).thenReturn("$2a$12$newHash");
+
+        // when
+        authService.confirmPasswordReset(token, "NewP@ss789!");
+
+        // then
+        verify(userMapper).updatePassword(eq(101L), eq("$2a$12$newHash"), any(Instant.class));
+        verify(refreshTokenMapper).revokeAllForUser(eq(101L), any(Instant.class));
+        verify(emailService).sendPasswordResetNotice(email);
+    }
+
+    @Test
+    @DisplayName("REQ-AUTH-017-D-4: confirmPasswordReset — 만료된 verifiedToken → InvalidVerifiedTokenException")
+    void confirmPasswordReset_throwsInvalidToken_onExpired() {
+        // given
+        String token = "b".repeat(64);
+        when(verificationService.validateVerifiedToken(token, VerificationPurpose.PASSWORD_RESET))
+            .thenReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> authService.confirmPasswordReset(token, "AnyP@ss123"))
+            .isInstanceOf(InvalidVerifiedTokenException.class);
     }
 
     // ============================================================

@@ -255,6 +255,50 @@ export interface PermissionSummary {
   description?: string
 }
 
+// ── 비밀번호 재설정 (이메일 OTP) 타입 (REQ-AUTH-017) ────────────────────────
+
+/** POST /api/v1/auth/verify/request 요청 */
+export interface VerifyRequestRequest {
+  channel: 'EMAIL'                  // SMS는 v0.4+ (Q-1)
+  target: string
+  purpose: 'SIGNUP' | 'PASSWORD_RESET' | 'IMPORTANT_CHANGE'
+}
+
+/** POST /api/v1/auth/verify/request 응답 */
+export interface VerifyRequestResponse {
+  requestId: string
+  expiresAt: string
+  cooldownSeconds: number
+}
+
+/** POST /api/v1/auth/verify/confirm 요청 */
+export interface VerifyConfirmRequest {
+  requestId: string
+  code: string
+}
+
+/** POST /api/v1/auth/verify/confirm 응답 */
+export interface VerifyConfirmResponse {
+  verifiedToken: string
+  purpose: string
+}
+
+/** POST /api/v1/auth/password/reset-request 요청 */
+export interface PasswordResetRequestRequest {
+  email: string
+}
+
+/** POST /api/v1/auth/password/reset-confirm 요청 */
+export interface PasswordResetConfirmRequest {
+  verifiedToken: string
+  newPassword: string
+}
+
+/** 단순 메시지 응답 (reset-request, reset-confirm 등) */
+export interface SimpleMessageResponse {
+  message: string
+}
+
 // ── 감사 로그 타입 (REQ-AUTH-016) ─────────────────────────────────────────────
 
 /** 권한 변경 유형 */

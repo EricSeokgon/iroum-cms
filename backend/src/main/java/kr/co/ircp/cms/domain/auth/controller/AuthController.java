@@ -7,10 +7,19 @@ import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
 import kr.co.ircp.cms.domain.auth.dto.PasswordChangeRequest;
 import kr.co.ircp.cms.domain.auth.dto.PasswordChangeResponse;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetConfirmDto;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetConfirmResponse;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetRequestDto;
+import kr.co.ircp.cms.domain.auth.dto.PasswordResetRequestResponse;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
+import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmRequest;
+import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmResponse;
+import kr.co.ircp.cms.domain.auth.dto.VerifyRequestRequest;
+import kr.co.ircp.cms.domain.auth.dto.VerifyRequestResponse;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
+import kr.co.ircp.cms.domain.auth.service.VerificationService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -38,10 +47,13 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtProperties jwtProperties;
+    private final VerificationService verificationService;
 
-    public AuthController(AuthService authService, JwtProperties jwtProperties) {
+    public AuthController(AuthService authService, JwtProperties jwtProperties,
+            VerificationService verificationService) {
         this.authService = authService;
         this.jwtProperties = jwtProperties;
+        this.verificationService = verificationService;
     }
 
     /**
@@ -155,6 +167,66 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, clearCookie.toString())
                 .body(new PasswordChangeResponse("비밀번호가 변경되었습니다. 다시 로그인해 주세요."));
+    }
+
+    /**
+     * POST /api/v1/auth/verify/request — 본인인증 OTP 발송 요청.
+     *
+     * <p>REQ-AUTH-017-D-1 — anonymous 허용. EMAIL 채널 OTP(6자리) 발송.
+     * 429(쿨다운), 423(IP 차단), 400(형식 위반) 반환 가능.
+     */
+    @PostMapping("/verify/request")
+    public ResponseEntity<VerifyRequestResponse> verifyRequest(
+            @Valid @RequestBody VerifyRequestRequest req,
+            HttpServletRequest httpRequest) {
+        String ip = extractIp(httpRequest);
+        String ua = httpRequest.getHeader("User-Agent");
+        VerifyRequestResponse response = verificationService.request(req, ip, ua);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/auth/verify/confirm — OTP 코드 검증.
+     *
+     * <p>REQ-AUTH-017-D-2 — anonymous 허용. 성공 시 verifiedToken(5분) 반환.
+     * 401(코드 불일치), 403(만료/초과/이미 사용) 반환 가능.
+     */
+    @PostMapping("/verify/confirm")
+    public ResponseEntity<VerifyConfirmResponse> verifyConfirm(
+            @Valid @RequestBody VerifyConfirmRequest req,
+            HttpServletRequest httpRequest) {
+        String ip = extractIp(httpRequest);
+        VerifyConfirmResponse response = verificationService.confirm(req, ip);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /api/v1/auth/password/reset-request — 비밀번호 재설정 이메일 발송.
+     *
+     * <p>REQ-AUTH-017-D-3 — anonymous 허용. 사용자 존재 여부와 무관하게 항상 200.
+     */
+    @PostMapping("/password/reset-request")
+    public ResponseEntity<PasswordResetRequestResponse> passwordResetRequest(
+            @Valid @RequestBody PasswordResetRequestDto req,
+            HttpServletRequest httpRequest) {
+        String ip = extractIp(httpRequest);
+        String ua = httpRequest.getHeader("User-Agent");
+        authService.requestPasswordReset(req.email(), ip, ua);
+        return ResponseEntity.ok(new PasswordResetRequestResponse(
+            "이메일이 등록되어 있다면 인증 코드를 발송했습니다."));
+    }
+
+    /**
+     * POST /api/v1/auth/password/reset-confirm — 비밀번호 재설정 확인.
+     *
+     * <p>REQ-AUTH-017-D-4 — anonymous 허용. verifiedToken + 새 비밀번호로 재설정.
+     * 400(정책 위반/재사용), 401(토큰 무효/만료) 반환 가능.
+     */
+    @PostMapping("/password/reset-confirm")
+    public ResponseEntity<PasswordResetConfirmResponse> passwordResetConfirm(
+            @Valid @RequestBody PasswordResetConfirmDto req) {
+        authService.confirmPasswordReset(req.verifiedToken(), req.newPassword());
+        return ResponseEntity.ok(new PasswordResetConfirmResponse("비밀번호가 재설정되었습니다."));
     }
 
     /**

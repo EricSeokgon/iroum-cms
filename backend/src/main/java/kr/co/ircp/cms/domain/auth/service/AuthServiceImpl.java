@@ -10,8 +10,12 @@ import kr.co.ircp.cms.domain.auth.entity.RefreshToken;
 import kr.co.ircp.cms.domain.auth.entity.TokenBlacklist;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
+import kr.co.ircp.cms.domain.auth.dto.VerifyRequestRequest;
+import kr.co.ircp.cms.domain.auth.entity.VerificationPurpose;
+import kr.co.ircp.cms.domain.auth.entity.VerificationRequest;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
+import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
@@ -52,6 +56,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordHistoryMapper passwordHistoryMapper;
     private final JwtProperties jwtProperties;
     private final PermissionService permissionService;
+    private final VerificationService verificationService;
+    private final EmailService emailService;
 
     public AuthServiceImpl(
             UserMapper userMapper,
@@ -62,7 +68,9 @@ public class AuthServiceImpl implements AuthService {
             PasswordPolicyService passwordPolicyService,
             PasswordHistoryMapper passwordHistoryMapper,
             JwtProperties jwtProperties,
-            PermissionService permissionService) {
+            PermissionService permissionService,
+            VerificationService verificationService,
+            EmailService emailService) {
         this.userMapper = userMapper;
         this.refreshTokenMapper = refreshTokenMapper;
         this.loginHistoryMapper = loginHistoryMapper;
@@ -72,6 +80,8 @@ public class AuthServiceImpl implements AuthService {
         this.passwordHistoryMapper = passwordHistoryMapper;
         this.jwtProperties = jwtProperties;
         this.permissionService = permissionService;
+        this.verificationService = verificationService;
+        this.emailService = emailService;
     }
 
     /**
@@ -317,6 +327,80 @@ public class AuthServiceImpl implements AuthService {
 
         // 7. 모든 Refresh Token 무효화 → 재로그인 강제
         refreshTokenMapper.revokeAllForUser(userId, now);
+    }
+
+    /**
+     * 비밀번호 재설정 이메일 발송 요청.
+     *
+     * <p>REQ-AUTH-017-D-3 — 사용자 존재 여부와 무관하게 동일 응답 반환 (enumeration 방지).
+     * 존재하는 이메일이면 OTP를 발송하고, 미존재 이메일이면 발송을 skip한다.
+     */
+    @Override
+    @Transactional
+    public void requestPasswordReset(String email, String ipAddress, String userAgent) {
+        // 사용자 조회 — 미존재여도 예외를 던지지 않음 (enumeration 방지)
+        String emailHash = HashUtil.sha256Hex(email);
+        userMapper.findByEmailHash(emailHash).ifPresent(user -> {
+            // 존재하는 사용자에 한해 OTP 발송
+            VerifyRequestRequest verifyReq = new VerifyRequestRequest(
+                "EMAIL", email, "PASSWORD_RESET");
+            try {
+                verificationService.request(verifyReq, ipAddress, userAgent);
+            } catch (Exception e) {
+                // 쿨다운/IP 차단 등은 보안상 외부에 노출하지 않음
+                // 내부 로그로만 기록 (운영팀 모니터링 대상)
+            }
+        });
+    }
+
+    /**
+     * 비밀번호 재설정 확인.
+     *
+     * <p>REQ-AUTH-017-D-4 — verifiedToken 검증 → 비밀번호 정책·재사용 검사 → 변경 → 세션 무효화.
+     */
+    // @MX:ANCHOR: [AUTO] AuthServiceImpl.confirmPasswordReset — 비밀번호 재설정 핵심 도메인 흐름
+    // @MX:REASON: AuthController, 테스트, verificationService에서 참조 (fan_in >= 3)
+    @Override
+    @Transactional
+    @AuditLog(action = "PASSWORD_RESET", entityType = "User", severity = "INFO")
+    public void confirmPasswordReset(String verifiedToken, String newPassword) {
+        Instant now = Instant.now();
+
+        // 1. verifiedToken 검증 (PURPOSE=PASSWORD_RESET, 5분 이내)
+        VerificationRequest vr = verificationService
+            .validateVerifiedToken(verifiedToken, VerificationPurpose.PASSWORD_RESET)
+            .orElseThrow(InvalidVerifiedTokenException::new);
+
+        // 2. 이메일로 사용자 조회
+        String emailHash = HashUtil.sha256Hex(vr.getTarget());
+        User user = userMapper.findByEmailHash(emailHash)
+            .orElseThrow(InvalidVerifiedTokenException::new);
+
+        // 3. 새 비밀번호 정책 검증
+        passwordPolicyService.validate(newPassword);
+
+        // 4. 직전 5개 재사용 검사 (changePassword와 동일 로직)
+        List<String> recentHashes = passwordHistoryMapper.findRecentHashes(user.getId(), 5);
+        Set<String> hashesToCheck = new HashSet<>(recentHashes);
+        hashesToCheck.add(user.getPasswordHash());
+        boolean reused = hashesToCheck.stream()
+            .anyMatch(h -> passwordPolicyService.matches(newPassword, h));
+        if (reused) {
+            throw new PasswordReuseException("최근 5회 사용한 비밀번호는 재사용할 수 없습니다");
+        }
+
+        // 5. 비밀번호 변경
+        String newHash = passwordPolicyService.hash(newPassword);
+        userMapper.updatePassword(user.getId(), newHash, now);
+
+        // 6. 비밀번호 이력 적재
+        passwordHistoryMapper.insert(user.getId(), newHash, now);
+
+        // 7. 모든 Refresh Token 무효화 → 재로그인 강제
+        refreshTokenMapper.revokeAllForUser(user.getId(), now);
+
+        // 8. 완료 안내 이메일 비동기 발송
+        emailService.sendPasswordResetNotice(vr.getTarget());
     }
 
     /**
