@@ -1,0 +1,30 @@
+{
+  "app": {
+    "title": "iroum-cms Admin"
+  },
+  "nav": {
+    "home": "Home",
+    "health": "Server Status"
+  },
+  "health": {
+    "title": "Server Health Check",
+    "status": "Status",
+    "service": "Service",
+    "version": "Version",
+    "loading": "Checking server status...",
+    "error": "Unable to reach the server.",
+    "retry": "Retry"
+  },
+  "home": {
+    "title": "iroum-cms Admin",
+    "subtitle": "Welcome to the Content Management System.",
+    "goHealth": "Check Server Status"
+  },
+  "error": {
+    "notFound": {
+      "title": "Page Not Found",
+      "message": "The page you requested does not exist.",
+      "goHome": "Go to Home"
+    }
+  }
+}

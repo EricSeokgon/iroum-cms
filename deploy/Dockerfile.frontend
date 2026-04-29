@@ -1,0 +1,59 @@
+# iroum-cms Frontend — Multi-stage Dockerfile (admin / public 공용)
+# ARG APP=admin|public 로 빌드 대상 선택
+#
+# 빌드 예시:
+#   docker build --build-arg APP=admin -f deploy/Dockerfile.frontend -t iroum-cms-admin .
+#   docker build --build-arg APP=public -f deploy/Dockerfile.frontend -t iroum-cms-public .
+
+# ────────────────────────────────────────────
+# Stage 1: 빌드 (Node 22 + pnpm 9)
+# ────────────────────────────────────────────
+FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
+
+# 빌드 대상 앱 (admin 또는 public)
+ARG APP=admin
+# Vite 빌드 타임 환경변수 (API 기본 경로)
+ARG VITE_API_BASE=/api/v1
+
+WORKDIR /workspace
+
+# pnpm 9 활성화 (corepack)
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# ─── 의존성 레이어 캐시 최적화 ───
+# workspace 루트 및 각 패키지 manifest만 먼저 복사
+COPY frontend/pnpm-workspace.yaml frontend/package.json ./
+COPY frontend/${APP}/package.json ./${APP}/
+COPY frontend/shared/package.json ./shared/
+
+# 의존성 설치 (lockfile 없는 초기 환경 대응)
+RUN pnpm install --frozen-lockfile=false
+
+# ─── 소스 복사 후 빌드 ───
+COPY frontend/${APP} ./${APP}/
+COPY frontend/shared ./shared/
+
+# Vite 환경변수 주입
+ENV VITE_API_BASE=$VITE_API_BASE
+
+# 해당 앱만 빌드 (pnpm workspace 필터)
+RUN pnpm -F @iroum-cms/${APP} build
+
+# ────────────────────────────────────────────
+# Stage 2: 서빙 (nginx 1.27-alpine)
+# ────────────────────────────────────────────
+FROM nginx:1.27-alpine
+
+ARG APP=admin
+
+# 빌드 산출물 복사 (dist/ → nginx html 루트)
+COPY --from=builder /workspace/${APP}/dist /usr/share/nginx/html
+
+# SPA 폴백 nginx 설정 복사
+COPY deploy/nginx/spa.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+# 헬스 체크
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD wget -q --spider http://localhost:80/ || exit 1

@@ -1,0 +1,16 @@
+{
+  "app": {
+    "title": "iroum-cms"
+  },
+  "home": {
+    "title": "Welcome to iroum-cms",
+    "subtitle": "Search for information and use our services."
+  },
+  "error": {
+    "notFound": {
+      "title": "Page Not Found",
+      "message": "The page you requested does not exist.",
+      "goHome": "Go to Home"
+    }
+  }
+}

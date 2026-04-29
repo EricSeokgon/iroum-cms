@@ -1,0 +1,16 @@
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* KWCAG 2.2 AA — 포커스 표시 강화 */
+@layer base {
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-600;
+  }
+
+  html {
+    font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}

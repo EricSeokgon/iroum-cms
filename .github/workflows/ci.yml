@@ -1,0 +1,184 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+# 동일 브랜치의 이전 실행 취소 (불필요한 자원 낭비 방지)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ──────────────────────────────────────────
+  # 백엔드 빌드 및 테스트 (Spring Boot 3.2)
+  # ──────────────────────────────────────────
+  backend-test:
+    name: Backend (Spring Boot)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: iroum_cms_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U test -d iroum_cms_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build & Test (with JaCoCo)
+        working-directory: backend
+        run: ./gradlew build jacocoTestReport --no-daemon --parallel
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          DB_URL: jdbc:postgresql://localhost:5432/iroum_cms_test
+          DB_USERNAME: test
+          DB_PASSWORD: test
+          JWT_SECRET: ci-test-jwt-secret-replace-in-production-min256bit
+
+      - name: Upload JaCoCo Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: backend/build/reports/jacoco/test/html/
+          retention-days: 14
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: backend/build/test-results/
+          retention-days: 14
+
+  # ──────────────────────────────────────────
+  # 프론트엔드 빌드 및 테스트 (Vue 3 + Vitest)
+  # admin / public 병렬 실행
+  # ──────────────────────────────────────────
+  frontend-test:
+    name: Frontend (${{ matrix.app }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [admin, public]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm 9
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9.0.0"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build ${{ matrix.app }}
+        working-directory: frontend
+        run: pnpm -F @iroum-cms/${{ matrix.app }} build
+        env:
+          VITE_API_BASE: /api/v1
+
+      - name: Test ${{ matrix.app }} (Vitest)
+        working-directory: frontend
+        run: pnpm -F @iroum-cms/${{ matrix.app }} test --reporter=verbose --coverage
+
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ matrix.app }}
+          path: frontend/${{ matrix.app }}/coverage/
+          retention-days: 14
+
+  # ──────────────────────────────────────────
+  # Docker 이미지 빌드 검증
+  # main 브랜치 push 시에만 실행
+  # ──────────────────────────────────────────
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-test, frontend-test]
+
+    # main 브랜치 push 이벤트로만 제한
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx (multi-arch)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile.backend
+          push: false
+          tags: iroum-cms-backend:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build admin image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile.frontend
+          push: false
+          build-args: |
+            APP=admin
+            VITE_API_BASE=/api/v1
+          tags: iroum-cms-admin:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build public image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: deploy/Dockerfile.frontend
+          push: false
+          build-args: |
+            APP=public
+            VITE_API_BASE=/api/v1
+          tags: iroum-cms-public:${{ github.sha }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

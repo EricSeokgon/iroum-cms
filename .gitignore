@@ -211,3 +211,40 @@ dist-ssr/
 .vercel/
 .netlify/
 .firebase/
+
+# ===========================================
+# iroum-cms 프로젝트 전용
+# ===========================================
+
+# Java / Gradle 빌드 산출물
+backend/build/
+backend/.gradle/
+backend/out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# pnpm 스토어 및 프론트엔드 빌드 산출물
+frontend/node_modules/
+frontend/.pnpm-store/
+frontend/admin/dist/
+frontend/admin/node_modules/
+frontend/public/dist/
+frontend/public/node_modules/
+frontend/shared/dist/
+frontend/shared/node_modules/
+
+# Vitest 커버리지
+frontend/*/coverage/
+
+# Playwright 테스트 산출물
+frontend/*/test-results/
+frontend/*/playwright-report/
+
+# 배포 환경변수 (시크릿 보호)
+deploy/.env
+deploy/.env.local
+deploy/.env.production
+
+# Docker 로컬 볼륨 마운트 데이터 (개발 시 생성)
+deploy/data/

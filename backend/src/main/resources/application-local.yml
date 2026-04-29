@@ -1,0 +1,33 @@
+# 로컬 개발 환경 설정
+# docker-compose의 postgres:16-alpine 서비스와 연동
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/iroum_cms_local
+    username: ${DB_USERNAME:iroum_cms}
+    password: ${DB_PASSWORD:iroum_cms_dev_pwd}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      idle-timeout: 300000
+      max-lifetime: 900000
+      pool-name: HikariPool-local
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+logging:
+  level:
+    root: DEBUG
+    kr.co.ircp.cms: DEBUG
+    org.springframework.security: DEBUG
+    org.mybatis.spring: DEBUG
+    org.flywaydb: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true

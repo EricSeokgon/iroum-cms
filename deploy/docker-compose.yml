@@ -1,0 +1,147 @@
+# iroum-cms 로컬 개발용 Docker Compose
+# 사용: docker compose -f deploy/docker-compose.yml up -d
+# DB만 기동: docker compose -f deploy/docker-compose.yml up -d postgres
+
+version: "3.9"
+
+services:
+  # ──────────────────────────────────────────
+  # PostgreSQL 16 — 개발·로컬 데이터베이스
+  # ──────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: iroum-postgres
+    environment:
+      POSTGRES_DB: iroum_cms_local
+      POSTGRES_USER: iroum_cms
+      POSTGRES_PASSWORD: iroum_cms_dev_pwd
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iroum_cms -d iroum_cms_local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Redis 7 — 세션 캐시 (선택 프로파일)
+  # 활성화: docker compose --profile cache up -d
+  # SPEC-CMS-002 본인인증 구현 시 필수
+  # ──────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: iroum-redis
+    profiles:
+      - cache
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "PING"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Backend — Spring Boot 3.2 + egovframe 5
+  # ──────────────────────────────────────────
+  backend:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile.backend
+    container_name: iroum-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      DB_URL: jdbc:postgresql://postgres:5432/iroum_cms_local
+      DB_USERNAME: iroum_cms
+      DB_PASSWORD: iroum_cms_dev_pwd
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-replace-in-production-min256bit}
+      JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Admin SPA — Vue 3 관리자 백오피스
+  # ──────────────────────────────────────────
+  admin-fe:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        APP: admin
+        VITE_API_BASE: /api/v1
+    container_name: iroum-admin-fe
+    ports:
+      - "5173:80"
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # Public SPA — Vue 3 공공 웹사이트
+  # ──────────────────────────────────────────
+  public-fe:
+    build:
+      context: ../
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        APP: public
+        VITE_API_BASE: /api/v1
+    container_name: iroum-public-fe
+    ports:
+      - "5174:80"
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
+  # nginx — 리버스 프록시 / 라우팅
+  # Admin: http://localhost/admin/
+  # Public: http://localhost/
+  # API: http://localhost/api/
+  # ──────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: iroum-nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - admin-fe
+      - public-fe
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    name: iroum_cms_postgres_data
+
+networks:
+  iroum-net:
+    name: iroum-cms-network
+    driver: bridge

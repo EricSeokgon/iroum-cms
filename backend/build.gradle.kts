@@ -1,0 +1,152 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+plugins {
+    java
+    id("org.springframework.boot") version "3.2.10"
+    id("io.spring.dependency-management") version "1.1.6"
+    jacoco
+}
+
+group = "kr.co.ircp"
+version = "0.1.0-SNAPSHOT"
+
+// Java 17 toolchain — Gradle이 Foojay API를 통해 자동 다운로드
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+        vendor = JvmVendorSpec.ADOPTIUM
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+    // egovFrame 5.0 공식 Maven 저장소
+    // 접근 불가 시 egovFrame 의존성이 해결되지 않으며, 하단 TODO 참조
+    maven {
+        url = uri("https://maven.egovframe.go.kr/maven/")
+        isAllowInsecureProtocol = false
+    }
+}
+
+// ─── 의존성 버전 상수 ─────────────────────────────────────────────────────
+val mybatisStarterVersion = "3.0.3"
+val jjwtVersion = "0.12.6"
+val springdocVersion = "2.6.0"
+val testcontainersVersion = "1.20.4"
+
+dependencies {
+    // ─── Spring Boot Starters ──────────────────────────────────────────────
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
+    // ─── MyBatis ──────────────────────────────────────────────────────────
+    implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:$mybatisStarterVersion")
+
+    // ─── PostgreSQL JDBC ───────────────────────────────────────────────────
+    runtimeOnly("org.postgresql:postgresql")
+
+    // ─── Flyway ───────────────────────────────────────────────────────────
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
+    // ─── JWT (jjwt 0.12.6) ────────────────────────────────────────────────
+    implementation("io.jsonwebtoken:jjwt-api:$jjwtVersion")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jjwtVersion")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jjwtVersion")
+
+    // ─── OpenAPI / Swagger UI ─────────────────────────────────────────────
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
+
+    // ─── Lombok ───────────────────────────────────────────────────────────
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // ─── egovFrame 5.0.0 ──────────────────────────────────────────────────
+    // TODO(SPEC-CMS-002): egovFrame Maven 저장소 접근 가능 여부 확인 후 주석 해제
+    //   저장소: https://maven.egovframe.go.kr/maven/
+    //   접근 불가 시 공식 배포 JAR을 libs/ 폴더에 직접 배치하거나,
+    //   Spring 표준 의존성(JDBC, Transaction, AOP)으로 대체 구현 후 SPEC-CMS-002에서 통합.
+    //
+    // implementation("org.egovframe.rte:egovframework.rte.psl.dataaccess:5.0.0")
+    // implementation("org.egovframe.rte:egovframework.rte.fdl.cmmn:5.0.0")
+    // implementation("org.egovframe.rte:egovframework.rte.fdl.security:5.0.0")
+
+    // egovFrame 대체 — 표준 Spring 의존성 (Step 0 bootstrap)
+    implementation("org.springframework:spring-jdbc")
+    implementation("org.springframework:spring-tx")
+
+    // ─── Test ──────────────────────────────────────────────────────────────
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        // Mockito는 별도로 추가하므로 제외하지 않음 (spring-boot-starter-test가 이미 포함)
+    }
+    testImplementation("org.springframework.security:spring-security-test")
+
+    // Testcontainers — 실제 PostgreSQL 컨테이너 기반 통합 테스트
+    testImplementation("org.testcontainers:junit-jupiter:$testcontainersVersion")
+    testImplementation("org.testcontainers:postgresql:$testcontainersVersion")
+
+    // Lombok (테스트 코드에서도 사용)
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
+}
+
+// ─── 빌드 설정 ────────────────────────────────────────────────────────────
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    archiveFileName.set("iroum-cms.jar")
+}
+
+// ─── 테스트 설정 ──────────────────────────────────────────────────────────
+tasks.test {
+    useJUnitPlatform()
+    testLogging {
+        events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+        exceptionFormat = TestExceptionFormat.FULL
+        showStandardStreams = false
+    }
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+// ─── JaCoCo 커버리지 ──────────────────────────────────────────────────────
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+    // 커버리지 제외 대상 (생성 코드, 설정 클래스 등)
+    classDirectories.setFrom(
+        files(classDirectories.files.map {
+            fileTree(it) {
+                exclude(
+                    "**/IroumCmsApplication.class",
+                    "**/config/**",
+                )
+            }
+        })
+    )
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+}

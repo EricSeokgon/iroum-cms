@@ -1,0 +1,30 @@
+{
+  "app": {
+    "title": "iroum-cms 관리자"
+  },
+  "nav": {
+    "home": "홈",
+    "health": "서버 상태"
+  },
+  "health": {
+    "title": "서버 상태 확인",
+    "status": "상태",
+    "service": "서비스",
+    "version": "버전",
+    "loading": "서버 상태를 확인하는 중...",
+    "error": "서버와 통신할 수 없습니다.",
+    "retry": "다시 시도"
+  },
+  "home": {
+    "title": "iroum-cms 관리자",
+    "subtitle": "콘텐츠 관리 시스템에 오신 것을 환영합니다.",
+    "goHealth": "서버 상태 확인"
+  },
+  "error": {
+    "notFound": {
+      "title": "페이지를 찾을 수 없습니다",
+      "message": "요청하신 페이지가 존재하지 않습니다.",
+      "goHome": "홈으로 돌아가기"
+    }
+  }
+}

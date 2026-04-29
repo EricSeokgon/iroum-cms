@@ -1,0 +1,13 @@
+{
+  "name": "iroum-cms-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:admin": "pnpm -F @iroum-cms/admin dev",
+    "dev:public": "pnpm -F @iroum-cms/public dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
