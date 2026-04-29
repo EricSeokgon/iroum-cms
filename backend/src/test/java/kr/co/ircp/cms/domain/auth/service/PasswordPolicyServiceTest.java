@@ -5,72 +5,71 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * PasswordPolicyService RED 단계 테스트.
+ * PasswordPolicyService 행동 검증 테스트.
  *
  * <p>SPEC-CMS-002 REQ-AUTH-004 — 8자 이상, 3종류 이상 문자, BCrypt strength=12.
- * 모든 테스트는 UnsupportedOperationException으로 실패해야 한다 (RED 의도).
+ * 구현이 올바르면 모두 GREEN.
  */
-// @MX:TODO: [AUTO] Step 2 GREEN — BCrypt 정책 검증 로직 구현 후 UOE를 실제 검증으로 교체
-@DisplayName("PasswordPolicyService RED 단계 테스트")
+@DisplayName("PasswordPolicyService 행동 검증 테스트")
 class PasswordPolicyServiceTest {
 
-    private PasswordPolicyService passwordPolicyService;
+    private PasswordPolicyService service;
 
     @BeforeEach
     void setUp() {
-        passwordPolicyService = new PasswordPolicyServiceImpl();
+        service = new PasswordPolicyServiceImpl();
     }
 
     @Test
-    @DisplayName("validate — 정책 준수 비밀번호 통과 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: 정상 비밀번호는 검증을 통과한다 (8자, 3종 조합)")
     void validate_passes_for_compliant() {
-        // 8자 이상, 대문자+소문자+숫자+특수문자 포함 — 정책 준수
-        assertThatThrownBy(() ->
-                passwordPolicyService.validate("ValidP@ss123")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        // given
+        String compliant = "ValidP@ss123";
+        // when / then — 예외가 발생하지 않아야 한다
+        service.validate(compliant);
     }
 
     @Test
-    @DisplayName("validate — 8자 미만 시 정책 위반 예외 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: 8자 미만 비밀번호는 거부된다")
     void validate_throws_when_too_short() {
-        assertThatThrownBy(() ->
-                passwordPolicyService.validate("Ab1!")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> service.validate("Ab1!"))
+                .isInstanceOf(PasswordPolicyViolationException.class)
+                .hasMessageContaining("8자");
     }
 
     @Test
-    @DisplayName("validate — 3종류 미만 문자 시 정책 위반 예외 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: 3종 미만 조합은 거부된다 (대문자만 8자)")
     void validate_throws_when_lacks_3_types() {
-        // 소문자만 사용 — 1종류
-        assertThatThrownBy(() ->
-                passwordPolicyService.validate("password")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> service.validate("ABCDEFGH"))
+                .isInstanceOf(PasswordPolicyViolationException.class)
+                .hasMessageContaining("3종");
     }
 
     @Test
-    @DisplayName("hash — BCrypt strength=12로 해싱 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: BCrypt strength 12 해시 형식 ($2a$12$ 또는 $2b$12$)")
     void hash_returnsBcryptStrength12() {
-        assertThatThrownBy(() ->
-                passwordPolicyService.hash("ValidP@ss123")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        // when
+        String hash = service.hash("ValidP@ss123");
+        // then — BCrypt 출력 형식: $2a$12$... 또는 $2b$12$...
+        assertThat(hash).matches("^\\$2[aby]\\$12\\$.{53}$");
     }
 
     @Test
-    @DisplayName("matches — 올바른 비밀번호와 해시 일치 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: 동일한 raw 비밀번호 매칭 성공")
     void matches_returnsTrue_for_correctPassword() {
-        assertThatThrownBy(() ->
-                passwordPolicyService.matches("ValidP@ss123", "$2a$12$hash")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String raw = "ValidP@ss123";
+        String hash = service.hash(raw);
+        assertThat(service.matches(raw, hash)).isTrue();
     }
 
     @Test
-    @DisplayName("matches — 잘못된 비밀번호와 해시 불일치 (RED: UOE)")
+    @DisplayName("REQ-AUTH-004: 다른 raw 비밀번호 매칭 실패")
     void matches_returnsFalse_for_wrong() {
-        assertThatThrownBy(() ->
-                passwordPolicyService.matches("wrongPassword", "$2a$12$hash")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String hash = service.hash("ValidP@ss123");
+        assertThat(service.matches("WrongP@ss456", hash)).isFalse();
     }
 }

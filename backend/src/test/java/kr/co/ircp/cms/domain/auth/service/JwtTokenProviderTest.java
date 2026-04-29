@@ -5,94 +5,117 @@ import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.Duration;
-import java.util.Optional;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * JwtTokenProvider RED 단계 테스트.
+ * JwtTokenProvider 행동 검증 테스트.
  *
- * <p>SPEC-CMS-002 REQ-AUTH-001/002 — 모든 테스트는 UnsupportedOperationException으로 실패해야 한다 (RED 의도).
+ * <p>SPEC-CMS-002 REQ-AUTH-001/002 — 구현이 올바르면 모두 GREEN.
+ * Spring 컨텍스트 없이 단위 테스트로 실행.
  */
-// @MX:TODO: [AUTO] Step 2 GREEN — UOE를 실제 동작 검증으로 교체
-@ExtendWith(SpringExtension.class)
-@DisplayName("JwtTokenProvider RED 단계 테스트")
+@DisplayName("JwtTokenProvider 행동 검증 테스트")
 class JwtTokenProviderTest {
 
-    private JwtTokenProvider jwtTokenProvider;
-    private JwtProperties jwtProperties;
+    private static final String SECRET_64BYTE =
+            "test-secret-key-256-bits-long-please-replace-in-production-env-vars";
+    private static final String ISSUER = "iroum-cms-test";
+
+    private JwtTokenProvider provider;
+    private JwtTokenProvider expiredProvider;
 
     @BeforeEach
     void setUp() {
-        jwtProperties = new JwtProperties(
-                "changeme-256-bits-min-replace-in-prod-aaaaaaaaaaaaaaaaaaaaa",
+        // 정상 TTL (15분 / 7일)
+        JwtProperties props = new JwtProperties(
+                SECRET_64BYTE,
                 Duration.ofMinutes(15),
                 Duration.ofDays(7),
-                "iroum-cms"
+                ISSUER
         );
-        jwtTokenProvider = new JwtTokenProviderImpl();
+        provider = new JwtTokenProviderImpl(props);
+
+        // 만료 시뮬레이션용 (음수 TTL → 발급 즉시 exp가 과거)
+        JwtProperties expiredProps = new JwtProperties(
+                SECRET_64BYTE,
+                Duration.ofMinutes(-15),
+                Duration.ofDays(-1),
+                ISSUER
+        );
+        expiredProvider = new JwtTokenProviderImpl(expiredProps);
     }
 
     @Test
-    @DisplayName("generateAccessToken — 유효한 JWS 반환 (RED: UOE)")
+    @DisplayName("REQ-AUTH-001: Access Token은 JWS 3-segment 형식")
     void generateAccessToken_returnsValidJws() {
-        // RED — UnsupportedOperationException 발생 의도
-        assertThatThrownBy(() ->
-                jwtTokenProvider.generateAccessToken(1L, "admin", Set.of("SUPER_ADMIN"))
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String token = provider.generateAccessToken(1L, "admin", Set.of("SUPER_ADMIN"));
+        assertThat(token).isNotBlank();
+        assertThat(token.split("\\.")).hasSize(3);
     }
 
     @Test
-    @DisplayName("generateAccessToken — userId/username/roles 클레임 포함 (RED: UOE)")
+    @DisplayName("REQ-AUTH-001: Access Token claims 포함 검증 (uid, sub, roles)")
     void generateAccessToken_includesUserAndRoles() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.generateAccessToken(42L, "editor", Set.of("EDITOR", "VIEWER"))
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String token = provider.generateAccessToken(42L, "alice", Set.of("EDITOR", "VIEWER"));
+        var claims = provider.validateAccessToken(token);
+        assertThat(claims).isPresent();
+        assertThat(claims.get().userId()).isEqualTo(42L);
+        assertThat(claims.get().username()).isEqualTo("alice");
+        assertThat(claims.get().roles()).containsExactlyInAnyOrder("EDITOR", "VIEWER");
     }
 
     @Test
-    @DisplayName("validateAccessToken — 유효한 토큰에서 클레임 반환 (RED: UOE)")
+    @DisplayName("REQ-AUTH-001: 정상 토큰 검증 시 클레임 반환 및 만료 시각이 미래")
     void validateAccessToken_returnsClaims_whenValid() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.validateAccessToken("valid.jwt.token")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String token = provider.generateAccessToken(1L, "admin", Set.of());
+        var claims = provider.validateAccessToken(token);
+        assertThat(claims).isPresent();
+        assertThat(claims.get().expiresAt()).isAfter(Instant.now());
     }
 
     @Test
-    @DisplayName("validateAccessToken — 만료된 토큰에서 TokenExpiredException 발생 (RED: UOE)")
+    @DisplayName("REQ-AUTH-002: 만료된 토큰은 TokenExpiredException 발생")
     void validateAccessToken_throwsTokenExpired_whenPastExp() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.validateAccessToken("expired.jwt.token")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String expired = expiredProvider.generateAccessToken(1L, "admin", Set.of());
+        assertThatThrownBy(() -> provider.validateAccessToken(expired))
+                .isInstanceOf(TokenExpiredException.class);
     }
 
     @Test
-    @DisplayName("validateAccessToken — 서명 불일치 시 empty 반환 (RED: UOE)")
+    @DisplayName("REQ-AUTH-001: 다른 키로 서명된 토큰은 Optional.empty 반환")
     void validateAccessToken_returnsEmpty_whenSignatureMismatch() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.validateAccessToken("tampered.jwt.token")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        // 다른 secret으로 서명된 토큰 생성
+        JwtProperties differentSecret = new JwtProperties(
+                "different-secret-256-bits-long-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                Duration.ofMinutes(15),
+                Duration.ofDays(7),
+                ISSUER
+        );
+        JwtTokenProvider other = new JwtTokenProviderImpl(differentSecret);
+        String foreign = other.generateAccessToken(1L, "intruder", Set.of());
+
+        assertThat(provider.validateAccessToken(foreign)).isEmpty();
     }
 
     @Test
-    @DisplayName("generateRefreshToken — userId만 포함한 토큰 생성 (RED: UOE)")
+    @DisplayName("REQ-AUTH-002: Refresh Token은 userId만 포함 (sub=userId, roles 없음)")
     void generateRefreshToken_includesOnlyUserId() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.generateRefreshToken(1L)
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String refresh = provider.generateRefreshToken(99L);
+        assertThat(refresh).isNotBlank();
+        assertThat(refresh.split("\\.")).hasSize(3);
+        // Refresh Token에서 userId 추출이 정상 동작
+        assertThat(provider.extractUserId(refresh)).contains(99L);
     }
 
     @Test
-    @DisplayName("extractUserId — 유효한 Refresh Token에서 userId 추출 (RED: UOE)")
+    @DisplayName("REQ-AUTH-002: extractUserId — Refresh Token에서 정확한 userId 반환")
     void extractUserId_returnsValidId() {
-        assertThatThrownBy(() ->
-                jwtTokenProvider.extractUserId("valid.refresh.token")
-        ).isInstanceOf(UnsupportedOperationException.class);
+        String refresh = provider.generateRefreshToken(12345L);
+        assertThat(provider.extractUserId(refresh)).contains(12345L);
     }
 }
