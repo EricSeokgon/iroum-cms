@@ -622,22 +622,162 @@
 
 ---
 
-## L. Definition of Done (Bundle A 완료 기준, v0.2)
+## L. 본인인증 (REQ-AUTH-017-D-*, v0.3)
 
-본 SPEC-CMS-002 v0.2는 다음을 모두 만족할 때 완료된 것으로 간주한다.
+### L-001 — 인증 요청 — SMS 채널 정상
 
-- v0.1 기준: 모든 REQ-AUTH-001-D ~ REQ-AUTH-012-D sub-requirement가 구현되고 acceptance.md A~G의 모든 시나리오가 자동화 테스트로 통과
-- v0.2 추가: REQ-AUTH-013-D ~ REQ-AUTH-016-D sub-requirement가 구현되고 H~K의 모든 시나리오가 통과
-- QG-A-1~6의 6개 품질 게이트가 CI에서 모두 PASS (QG-A-6는 v0.2 신규)
-- Flyway V1 + V2 마이그레이션이 PostgreSQL 16에서 0 오류 순차 적용
-- JaCoCo 커버리지: domain.auth + domain.organization 패키지 line/branch 모두 ≥ 85%
-- Vitest 커버리지: Admin SPA의 인증·권한 매트릭스·조직 화면 컴포넌트 line ≥ 85%
-- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 §6 + §13 신규 엔드포인트(`/admin/permission-matrix`, `/admin/permission-history`, `/organizations/*`) 모두 노출됨
-- 보안 담당자 검수: JWT/BCrypt/Refresh + 4단계 RBAC + 권한 변경 이력 정책 검증 완료 서명
-- 운영 매뉴얼: 사용자·역할·잠금 해제·조직 트리·권한 매트릭스 절차가 한국어로 문서화됨
+**Given** 인증된 사용자 'alice'가 휴대폰 번호 '01012345678'을 보유하고
+**When** alice가 `POST /api/v1/auth/verify/request {channel:'SMS', target:'01012345678', purpose:'IMPORTANT_CHANGE'}` 호출
+**Then** 200 + `{ "request_id":"<uuid>", "expires_in":300 }`가 반환되고
+**And** verification_request에 (request_id, channel='SMS', target='01012345678', purpose='IMPORTANT_CHANGE', code_hash=BCrypt(6자리), expires_at=now+5m, status='PENDING', attempts=0, max_attempts=3, requester_id=alice) 1행 INSERT
+**And** SmsProvider.sendOtp('01012345678', code) 1회 호출 (NoOpSmsProvider 환경에서는 stdout 로깅만 검증)
+**And** 평문 OTP는 응답·로그에 노출되지 않는다.
+
+### L-002 — 인증 요청 — EMAIL 채널 정상
+
+**Given** 익명 사용자가 회원가입 도중 이메일 'new@x.com' 입력
+**When** `POST /api/v1/auth/verify/request {channel:'EMAIL', target:'new@x.com', purpose:'SIGNUP'}` 호출
+**Then** 200 + `{request_id, expires_in:300}` 반환
+**And** verification_request 행 INSERT (channel='EMAIL', requester_id=NULL, requester_ip=요청 IP)
+**And** Spring Mail로 'new@x.com' 주소에 6자리 OTP가 포함된 메일 발송된다.
+
+### L-003 — 재발송 쿨다운 (1분 이내)
+
+**Given** L-001이 방금 처리되어 verification_request에 alice의 행이 1건 존재 (created_at=now-30s)
+**When** alice가 동일 target='01012345678'으로 즉시 재요청
+**Then** 429 + `VERIFY_RESEND_COOLDOWN`이 반환되고
+**And** verification_request에 신규 행이 INSERT되지 않으며
+**And** SmsProvider.sendOtp는 호출되지 않는다.
+
+### L-004 — OTP 검증 정상
+
+**Given** verification_request 행이 (request_id='r-1', code_hash=BCrypt('123456'), status='PENDING', expires_at=now+4m, attempts=0)으로 존재
+**When** `POST /api/v1/auth/verify/confirm {request_id:'r-1', code:'123456'}` 호출
+**Then** 200 + `{ "verified":true }` 반환
+**And** verification_request.status='VERIFIED', verified_at=now로 갱신
+**And** verification_history에 (target, success=true, ip_address, user_agent, occurred_at) 1행 적재.
+
+### L-005 — OTP 검증 실패 — 코드 불일치 1회
+
+**Given** verification_request (code_hash=BCrypt('123456'), attempts=0, max_attempts=3, status='PENDING')
+**When** `POST /api/v1/auth/verify/confirm {request_id, code:'999999'}` 호출
+**Then** 401 + `VERIFY_CODE_INVALID` 반환
+**And** verification_request.attempts=1로 증가, status='PENDING' 유지
+**And** verification_history에 success=false 행 추가.
+
+### L-006 — OTP 검증 실패 — 3회 시도 후 차단
+
+**Given** verification_request (attempts=2, max_attempts=3, status='PENDING')
+**When** 잘못된 코드로 3회째 검증 호출
+**Then** 423 + `VERIFY_BLOCKED` 반환
+**And** verification_request.status='FAILED', attempts=3으로 갱신
+**And** 동일 request_id로 재시도 시 423 + `VERIFY_BLOCKED` 반환 (status='FAILED' 영구 차단).
+
+### L-007 — OTP 만료
+
+**Given** verification_request.expires_at = now - 1분, status='PENDING'
+**When** `/auth/verify/confirm` 호출
+**Then** 401 + `VERIFY_CODE_EXPIRED` 반환 (status='EXPIRED'로 갱신).
+
+### L-008 — IP 부정 시도 차단 (REQ-AUTH-017-D-5)
+
+**Given** 동일 IP '203.0.113.10'에서 1시간 내 verification_history에 10건 시도 누적
+**When** 11회째 `/auth/verify/request` 또는 `/auth/verify/confirm` 호출
+**Then** 429 + `VERIFY_RATE_LIMIT_EXCEEDED` 반환
+**And** audit_log에 (severity=CRITICAL, action='VERIFY_RATE_LIMIT', ip_address='203.0.113.10') 기록
+**And** 1시간 동안 동일 IP의 verify 계열 호출이 차단된다.
+
+### L-009 — SmsProvider 인터페이스 — NoOpSmsProvider 기본 동작
+
+**Given** 1차 빌드 (`auth.sms.provider` 미설정)
+**When** ApplicationContext에서 `SmsProvider` 빈 조회
+**Then** `NoOpSmsProvider` 인스턴스 1개만 등록 (NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 빈 미등록)
+**And** L-001 시나리오 실행 시 SmsProvider.sendOtp 호출이 stdout 로그 1행만 출력하고 SmsResult.success("noop")를 반환해 정상 흐름 유지.
 
 ---
 
-_문서 버전: v0.2 (2026-04-29 RFP 통합 amendment)_
+## M. 회원정보 접근 로그 (REQ-AUTH-018-D-*, v0.3)
+
+### M-001 — AOP 자동 적재 — 관리자가 다른 사용자 조회
+
+**Given** SUPER_ADMIN 'root'(viewer_id=1) 인증, `UserService.findById(target_user_id=42)`에 `@PersonalDataAccess(fields={"email","phone"}, purpose="BUSINESS_INQUIRY")` 부착
+**When** root가 `GET /api/v1/users/42` 호출
+**Then** 200 + 사용자 상세 응답
+**And** personal_data_access_log에 (viewer_id=1, target_user_id=42, accessed_fields=`["email","phone"]`, purpose='BUSINESS_INQUIRY', ip_address, user_agent, accessed_at=now) 1행 적재.
+
+### M-002 — AOP 자동 적재 — 본인 조회 시 skip
+
+**Given** 일반 사용자 'alice'(id=42) 인증
+**When** alice가 `GET /api/v1/me` 호출 (내부적으로 UserService.findById(42), viewer_id == target_user_id)
+**Then** 200 + 본인 정보 응답
+**And** personal_data_access_log에 행이 적재되지 않는다 (REQ-AUTH-018-D-2 본인 조회 skip 규칙).
+
+### M-003 — APPEND-ONLY 위반 — UPDATE 차단
+
+**Given** personal_data_access_log에 행 1건 존재
+**When** SUPER_ADMIN이 직접 SQL `UPDATE personal_data_access_log SET purpose='AUDIT' WHERE id=1` 실행
+**Then** PostgreSQL 트리거가 `RAISE EXCEPTION 'personal_data_access_log is APPEND-ONLY (REQ-AUTH-018-D-3). UPDATE/DELETE blocked.'`로 거부
+**And** 트랜잭션 ROLLBACK + audit_log에 (severity=CRITICAL, action='PDAL_MODIFICATION_ATTEMPT') 기록.
+
+### M-004 — 관리자 검색 화면
+
+**Given** SUPER_ADMIN 인증, personal_data_access_log에 100건 누적
+**When** `GET /api/v1/admin/personal-data-access-log?targetUserId=42&from=2026-04-01&to=2026-04-30&fields=email&purpose=BUSINESS_INQUIRY&page=0&size=20` 호출
+**Then** 200 + accessed_at 역순 페이징 결과
+**And** 응답 content는 target_user_id=42 + 기간 + accessed_fields에 'email' 포함 + purpose='BUSINESS_INQUIRY' 모두 만족 행만 반환 (`accessed_fields ?| array['email']` GIN 인덱스 활용).
+
+### M-005 — 본인 조회 권리 (REQ-AUTH-018-D-4)
+
+**Given** alice(id=42) 인증, personal_data_access_log에 alice를 target으로 한 행 5건 (다른 관리자가 조회한 이력)
+**When** alice가 `GET /api/v1/me/personal-data-access-log?from=2026-04-01&to=2026-04-30` 호출
+**Then** 200 + 5건 모두 반환 (viewer_id, accessed_fields, purpose, accessed_at 노출 — 단, viewer의 개인정보는 username만 표시)
+**And** 다른 사용자 'bob'을 target으로 한 행은 응답에 포함되지 않는다.
+
+### M-006 — 콜드 이관 batch (REQ-AUTH-018-D-3)
+
+**Given** personal_data_access_log에 accessed_at < now - 6개월인 행 1000건 존재
+**When** 일일 archive batch 실행
+**Then** 1000건이 personal_data_access_log_archive로 이관되고 (archived_at=now 적재)
+**And** 원본 personal_data_access_log에서 해당 행 DELETE (트리거 우회 권한으로)
+**And** audit_log에 batch 실행 이벤트 1건 (적재 건수, 실행 시각) 기록
+**And** archive 쪽 partition은 월별로 분리되어 있다 (5년 보존 후 폐기 batch가 별도 운영).
+
+---
+
+## H-extra. 품질 게이트 추가 (Bundle A v0.3)
+
+### QG-A-7 — RFP+홍익 비기능 (개인정보 접근 추적 100%)
+
+**Given** v0.3 amendment 빌드 산출물에 대해 personal_data_access_log + verification_request 동작이 가능한 환경에서
+**When** 다음 시나리오를 자동화로 검증하면
+**Then** 모두 만족한다:
+- 관리자 100명이 다른 사용자 100명을 조회하는 통합 테스트에서 personal_data_access_log에 정확히 100×100건의 행이 적재됨 (자기 조회 제외 — REQ-AUTH-018-D-2)
+- AOP 어드바이스 누락 검출: `@PersonalDataAccess` 어노테이션 없는 user 정보 조회 메서드를 사용자가 호출 시 정적 분석 또는 통합 테스트에서 경고
+- personal_data_access_log + archive 양쪽에 APPEND-ONLY 트리거가 활성 상태(SELECT * FROM pg_trigger WHERE tgname IN ('trg_pdal_no_update','trg_pdal_archive_no_update'))
+- OTP code는 평문이 어떤 로그·DB 컬럼에도 저장되지 않음 (`SELECT count(*) FROM verification_request WHERE code_hash !~ '^\\$2[ab]\\$12\\$'` = 0, code_hash가 모두 BCrypt strength=12 형식)
+- OTP 발송 응답 p95 < 3초 (NoOpSmsProvider 환경 < 100ms), OTP 검증 p95 < 200ms (k6 부하 테스트)
+- IP 부정 시도(시간당 10회 초과) 검출 시 audit_log severity=CRITICAL 기록 100% 적용 (L-008 시나리오 자동화)
+- 본인 조회 권리 API(`/api/v1/me/personal-data-access-log`)가 인증된 모든 사용자에게 동작 (M-005 시나리오 통과).
+
+---
+
+## L. Definition of Done (Bundle A 완료 기준, v0.3)
+
+본 SPEC-CMS-002 v0.3는 다음을 모두 만족할 때 완료된 것으로 간주한다.
+
+- v0.1 기준: 모든 REQ-AUTH-001-D ~ REQ-AUTH-012-D sub-requirement가 구현되고 acceptance.md A~G의 모든 시나리오가 자동화 테스트로 통과
+- v0.2 추가: REQ-AUTH-013-D ~ REQ-AUTH-016-D sub-requirement가 구현되고 H~K의 모든 시나리오가 통과
+- v0.3 추가: REQ-AUTH-017-D ~ REQ-AUTH-018-D sub-requirement가 구현되고 §L(본인인증) + §M(개인정보 접근 로그)의 모든 시나리오가 통과
+- QG-A-1~7의 7개 품질 게이트가 CI에서 모두 PASS (QG-A-6는 v0.2, QG-A-7은 v0.3 신규)
+- Flyway V1 + V2 + V3 마이그레이션이 PostgreSQL 16에서 0 오류 순차 적용
+- JaCoCo 커버리지: domain.auth + domain.organization + domain.verification + domain.privacy 패키지 line/branch 모두 ≥ 85%
+- Vitest 커버리지: Admin SPA의 인증·권한 매트릭스·조직·본인인증·개인정보 접근 화면 컴포넌트 line ≥ 85%
+- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 §6 + §13 + §16 신규 엔드포인트(`/auth/verify/request`, `/auth/verify/confirm`, `/admin/personal-data-access-log`, `/me/personal-data-access-log`) 모두 노출됨
+- 보안 담당자 검수: JWT/BCrypt/Refresh + 4단계 RBAC + 권한 변경 이력 + OTP 본인인증(SmsProvider 추상화) + 개인정보 접근 로그 정책 검증 완료 서명
+- 운영 매뉴얼: 사용자·역할·잠금 해제·조직 트리·권한 매트릭스·OTP 본인인증·개인정보 접근 추적·본인 조회 권리 절차가 한국어로 문서화됨
+
+---
+
+_문서 버전: v0.3 (2026-04-29 홍익인간 CMS gap 통합 amendment)_
 _작성일: 2026-04-29_
-_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + H 6 + I 5 + J 3 + K 5 + Quality Gate 6 = 83개 (v0.1 63개 + v0.2 추가 20개)_
+_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + H 6 + I 5 + J 3 + K 5 + L 9 + M 6 + Quality Gate 7 = 99개 (v0.1 63개 + v0.2 추가 20개 + v0.3 추가 16개)_

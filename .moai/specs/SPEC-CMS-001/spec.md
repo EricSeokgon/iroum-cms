@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
-| 버전 | v0.2 (2026-04-29 RFP 통합) |
+| 버전 | v0.3 (2026-04-29 RFP 통합 + 홍익인간 CMS gap 분석 통합) |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
 | 우선순위 | P0 |
@@ -518,6 +518,8 @@ SPEC-CMS-001 [umbrella v0.2]
 ├─ RFP 신규 P1 (운영·확장)
 │  ├─ SPEC-CMS-009 데이터 거버넌스 [SFR-001, SFR-011, DAR 전체]
 │  └─ SPEC-CMS-010 통합 검색 엔진 [INR + SFR-009 자동완성·인기검색어]
+├─ 홍익인간 CMS gap 신규 P0
+│  └─ SPEC-CMS-MEDIA-001 통합 미디어 라이브러리 [홍익 #5]
 └─ 옵션 트랙 (별도 일정/리소스 결정 필요)
    ├─ SPEC-CMS-AI-001 AI/ML + Milvus + 알고리즘 모니터링 [SFR-002, 003, 004, 012]
    └─ SPEC-CMS-MIG-001 통합 홈페이지 이관 + SSO [SFR-010] — DEPRECATED (자체 프로젝트로 확정, 비즈패스파인더 응찰 시나리오 외에는 불필요)
@@ -531,7 +533,8 @@ SPEC-CMS-001 [umbrella v0.2]
 | 신규 P0 | SPEC-CMS-006 / 007 / 008 신규 | +5,000 |
 | 신규 P1 | SPEC-CMS-009 / 010 신규 | +3,000 |
 | 옵션 트랙 | SPEC-CMS-AI-001 (AI/ML, 잠재 P1) / ~~SPEC-CMS-MIG-001~~ (DEPRECATED) | +2,000 |
-| **누적** | 현재 8,839 + 추가 12,000~14,000 | **약 21,000~23,000** |
+| 홍익 P0 | SPEC-CMS-MEDIA-001 신규 + SPEC-CMS-002 v0.3 amendment | +2,000 |
+| **누적** | 현재 8,839 + 추가 12,000~14,000 + 홍익 +2,000 | **약 23,000~25,000** |
 
 ### 16.3 작성 순서 권장
 
@@ -601,9 +604,52 @@ SPEC-CMS-001 [umbrella v0.2]
 
 ---
 
-## 18. 변경 이력
+## 18. 홍익인간 CMS Gap 분석 부록 (참고 자료, 2026-04-29)
+
+### 18.1 출처
+
+- 참고 사이트: https://www.yooncoms.com/cms (홍익인간 CMS 제품 페이지)
+- 분석일: 2026-04-29
+- 사용자 결정: P0 핵심 3개만 채택 (본인인증, 회원정보 접근로그, 통합 미디어 라이브러리)
+- 미채택 항목: GA4 연동, OAuth SNS, 페이지 롤백 워크플로, 더블린 코어, 일정/예약, 멀티사이트 활성화, 플러그인 아키텍처, 스킨 시스템 (총 8개 — 향후 v0.4+ 검토)
+
+### 18.2 채택 P0 3개
+
+| 갭 항목 | 적용 SPEC | 신규 REQ ID |
+|---|---|---|
+| 본인인증 (휴대폰 OTP + 이메일) | SPEC-CMS-002 v0.3 | REQ-AUTH-017-D |
+| 회원정보 접근 로그 | SPEC-CMS-002 v0.3 | REQ-AUTH-018-D |
+| 통합 미디어 라이브러리 | **SPEC-CMS-MEDIA-001 신규** | REQ-MEDIA-001~005-D |
+
+### 18.3 미채택 항목 사유
+
+| 미채택 | 사유 | 미래 검토 |
+|---|---|---|
+| Google Analytics 4 사이트별 연동 | 자체 KPI(SPEC-005)로 충분, GA 의존 회피 | v0.4+ |
+| OAuth SNS (네이버/카카오/구글) | SSO Provider 인터페이스(SPEC-002 v0.2) 활용 가능, 어댑터는 후속 | v0.4+ |
+| 페이지 버전 롤백 워크플로 | page_history 모델 있음, 롤백 UI 후속 | v0.5+ |
+| 더블린 코어 메타데이터 | S-Meta/DA# 우선, dc:* 컬럼 추가는 후속 | v0.5+ |
+| 일정·예약 프로그램 | 별도 도메인, 본 1차 범위 외 | 신규 SPEC-CMS-CAL-001 가능 |
+| 멀티사이트 활성화 | site 테이블 1차는 단일, 활성화는 2차 | v1.0+ |
+| 플러그인 아키텍처 | 모놀리식 1차, 플러그인은 v2.0급 | 장기 |
+| 스킨 패키지 시스템 | template 모델 있음, 패키지 핫스왑은 후속 | v0.5+ |
+
+### 18.4 iroum-cms 우위 영역 (홍익인간 CMS 대비)
+
+- KWCAG 2.2 AA 명시 + 자동 검증 (홍익은 명시 없음)
+- JWT Refresh Rotation + 탈취 감지 (SPEC-002)
+- 4단계 RBAC + 부서 (SPEC-002 v0.2)
+- 감사로그 APPEND-ONLY + DB 트리거 (SPEC-005)
+- Vue 3.5 SPA + TypeScript (홍익은 JSP+Spring MVC)
+- 카카오 알림톡 + Q&A 자동화 (SPEC-003 v0.2)
+- 외부 연계 로그 분리 + 6개월 보존 (SPEC-005 v0.2)
+
+---
+
+## 19. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Umbrella SPEC) |
 | v0.2 | 2026-04-29 | MoAI orchestrator | RFP 통합 amendment (§15~17 신설, RFP 69개 요구사항 매핑, 확장 SPEC 트리 SPEC-CMS-006~010 + 옵션 트랙 정의, 비기능 횡단 적용 정책 수립) |
+| v0.3 | 2026-04-29 | MoAI orchestrator | 홍익인간 CMS gap 분석 통합 (§18 부록 신설), SPEC-CMS-MEDIA-001 트리 추가, SPEC-CMS-002 v0.3 reference (REQ-AUTH-017/018-D) |

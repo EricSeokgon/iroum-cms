@@ -1,4 +1,4 @@
-# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.2 (2026-04-29 RFP 통합)
+# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.3 (2026-04-29 홍익인간 CMS gap 통합)
 
 ## 1. 개요
 
@@ -10,7 +10,7 @@
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
-| 버전 | v0.2 (RFP 통합 amendment) |
+| 버전 | v0.3 (홍익인간 CMS gap 통합 amendment) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | uss/umt(사용자관리), sec/rmt(역할관리), sec/aut(권한관리), uat/uia(일반로그인), uss/olh(조직관리) |
@@ -1125,9 +1125,183 @@ v0.1 §9 보안 정책은 그대로 유지되며, 본 절은 RFP §17 PER/SER/QU
 
 ---
 
+## 16. RFP+홍익인간 통합 보강 (v0.3 amendment, SPEC-CMS-001 v0.2 §17 비기능 횡단 + 홍익인간 CMS gap analysis 2026-04-29)
+
+본 절은 홍익인간 CMS gap analysis(2026-04-29)에서 식별된 사용자 본인인증·개인정보 접근 추적 요구를 v0.2 기준선에 추가 적용한다. v0.1~v0.2의 §1~§15 기존 요구사항·DDL·API는 변경 없이 유지된다. 본 절의 모든 신규 sub-REQ는 acceptance.md §L, §M에 G/W/T로 매핑된다.
+
+### 16.1 REQ-AUTH-017-D: 본인인증 (휴대폰 OTP + 이메일)
+
+회원가입·비밀번호 재설정·중요 정보 변경 등 신원 확인이 필요한 시점에 휴대폰 SMS 또는 이메일을 통한 OTP(One-Time Password) 본인인증을 제공한다. v0.1 §5.9 비밀번호 재설정(이메일 토큰)과 별개의 일반화된 본인인증 채널이며, 향후 SPEC-CMS-003(게시판 실명 인증)·SPEC-CMS-AI-001(통합) 등에서 재사용된다.
+
+- **REQ-AUTH-017-D-1 (인증 요청 API — Event-driven)**
+  사용자가 `POST /api/v1/auth/verify/request`에 `{ "channel": "SMS|EMAIL", "target": "01012345678 또는 user@x.com", "purpose": "SIGNUP|PASSWORD_RESET|IMPORTANT_CHANGE" }`를 보냈을 때, 시스템은 (a) target 형식 검증 (휴대폰: 한국 010-XXXX-XXXX 정규화, 이메일: RFC 5322) (b) purpose 화이트리스트 검증 (c) 요청자 식별(인증된 사용자는 user_id, 익명은 IP) 후 `verification_request` 행을 INSERT하고 `request_id`(UUID)를 응답해야 한다.
+- **REQ-AUTH-017-D-2 (OTP 발송 — Event-driven)**
+  REQ-AUTH-017-D-1 처리 직후 시스템은 (a) 6자리 숫자 OTP 무작위 생성(`SecureRandom`, 000000~999999) (b) 5분 만료 (`expires_at = now + 5m`) (c) 동일 target에 대해 최근 1분 이내 발송 이력이 있으면 429 + `VERIFY_RESEND_COOLDOWN` 반환(재발송 쿨다운) (d) channel='SMS'이면 `SmsProvider.sendOtp(target, code)` 호출, channel='EMAIL'이면 Spring Mail로 발송해야 한다. OTP 평문은 발송 직후 폐기되며, DB에는 §17.1 `verification_request.code_hash`(BCrypt strength=12 해시)만 저장한다.
+- **REQ-AUTH-017-D-3 (OTP 검증 API — Event-driven)**
+  사용자가 `POST /api/v1/auth/verify/confirm`에 `{ "request_id": "uuid", "code": "123456" }`를 보냈을 때, 시스템은 (a) `verification_request` 조회 + status='PENDING' + expires_at > now 검증 (b) `BCrypt.matches(code, code_hash)` 비교 (c) 일치 시 status='VERIFIED', verified_at=now 갱신 후 200 + `{ "verified": true }` 응답 (d) 불일치 시 attempts 1 증가, attempts ≥ max_attempts(3)이면 status='FAILED'로 차단하고 401 + `VERIFY_CODE_INVALID` 또는 423 + `VERIFY_BLOCKED` 반환해야 한다. (e) verification_history에 (target, success, ip_address, user_agent, occurred_at) 1행 적재.
+- **REQ-AUTH-017-D-4 (SmsProvider 인터페이스 추상화 — Ubiquitous)**
+  시스템은 다음 2개 메서드를 가지는 `SmsProvider` 인터페이스를 정의해야 한다:
+  (a) `sendOtp(target: String, code: String): SmsResult` — 단건 OTP 발송
+  (b) `sendBulk(messages: List<SmsMessage>): List<SmsResult>` — 다건 일괄 발송 (운영 알림·공지용 자리표시)
+  1차 빌드는 `NoOpSmsProvider`(stdout 로깅만 + `SmsResult.success("noop")` 반환) 빈을 default 등록하고, `NhnCloudSmsProvider`·`NaverCloudSmsProvider`·`AwsSnsSmsProvider`·`AligoSmsProvider` 어댑터 자리표시자(skeleton)를 패키지 트리에 포함하되 모든 메서드는 `throw UnsupportedOperationException("SMS provider not configured")`로 1차 빌드 실동작 금지(`@ConditionalOnProperty("auth.sms.provider")` 비활성). 실제 어댑터 구현 채택은 별도 SPEC(예: `SPEC-CMS-SMS-001`)로 위임.
+- **REQ-AUTH-017-D-5 (verification_history 모니터링 + 부정 시도 차단 — Unwanted)**
+  시스템은 모든 `/auth/verify/confirm` 시도(성공·실패 무관)를 `verification_history`(§17.2)에 적재해야 하며, 동일 IP에서 시간당 10회 초과 발송 또는 검증 시도가 감지된 경우 즉시 해당 IP를 1시간 차단(429 + `VERIFY_RATE_LIMIT_EXCEEDED`)하고 audit_log에 severity=CRITICAL로 기록해야 한다. 차단 정책은 Bucket4j(§9.4) 라이브러리를 재사용한다.
+
+### 16.2 REQ-AUTH-018-D: 회원정보 접근 로그 (별도 테이블, 개인정보보호법 강화)
+
+관리자가 다른 사용자의 개인정보(이메일·휴대폰·주민등록번호 등)를 조회·열람하는 모든 행위를 별도 전용 테이블에 적재한다. v0.1 `audit_log`(REQ-CROSS-004) 통합 로그와 분리해 검색·보고·열람 권리(GDPR-style) 응답 성능을 확보한다.
+
+- **REQ-AUTH-018-D-1 (personal_data_access_log 테이블 — Ubiquitous)**
+  시스템은 §17.3 schema의 `personal_data_access_log` 테이블에 관리자(`viewer_id` = 조회 주체 user_id) → 대상(`target_user_id` = 조회 대상 user_id)의 개인정보 필드 접근을 1행/1조회로 적재해야 한다. `accessed_fields` jsonb 컬럼에는 실제 조회한 필드 명세(예: `["email","phone","resident_no"]`)를 배열로 기록하고, `purpose`는 `BUSINESS_INQUIRY|SUPPORT|AUDIT` 화이트리스트로 분류한다. ip_address, user_agent도 함께 적재. 보존·검색 효율을 위해 `accessed_at` 기준 월별 PostgreSQL 16 PARTITION을 적용한다.
+- **REQ-AUTH-018-D-2 (자동 로깅 — Spring AOP 어노테이션 — Ubiquitous)**
+  시스템은 `@PersonalDataAccess(fields = {...}, purpose = "...")` 어노테이션을 정의해야 하며, 사용자 정보 조회 메서드(`UserService.findById`, `UserService.findByUsername` 등)에 부착하면 AOP advice가 메서드 진입 시점에 SecurityContext의 viewer_id, 메서드 인자에서 target_user_id를 추출해 `personal_data_access_log`에 자동 적재해야 한다. viewer_id == target_user_id(본인 조회)인 경우는 적재를 skip한다(자기 정보 열람 자체는 추적 대상 외, 단 본인이 요구 시 §018-D-4 본인 조회 화면으로 별도 제공).
+- **REQ-AUTH-018-D-3 (보존 정책 6개월 + 콜드 이관 — Ubiquitous)**
+  시스템은 `personal_data_access_log`에 적재 후 6개월 경과 행을 일 1회 batch로 `personal_data_access_log_archive` 테이블(§17.4, 동일 schema, 월별 PARTITION)로 이관하고 원본에서 DELETE해야 한다. archive는 5년 보존 후 폐기(개인정보보호법 별표1 권장 보존 5년 준용). archive 테이블도 §17.5 APPEND-ONLY 트리거가 적용되어 UPDATE/DELETE는 SUPER_ADMIN의 의도적 폐기 batch만 허용된다.
+- **REQ-AUTH-018-D-4 (관리자 검색 화면 + 본인 조회 권리 — Ubiquitous)**
+  시스템은 SUPER_ADMIN에게 `GET /api/v1/admin/personal-data-access-log?targetUserId=&viewerId=&from=&to=&fields=&purpose=&page=&size=` API를 제공해 페이징·필터(대상 회원·기간·필드·접근 사유·viewer)로 검색할 수 있도록 해야 한다. 또한 모든 인증된 사용자는 `GET /api/v1/me/personal-data-access-log?from=&to=&page=&size=` API로 본인 정보가 누구에 의해 언제 어떤 사유로 열람되었는지 본인 조회가 가능해야 한다 (개인정보 자기결정권 — GDPR Article 15 준용).
+
+### 16.3 비기능 임계값 (PER/SER 보강)
+
+- **PER**: OTP 발송 응답 p95 < 3초 (외부 SMS 게이트웨이 의존, NoOpSmsProvider 시 < 100ms). OTP 검증 p95 < 200ms (BCrypt.matches strength=12 비용 포함).
+- **SER**: OTP code는 평문 저장 금지. `verification_request.code_hash`에 BCrypt strength=12 해시만 저장. 검증은 `BCrypt.matches(plain, hash)`로 수행. 평문 OTP는 발송 직후 메모리에서 폐기.
+- **개인정보보호법 강화**: `personal_data_access_log`·`personal_data_access_log_archive`는 §17.5 APPEND-ONLY 트리거로 UPDATE/DELETE를 차단해 위변조 방지. SUPER_ADMIN의 보존기간 경과 폐기 batch만 예외(트리거 우회 권한 부여).
+
+---
+
+## 17. 추가 데이터 모델 (v0.3 amendment)
+
+본 절은 §4 v0.1 DDL과 §14 v0.2 DDL을 그대로 유지한 채 v0.3 신규 테이블 DDL을 추가한다. Flyway V3 마이그레이션 단위로 묶는다.
+
+### 17.1 `verification_request` (본인인증 요청, 신규)
+
+```sql
+CREATE TABLE verification_request (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    request_id    UUID         NOT NULL UNIQUE,
+    channel       VARCHAR(10)  NOT NULL,
+    target        VARCHAR(255) NOT NULL,
+    purpose       VARCHAR(30)  NOT NULL,
+    code_hash     VARCHAR(60)  NOT NULL,
+    requester_id  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    requester_ip  INET,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at    TIMESTAMPTZ  NOT NULL,
+    attempts      INT          NOT NULL DEFAULT 0,
+    max_attempts  INT          NOT NULL DEFAULT 3,
+    status        VARCHAR(15)  NOT NULL DEFAULT 'PENDING',
+    verified_at   TIMESTAMPTZ,
+    CONSTRAINT chk_vreq_channel CHECK (channel IN ('SMS','EMAIL')),
+    CONSTRAINT chk_vreq_purpose CHECK (purpose IN ('SIGNUP','PASSWORD_RESET','IMPORTANT_CHANGE')),
+    CONSTRAINT chk_vreq_status  CHECK (status IN ('PENDING','VERIFIED','EXPIRED','FAILED'))
+);
+CREATE INDEX idx_vreq_request_id     ON verification_request(request_id);
+CREATE INDEX idx_vreq_target_created ON verification_request(target, created_at DESC);
+CREATE INDEX idx_vreq_status_expires ON verification_request(status, expires_at) WHERE status = 'PENDING';
+COMMENT ON COLUMN verification_request.code_hash IS 'BCrypt strength=12 해시 (REQ-AUTH-017-D-2 SER)';
+COMMENT ON COLUMN verification_request.target    IS '휴대폰 번호 또는 이메일 주소 (channel에 따라)';
+```
+
+비고: `request_id`(UUID)는 외부 노출용, internal id는 BIGINT IDENTITY. 재발송 쿨다운 검사는 `idx_vreq_target_created` 인덱스로 동일 target의 직전 INSERT 시각 비교(now - 1분).
+
+### 17.2 `verification_history` (본인인증 시도 이력, 신규)
+
+```sql
+CREATE TABLE verification_history (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    target        VARCHAR(255) NOT NULL,
+    success       BOOLEAN      NOT NULL,
+    ip_address    INET         NOT NULL,
+    user_agent    VARCHAR(500),
+    occurred_at   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_vhist_target_time ON verification_history(target, occurred_at DESC);
+CREATE INDEX idx_vhist_ip_time     ON verification_history(ip_address, occurred_at DESC);
+COMMENT ON TABLE verification_history IS 'REQ-AUTH-017-D-5 부정 시도 모니터링 (IP 기준 시간당 10회 초과 차단)';
+```
+
+비고: 보존 1년 후 정리 batch (login_history와 동일 정책).
+
+### 17.3 `personal_data_access_log` (회원정보 접근 로그, 신규 — 월별 PARTITION)
+
+```sql
+CREATE TABLE personal_data_access_log (
+    id              BIGINT       GENERATED ALWAYS AS IDENTITY,
+    viewer_id       BIGINT       NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    target_user_id  BIGINT       NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    accessed_fields JSONB        NOT NULL,
+    purpose         VARCHAR(30)  NOT NULL,
+    ip_address      INET         NOT NULL,
+    user_agent      VARCHAR(500),
+    accessed_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_pdal_purpose CHECK (purpose IN ('BUSINESS_INQUIRY','SUPPORT','AUDIT')),
+    PRIMARY KEY (id, accessed_at)
+) PARTITION BY RANGE (accessed_at);
+
+-- 월별 partition 예시 (Flyway V3 기준 시점부터 12개월치 사전 생성, 이후 월별 batch가 자동 생성)
+CREATE TABLE personal_data_access_log_2026_05 PARTITION OF personal_data_access_log
+  FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+CREATE TABLE personal_data_access_log_2026_06 PARTITION OF personal_data_access_log
+  FOR VALUES FROM ('2026-06-01') TO ('2026-07-01');
+-- ... (이후 월별 자동 생성: pg_partman 또는 application 내장 batch)
+
+CREATE INDEX idx_pdal_target_time   ON personal_data_access_log(target_user_id, accessed_at DESC);
+CREATE INDEX idx_pdal_viewer_time   ON personal_data_access_log(viewer_id,      accessed_at DESC);
+CREATE INDEX idx_pdal_fields_gin    ON personal_data_access_log USING GIN (accessed_fields);
+COMMENT ON COLUMN personal_data_access_log.accessed_fields IS '예: ["email","phone","resident_no"]';
+COMMENT ON COLUMN personal_data_access_log.purpose         IS 'REQ-AUTH-018-D-1 화이트리스트';
+```
+
+비고: PARTITION KEY는 `accessed_at`. 6개월 경과 partition은 §17.4 archive로 ATTACH 변경 또는 INSERT-DELETE 이관 batch로 처리(application 결정).
+
+### 17.4 `personal_data_access_log_archive` (콜드 이관, 신규 — 월별 PARTITION)
+
+```sql
+CREATE TABLE personal_data_access_log_archive (
+    id              BIGINT       NOT NULL,
+    viewer_id       BIGINT       NOT NULL,
+    target_user_id  BIGINT       NOT NULL,
+    accessed_fields JSONB        NOT NULL,
+    purpose         VARCHAR(30)  NOT NULL,
+    ip_address      INET         NOT NULL,
+    user_agent      VARCHAR(500),
+    accessed_at     TIMESTAMPTZ  NOT NULL,
+    archived_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id, accessed_at)
+) PARTITION BY RANGE (accessed_at);
+
+CREATE INDEX idx_pdal_archive_target_time ON personal_data_access_log_archive(target_user_id, accessed_at DESC);
+COMMENT ON TABLE personal_data_access_log_archive IS 'REQ-AUTH-018-D-3 콜드 이관 (5년 보존 후 폐기)';
+```
+
+비고: archive는 viewer_id/target_user_id의 FK를 두지 않는다(원본 users가 hard-delete된 경우에도 이력 보존 필요).
+
+### 17.5 APPEND-ONLY 트리거 (개인정보 접근 로그 위변조 방지)
+
+```sql
+-- personal_data_access_log + archive 양쪽에 적용
+CREATE OR REPLACE FUNCTION reject_pdal_modification() RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION 'personal_data_access_log is APPEND-ONLY (REQ-AUTH-018-D-3). UPDATE/DELETE blocked.';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_pdal_no_update
+    BEFORE UPDATE OR DELETE ON personal_data_access_log
+    FOR EACH ROW EXECUTE FUNCTION reject_pdal_modification();
+
+CREATE TRIGGER trg_pdal_archive_no_update
+    BEFORE UPDATE OR DELETE ON personal_data_access_log_archive
+    FOR EACH ROW EXECUTE FUNCTION reject_pdal_modification();
+```
+
+비고: 5년 보존 경과 폐기 batch는 SUPER_ADMIN 권한의 별도 SQL role로 트리거 우회(`SET session_replication_role = 'replica'` 또는 `ALTER TABLE ... DISABLE TRIGGER`). batch 자체는 audit_log에 severity=CRITICAL로 기록.
+
+---
+
 ## 12. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성. SPEC-CMS-001 §6.1 REQ-AUTH-001~012를 sub-REQ-D-* 형식으로 상세화. REQ-AUTH-010의 재사용 금지 범위를 부모 SPEC의 "직전 3회"에서 "직전 5개"로 보안 강화 변경(상세 SPEC 단계 결정). 비밀번호 재설정(이메일 토큰), refresh_tokens DB 저장(해시), Caffeine 권한 캐시(TTL 5분), Refresh Rotation + 탈취 감지를 신규로 명시. menu 테이블은 SPEC-CMS-004에서 정의 예정으로 표시. |
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 amendment. SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015 매핑. §13 신설(REQ-AUTH-013-D 4단계 RBAC, REQ-AUTH-014-D 부서·조직 관리, REQ-AUTH-015-D SSO 옵션 인터페이스, REQ-AUTH-016-D 권한 변경 이력 + 비인가 사전 차단). §14 신설(roles 시드 보강, organization·organization_history·permission_change_history DDL, users.organization_id FK 추가). §15 신설(RFP PER/SER/QUR 비기능 횡단 적용). v0.1 §1~§11 본문은 변경 없이 유지. |
+| v0.3 | 2026-04-29 | manager-spec | 홍익인간 CMS gap 통합 amendment (SPEC-CMS-001 v0.2 §17 비기능 횡단 + 홍익인간 CMS gap analysis 2026-04-29). §16 신설(REQ-AUTH-017-D 본인인증 휴대폰 OTP+이메일 5개 sub-REQ, REQ-AUTH-018-D 회원정보 접근 로그 4개 sub-REQ). §17 신설(verification_request·verification_history·personal_data_access_log 월별 PARTITION·personal_data_access_log_archive DDL + APPEND-ONLY 트리거). SmsProvider 인터페이스 추상화(NoOpSmsProvider 기본 + NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 자리표시자). 비기능: OTP 발송 < 3초, 검증 < 200ms, BCrypt(12) for OTP code hash, personal_data_access_log APPEND-ONLY 트리거. v0.1~v0.2 §1~§15 본문은 변경 없이 유지. |

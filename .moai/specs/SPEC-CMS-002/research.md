@@ -430,3 +430,185 @@ _본 SPEC의 결정 사항은 spec.md §4~§9, acceptance.md A~H에 반영되었
 _문서 버전: v0.2 (2026-04-29 RFP 통합 amendment)_
 _작성일: 2026-04-29_
 _v0.2 amendment 결정 사항은 spec.md §13~§15, acceptance.md H~L에 반영되었다._
+
+---
+
+## 10. 홍익인간 CMS gap 통합 결정 (v0.3 amendment, 2026-04-29)
+
+본 절은 SPEC-CMS-001 v0.2 §17 비기능 횡단 + 홍익인간 CMS gap analysis(2026-04-29)에서 식별된 본인인증·회원정보 접근 추적 요구를 SPEC-CMS-002 v0.3 §16~§17에 반영하는 과정에서 검토한 의사결정과 근거를 기록한다. 결정 자체는 spec.md에 명시되며, 본 절은 사유와 대안 분석을 제공한다.
+
+### 10.1 OTP 길이 — 6자리 vs 8자리
+
+#### 의사결정
+
+**6자리 숫자 채택.** 8자리는 1차 미도입.
+
+#### 근거
+
+- 한국 시중은행·핀테크 표준이 6자리 (NH·KB·카카오뱅크 모두 6자리 SMS OTP)
+- 6자리는 10^6 = 1,000,000 조합. 5분 만료 + 3회 시도 + IP 시간당 10회 차단 결합 시 무차별 대입 성공 확률 < 0.000003%로 수용 가능
+- UX: 휴대폰 화면 → 입력 화면 전환 시 8자리는 외우기·재입력 부담이 약 30% 증가 (사용자 테스트 일반 결과)
+- 5분 만료 정책으로 장기 유효성 위협이 제거되어 자릿수 추가 보안 이득이 미미
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| 8자리 숫자 (10^8 조합) | UX 저하 대비 보안 이득 한계 (5분 만료·3회 차단으로 충분) |
+| 6자리 영숫자 혼합 | 키패드 입력 어려움, 한국 사용자 친화성 저하 |
+| TOTP (RFC 6238 인증 앱) | 1차는 SMS·EMAIL 채널 우선, TOTP는 후속 SPEC (2FA 도입 시) |
+
+#### 보안 임계 보강
+
+- BCrypt strength=12로 code_hash 저장 → 평문 OTP 추측 불가 (hash 비교 비용 ~250ms)
+- 검증 시 timing attack 방지: `BCrypt.matches`는 상수 시간 비교 보장
+- 5분 만료 단축 검토: 5분이 산업 표준, 더 짧으면 SMS 도달 지연 시 UX 저하
+
+### 10.2 SMS 게이트웨이 — 한국 친화 + 알림톡 연계 가능성
+
+#### 의사결정
+
+**SmsProvider 인터페이스 추상화 + NoOpSmsProvider 기본 채택.** 1차 출시 어댑터 권장 1순위는 **NHN Cloud Notification (NHN Cloud Outbound Mailer + SMS)**.
+
+#### 근거 — NHN Cloud 권장 사유
+
+- 한국 친화: 한국어 발신 번호 등록·전송, 한국 통신 3사 직접 연동, KT 알림톡(카카오 연계) 동일 콘솔에서 함께 운영 가능
+- 공공기관 도입 사례 다수 (중앙행정기관 클라우드 전환 가이드라인 호환)
+- API: REST 단순, JSON 요청, 프로젝트별 appKey 인증 (Spring `@Value` 주입 용이)
+- 가격: 건당 8~10원 (2026년 시점), 초기 무료 크레딧 제공
+- 미래 확장: SMS → 알림톡(카카오톡) 자동 fallback 정책을 동일 NHN Cloud 콘솔에서 구성 가능 (REQ-AUTH-017-D-4 sendBulk 진화 경로)
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 / 보류 사유 |
+|------|----------------------|
+| Naver Cloud Platform SENS | NHN과 유사한 한국 친화도, 가격도 비슷. 2순위 후보 (SmsProvider 어댑터로 동등 등록 가능) |
+| AWS SNS | 글로벌 친화이나 한국 발신 번호 등록 절차 복잡, 한국 통신사 호환 이슈, 알림톡 연계 불가 |
+| Aligo | 저렴하고 한국 특화이나 공공기관 보안 검토·SLA 부족, 1차 비추천 (개인 사이트·중소기업용) |
+| 직접 통신사 연동 (KT/SKT) | 별도 계약·법인 인증 필요, 1차 출시 일정 부담 |
+
+#### 어댑터 등록 전략
+
+- 1차 빌드: NoOpSmsProvider만 활성, 나머지는 패키지 트리 skeleton (`@ConditionalOnProperty("auth.sms.provider", havingValue="...")`)
+- 운영 도입 시 `application-prod.yml`에 `auth.sms.provider: nhn-cloud` 설정 + 환경변수로 appKey/secret 주입
+- 추상화 인터페이스 덕분에 후속 SPEC(`SPEC-CMS-SMS-001`)에서 어댑터 단위 구현·테스트 격리 가능
+
+#### 알림톡 연계 진화 경로 (참고)
+
+- 1차: SMS 발송 (REQ-AUTH-017-D-2)
+- 후속: SMS → 카카오 알림톡 우선 발송 시도 → 실패 시 SMS fallback (NHN Cloud 단일 API로 가능)
+- SmsProvider.sendOtp 시그니처는 동일 유지, 내부 구현이 fallback 분기
+
+### 10.3 personal_data_access_log 자동 적재 — AOP vs Repository 어드바이스
+
+#### 의사결정
+
+**Spring AOP `@PersonalDataAccess` 어노테이션 채택.** Repository advice는 1차 미도입.
+
+#### 근거
+
+- AOP advice는 메서드 시그니처에 영향 없이 횡단 관심사 분리 (REQ-CROSS-004 audit_log AOP와 동일 패턴 — 일관성)
+- 어노테이션 메타로 `fields`·`purpose`를 메서드별로 명시 가능 → 동일 메서드라도 호출 컨텍스트별 분리 추적 어려움 회피
+- Repository 어드바이스는 raw query 단위 적재 → 어떤 필드를 실제 응답에 포함했는지 알기 어려움 (raw select * 시 조회 필드 모호)
+- AOP는 Service layer에 적용 → 비즈니스 의도(purpose)와 결합 자연스러움
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| Repository advice (Spring Data 이벤트) | 비즈니스 의도(purpose) 결합 어려움, 응답 필드 명세 부정확 |
+| Database trigger (PostgreSQL row-level audit) | viewer_id를 DB가 알 수 없음 (application context 필요), purpose 미부여 |
+| Hibernate Interceptor | 영속성 layer 결합도 증가, 테스트 어려움 |
+| 명시적 호출 (서비스 코드에 직접 INSERT) | 누락 위험 큼, 일관성 보장 어려움 |
+
+#### 누락 검출 메커니즘
+
+- QG-A-7: 정적 분석 또는 통합 테스트에서 user 정보 조회 메서드 중 `@PersonalDataAccess` 미부착 메서드를 검출해 경고
+- 검사 도구: ArchUnit 또는 자체 스캐너 (`UserService` 패키지의 `findBy*` 메서드 모두 어노테이션 보유 확인)
+
+#### 본인 조회 skip 사유
+
+- viewer_id == target_user_id이면 자기 정보 열람 — GDPR/개인정보보호법상 추적 의무 없음 (자기결정권 행사)
+- skip하지 않으면 매 본인 GET /me 호출마다 적재 → 무의미한 노이즈로 검색·보고 성능 저하
+- 단, 본인이 "내 정보가 누구에 의해 조회되었는가"를 알 권리는 §M-005 본인 조회 API로 별도 보장
+
+### 10.4 본인 접근 이력 본인 조회 — 사용자 권리 (GDPR Article 15 / 개인정보보호법 제35조)
+
+#### 의사결정
+
+**REQ-AUTH-018-D-4의 본인 조회 API(`GET /api/v1/me/personal-data-access-log`) 도입.** 인증된 모든 사용자에게 자신을 target으로 한 접근 이력 조회 권리 부여.
+
+#### 근거 — 법적 근거
+
+- GDPR Article 15 (Right of Access by the Data Subject): 정보주체는 자신의 개인정보를 처리하는 자에 대해 처리 사실·목적·기간·열람 이력 등을 알 권리 보유
+- 개인정보보호법(KR) 제35조: 정보주체의 열람권 — "자신의 개인정보의 처리에 관한 정보의 열람을 요구할 수 있다"
+- 동법 시행령 제41조: 개인정보 처리위탁·제3자 제공 이력 등을 정보주체 요구 시 제공
+- 공공기관 컴플라이언스 감사에서 "정보주체 본인 조회 기능 부재" 지적사항이 빈번
+
+#### 운영 정책
+
+- 응답 형식: viewer 식별은 username만 노출 (full name·이메일은 마스킹 — 관리자 보호와 정보주체 권리 균형)
+- 응답 컬럼: viewer_username, accessed_fields, purpose, accessed_at
+- 응답 제외: viewer의 IP, user_agent (관리자 운영정보 보호)
+- 페이징: 기본 size 20, 최대 100, 기간 필터 필수 권장
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| 본인 조회 미제공 | GDPR/개인정보보호법 위반 위험, 컴플라이언스 감사 지적 |
+| 본인 조회 제공 + viewer 정보 전체 노출 | 관리자 신원 보호·역공격 위험 (DEPT_ADMIN이 누구를 조회했는지 모든 사용자가 알면 사회공학적 공격 표적이 됨) |
+| 사전 신청 후 수동 회신 | 자동화 부재, GDPR Article 12 "응답 시한 1개월" 운영 부담 |
+
+### 10.5 OTP code 저장 — BCrypt vs 평문 vs HMAC
+
+#### 의사결정
+
+**BCrypt strength=12 채택.** 평문 저장은 즉시 거부, HMAC은 2순위 검토 후 거부.
+
+#### 근거 — 위협 모델
+
+- 위협 1 (DB 유출): 평문 저장 시 공격자가 진행 중인 모든 OTP를 즉시 사용 가능 → BCrypt로 무력화
+- 위협 2 (백업 유출): 백업·로그·snapshot 어디에도 평문 OTP가 노출되지 않아야 함
+- 위협 3 (재현 공격): 동일 code_hash가 같은 평문 OTP를 가리키지 않음(BCrypt는 매번 다른 salt) → rainbow table 공격 봉쇄
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| 평문 저장 | 위협 1·2 모두 노출, 즉시 거부 |
+| SHA-256 단순 해시 | 6자리 숫자는 사전 공격으로 < 1초 brute-force 가능 (10^6 시도) |
+| HMAC-SHA256(secret, code) | secret 유출 시 동일 위협, 그리고 secret 회전 정책 부담 |
+| BCrypt strength=10 | 비용 ~60ms로 빠르나, OTP 검증 자체는 사용자 1명·1회만 발생 → 강도 우선 (strength=12, ~250ms) |
+| Argon2id | 더 강하나 §4 비밀번호 해싱 결정과 동일 사유로 1차 미도입 (BCrypt strength=12로 충분) |
+
+#### 검증 흐름 (재현 어려움)
+
+```
+on /auth/verify/confirm:
+  row = SELECT * FROM verification_request WHERE request_id = ?
+  if row IS NULL or row.status != 'PENDING' or row.expires_at < now:
+    return 401 VERIFY_CODE_EXPIRED or VERIFY_BLOCKED
+  ok = BCrypt.matches(submitted_code, row.code_hash)
+  if !ok:
+    UPDATE verification_request SET attempts = attempts + 1
+    if attempts + 1 >= max_attempts:
+      UPDATE ... SET status = 'FAILED'
+      return 423 VERIFY_BLOCKED
+    return 401 VERIFY_CODE_INVALID
+  UPDATE verification_request SET status = 'VERIFIED', verified_at = now
+  INSERT verification_history (...)
+  return 200 { verified: true }
+```
+
+#### 메모리 위생
+
+- 평문 OTP는 발송 직후(`SmsProvider.sendOtp` 호출 직후) 변수에서 폐기
+- 가능하면 `char[]` 사용 후 명시적 zero-fill (Java String immutability 한계로 BCrypt 입력 시점만 짧게 유지)
+- BCrypt.hashpw 호출 후에는 hash 문자열만 보유
+
+---
+
+_문서 버전: v0.3 (2026-04-29 홍익인간 CMS gap 통합 amendment)_
+_작성일: 2026-04-29_
+_v0.3 amendment 결정 사항은 spec.md §16~§17, acceptance.md L~M + QG-A-7에 반영되었다._
