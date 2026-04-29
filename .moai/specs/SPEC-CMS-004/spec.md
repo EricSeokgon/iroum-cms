@@ -961,8 +961,223 @@ og:title, og:description, og:locale, seo_title, seo_description은 i18n_resource
 
 ---
 
-## 13. 변경 이력
+## 13. RFP 통합 보강 (v0.2 추가)
+
+본 절은 SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑에 따라 추가된 RFP 파생 요구사항을 정의한다. 기존 §5 부모 REQ를 보존하면서 신규 부모 REQ 3건(011-D ~ 013-D)을 추가한다.
+
+### 13.1 REQ-CONTENT-011-D 알림톡/메일 템플릿 마스터 (SFR-008 매핑)
+
+(SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑)
+
+다채널(KAKAO 알림톡, EMAIL, SMS, INAPP) 통합 템플릿 마스터를 정의한다. 시스템은 변수 치환, 미리보기, 카카오 검수 상태 추적, 버전 잠금을 일관된 모델로 제공해야 한다.
+
+- **REQ-CONTENT-011-D-1 (템플릿 등록 — Event-driven)**
+  CONTENT_ADMIN이 `POST /api/v1/content/notification-templates`에 (code, channel, category, title, body_template, variables, locale)을 보냈을 때, 시스템은 (a) channel ∈ {KAKAO, EMAIL, SMS, INAPP} 검증 (b) (code, channel, locale) 유일성 검증 (c) variables jsonb 스키마 검증 후 `notification_template`에 INSERT하고 status='DRAFT'로 초기화해야 한다.
+
+- **REQ-CONTENT-011-D-2 (변수 치환 검증 — Ubiquitous)**
+  시스템은 body_template 내 `{{변수명}}` 토큰(예: `{{user.name}}`, `{{policy.title}}`)을 추출하여 variables jsonb 선언 목록과 대조해야 하며, (a) 선언되지 않은 변수가 본문에 존재하면 HTTP 400 + `{"code":"TEMPLATE_VARIABLE_UNDECLARED", "missing":["변수명"]}` (b) 선언되었으나 본문에 없는 변수는 경고 헤더 `X-Warning: TEMPLATE_VARIABLE_UNUSED`로 알리되 거부하지 않아야 한다.
+
+- **REQ-CONTENT-011-D-3 (미리보기 — Event-driven)**
+  CONTENT_ADMIN이 `POST /api/v1/content/notification-templates/{id}/preview`에 샘플 데이터(`{"user":{"name":"홍길동"},"policy":{"title":"공공 정책 안내"}}`)를 보냈을 때, 시스템은 Handlebars 엔진으로 body_template을 렌더링하여 최종 메시지(text/html)를 응답해야 한다. 데이터 누락 변수는 `{{변수명}}` 표시를 유지하고 `X-Preview-Missing` 응답 헤더로 보고한다.
+
+- **REQ-CONTENT-011-D-4 (카카오 알림톡 검수 — State-driven)**
+  channel='KAKAO'인 템플릿이 status='PENDING_REVIEW'인 동안, 시스템은 본문 수정 요청(`PUT`)을 거부(HTTP 409 + `{"code":"TEMPLATE_REVIEW_LOCKED"}`)하고, 검수 결과 등록 API(`POST /api/v1/content/notification-templates/{id}/review-result`, body: `{result: APPROVED|REJECTED, reviewed_at, reason}`)만 허용해야 한다. APPROVED 시 status='APPROVED', 본문 잠금 발효; REJECTED 시 status='DRAFT'로 환원.
+
+- **REQ-CONTENT-011-D-5 (버전 관리 — Ubiquitous)**
+  시스템은 status가 'APPROVED'로 전환되거나 본문 변경이 발생할 때마다 `notification_template_history`에 직전 스냅샷(template row + variables jsonb)을 INSERT하고 version을 단조 증가시켜야 한다. APPROVED 버전은 잠금되어 동일 row에 대한 추가 본문 수정 시 신규 row(code 동일, version+1)로 분기되어야 한다.
+
+### 13.2 REQ-CONTENT-012-D 메타데이터 표준 항목 (DAR-001/007 매핑)
+
+(SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑)
+
+발주기관 메타데이터 표준(S-Meta, Da#)을 콘텐츠 전 영역에 균질하게 적용한다. 모든 콘텐츠 row는 분류·보존·표준 식별자 메타데이터를 보유해야 하며 외부 메타데이터 시스템과 연동 가능해야 한다.
+
+- **REQ-CONTENT-012-D-1 (메타데이터 컬럼 — Ubiquitous)**
+  시스템은 page, content_block, popup, banner 테이블에 다음 컬럼을 추가해야 한다: `s_meta_id VARCHAR(50)`, `da_sharp_id VARCHAR(50)`, `classification_code VARCHAR(50) NOT NULL`, `retention_period INT NOT NULL`(년 단위), `metadata_extra JSONB`. classification_code는 컬럼으로 분리(인덱스 활용), 그 외 표준화 미정 항목은 metadata_extra jsonb에 보관한다.
+
+- **REQ-CONTENT-012-D-2 (표준 사전 — Ubiquitous)**
+  시스템은 `metadata_dictionary` 테이블에 메타데이터 표준 사전(단어, 용어, 도메인, 코드 카탈로그)을 보유해야 하며, 콘텐츠 등록 시 classification_code가 사전에 등록된 코드인지 검증해야 한다(미등록 시 HTTP 400 + `{"code":"META_CLASSIFICATION_UNKNOWN"}`).
+
+- **REQ-CONTENT-012-D-3 (변경 이력 — Event-driven)**
+  CONTENT_ADMIN이 콘텐츠의 메타데이터(s_meta_id, da_sharp_id, classification_code, retention_period, metadata_extra) 중 임의 항목을 변경했을 때, 시스템은 `metadata_history` 테이블에 (target_namespace, target_id, before_jsonb, after_jsonb, changed_by, changed_at)을 INSERT해야 한다.
+
+- **REQ-CONTENT-012-D-4 (외부 메타데이터 시스템 연동 — Event-driven, DAR-007)**
+  발주기관 메타데이터 시스템 운영자가 `GET /api/v1/content/metadata/export?since={ISO-8601}&format=json|xml`을 호출했을 때, 시스템은 변경 시점 이후의 모든 콘텐츠 메타데이터를 표준 형식(기본 JSON, optional XML)으로 페이지네이션하여 반환해야 한다. 응답 스키마는 외부 시스템 인터페이스 정의서를 따른다.
+
+### 13.3 REQ-CONTENT-013-D 콘텐츠 다국어 강화 (REQ-CONTENT-010-D 보강)
+
+(SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑)
+
+기존 REQ-CONTENT-010-D를 보강하여 누락 검증, 일괄 변환 도구 인터페이스, 다국어 검색 인덱스를 정의한다.
+
+- **REQ-CONTENT-013-D-1 (양쪽 누락 검증 — Ubiquitous)**
+  시스템은 콘텐츠 발행(publish) 시 supported_languages 전 언어에 대해 i18n_resource 보유 여부를 검증해야 하며, 누락된 (namespace, resource_id, language, field_name) 조합을 `missing_translation` 테이블에 INSERT(존재 시 last_observed_at 갱신)하고 응답 헤더 `X-Missing-Translation-Count: N`으로 보고해야 한다. 발행은 차단하지 않는다(폴백 정책 §9.2 유지).
+
+- **REQ-CONTENT-013-D-2 (일괄 변환 워크플로 — Event-driven)**
+  CONTENT_ADMIN이 (a) `GET /api/v1/content/i18n/export?namespace={ns}&language={lang}&format=xliff|csv`를 호출하면 시스템은 해당 namespace·language 리소스를 표준 번역 교환 형식(XLIFF 1.2 또는 CSV)으로 export해야 하고, (b) 번역 후 `POST /api/v1/content/i18n/import` (multipart/form-data, file)에 동일 형식 파일을 업로드하면 시스템은 (b1) 형식 검증 (b2) namespace/resource_id 존재 검증 (b3) i18n_resource UPSERT를 트랜잭션으로 수행하고 import 결과 리포트(성공·실패·스킵 건수)를 반환해야 한다.
+
+- **REQ-CONTENT-013-D-3 (다국어 검색 인덱스 — Ubiquitous)**
+  시스템은 page 테이블에 `tsv_ko tsvector`, `tsv_en tsvector` 두 컬럼을 별도 보유해야 하며, page 본문(title + content_block 텍스트 합계)이 변경될 때마다 ko 콘텐츠는 `to_tsvector('simple', ...)`로, en 콘텐츠는 `to_tsvector('english', ...)`로 갱신해야 한다. GIN 인덱스를 컬럼별로 생성하고 검색 API는 응답 언어에 따라 적합한 인덱스를 선택해야 한다.
+
+---
+
+## 14. 추가 데이터 모델 (v0.2 신규 테이블)
+
+### 14.1 `notification_template` (알림 템플릿 마스터)
+
+```sql
+CREATE TABLE notification_template (
+    id              BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code            VARCHAR(100) NOT NULL,
+    channel         VARCHAR(20)  NOT NULL,
+    category        VARCHAR(50)  NOT NULL,
+    title           VARCHAR(300) NOT NULL,
+    body_template   TEXT         NOT NULL,
+    variables       JSONB        NOT NULL DEFAULT '[]'::jsonb,
+    locale          VARCHAR(10)  NOT NULL DEFAULT 'ko',
+    status          VARCHAR(20)  NOT NULL DEFAULT 'DRAFT',
+    kakao_template_code VARCHAR(50),
+    reviewed_at     TIMESTAMPTZ,
+    review_reason   VARCHAR(500),
+    version         INT          NOT NULL DEFAULT 1,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_notif_tmpl UNIQUE (code, channel, locale, version),
+    CONSTRAINT chk_notif_channel CHECK (channel IN ('KAKAO','EMAIL','SMS','INAPP')),
+    CONSTRAINT chk_notif_status  CHECK (status IN ('DRAFT','PENDING_REVIEW','APPROVED','REJECTED','RETIRED')),
+    CONSTRAINT chk_notif_locale  CHECK (locale IN ('ko','en'))
+);
+CREATE INDEX idx_notif_tmpl_lookup ON notification_template(code, channel, locale) WHERE status='APPROVED';
+COMMENT ON COLUMN notification_template.variables IS
+  'jsonb 배열: [{"name":"user.name","type":"string","required":true,"description":"수신자 이름"}, ...]';
+COMMENT ON COLUMN notification_template.kakao_template_code IS '카카오 알림톡 사업자 등록 템플릿 코드(검수 후 발급)';
+```
+
+### 14.2 `notification_template_history` (템플릿 버전 이력)
+
+```sql
+CREATE TABLE notification_template_history (
+    id              BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    template_id     BIGINT       NOT NULL REFERENCES notification_template(id) ON DELETE CASCADE,
+    version         INT          NOT NULL,
+    snapshot        JSONB        NOT NULL,
+    changed_by      BIGINT       NOT NULL,
+    changed_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    change_summary  VARCHAR(500),
+    CONSTRAINT uq_notif_hist UNIQUE (template_id, version)
+);
+CREATE INDEX idx_notif_hist_tmpl ON notification_template_history(template_id, version DESC);
+```
+
+### 14.3 `metadata_dictionary` (메타데이터 표준 사전)
+
+```sql
+CREATE TABLE metadata_dictionary (
+    id            BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    entry_type    VARCHAR(20)  NOT NULL,
+    code          VARCHAR(50)  NOT NULL,
+    name          VARCHAR(200) NOT NULL,
+    domain        VARCHAR(100),
+    description   TEXT,
+    status        VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_meta_dict UNIQUE (entry_type, code),
+    CONSTRAINT chk_meta_entry_type CHECK (entry_type IN ('WORD','TERM','DOMAIN','CODE','CLASSIFICATION')),
+    CONSTRAINT chk_meta_status     CHECK (status IN ('ACTIVE','INACTIVE'))
+);
+CREATE INDEX idx_meta_dict_type ON metadata_dictionary(entry_type, status);
+```
+
+### 14.4 `metadata_history` (콘텐츠 메타데이터 변경 이력)
+
+```sql
+CREATE TABLE metadata_history (
+    id                BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    target_namespace  VARCHAR(50)  NOT NULL,
+    target_id         BIGINT       NOT NULL,
+    before_jsonb      JSONB,
+    after_jsonb       JSONB        NOT NULL,
+    changed_by        BIGINT       NOT NULL,
+    changed_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    change_reason     VARCHAR(500),
+    CONSTRAINT chk_meta_hist_namespace CHECK (target_namespace IN ('page','content_block','popup','banner'))
+);
+CREATE INDEX idx_meta_hist_target ON metadata_history(target_namespace, target_id, changed_at DESC);
+```
+
+### 14.5 `missing_translation` (번역 누락 추적)
+
+```sql
+CREATE TABLE missing_translation (
+    id                BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    namespace         VARCHAR(50)  NOT NULL,
+    resource_id       BIGINT       NOT NULL,
+    language          VARCHAR(10)  NOT NULL,
+    field_name        VARCHAR(100) NOT NULL,
+    first_observed_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_observed_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    observation_count BIGINT       NOT NULL DEFAULT 1,
+    resolved          BOOLEAN      NOT NULL DEFAULT FALSE,
+    CONSTRAINT uq_missing_i18n UNIQUE (namespace, resource_id, language, field_name)
+);
+CREATE INDEX idx_missing_i18n_unresolved ON missing_translation(namespace, language) WHERE resolved = FALSE;
+```
+
+### 14.6 기존 테이블 확장 (ALTER 정의)
+
+```sql
+-- 메타데이터 표준 항목을 page/content_block/popup/banner에 일괄 추가
+ALTER TABLE page              ADD COLUMN s_meta_id           VARCHAR(50);
+ALTER TABLE page              ADD COLUMN da_sharp_id         VARCHAR(50);
+ALTER TABLE page              ADD COLUMN classification_code VARCHAR(50) NOT NULL DEFAULT 'GENERAL';
+ALTER TABLE page              ADD COLUMN retention_period    INT         NOT NULL DEFAULT 5;
+ALTER TABLE page              ADD COLUMN metadata_extra      JSONB;
+ALTER TABLE page              ADD COLUMN tsv_ko              TSVECTOR;
+ALTER TABLE page              ADD COLUMN tsv_en              TSVECTOR;
+CREATE INDEX idx_page_meta_class ON page(classification_code);
+CREATE INDEX idx_page_tsv_ko ON page USING GIN(tsv_ko);
+CREATE INDEX idx_page_tsv_en ON page USING GIN(tsv_en);
+
+ALTER TABLE content_block     ADD COLUMN s_meta_id           VARCHAR(50);
+ALTER TABLE content_block     ADD COLUMN da_sharp_id         VARCHAR(50);
+ALTER TABLE content_block     ADD COLUMN classification_code VARCHAR(50) NOT NULL DEFAULT 'GENERAL';
+ALTER TABLE content_block     ADD COLUMN retention_period    INT         NOT NULL DEFAULT 5;
+ALTER TABLE content_block     ADD COLUMN metadata_extra      JSONB;
+
+ALTER TABLE popup             ADD COLUMN s_meta_id           VARCHAR(50);
+ALTER TABLE popup             ADD COLUMN da_sharp_id         VARCHAR(50);
+ALTER TABLE popup             ADD COLUMN classification_code VARCHAR(50) NOT NULL DEFAULT 'GENERAL';
+ALTER TABLE popup             ADD COLUMN retention_period    INT         NOT NULL DEFAULT 3;
+ALTER TABLE popup             ADD COLUMN metadata_extra      JSONB;
+
+ALTER TABLE banner            ADD COLUMN s_meta_id           VARCHAR(50);
+ALTER TABLE banner            ADD COLUMN da_sharp_id         VARCHAR(50);
+ALTER TABLE banner            ADD COLUMN classification_code VARCHAR(50) NOT NULL DEFAULT 'GENERAL';
+ALTER TABLE banner            ADD COLUMN retention_period    INT         NOT NULL DEFAULT 3;
+ALTER TABLE banner            ADD COLUMN metadata_extra      JSONB;
+```
+
+---
+
+## 15. RFP 비기능 요구사항 (v0.2 추가)
+
+(SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑) §11 비기능 표를 보완한다.
+
+| ID | 카테고리 | 요구치 |
+|----|----------|-------|
+| PER-002 | 알림 템플릿 미리보기 응답 | p95 < 300ms (1KB 본문, 변수 10개 이하) |
+| PER-003 | 메타데이터 export (변경 1만 건) | p95 < 5s (페이지네이션 1000건 단위) |
+| PER-004 | 다국어 일괄 import (XLIFF 5천 행) | p95 < 30s (트랜잭션 청크 500건) |
+| DAR-007 | 메타데이터 등록·현행화 의무 | 모든 콘텐츠는 등록 시 classification_code NOT NULL 강제, 변경 시 metadata_history 100% 기록, 분기 1회 발주기관 메타데이터 시스템과 정합 점검 리포트 생성 |
+| RFP-NF-NOTIF-001 | 카카오 검수 본문 잠금 | APPROVED 버전은 본문 변경 차단(application 레이어), 신규 버전 분기로만 갱신 |
+| RFP-NF-I18N-001 | 다국어 검색 정확도 | ko/en 별도 tsvector 인덱스 사용, 토큰 누락률 < 2% (한국어 형태소 미적용 시 simple로 우선 운용) |
+
+---
+
+## 16. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Bundle C 상세 분리, 11 테이블 DDL, 30+ sub-REQ, 30+ API, 5 시퀀스, 권한 매트릭스, 다국어/캐시 정책) |
+| v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강 — REQ-CONTENT-011-D~013-D 신설(sub-REQ 12건), notification_template/notification_template_history/metadata_dictionary/metadata_history/missing_translation 5개 테이블 추가, page/content_block/popup/banner 메타데이터 컬럼 확장, RFP 비기능(PER-002~004, DAR-007 의무, RFP-NF-NOTIF-001/I18N-001) 추가. (SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑) |

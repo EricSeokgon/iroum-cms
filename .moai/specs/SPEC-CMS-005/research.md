@@ -306,3 +306,148 @@ CIS 벤치마크 적용 시 distroless 또는 chainguard images 평가.
 
 _문서 버전: v0.1_
 _작성일: 2026-04-29_
+
+---
+
+## 10. RFP 통합 보강 결정 사항 (v0.2)
+
+본 절은 SPEC-CMS-005 v0.2 RFP 통합(REQ-SYSTEM-007-D ~ 010-D) 도입 시 도출한 5개 결정 사항을 정리한다.
+
+### 10.1 KPI 계산 방식 — 사전 집계(배치) vs 실시간 + 캐시
+
+#### 결정 (1차)
+
+**사전 집계(배치) + 60초~1시간 Caffeine 캐시**. `KpiRefreshScheduler`가 `kpi_definition.refresh_interval_min` 주기로 SELECT 템플릿을 실행해 `kpi_value`에 적재하고, 대시보드 API는 `kpi_value`를 읽는다.
+
+#### 근거
+
+- 핵심 KPI 8종 중 PV/UV/STAY는 access_log GROUP BY로 비용이 크다. 매 요청 실시간 계산 시 p95 < 3초(REQ-SYSTEM-010-D-1) 위반 위험.
+- 사전 집계는 SPEC-CMS-005 §3.1 (1차 포함 범위)의 일별/월별 배치 기조와 일치.
+- 60초 단위 짧은 KPI(오늘 실시간 KPI)는 `refresh_interval_min=1`로 사전 집계되며, 이는 분 단위로 충분.
+
+#### 트레이드오프
+
+- 사전 집계는 분 단위 신선도(stale)가 있으나 운영 의사결정 KPI 특성상 허용.
+- 실시간 계산은 쿼리 비용·DB 부하가 사용자 트래픽과 곱해져 위험.
+
+#### 대안
+
+- 실시간 + 길게 잡힌 캐시(5분): 캐시 미스 시 쿼리 비용 폭발 위험.
+- Materialized View REFRESH: PG MV는 REFRESH 동안 락 또는 CONCURRENTLY 비용 큼. 1차 제외.
+- TimescaleDB continuous aggregate: 인프라 추가, 후속 검토.
+
+#### 1차 적용
+
+`KpiRefreshScheduler` + `kpi_value` UPSERT + Caffeine 60초 캐시(대시보드 API 응답 단위).
+
+### 10.2 엑셀 스트리밍 다운로드 라이브러리 — Apache POI SXSSF vs SQL→CSV stream
+
+#### 결정 (1차)
+
+**xlsx는 Apache POI `SXSSFWorkbook`(window=100), csv는 JDBC ResultSet streaming(`fetchSize=1000`)** 의 듀얼 트랙. 운영자가 format 파라미터로 선택.
+
+#### 근거
+
+- `SXSSFWorkbook`은 메모리에 sliding window(기본 100행)만 유지하고 디스크 임시 파일에 flush하므로 50만 행에서도 heap 200MB 이내 유지(REQ-SYSTEM-007-D-4 기준).
+- CSV는 단순성·범용성이 강하고, JDBC fetchSize + ResponseBody OutputStream으로 행 단위 스트림이 자연스럽다.
+- 두 포맷 모두 `Transfer-Encoding: chunked`로 응답해 클라이언트가 다운로드 진행률을 즉시 받을 수 있다.
+
+#### 트레이드오프
+
+- POI SXSSF는 CellStyle 메모리 누적 위험 → 스타일 캐시 재사용 패턴 적용 필수.
+- CSV는 다국어 BOM, 줄바꿈 이스케이프, Excel 호환(UTF-8 with BOM) 처리 코드가 필요.
+
+#### 대안
+
+- xlsx 전용 + JDBC cursor 직접 사용: 하위 호환 어려움.
+- 외부 워커(Worker pool)로 비동기 생성 후 다운로드 URL 발급: 1차 과잉, 후속 검토.
+- streaming-excel(JOOQ) 라이브러리: 검증 부족, 1차 제외.
+
+#### 1차 적용
+
+`KpiExportService` 안에서 format 분기 → xlsx는 POI SXSSF, csv는 ResultSet 스트림. 둘 다 `OutputStream`을 직접 받아 controller에서 `StreamingResponseBody`로 반환.
+
+### 10.3 integration_log vs audit_log 분리 사유
+
+#### 결정 (1차)
+
+**integration_log(외부 연계 기술 로그)와 audit_log(비즈니스 도메인 감사로그)를 별도 테이블로 분리**.
+
+#### 근거
+
+- audit_log는 컴플라이언스 보존(5년) + APPEND-ONLY(트리거) + 비즈니스 행위(C/U/D/권한) 추적 목적. 보존 기간이 길고 행 수가 많지 않다.
+- integration_log는 운영 디버깅·SLA 모니터링 목적이며 호출량이 많고 보존은 6개월(개인정보보호법). 인덱스 설계와 archive 정책이 다르다.
+- 두 로그를 합치면 보존 정책 충돌 + 인덱스 비효율 + 트리거 확장 시 외부 호출까지 immutable이 되는 부작용.
+
+#### 트레이드오프
+
+- 운영자가 "이 비즈니스 이벤트와 관련된 외부 호출"을 추적하려면 두 테이블을 JOIN해야 함 → trace_id 일치 + view 제공.
+
+#### 대안
+
+- 단일 테이블 + log_category 구분: 인덱스/보존 정책 분리 어려움. 1차 제외.
+- 외부 로그 시스템(ELK)으로만 처리: SFR-015 "DB 분리 보관" 명시 요건 위반.
+
+#### 1차 적용
+
+`integration_log`(월별 PARTITION, 6개월) + `audit_log`(월별 PARTITION, 6개월 핫 + 5년 콜드). 두 로그는 trace_id MDC로 연관 추적.
+
+### 10.4 외부 데이터 수집 스케줄러 — Spring @Scheduled 단일 vs ShedLock 멀티
+
+#### 결정 (1차)
+
+**Spring `@Scheduled` 단일 인스턴스**(SPEC-CMS-005 §3.1 / ASSUM-D-01 단일 노드 가정). ShedLock 도입은 멀티노드 전환 시 후속 SPEC.
+
+#### 근거
+
+- 1차 운영은 단일 백엔드 노드(SPEC-CMS-001 §17 운영 가정).
+- Spring `@Scheduled`는 별도 인프라 없이 cron 표현식 + Bean 메서드로 동작.
+- 멀티노드 전환 시 ShedLock(PG 또는 Redis backend)으로 분산 락 적용 가능 → 미리 인터페이스만 분리(`SchedulerLock` 추상화)해 두면 마이그레이션 비용 작음.
+
+#### 트레이드오프
+
+- 단일 노드 장애 시 동기화 미실행 → Docker healthcheck + 운영자 수동 재실행 절차로 보완.
+- ShedLock은 PG row lock 부담이 있으나 1분 단위 cron에서 무시 가능.
+
+#### 대안
+
+- Quartz cluster: 운영 복잡도 큼. 1차 제외.
+- AWS EventBridge + Lambda: 클라우드 종속, 공공기관 정책 검토 필요.
+
+#### 1차 적용
+
+`@Scheduled(cron=...)` Bean + `ExternalDataSyncService`. 멀티노드 시 ShedLock 4.x로 전환.
+
+### 10.5 RFP 성능 임계값 검증 방법 — JMeter + Prometheus 룰
+
+#### 결정 (1차)
+
+**JMeter 부하 테스트 시나리오 + Prometheus 알람 룰** 듀얼 검증.
+
+- JMeter: 50 RPS 10분, 1,000 동시 사용자 시나리오 (`tests/load/{api_search.jmx, api_dashboard.jmx, peak_users.jmx}`)
+- Prometheus 룰 5종(`ApiLatencyHigh`, `BatchSlaBreach`, `NodeCpuHigh`, `NodeMemHigh`, `NodeDiskHigh`)을 `deploy/prometheus/rules/`에 배치.
+
+#### 근거
+
+- JMeter는 일회성·검수용 부하 측정에 적합하고 GUI/CLI 모두 지원.
+- Prometheus 룰은 운영 중 지속 모니터링 + 알림. 두 채널 결합으로 출시 직전 검증과 운영 중 회귀 모두 커버.
+- Spring Boot Actuator + Micrometer는 이미 SPEC-CMS-005 v0.1 §10에 도입되어 추가 인프라 없음.
+
+#### 트레이드오프
+
+- JMeter는 Java 기반이라 CI 환경에서 무겁다 → 별도 Docker 이미지로 격리.
+- Prometheus 룰의 thresholds(예: p95 3초, 5분 연속)는 운영 데이터 누적 후 조정 필요.
+
+#### 대안
+
+- k6 / Gatling: 가볍고 코드 시나리오. JMeter 대체 가능하나 공공기관 사례 적음. 후속 검토.
+- 자체 부하 스크립트: 검증 신뢰 낮음. 제외.
+
+#### 1차 적용
+
+JMeter `.jmx` + Prometheus rule yaml + Grafana 대시보드(운영 단계). RUN phase에서 룰 yaml 작성 + JMeter 시나리오 작성을 함께 산출물로 포함.
+
+---
+
+_문서 버전: v0.2_
+_갱신일: 2026-04-29 (RFP 통합 보강: REQ-SYSTEM-007-D ~ 010-D 결정 사항 5종 추가)_

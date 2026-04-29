@@ -566,13 +566,230 @@
 
 ---
 
+## H-RFP. 게시판 유형 enum 확장 (REQ-BOARD-011-D-*)
+
+### H-RFP-01 (REQ-BOARD-011-D-1) 7종 enum 허용
+
+**Given** Flyway V2 마이그레이션이 적용되어 `chk_bbs_master_type`이 (NORMAL, NOTICE, QNA, FAQ, GALLERY, PUBLICATION, SURVEY)로 갱신된 상태에서
+**When** SYSADMIN이 `POST /api/v1/boards`에 `type:"PUBLICATION"`로 마스터를 생성하면
+**Then** 201 + 마스터가 저장되고, `bbs_type_template` 조회 시 `layout_template_id="list-publication"`이 응답에 포함된다.
+
+### H-RFP-02 (REQ-BOARD-011-D-1) 미허용 enum 거부
+
+**When** type='OPINION'(미허용 값)으로 POST 시도하면
+**Then** 400 + `BOARD_TYPE_INVALID`가 반환되고, DB CHECK constraint 위반 전에 애플리케이션 검증으로 거부된다.
+
+### H-RFP-03 (REQ-BOARD-011-D-2) 템플릿 메타 응답
+
+**When** `GET /api/v1/boards/{id}`로 type=GALLERY 마스터를 조회하면
+**Then** 응답에 `template:{layoutTemplateId:"grid-3col", defaultColumns:["thumbnail","title","author","viewCount"], defaultSort:"createdAt,desc"}`가 포함된다.
+
+### H-RFP-04 (REQ-BOARD-011-D-3) NOTICE 기본 정렬
+
+**Given** type=NOTICE 게시판에 is_notice=true 게시글 2건과 is_notice=false 5건이 존재하고
+**When** sort 파라미터 미지정으로 목록 조회 시
+**Then** 응답 정렬이 (is_notice DESC, notice_from DESC, created_at DESC) 기본 정렬로 적용되어 공지 2건이 상단에 노출된다.
+
+### H-RFP-05 (REQ-BOARD-011-D-4) 활성 게시글 존재 시 type 변경 차단
+
+**Given** type=NORMAL 마스터 id=20에 status='PUBLISHED' AND deleted_at IS NULL 게시글 1건 이상 존재
+**When** SYSADMIN이 `PUT /api/v1/boards/20`에 `type:"GALLERY"`를 보내면
+**Then** 400 + `BOARD_TYPE_CHANGE_BLOCKED`가 반환되고, 마스터 type은 변경되지 않는다.
+
+**And When** 모든 게시글을 status='DELETED'로 soft delete한 후 동일 요청을 재시도하면
+**Then** 200 + type이 GALLERY로 변경된다.
+
+---
+
+## I-RFP. 발간자료 (REQ-BOARD-012-D-*)
+
+### I-RFP-01 (REQ-BOARD-012-D-1) 발간자료 메타 저장
+
+**Given** type=PUBLICATION 마스터 id=30
+**When** EDITOR가 `POST /api/v1/boards/30/posts`에 `{title, contentHtml, publication:{year:2026, month:4, documentType:"REPORT", categoryId:5}}`를 보내면
+**Then** 201 + bbs_post INSERT + bbs_post_publication_meta(post_id, publication_year=2026, publication_month=4, document_type='REPORT', publication_category_id=5)가 저장된다.
+
+### I-RFP-02 (REQ-BOARD-012-D-1) document_type 화이트리스트
+
+**When** documentType='UNKNOWN'으로 POST 시도하면
+**Then** 400 + `PUBLICATION_DOCTYPE_INVALID`가 반환된다.
+
+### I-RFP-03 (REQ-BOARD-012-D-2) 카테고리 depth ≤ 3 강제
+
+**Given** depth=3인 카테고리 id=10이 존재
+**When** parent_id=10으로 자식 카테고리 INSERT 시도하면
+**Then** 트리거 `trg_pub_cat_depth`에 의해 `PUBLICATION_CATEGORY_DEPTH_EXCEEDED` 예외가 발생하고 INSERT가 거부된다.
+
+### I-RFP-04 (REQ-BOARD-012-D-3) 다운로드 통계 일별 집계
+
+**Given** 발간자료 게시글 id=300의 첨부 id=500
+**When** 동일 사용자가 같은 날 첨부를 3회 다운로드하면
+**Then** `publication_download_stat(post_id=300, attachment_id=500, stat_date=오늘).download_count=3`이 UPSERT로 갱신된다.
+
+### I-RFP-05 (REQ-BOARD-012-D-4) 압축 다운로드 동기 (≤50MB)
+
+**Given** 합계 30MB 첨부 3개의 권한 보유 사용자가
+**When** `POST /api/v1/posts/{id}/download-zip {attachmentIds:[1,2,3]}`을 호출하면
+**Then** 200 + Content-Type=application/zip + Content-Disposition + zip 스트림이 동기 응답된다.
+
+### I-RFP-06 (REQ-BOARD-012-D-4) 압축 다운로드 비동기 (>50MB)
+
+**Given** 합계 200MB 첨부 5개
+**When** download-zip 요청 시
+**Then** 202 + `{jobId, statusUrl}`이 반환되고, 작업 완료 후 인앱 알림 + 서명 URL이 발송된다.
+
+### I-RFP-07 (REQ-BOARD-012-D-4) 압축 한도 초과 거부
+
+**Given** 합계 600MB 첨부
+**When** download-zip 요청 시
+**Then** 413 + `ZIP_SIZE_EXCEEDED`가 반환된다.
+
+### I-RFP-08 (REQ-BOARD-012-D-5) 발간자료 검색 복합 필터
+
+**Given** publication_year=2025, document_type=REPORT 발간자료 5건과 publication_year=2026 발간자료 3건
+**When** `GET /api/v1/publications?year=2025&documentType=REPORT&keyword=정책`을 호출하면
+**Then** 200 + 2025년 REPORT 중 keyword 매치 결과만 페이징 응답된다.
+
+---
+
+## J-RFP. 설문조사 (REQ-BOARD-013-D-*)
+
+### J-RFP-01 (REQ-BOARD-013-D-1) 설문 마스터 생성
+
+**Given** EDITOR 권한 사용자
+**When** `POST /api/v1/surveys`에 `{title, descriptionHtml, startAt, endAt, isAnonymous:true, maxResponses:1000}`을 보내면
+**Then** 201 + survey 행이 status='DRAFT'로 INSERT되고, `chk_survey_period(end_at > start_at)` 위반 시 400 `SURVEY_PERIOD_INVALID` 반환.
+
+### J-RFP-02 (REQ-BOARD-013-D-2) 5종 질문 유형
+
+**When** survey_id=10에 대해 questions 배열로 SINGLE/MULTI/TEXT/RATING/DATE 각 1개씩 5개를 등록하면
+**Then** survey_question 5건이 INSERT되고, SINGLE/MULTI는 options jsonb 필수, TEXT/RATING/DATE는 options NULL 허용 검증된다.
+
+### J-RFP-03 (REQ-BOARD-013-D-2) options 누락 거부
+
+**When** question_type='SINGLE'인데 options를 NULL로 POST하면
+**Then** 400 + `SURVEY_OPTIONS_REQUIRED` 또는 `chk_question_options` CHECK 위반으로 거부된다.
+
+### J-RFP-04 (REQ-BOARD-013-D-3) 익명 설문 응답 — respondent_id NULL 강제
+
+**Given** survey.is_anonymous=true이고 인증된 사용자 user_A가
+**When** `POST /api/v1/surveys/{id}/responses`로 응답 제출하면
+**Then** survey_response.respondent_id IS NULL + respondent_ip_hash만 저장된다(REQ-CROSS-002 개인정보 분리).
+
+### J-RFP-05 (REQ-BOARD-013-D-3) 식별 설문 1인 1회 강제
+
+**Given** survey.is_anonymous=false, user_A가 이미 응답 제출됨
+**When** user_A가 동일 survey에 재응답 시도 시
+**Then** 409 + `SURVEY_ALREADY_RESPONDED`가 반환된다(uq_survey_response_user_once 제약).
+
+### J-RFP-06 (REQ-BOARD-013-D-4) RATING 1~5 범위 검증
+
+**When** answer_rating=6으로 응답 저장 시도 시
+**Then** `chk_answer_rating` CHECK 위반으로 400 + `RATING_OUT_OF_RANGE`가 반환된다.
+
+### J-RFP-07 (REQ-BOARD-013-D-5) 결과 통계 집계
+
+**Given** SINGLE 질문에 응답 100건(option A: 60, B: 30, C: 10)
+**When** ADMIN이 `GET /api/v1/surveys/{id}/results`를 호출하면
+**Then** 200 + `{questionId, type:"SINGLE", distribution:[{option:"A", count:60, percentage:60.0}, ...], totalResponses:100}`가 반환된다.
+
+### J-RFP-08 (REQ-BOARD-013-D-6) 설문 권한 매트릭스
+
+**Given** VIEWER 역할 사용자
+**When** `POST /api/v1/surveys` (작성)을 호출하면 → 403 `AUTH_PERMISSION_DENIED`
+**And When** `POST /api/v1/surveys/{id}/responses` (응답)를 호출하면 → 201 (status='OPEN' AND start_at <= now < end_at 조건)
+**And When** `GET /api/v1/surveys/{id}/results` (결과)를 호출하면 → 403 `AUTH_PERMISSION_DENIED`
+
+### J-RFP-09 (REQ-BOARD-013-D-6) 기간 외 응답 거부
+
+**Given** start_at=내일인 설문
+**When** 사용자가 응답 제출 시도하면
+**Then** 400 + `SURVEY_PERIOD_INVALID`가 반환된다.
+
+---
+
+## K-RFP. Q&A 답변 알림 연동 (REQ-BOARD-014-D-*)
+
+### K-RFP-01 (REQ-BOARD-014-D-1) 답변 등록 시 알림 발송
+
+**Given** Q&A id=700의 questioner=user_A, EMAIL 옵트아웃 미존재
+**When** CONTENT_ADMIN이 답변을 등록하면
+**Then** (a) notification 테이블에 INAPP 알림 INSERT (b) qna_notification_log에 channel='INAPP' status='SENT', channel='EMAIL' status='PENDING' 2건이 INSERT (c) SMTP 큐에 EMAIL 작업 enqueue된다.
+
+### K-RFP-02 (REQ-BOARD-014-D-2) 멱등성 — 중복 발송 차단
+
+**Given** 동일 qna_id=700, answerer_id=admin, channel='EMAIL', status='SENT' 로그가 이미 존재
+**When** 동일 답변에 대해 알림 발송이 재트리거되면
+**Then** uq_qna_notif_idem 제약 위반으로 409 + `NOTIFICATION_ALREADY_SENT`가 반환되고 중복 INSERT가 차단된다.
+
+### K-RFP-03 (REQ-BOARD-014-D-3) 재시도 지수 백오프
+
+**Given** EMAIL 발송이 1차 실패한 qna_notification_log (status='FAILED', retry_count=1)
+**When** 재시도 워커가 1분 후 실행되면
+**Then** 2차 시도가 트리거되고, 실패 시 retry_count=2, 다음 재시도는 2분 후 예약된다.
+
+### K-RFP-04 (REQ-BOARD-014-D-3) DEAD_LETTER 전환
+
+**Given** retry_count=3까지 모두 실패한 qna_notification_log
+**When** 추가 재시도 트리거 시점에
+**Then** status='DEAD_LETTER'로 전환되고, ADMIN에게 운영 알림(별도 채널)이 발송된다.
+
+### K-RFP-05 (REQ-BOARD-014-D-4) 옵트아웃 후 EMAIL 스킵
+
+**Given** user_A가 `PUT /api/v1/me/notifications/preferences {qnaAnswer:{email:false}}`로 옵트아웃 등록
+**When** user_A의 Q&A에 답변이 등록되면
+**Then** qna_notification_optout 행이 존재하므로 EMAIL 채널은 enqueue되지 않고, INAPP 알림만 적재된다.
+
+**And When** user_A가 `PUT /api/v1/me/notifications/preferences {qnaAnswer:{inapp:false}}`를 시도하면
+**Then** 400 + `OPTOUT_CHANNEL_NOT_ALLOWED`가 반환된다(INAPP 옵트아웃 불가).
+
+---
+
+## M-RFP. 품질 게이트 RFP 비기능 (QG-B-6)
+
+### QG-B-6 (RFP §17 비기능 — PER-003 / SER-004 / DAR-007)
+
+**Given** RFP 비기능 항목별 통합 테스트가 실행되면
+
+**When PER-003** (검색·목록 응답시간):
+- 10만 건 게시글 인덱스 + 1만 건 발간자료 + 5천 건 FAQ에서 통합 검색 수행
+- JMeter 50 동시 사용자, p95 측정
+
+**Then PER-003 게이트:**
+- 통합 검색 p95 < 3초
+- 게시글 목록 p95 < 300ms (기존 §11 유지)
+- 발간자료 복합 필터 검색 p95 < 500ms
+- 설문 결과 통계 집계 p95 < 1초
+
+**When SER-004** (다운로드 보안 강화):
+- 매직넘버 변조 시나리오 100건, 권한 변경 직후 캐시 우회 시나리오 50건, URL 파라미터 추가 변조 시나리오 50건 실행
+
+**Then SER-004 게이트:**
+- 디스크 변조 탐지율 100% (10% 샘플링 기준 통계적 유의 범위)
+- 권한 변경 후 다운로드 차단율 100%
+- URL 파라미터 변조 차단율 100%
+
+**When DAR-007** (S-Meta 분류체계):
+- 모든 활성 마스터에 대해 taxonomy_code 응답 검증
+
+**Then DAR-007 게이트:**
+- 신규 마스터 100%에 taxonomy_code 응답(선택 입력이지만 필드 자체는 응답 포함)
+- code 테이블 S_META_TAXONOMY 그룹과 무결성 100%
+
+---
+
 ## N. Definition of Done
 
 - 모든 REQ-BOARD-001-D ~ REQ-BOARD-010-D sub-REQ가 자동화 테스트로 검증됨 (35개 sub-REQ → 약 70개 G/W/T)
-- 5개 품질 게이트(QG-B-1~5) 통과
+- v0.2 신규 REQ-BOARD-011-D ~ REQ-BOARD-014-D sub-REQ 19개가 자동화 테스트로 검증됨 (H-RFP·I-RFP·J-RFP·K-RFP, 약 35개 G/W/T)
+- 6개 품질 게이트(QG-B-1~6) 통과 — QG-B-6은 RFP §17 비기능
 - OWASP HTML Sanitizer 정책이 PolicyFactory 단위 테스트로 검증됨
 - 첨부파일 업로드/다운로드/스캔 흐름이 Testcontainers + Mock SMTP/ClamAV로 통합 테스트됨
 - PostgreSQL FTS 인덱스(GIN tsvector + pg_trgm)가 Flyway V*로 생성되어 있음
+- v0.2 신규 9개 테이블 DDL이 Flyway V2_*로 마이그레이션되어 있음 (bbs_type_template, bbs_post_publication_meta, publication_category, publication_download_stat, survey, survey_question, survey_response, survey_answer, qna_notification_optout, qna_notification_log)
 - 권한 캐시(SPEC-CMS-002 §5.8) 무효화가 게시판 권한 변경 시 정상 동작함
 - audit_log 적재가 모든 C/U/D + 다운로드 경로에서 100% 동작함
-- 기존 SPEC-CMS-002 인증·권한 테스트가 회귀 없이 통과함
+- Q&A 답변 알림 멱등성 제약(uq_qna_notif_idem)과 재시도(최대 3회 지수 백오프)가 통합 테스트로 검증됨
+- 설문조사 1인 1회 응답 강제(uq_survey_response_user_once)가 식별 설문에서 동작함
+- 발간자료 카테고리 depth ≤ 3 트리거가 통합 테스트로 검증됨
+- 기존 SPEC-CMS-002 인증·권한 테스트 + SPEC-CMS-003 v0.1 테스트가 회귀 없이 통과함

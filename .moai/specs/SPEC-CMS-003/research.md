@@ -219,3 +219,83 @@
 | 알림 | 인앱 + Spring Mail (조건부) | FCM·SMS·알림톡은 별도 SPEC |
 
 본 결론은 spec.md §3 범위 / §4 DDL / §6 API / §8 보안 / §10 검색 / §11 성능 정책에 그대로 반영되었다.
+
+---
+
+## 9. RFP 통합 보강 연구 노트 (v0.2 — spec.md §14~§16 근거)
+
+> 본 절은 SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-008 매핑과 RFP §10.1 기존 비즈패스파인더 차용 모듈을 위한 추가 의사결정 기록이다. spec.md §14~§16 작성 시 본 절의 결론을 채택했다.
+
+### 9.1 다중 게시판 유형 — enum 확장 vs 단일 게시판 + 메타 분기
+
+**문제**: RFP는 발간자료, 갤러리, 설문 등 이질적 유형을 단일 게시판 모듈로 수용해야 한다.
+
+| 옵션 | 장점 | 단점 |
+|------|------|------|
+| **enum 7종 확장 (권장)** | 기존 bbs_master·bbs_post 재사용, 인덱스·권한 매트릭스 일관, type별 템플릿 매핑으로 화면 분기 | type별 컬럼 차이는 별도 1:1 테이블(bbs_post_publication_meta 등)로 수용 필요 |
+| 단일 type + metadata jsonb 분기 | 스키마 단순 | 인덱스·정렬 기본값을 jsonb 키로 분기 → 성능·가독성 저하 |
+| type별 별도 테이블(survey만 별개 등) | 도메인 격리 | 게시판 마스터 권한·검색·첨부파일 인프라 중복 구현 |
+
+**결론**: enum 7종 확장 + 보조 1:1 테이블. SURVEY는 도메인 특수성(질문/응답) 때문에 별도 4개 테이블(survey, survey_question, survey_response, survey_answer)을 두되, bbs_master(type=SURVEY)와 survey.bbs_id FK로 마스터 메타·권한·메뉴 연동을 유지한다.
+
+### 9.2 발간자료 압축 다운로드 — 동기 vs 비동기
+
+**문제**: 사용자가 N개 첨부를 일괄 다운로드하면 zip 패키징이 필요한데, 합계 용량에 따라 응답 지연·메모리 폭증 위험.
+
+| 옵션 | 장점 | 단점 |
+|------|------|------|
+| **합계 ≤ 50MB 동기, > 50MB 비동기 (권장)** | 작은 케이스는 즉시 응답, 큰 케이스는 백엔드 안정성 | 클라이언트가 두 응답 형식 모두 처리 필요(202 vs 200) |
+| 항상 동기 | 클라이언트 단순 | 큰 파일 시 timeout·OOM 위험 |
+| 항상 비동기 | 일관된 처리 | 작은 zip도 알림 대기 — UX 저하 |
+
+**결론**: 50MB 임계값. 동기는 `ZipOutputStream`으로 응답 스트림에 직접 패키징(메모리 사용 ≤ 100MB 보장). 비동기는 작업 큐(1차는 DB 폴링, §3과 동일 패턴) → 완료 시 stored zip을 서명 URL로 알림 발송. 절대 한도 500MB 초과는 거부(REQ-BOARD-012-D-4).
+
+### 9.3 설문 응답 — 익명 vs 식별
+
+**문제**: 설문은 익명성이 응답률에 영향을 주지만, 일부 설문은 응답자 식별이 필요(중복 방지, 인구통계 연계).
+
+| 패턴 | 사용처 | DDL 처리 |
+|------|--------|----------|
+| **익명 (is_anonymous=TRUE) (권장 기본)** | 만족도 조사, 의견 수렴 | respondent_id NULL 강제, ip_hash로 1인 1회 약한 보장(완벽한 강제 불가) |
+| 식별 (is_anonymous=FALSE) | 회원 한정 정책 설문 | respondent_id NOT NULL, uq_survey_response_user_once UNIQUE 제약 |
+
+**결론**: 둘 다 지원, 마스터 단계 `is_anonymous` 플래그로 분기. 익명 설문은 `respondent_id`를 NULL로 강제 INSERT(application layer)하여 REQ-CROSS-002(개인정보 분리 원칙)를 충족한다. 익명 설문 1인 1회는 ip_hash 기반 약한 보장(완벽한 강제는 불가능 — VPN/모바일 다중 IP)으로 한계를 명시한다.
+
+### 9.4 알림 멱등성 키 설계 — qna_id + answerer_id + channel
+
+**문제**: 답변 등록 트랜잭션 재시도 또는 워커 중복 실행 시 동일 알림이 중복 발송될 위험.
+
+| 멱등성 키 후보 | 장점 | 단점 |
+|----------------|------|------|
+| **(qna_id, answerer_id, channel) (권장)** | 답변 1건 = 알림 채널당 1건 보장, 답변 수정 시 재발송 가능 | answerer_id가 NULL이면 키 무효 — answerer_id NOT NULL 강제 필요(SPEC-CMS-001 sync 시 정합 검증) |
+| (qna_id, channel) | 단순 | 답변 수정 시 재발송 불가 |
+| (qna_id, sent_type, sent_at) | 시간 포함 | 시간으로 재시도와 신규 발송 구분 어려움 |
+| 외부 idempotency key (UUID) | 워커 재실행에 안전 | 클라이언트가 키 관리 부담 |
+
+**결론**: `UNIQUE(qna_id, answerer_id, channel) WHERE status IN ('SENT','PENDING')`. answerer_id는 답변 등록 시점에 항상 존재(SYSADMIN/CONTENT_ADMIN 인증 필수). 부분 인덱스로 FAILED/DEAD_LETTER 행은 멱등성 검사에서 제외하여 재시도가 가능하도록 한다. 답변 수정(UPDATE qna SET answer_html=...)은 새 알림 발송이 아닌 기존 알림의 메타 갱신으로 처리(별도 정책).
+
+### 9.5 발간자료 카테고리 트리 — Adjacency vs Materialized Path vs ltree
+
+**문제**: 발간자료는 카테고리(예: 정책연구 > 디지털전환 > AI/ML) 트리 구조가 필요. depth 제한·정렬·이동 비용을 고려해 모델 선택.
+
+| 옵션 | 장점 | 단점 |
+|------|------|------|
+| **Adjacency List + depth 컬럼 (권장)** | 단순, 트리거로 depth 자동 계산·제한, 일반 SQL 충분 | 전체 경로 조회 시 재귀 CTE 필요 |
+| Materialized Path (path varchar) | 단일 LIKE로 자손 조회 | 이동·rename 시 전체 자손 path 갱신 비용 |
+| ltree (PostgreSQL 확장) | 트리 연산 풍부, 인덱스 우수 | 추가 확장 의존, 학습 곡선 |
+| Closure Table | 자손/조상 양방향 빠름 | 트리 변경 시 다중 INSERT |
+
+**결론**: Adjacency List + depth 컬럼 + INSERT/UPDATE 트리거. depth ≤ 3 제한이 명확하므로 재귀 CTE 깊이도 3으로 제한적. 자식 카테고리 조회는 단일 `WHERE parent_id=?`로 충분. 정렬은 `sort_order` 컬럼으로 트리 내 동일 부모 자식들 간 순서 보장. ltree는 후속 SPEC에서 카테고리 분석 쿼리가 복잡해질 때 검토.
+
+### 9.6 결정 요약 (RFP 통합 보강)
+
+| 영역 | 1차 선택 | 후속 트리거 |
+|------|----------|-------------|
+| 다중 게시판 유형 모델 | enum 7종 + 1:1 보조 테이블 | 새 유형 추가 시 enum + 템플릿 + (필요 시) 보조 테이블 동시 추가 |
+| 압축 다운로드 임계값 | 50MB 동기 / 50MB~500MB 비동기 | 운영 통계 후 임계값 튜닝 |
+| 설문 익명 정책 | is_anonymous 플래그로 분기, 익명 시 ip_hash 약한 보장 | 강한 1인 1회 필요 시 OAuth/PASS 인증 도입 |
+| 알림 멱등성 키 | (qna_id, answerer_id, channel) UNIQUE 부분 인덱스 | 답변 수정 시 재발송 정책 별도 검토 |
+| 카테고리 트리 모델 | Adjacency + depth 트리거 + sort_order | depth > 3 또는 분석 쿼리 복잡화 시 ltree 검토 |
+| 분류체계 코드 | code 테이블 S_META_TAXONOMY 그룹 + bbs_master.taxonomy_code | S-Meta 표준 변경 시 매핑 갱신 |
+
+본 §9 결론은 spec.md §14 신규 sub-REQ / §15 신규 DDL / §16 RFP 비기능 / acceptance.md H-RFP·I-RFP·J-RFP·K-RFP·QG-B-6에 그대로 반영되었다.

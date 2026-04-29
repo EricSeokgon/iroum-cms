@@ -156,3 +156,57 @@
 
 1. **블록 타입 확장 정책**: 향후 'TABLE', 'CALENDAR', 'MAP' 같은 블록을 추가할 때 payload 스키마 검증을 어디서 강제할 것인가? — JSON Schema 도입 검토(후속).
 2. **다국어 자동 번역**: 영어 누락 필드를 운영자 도구에서 일괄 외부 번역 API로 채울 것인가? — 1차 비범위, 후속 검토.
+
+---
+
+## 9. RFP 통합 보강 의사결정 (v0.2)
+
+(SPEC-CMS-001 v0.2 §15.2 SFR-008/DAR-007 매핑 후속 의사결정)
+
+### 9.1 알림 템플릿 변수 치환 엔진 — Mustache vs Handlebars vs 자체
+
+| 옵션 | 장점 | 단점 |
+|------|------|------|
+| Mustache (logic-less) | 단순, 보안적으로 안전 | 조건/반복 표현력 부족, 카카오 알림톡의 다국적 이름 처리(존댓말 분기) 어려움 |
+| **Handlebars** | Mustache 호환 + helper로 조건/반복 지원, JVM 구현 안정(`com.github.jknack:handlebars`) | 약간의 학습 곡선, 무한 helper 등록 위험(보안) |
+| 자체 정규식 치환 | 의존성 0 | 이스케이프·예외 처리 재구현 부담, KAKAO 검수에서 외부 호환성 입증 어려움 |
+| Velocity / Thymeleaf | 풍부한 표현 | 템플릿이 사실상 코드, XSS 위험 |
+
+**결정: Handlebars (jknack handlebars.java) 채택.**
+- helper는 화이트리스트(eq, format, date)만 등록, 사용자 정의 helper는 거부
+- 변수 미정의 시 `{{변수명}}` 원형 유지(`MissingValueResolver`) → 미리보기 누락 보고와 정합
+- 카카오 알림톡 표준(템플릿 변수 `#{변수명}`)과 매핑은 export 시점에 변환 (`{{user.name}}` → `#{user.name}`)
+
+### 9.2 카카오 알림톡 검수 자동화 한계
+
+카카오 비즈메시지 정책상 알림톡 템플릿은 카카오 검수자(사람) 승인이 필수이며 OpenAPI를 통한 자동 승인 채널은 제공되지 않는다(2026-04 시점). 따라서:
+
+- **자동화 가능 영역**: 등록·수정 시점 본문 정적 검사(금칙어, 변수 형식, 광고성 표현 휴리스틱), 운영자 콘솔에서 카카오 비즈센터로의 export, 검수 결과 수동 입력 후 시스템 반영
+- **자동화 불가 영역**: 카카오 검수 결정 자체. `POST .../{id}/review-result` API는 운영자가 카카오 콘솔에서 받은 결과를 시스템으로 동기화하는 수동 단계
+- **운영 절차 명문화**: (1) 시스템 PENDING_REVIEW (2) 카카오 비즈센터 제출 (3) 카카오 검수(사람, 평균 1~3 영업일) (4) 결과 시스템 등록 → APPROVED/REJECTED — 본 4단계는 후속 운영 매뉴얼에 기록
+
+### 9.3 메타데이터 jsonb vs 정규화 — 분류코드는 컬럼 분리
+
+| 옵션 | 장점 | 단점 |
+|------|------|------|
+| 전 항목 정규화 (별도 테이블) | 무결성, 인덱스 용이 | 표준 진화 시 ALTER 빈발, 항목 추가 시 마이그레이션 필요 |
+| 전 항목 jsonb | 스키마 진화 자유 | 자주 검색되는 분류코드 인덱스 비효율, 집계 쿼리 복잡 |
+| **혼합: classification_code는 컬럼, 그 외 metadata_extra jsonb** | 분류 검색·필터 인덱스 활용 + 표준 진화 흡수 + 표준 미정 항목 수용 | 두 가지 패턴 학습 필요 |
+
+**결정: 혼합 채택.**
+- classification_code, retention_period는 검색·정책 적용 빈도가 높아 컬럼 + 인덱스
+- s_meta_id, da_sharp_id는 외부 시스템 키이므로 컬럼(NULL 허용, 단순 lookup)
+- 그 외 metadata_dictionary가 정의하는 표준 항목 중 미확정·신규 도입 항목은 metadata_extra jsonb
+- DAR-007의 표준 진화 시점에 컬럼 승격(metadata_extra에서 컬럼으로 이전)이 가능한 보수적 설계
+
+### 9.4 다국어 폴백 로깅 — missing_translation 테이블 적재
+
+기존 §9.2 폴백 정책은 누락을 감지해도 발행을 차단하지 않는다(UX 우선). v0.1 단계에서는 audit 리포트로만 다루었으나, REQ-CONTENT-013-D-1에서 다음 보강을 결정한다:
+
+- **적재 방식**: 폴백 발생 시점이 아닌 **발행(publish) 시점**에 검증 (런타임 fallback 적재는 트래픽 폭증 리스크)
+- **테이블**: `missing_translation(namespace, resource_id, language, field_name, first_observed_at, last_observed_at, observation_count, resolved)`
+- **UNIQUE 키**: (namespace, resource_id, language, field_name) — 이미 존재 시 last_observed_at, observation_count 갱신
+- **운영 활용**: 관리자 콘솔에서 미번역 백로그 보드, language별 누락률 KPI, 일괄 export 후 번역 워크플로(REQ-CONTENT-013-D-2)와 연결
+- **해소 처리**: i18n_resource INSERT 트리거 또는 application 레이어 hook으로 동일 키의 missing_translation row.resolved=true 갱신
+
+본 결정으로 누락이 단순 로그가 아닌 추적 가능한 백로그가 되어 다국어 품질 지표 산출이 가능해진다.

@@ -466,23 +466,178 @@
 **And** 모든 input에 `<label>` 또는 `aria-label` 부여
 **And** 색대비 4.5:1 이상 (axe 자동 검증).
 
----
+### QG-A-6 — RFP 비기능 임계값 (v0.2 추가, SPEC-CMS-001 v0.2 §17 매핑)
 
-## I. Definition of Done (Bundle A 완료 기준)
-
-본 SPEC-CMS-002는 다음을 모두 만족할 때 완료된 것으로 간주한다.
-
-- 모든 REQ-AUTH-001-D ~ REQ-AUTH-012-D sub-requirement가 구현되고 acceptance.md A~G의 모든 시나리오가 자동화 테스트로 통과
-- QG-A-1~5의 5개 품질 게이트가 CI에서 모두 PASS
-- Flyway V1 마이그레이션이 PostgreSQL 16에서 0 오류 적용
-- JaCoCo 커버리지: domain.auth 패키지 line/branch 모두 ≥ 85%
-- Vitest 커버리지: Admin SPA의 인증 화면 컴포넌트 line ≥ 85%
-- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 모든 §6 엔드포인트가 노출됨
-- 보안 담당자 검수: JWT/BCrypt/Refresh 보안 정책 검증 완료 서명
-- 운영 매뉴얼: 사용자·역할·잠금 해제 절차가 한국어로 문서화됨
+**Given** v0.2 amendment 빌드 산출물에 대해 부하·결함 운영 시뮬레이션이 가능한 환경에서
+**When** 인증 API(`/auth/login`, `/auth/refresh`) k6 부하 테스트(동시 사용자 1,000명, 초당 50건, 10분)를 수행하면
+**Then** 다음을 모두 만족한다:
+- 정상 부하 p95 < 200ms 달성 (BCrypt 비용 제외 측정값 보고)
+- BCrypt 포함 p95 < 3초 (PER-003 상한)
+- CPU/Memory/Disk 평균 사용률 < 90% 유지 (PER-002)
+- 시험 운영 기간 결함 발생률 < 5% (QUR-004 → QG-COMMON-1)
+- P0 결함 탐지~복구 < 1시간 (QUR-004 → QG-COMMON-2)
+- 고유식별번호(이메일·휴대폰) 컬럼이 AES-256-GCM 암호화 저장됨 (DB dump grep으로 평문 미존재 검증, SER-002).
 
 ---
 
-_문서 버전: v0.1_
+## H. 4단계 RBAC (REQ-AUTH-013-D-*, v0.2)
+
+### H-001 — 4단계 표준 역할 시드 보장
+
+**Given** Flyway V2 마이그레이션 실행 후
+**When** `SELECT code FROM roles WHERE is_system=TRUE ORDER BY code` 조회하면
+**Then** SUPER_ADMIN, DEPT_ADMIN, EDITOR, VIEWER 4개 행이 모두 존재한다 (v0.1 SYSADMIN/CONTENT_ADMIN/USER 시드와 공존).
+
+### H-002 — 역할 템플릿 권한 매핑 검증
+
+**Given** V2 마이그레이션 직후
+**When** `SELECT role_code, count(*) FROM role_permissions WHERE role_code IN ('SUPER_ADMIN','DEPT_ADMIN','EDITOR','VIEWER') GROUP BY 1` 실행
+**Then** 각 역할의 시드 권한 개수가 §13.1 REQ-AUTH-013-D-2 정의(SUPER_ADMIN 전체, DEPT_ADMIN 도메인 한정, EDITOR 작성권, VIEWER 읽기 전용)와 일치한다.
+
+### H-003 — 역방향 위임 거부
+
+**Given** DEPT_ADMIN으로 인증된 사용자 'manager'
+**When** manager가 `POST /api/v1/users/{target_id}/roles {roleCode:'SUPER_ADMIN'}` 호출
+**Then** 403 + `AUTH_ROLE_ESCALATION_DENIED`가 반환되고
+**And** permission_change_history에 (change_type='DENIED_ATTEMPT', target_resource='SUPER_ADMIN', changed_by=manager) 행이 기록된다.
+
+### H-004 — 정방향 위임 허용
+
+**Given** SUPER_ADMIN 'root'으로 인증
+**When** root가 `POST /api/v1/users/{target_id}/roles {roleCode:'DEPT_ADMIN'}` 호출
+**Then** 201 + user_roles 매핑 추가
+**And** permission_change_history에 (change_type='ROLE_ASSIGN', target_resource='DEPT_ADMIN', changed_by=root) 기록.
+
+### H-005 — 메뉴 × 역할 × 액션 매트릭스 조회
+
+**Given** SUPER_ADMIN 인증
+**When** `GET /api/v1/admin/permission-matrix` 호출
+**Then** 200 + `{rows:[{resource, action, roles:{SUPER_ADMIN:bool, DEPT_ADMIN:bool, EDITOR:bool, VIEWER:bool}}]}` 형식의 매트릭스 응답이 반환된다.
+
+### H-006 — 매트릭스 셀 토글 시 이력 자동 적재
+
+**Given** SUPER_ADMIN 인증, 현재 EDITOR 역할에 `BOARD:DELETE` 권한 미부여
+**When** SUPER_ADMIN이 매트릭스 화면에서 해당 셀을 토글(`POST /api/v1/admin/permission-matrix {roleCode:'EDITOR', permissionCode:'BOARD:DELETE', enabled:true}`)
+**Then** 200 + role_permissions에 매핑 추가
+**And** permission_change_history에 (change_type='PERM_ATTACH', target_resource='BOARD:DELETE', after_value='EDITOR') 자동 기록.
+
+---
+
+## I. 부서·조직 관리 (REQ-AUTH-014-D-*, v0.2)
+
+### I-001 — organization 트리 깊이 제한
+
+**Given** organization에 4단계 깊이 행 (`/1/2/3/4/`)이 존재
+**When** 5단계 자식 추가 (`POST /api/v1/organizations {parent_id: 4단계 id}`)
+**Then** 201 + 5단계 행 INSERT (depth=5)
+**And** 6단계 추가 시도 시 400 + `ORG_DEPTH_EXCEEDED` 반환.
+
+### I-002 — users.organization_id NULL 허용 (v0.1 사용자 호환)
+
+**Given** v0.1 마이그레이션 직후의 기존 사용자(organization_id=NULL)
+**When** v0.2 마이그레이션 적용 후 동일 사용자로 로그인
+**Then** 200 OK + 정상 인증 (organization_id=NULL 인 users는 v0.2에서도 그대로 동작).
+
+### I-003 — DEPT_ADMIN 자기 부서 사용자 조회
+
+**Given** DEPT_ADMIN 'mgr'(organization.path='/1/3/')으로 인증
+**When** `GET /api/v1/users?page=0&size=20` 호출
+**Then** 200 + 응답 content는 `users.organization.path LIKE '/1/3/%'` 인 사용자 + organization_id=NULL 인 사용자만 포함 (다른 부서 사용자 제외).
+
+### I-004 — DEPT_ADMIN 타 부서 사용자 조작 거부
+
+**Given** DEPT_ADMIN 'mgr'(path='/1/3/')으로 인증, 대상 사용자 'other'(path='/1/5/')
+**When** mgr가 `PUT /api/v1/users/{other_id} {name:'changed'}` 호출
+**Then** 403 + `AUTH_ORG_SCOPE_DENIED` 반환
+**And** audit_log에 차단 이벤트 기록.
+
+### I-005 — 조직 변경 이력 자동 적재
+
+**Given** SUPER_ADMIN이 organization id=12 행의 name을 'A팀' → 'A부'로 UPDATE
+**When** UPDATE 트랜잭션 커밋 직후
+**Then** organization_history 테이블에 (org_id=12, change_type='UPDATE', snapshot=수정 후 jsonb, changed_by=SUPER_ADMIN id) 행이 1건 추가된다.
+
+---
+
+## J. SSO 옵션 인터페이스 (REQ-AUTH-015-D-*, v0.2)
+
+### J-001 — NoOpSsoProvider 기본 등록
+
+**Given** Spring Boot 1차 빌드 (`auth.sso.enabled` 미설정)
+**When** ApplicationContext에서 `SsoProvider` 빈을 조회
+**Then** `NoOpSsoProvider` 인스턴스 1개만 등록되어 있다 (SamlSsoProvider, OidcSsoProvider 빈 미등록).
+
+### J-002 — NoOpSsoProvider 동작 — 일반 로그인 무영향
+
+**Given** J-001 환경에서 일반 사용자 'alice'가 ID/비밀번호로 `POST /api/v1/auth/login` 호출
+**When** 응답 수신
+**Then** 200 OK + 정상 accessToken 발급 (SSO 경로 미진입, 기존 v0.1 REQ-AUTH-001-D-1 그대로 동작).
+
+### J-003 — NoOpSsoProvider 메서드 호출 시 안전 실패
+
+**Given** 테스트 코드에서 `ssoProvider.authenticate("dummy")` 직접 호출
+**When** 메서드 실행
+**Then** `UnsupportedOperationException("SSO not configured")` 또는 빈 `SsoAuthResult.empty()`가 반환되어 호출자가 안전하게 처리할 수 있다 (런타임 충돌 없음).
+
+---
+
+## K. 권한 변경 이력 + 비인가 사전 차단 (REQ-AUTH-016-D-*, v0.2)
+
+### K-001 — 정상 권한 부여 시 이력 자동 적재
+
+**Given** SUPER_ADMIN 'root' 인증, 대상 'alice'에 EDITOR 미부여
+**When** root가 `POST /api/v1/users/{alice_id}/roles {roleCode:'EDITOR'}` 호출
+**Then** 201 + user_roles 매핑 추가
+**And** permission_change_history에 (target_user_id=alice, change_type='ROLE_ASSIGN', target_resource='EDITOR', changed_by=root, ip_address) 1행 기록 (동일 트랜잭션).
+
+### K-002 — 권한 회수 시 이력 적재
+
+**Given** alice가 EDITOR 보유
+**When** SUPER_ADMIN이 `DELETE /api/v1/users/{alice_id}/roles/EDITOR` 호출
+**Then** 204 + 매핑 삭제
+**And** permission_change_history에 change_type='ROLE_UNASSIGN' 행 추가.
+
+### K-003 — 비인가 사용자 사전 차단
+
+**Given** EDITOR 역할의 'alice'가 인증 (USER:WRITE 미보유)
+**When** alice가 `POST /api/v1/users/{victim_id}/roles {roleCode:'EDITOR'}` 호출
+**Then** 403 + `AUTH_PERMISSION_DENIED` 반환 (차단)
+**And** permission_change_history에 (change_type='DENIED_ATTEMPT', target_user_id=victim, target_resource='EDITOR', changed_by=alice, ip_address) 행 기록
+**And** audit_log에 severity=CRITICAL 동시 기록.
+
+### K-004 — 권한 변경 이력 검색 API
+
+**Given** SUPER_ADMIN 인증, permission_change_history에 100건 이력
+**When** `GET /api/v1/admin/permission-history?targetUserId=42&changeType=ROLE_ASSIGN&from=2026-04-01&to=2026-04-30&page=0&size=20` 호출
+**Then** 200 + 시간 역순 페이징 결과 + 필터 일치 행만 반환.
+
+### K-005 — SUPER_ADMIN 부여 시 CRITICAL 알림
+
+**Given** 활성 SUPER_ADMIN 3명('root1','root2','root3')이 존재, 대상 'alice'에 SUPER_ADMIN 미부여
+**When** 'root1'이 alice에 SUPER_ADMIN을 부여하면
+**Then** 201 + user_roles 매핑 추가
+**And** root2, root3의 인앱 알림 큐에 "SUPER_ADMIN granted to alice by root1" 메시지 적재
+**And** SMTP 활성 시 root2/root3 이메일에 동일 알림 발송
+**And** audit_log에 (severity=CRITICAL, action='SUPER_ADMIN_GRANT') 기록.
+
+---
+
+## L. Definition of Done (Bundle A 완료 기준, v0.2)
+
+본 SPEC-CMS-002 v0.2는 다음을 모두 만족할 때 완료된 것으로 간주한다.
+
+- v0.1 기준: 모든 REQ-AUTH-001-D ~ REQ-AUTH-012-D sub-requirement가 구현되고 acceptance.md A~G의 모든 시나리오가 자동화 테스트로 통과
+- v0.2 추가: REQ-AUTH-013-D ~ REQ-AUTH-016-D sub-requirement가 구현되고 H~K의 모든 시나리오가 통과
+- QG-A-1~6의 6개 품질 게이트가 CI에서 모두 PASS (QG-A-6는 v0.2 신규)
+- Flyway V1 + V2 마이그레이션이 PostgreSQL 16에서 0 오류 순차 적용
+- JaCoCo 커버리지: domain.auth + domain.organization 패키지 line/branch 모두 ≥ 85%
+- Vitest 커버리지: Admin SPA의 인증·권한 매트릭스·조직 화면 컴포넌트 line ≥ 85%
+- OpenAPI 3.1 스펙 자동 생성 후 Swagger UI에서 §6 + §13 신규 엔드포인트(`/admin/permission-matrix`, `/admin/permission-history`, `/organizations/*`) 모두 노출됨
+- 보안 담당자 검수: JWT/BCrypt/Refresh + 4단계 RBAC + 권한 변경 이력 정책 검증 완료 서명
+- 운영 매뉴얼: 사용자·역할·잠금 해제·조직 트리·권한 매트릭스 절차가 한국어로 문서화됨
+
+---
+
+_문서 버전: v0.2 (2026-04-29 RFP 통합 amendment)_
 _작성일: 2026-04-29_
-_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + Quality Gate 5 = 63개_
+_총 시나리오: A 8 + B 9 + C 13 + D 6 + E 10 + F 8 + G 4 + H 6 + I 5 + J 3 + K 5 + Quality Gate 6 = 83개 (v0.1 63개 + v0.2 추가 20개)_

@@ -1,4 +1,4 @@
-# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)
+# SPEC-CMS-002: 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization)  v0.2 (2026-04-29 RFP 통합)
 
 ## 1. 개요
 
@@ -6,13 +6,14 @@
 |------|------|
 | SPEC ID | SPEC-CMS-002 |
 | 제목 | 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization) |
-| 부모 SPEC | SPEC-CMS-001 (Umbrella) |
+| 부모 SPEC | SPEC-CMS-001 v0.2 (Umbrella) — §15.2 SFR-014 / SFR-010 / SFR-015, §16, §17 매핑 |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
 | 상태 | Draft |
+| 버전 | v0.2 (RFP 통합 amendment) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |
-| egov 차용 모듈 | uss/umt(사용자관리), sec/rmt(역할관리), sec/aut(권한관리), uat/uia(일반로그인) |
+| egov 차용 모듈 | uss/umt(사용자관리), sec/rmt(역할관리), sec/aut(권한관리), uat/uia(일반로그인), uss/olh(조직관리) |
 
 본 SPEC은 SPEC-CMS-001 §6.1 REQ-AUTH-001~012 및 §6.5 REQ-CROSS-002~005 횡단 관심사를 Bundle A 범위로 상세화한다. 모든 REST API, DDL, 시퀀스, 권한 매트릭스, 보안 정책을 구현 단계 의사결정 수준까지 확정한다.
 
@@ -950,8 +951,183 @@ sequenceDiagram
 
 ---
 
+## 13. RFP 통합 보강 (v0.2 amendment, SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015 매핑)
+
+본 절은 RFP "비즈패스파인더 고도화 용역" §1 SFR-014(4단계 RBAC), SFR-010(SSO 옵션), SFR-015(권한 변경 이력)을 v0.1 기준선에 추가 적용한다. v0.1 §1~§11 기존 요구사항·DDL·API는 변경 없이 유지된다.
+
+### 13.1 REQ-AUTH-013-D: 4단계 RBAC (SPEC-CMS-001 v0.2 §15.2 SFR-014 매핑)
+
+기존 v0.1의 3개 시스템 역할(SYSADMIN, CONTENT_ADMIN, USER)을 4단계 표준 운영 모델로 확장한다. v0.1의 `roles` 테이블은 그대로 유지되며 시드 데이터·매트릭스만 보강한다.
+
+- **REQ-AUTH-013-D-1 (4단계 역할 기본 정의 — Ubiquitous)**
+  시스템은 부팅 시 4개 표준 역할 `SUPER_ADMIN`(최고관리자), `DEPT_ADMIN`(부서관리자), `EDITOR`(편집자), `VIEWER`(조회전용)를 `roles.is_system=TRUE`로 보장해야 한다. 기존 v0.1의 SYSADMIN은 SUPER_ADMIN과 동의어로 alias 매핑하고, 신규 부팅 시에는 SUPER_ADMIN 코드를 기본 시드로 사용해야 한다.
+- **REQ-AUTH-013-D-2 (역할 템플릿 — Ubiquitous)**
+  시스템은 각 표준 역할에 대해 메뉴 권한 묶음을 사전 정의한 "역할 템플릿"을 제공해야 한다. SUPER_ADMIN은 `*:*` 전체 권한, DEPT_ADMIN은 자기 부서 범위의 `USER:READ/WRITE`·`BOARD:*`·`CONTENT:*`, EDITOR는 `BOARD:WRITE`·`CONTENT:WRITE`·`ME:*`, VIEWER는 `*:READ`·`ME:READ`만 보유해야 한다. 템플릿은 `role_permissions` 시드 INSERT로 V1 마이그레이션에 포함된다.
+- **REQ-AUTH-013-D-3 (역할간 위임 정책 — State-driven)**
+  SUPER_ADMIN이 인증된 동안, 시스템은 SUPER_ADMIN이 DEPT_ADMIN·EDITOR·VIEWER를 부여·회수할 수 있도록 허용해야 한다. DEPT_ADMIN이 SUPER_ADMIN을 부여하거나 자기보다 상위 역할을 부여하려는 시도는 거부(403 + `AUTH_ROLE_ESCALATION_DENIED`)해야 한다 (역방향 위임 금지).
+- **REQ-AUTH-013-D-4 (메뉴 × 역할 × 액션 매트릭스 관리 화면 — Ubiquitous)**
+  시스템은 SUPER_ADMIN에게 메뉴 × 역할 × 액션(C/R/U/D)을 시각화 매트릭스 화면으로 제공해야 한다 (`GET /api/v1/admin/permission-matrix`). 셀 단위 토글은 `role_permissions` 매핑을 추가·삭제하며, 변경 시 §13.4 권한 변경 이력에 자동 기록되어야 한다.
+
+### 13.2 REQ-AUTH-014-D: 부서·조직 관리 (SPEC-CMS-001 v0.2 §15.2 SFR-014 매핑)
+
+DEPT_ADMIN의 권한 범위를 한정하기 위해 조직(organization) 트리를 도입한다. v0.1 `users` 테이블에 `organization_id` FK를 추가한다(non-breaking — NULL 허용).
+
+- **REQ-AUTH-014-D-1 (organization 트리 — Ubiquitous)**
+  시스템은 자기참조(parent_id) 트리 구조의 `organization` 테이블을 제공해야 하며, 트리 깊이는 5단계 이하로 제한해야 한다. `path` 컬럼(materialized path, 예: `/1/3/12/`)을 부수 보유해 상위 부서 일괄 검색을 O(log n)으로 지원한다.
+- **REQ-AUTH-014-D-2 (user.organization_id FK — Ubiquitous)**
+  시스템은 `users` 테이블에 `organization_id BIGINT REFERENCES organization(id) ON DELETE SET NULL` 컬럼을 추가해야 한다 (NULL 허용 — v0.1 기존 사용자 마이그레이션 안전).
+- **REQ-AUTH-014-D-3 (DEPT_ADMIN 권한 범위 제한 — State-driven)**
+  DEPT_ADMIN 역할로 인증된 사용자가 `GET/PUT/DELETE /api/v1/users/*`를 호출하는 동안, 시스템은 호출자의 `organization.path`를 prefix로 갖는 사용자 또는 동일 organization 사용자만 대상으로 허용해야 한다. 다른 부서 사용자 조작 시도는 403 + `AUTH_ORG_SCOPE_DENIED`를 반환해야 한다.
+- **REQ-AUTH-014-D-4 (조직 변경 이력 — Ubiquitous)**
+  시스템은 `organization_history` 테이블에 organization 행이 INSERT/UPDATE/DELETE될 때마다 snapshot(jsonb), changed_by, changed_at을 자동 적재해야 한다 (AOP 또는 Postgres trigger 중 택일, 결정은 §15에 명시). 조회 API: `GET /api/v1/organizations/{id}/history`.
+
+### 13.3 REQ-AUTH-015-D: SSO Provider 옵션 인터페이스 (SPEC-CMS-001 v0.2 §15.2 SFR-010 잔재)
+
+자체 프로젝트는 JWT 자체 발급을 기본으로 하나, 미래 외부 IdP 연동(공공기관 통합로그인) 가능성에 대비해 인터페이스 자리표시자를 마련한다. 1차 구현은 NoOpSsoProvider 단일 빈으로, 외부 IdP 어댑터 실제 구현은 SPEC-CMS-AI-001 또는 별도 SPEC로 위임한다.
+
+- **REQ-AUTH-015-D-1 (SsoProvider 인터페이스 — Ubiquitous)**
+  시스템은 다음 3개 메서드를 가지는 `SsoProvider` 인터페이스를 정의해야 한다:
+  (a) `authenticate(rawToken: String): SsoAuthResult` — 외부 토큰 검증
+  (b) `extractClaims(rawToken: String): Map<String,Object>` — claim 추출
+  (c) `mapToInternalUser(claims: Map): Optional<Long>` — 내부 user_id 매핑(없으면 신규 생성 위임)
+- **REQ-AUTH-015-D-2 (NoOpSsoProvider 기본 구현체 — Ubiquitous)**
+  시스템은 1차에 `NoOpSsoProvider` 빈을 default 등록해야 하며, 모든 메서드는 `UnsupportedOperationException("SSO not configured")` 또는 빈 결과를 반환해 일반 로그인 경로(REQ-AUTH-001-D-1)에 영향을 주지 않아야 한다.
+- **REQ-AUTH-015-D-3 (외부 IdP 어댑터 자리 표시 — Optional)**
+  시스템은 SAML 2.0 / OIDC 어댑터 클래스 자리표시자(`SamlSsoProvider`, `OidcSsoProvider` skeleton)를 패키지 트리에 포함하되, 실제 동작 구현은 본 SPEC 범위 외(별도 SPEC, 옵션 트랙)이며 1차 빌드에 포함되어서는 안 된다 (Spring `@ConditionalOnProperty("auth.sso.enabled")`로 비활성).
+
+### 13.4 REQ-AUTH-016-D: 권한 변경 이력 + 비인가 사전 차단 (SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-015 매핑)
+
+v0.1 `audit_log`(REQ-CROSS-004)와 분리된 권한 전용 이력 테이블을 신설해 권한 검색 성능과 컴플라이언스 추적성을 강화한다.
+
+- **REQ-AUTH-016-D-1 (permission_change_history 테이블 — Ubiquitous)**
+  시스템은 권한 변경 전용 테이블 `permission_change_history`를 보유해야 한다 (스키마는 §14.4). 모든 user_roles INSERT/DELETE, role_permissions INSERT/DELETE는 동일 트랜잭션 내 본 테이블에 1건 적재되어야 한다.
+- **REQ-AUTH-016-D-2 (사전 검증 + 차단 — Unwanted)**
+  비인가 사용자(권한 보유자가 아닌 자)가 권한 변경 API(`POST /api/v1/users/{id}/roles` 등)를 호출한 경우, 시스템은 권한 검사 단계에서 즉시 차단(403)하고 `permission_change_history`에 `change_type='DENIED_ATTEMPT'`로 기록하며, audit_log에도 critical 이벤트로 동시 기록해야 한다.
+- **REQ-AUTH-016-D-3 (권한 변경 이력 검색 — Ubiquitous)**
+  시스템은 SUPER_ADMIN에게 `GET /api/v1/admin/permission-history?targetUserId=&changeType=&from=&to=&page=&size=` API를 제공해 페이징·필터 검색을 지원해야 한다.
+- **REQ-AUTH-016-D-4 (CRITICAL 등급 알림 — Event-driven)**
+  SUPER_ADMIN 역할이 부여 또는 회수되었을 때, 시스템은 다른 모든 활성 SUPER_ADMIN에게 인앱 알림 + 이메일(SMTP 사용 가능 시)로 즉시 통지해야 하며, audit_log에 severity=CRITICAL로 기록해야 한다.
+
+---
+
+## 14. 추가 데이터 모델 (v0.2 amendment)
+
+본 절은 §4의 v0.1 DDL을 그대로 유지한 채 신규/보강 테이블 DDL을 추가한다. Flyway V2 마이그레이션 단위로 묶는다.
+
+### 14.1 `roles` 시드 보강 (v0.1 테이블 그대로, 시드만 추가)
+
+```sql
+-- v0.1 INSERT (SYSADMIN, CONTENT_ADMIN, USER)는 그대로 유지
+-- v0.2 4단계 표준 역할 alias 시드 추가
+INSERT INTO roles (code, name, description, is_system) VALUES
+  ('SUPER_ADMIN',  '최고관리자',   'SYSADMIN alias — RFP SFR-014 4단계 RBAC 표준', TRUE),
+  ('DEPT_ADMIN',   '부서관리자',   '자기 부서 사용자·콘텐츠 관리 권한',            TRUE),
+  ('EDITOR',       '편집자',       '게시판·콘텐츠 작성 권한',                       TRUE),
+  ('VIEWER',       '조회전용',     '읽기 전용',                                     TRUE)
+ON CONFLICT (code) DO NOTHING;
+```
+
+비고: SUPER_ADMIN은 운영 표준 명칭이며, 기존 SYSADMIN과 동일 권한이다. v0.2 신규 환경은 SUPER_ADMIN을 사용하고 v0.1 기존 환경은 SYSADMIN을 그대로 유지한다(데이터 마이그레이션은 옵션). `is_system=TRUE`로 보호되어 코드 변경·삭제 거부(REQ-AUTH-007-D-1).
+
+### 14.2 `organization` (조직 트리, 신규)
+
+```sql
+CREATE TABLE organization (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code        VARCHAR(50)  NOT NULL UNIQUE,
+    name        VARCHAR(200) NOT NULL,
+    parent_id   BIGINT       REFERENCES organization(id) ON DELETE RESTRICT,
+    depth       INT          NOT NULL DEFAULT 1,
+    path        VARCHAR(500) NOT NULL,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    status      VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_org_depth   CHECK (depth >= 1 AND depth <= 5),
+    CONSTRAINT chk_org_status  CHECK (status IN ('ACTIVE','INACTIVE','MERGED'))
+);
+CREATE INDEX idx_organization_parent ON organization(parent_id);
+CREATE INDEX idx_organization_path   ON organization(path text_pattern_ops);
+COMMENT ON COLUMN organization.path  IS 'Materialized path, 예: /1/3/12/. prefix LIKE 검색용.';
+
+-- users 테이블 보강 (v0.1 테이블 ALTER, NULL 허용으로 backward compatible)
+ALTER TABLE users ADD COLUMN organization_id BIGINT REFERENCES organization(id) ON DELETE SET NULL;
+CREATE INDEX idx_users_organization ON users(organization_id) WHERE deleted_at IS NULL;
+```
+
+### 14.3 `organization_history` (조직 변경 이력, 신규)
+
+```sql
+CREATE TABLE organization_history (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    org_id      BIGINT       NOT NULL,
+    version     INT          NOT NULL,
+    snapshot    JSONB        NOT NULL,
+    change_type VARCHAR(10)  NOT NULL,
+    changed_by  BIGINT       REFERENCES users(id),
+    changed_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_orghist_change_type CHECK (change_type IN ('INSERT','UPDATE','DELETE','MERGE'))
+);
+CREATE INDEX idx_org_history_org_time ON organization_history(org_id, changed_at DESC);
+COMMENT ON COLUMN organization_history.snapshot IS '변경 직후 organization 행 전체를 JSONB로 직렬화';
+```
+
+### 14.4 `permission_change_history` (권한 변경 전용 이력, 신규)
+
+```sql
+CREATE TABLE permission_change_history (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    target_user_id  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    change_type     VARCHAR(30)  NOT NULL,
+    target_resource VARCHAR(100) NOT NULL,
+    before_value    VARCHAR(200),
+    after_value     VARCHAR(200),
+    changed_by      BIGINT       REFERENCES users(id),
+    changed_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reason          VARCHAR(500),
+    ip_address      INET,
+    CONSTRAINT chk_pch_change_type CHECK (change_type IN
+      ('GRANT','REVOKE','ROLE_ASSIGN','ROLE_UNASSIGN','PERM_ATTACH','PERM_DETACH','DENIED_ATTEMPT'))
+);
+CREATE INDEX idx_pch_target_time ON permission_change_history(target_user_id, changed_at DESC);
+CREATE INDEX idx_pch_change_type ON permission_change_history(change_type);
+COMMENT ON COLUMN permission_change_history.target_resource IS 'role_code or permission_code';
+COMMENT ON COLUMN permission_change_history.change_type     IS 'DENIED_ATTEMPT: 비인가 시도 차단 기록 (REQ-AUTH-016-D-2)';
+```
+
+비고: `audit_log`(REQ-CROSS-004)는 모든 도메인 이벤트의 통합 로그이며, `permission_change_history`는 권한 도메인 전용으로 검색 성능·컴플라이언스 보고에 최적화되어 있다 (분리 사유는 research.md §9.4).
+
+---
+
+## 15. RFP 비기능 횡단 적용 (SPEC-CMS-001 v0.2 §17 매핑)
+
+v0.1 §9 보안 정책은 그대로 유지되며, 본 절은 RFP §17 PER/SER/QUR 임계값을 Bundle A에 명시 적용한다.
+
+### 15.1 성능 임계값 (PER-002~004)
+
+- 인증 API(`/auth/login`, `/auth/refresh`) p95 < 200ms (정상 부하), p95 < 3초 (RFP PER-003 상한)
+- BCrypt strength=12 ~250ms 비용은 정상 부하 측정 시 제외 측정값과 포함 측정값을 모두 보고
+- 동시 사용자 1,000명, 초당 50건 인증 처리 (PER-004), 임계 90% 도달 시 nginx에서 지연 안내 페이지 노출
+- CPU/Memory/Disk 평균 사용률 90% 미만 (PER-002)
+
+### 15.2 보안 강화 (SER-002)
+
+- 고유식별번호(주민·계좌·이메일·휴대폰) AES-256-GCM 암호화 (REQ-CROSS-002 강화) — v0.1 `email_enc`/`phone_enc`는 이미 충족
+- 가명·합성정보 처리는 데이터 거버넌스 SPEC-CMS-009로 위임
+- 행안부 시큐어 코딩 가이드(2024) 전체 항목 정적 분석 통과 (Sonar 또는 Snyk)
+- 패스워드·시크릿 하드코딩 금지: 빌드 시 truffleHog 또는 detect-secrets로 검증
+
+### 15.3 품질 게이트 (QUR-004)
+
+- QG-COMMON-1: 시험 운영 기간 결함 발생률 5% 미만
+- QG-COMMON-2: P0 결함 지속시간 1시간 이내 (탐지~복구)
+- 본 SPEC acceptance.md `QG-A-6`로 검증 시나리오 명시
+
+---
+
 ## 12. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성. SPEC-CMS-001 §6.1 REQ-AUTH-001~012를 sub-REQ-D-* 형식으로 상세화. REQ-AUTH-010의 재사용 금지 범위를 부모 SPEC의 "직전 3회"에서 "직전 5개"로 보안 강화 변경(상세 SPEC 단계 결정). 비밀번호 재설정(이메일 토큰), refresh_tokens DB 저장(해시), Caffeine 권한 캐시(TTL 5분), Refresh Rotation + 탈취 감지를 신규로 명시. menu 테이블은 SPEC-CMS-004에서 정의 예정으로 표시. |
+| v0.2 | 2026-04-29 | manager-spec | RFP 통합 amendment. SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015 매핑. §13 신설(REQ-AUTH-013-D 4단계 RBAC, REQ-AUTH-014-D 부서·조직 관리, REQ-AUTH-015-D SSO 옵션 인터페이스, REQ-AUTH-016-D 권한 변경 이력 + 비인가 사전 차단). §14 신설(roles 시드 보강, organization·organization_history·permission_change_history DDL, users.organization_id FK 추가). §15 신설(RFP PER/SER/QUR 비기능 횡단 적용). v0.1 §1~§11 본문은 변경 없이 유지. |

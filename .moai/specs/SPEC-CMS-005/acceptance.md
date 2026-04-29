@@ -405,6 +405,194 @@
 
 ---
 
+## I-RFP. KPI 통합 대시보드 (REQ-SYSTEM-007-D, RFP SFR-013)
+
+### REQ-SYSTEM-007-D-1 — KPI 정의 CRUD + SELECT 검증
+
+**Given** 운영자가 인증된 상태에서
+**When** `POST /api/v1/system/kpi/definitions` 로 `{code:"PV", name:"페이지뷰", calculation_query:"SELECT COUNT(*) FROM access_log WHERE created_at >= :from", refresh_interval_min:60}` 를 전송하면
+**Then** 201 Created + kpi_definition 행이 추가된다.
+
+**And When** `calculation_query` 에 `INSERT|UPDATE|DELETE|DROP|TRUNCATE` 키워드가 포함되어 있으면
+**Then** 400 Bad Request + 에러 코드 `KPI_QUERY_FORBIDDEN` 이 반환된다.
+
+### REQ-SYSTEM-007-D-2 — KPI 값 적재 + 이력 이관
+
+**Given** kpi_definition(code=PV, refresh_interval_min=60) 이 ACTIVE 이고
+**When** `KpiRefreshScheduler` 가 정기 실행되어 새 값을 계산하면
+**Then** kpi_value(kpi_id=..., dimension={...}, value_numeric=..., calculated_at=now) 가 UPSERT 되고, 동일 (kpi_id, dimension)의 직전 값은 kpi_value_history 로 이관된다.
+
+### REQ-SYSTEM-007-D-3 — 다중 KPI 일괄 조회 + 시계열
+
+**Given** PV, UV, STAY_AVG_SEC 3개 KPI가 활성 상태이고
+**When** `GET /api/v1/system/kpi/dashboard?codes=PV,UV,STAY_AVG_SEC` 를 호출하면
+**Then** 응답에 3개 KPI의 (메타, 최신값, 갱신시각) 이 단일 JSON 으로 반환된다.
+
+**And When** `GET /api/v1/system/kpi/series?code=PV&period=30d&dimension=feature` 를 호출하면
+**Then** 30일 시계열 데이터가 (date, dimension_value, value_numeric) 배열로 반환된다.
+
+### REQ-SYSTEM-007-D-4 — 엑셀 스트리밍 다운로드 (50만 행, OOM 방지)
+
+**Given** kpi_value 에 50만 행 분량의 데이터가 존재하고
+**When** 운영자가 `GET /api/v1/system/kpi/export?code=PV&from=2026-01-01&to=2026-04-29&format=xlsx` 를 호출하면
+**Then** 응답이 `Transfer-Encoding: chunked` 로 스트리밍 다운로드되고, JVM heap 사용량 증가가 200MB 이내로 유지된다 (Apache POI SXSSFWorkbook window=100).
+
+**And When** `format=csv` 로 호출하면
+**Then** SQL ResultSet fetchSize=1000 으로 행 단위 스트리밍되고 다운로드 완료까지 OOM 이 발생하지 않는다.
+
+### REQ-SYSTEM-007-D-5 — 핵심 KPI 8종 시드
+
+**Given** 운영 출시 시점에서
+**When** kpi_definition 시드 마이그레이션이 실행되면
+**Then** PV, UV, STAY_AVG_SEC, DL_COUNT, REACTION_TOTAL, POLICY_APPLY_CVR, NOTI_DELIVERY_RATE, ERROR_RATE 8개 행이 ACTIVE 상태로 등록된다.
+
+### REQ-SYSTEM-007-D-6 — KPI 권한
+
+**Given** ROLE=USER 사용자가 인증된 상태에서
+**When** `POST /api/v1/system/kpi/definitions` 를 호출하면
+**Then** 403 Forbidden 이 반환된다.
+
+---
+
+## J-RFP. 외부 연계 로그 분리 (REQ-SYSTEM-008-D, RFP SFR-015)
+
+### REQ-SYSTEM-008-D-1 — 연계 로그 자동 적재
+
+**Given** SSO 인증, 알림톡, 메일, 외부 API, 공공데이터 호출이 발생하고
+**When** 각 호출이 종료되면
+**Then** integration_log 에 (integration_type, target_system, request_id, status, duration_ms, response_code, payload_hash, occurred_at) 행이 자동 적재된다.
+
+**And** payload 평문은 어떠한 컬럼에도 저장되지 않으며, payload_hash 만 SHA-256 으로 저장된다.
+
+### REQ-SYSTEM-008-D-2 — 월별 PARTITION 라우팅
+
+**Given** occurred_at='2026-05-15' 인 연계 로그를 INSERT 하면
+**Then** integration_log_y2026m05 파티션에 적재된다.
+
+**And When** REQ-SYSTEM-001-D-4 매월 25일 02:00 작업이 실행되면
+**Then** integration_log 의 다음 달 파티션도 access_log 와 함께 자동 생성된다.
+
+### REQ-SYSTEM-008-D-3 — 알림·메일 발송 이력 단일 view
+
+**Given** 알림톡 발송 후 integration_log + notification_send 가 적재된 상태에서
+**When** 운영자가 `GET /api/v1/system/integration-logs/notifications?type=KAKAO&from=2026-04-01&to=2026-04-29` 를 호출하면
+**Then** v_notification_history 뷰 결과가 (수신자, 결과, 응답코드, 사유, 외부 응답시각) 단일 JSON 페이지로 반환된다.
+
+### REQ-SYSTEM-008-D-4 — 6개월 보관 + 자동 폐기
+
+**Given** 7개월 이전의 integration_log 파티션이 존재하고
+**When** 매월 1일 04:00 `IntegrationLogArchiveJob` 이 실행되면
+**Then** 해당 파티션 데이터가 integration_log_archive 로 이관되고 원본 파티션은 DROP 되며, audit_log 에 (action=ARCHIVE, entity_type=integration_log, severity=INFO) 행이 적재된다.
+
+### REQ-SYSTEM-008-D-5 — audit_log 와 분리
+
+**Given** 외부 알림톡 호출이 실패하면
+**When** integration_log 에 status=FAILURE 가 적재되어도
+**Then** audit_log 에는 해당 외부 호출 자체가 추가 행으로 적재되지 않는다 (비즈니스 도메인 이벤트만 audit_log).
+
+---
+
+## K-RFP. 외부 공공데이터 수집 배치 (REQ-SYSTEM-009-D, RFP SFR-001/011)
+
+### REQ-SYSTEM-009-D-1 — 데이터 소스 등록
+
+**Given** 운영자가 인증된 상태에서
+**When** `POST /api/v1/system/external-sources` 로 `{code:"DATA_GO_KR_CENSUS", name:"공공데이터 인구통계", endpoint:"https://api.data.go.kr/...", schedule_cron:"0 0 3 * * *"}` 를 전송하면
+**Then** 201 Created + external_data_source 행이 추가되고 status=ACTIVE 로 등록된다.
+
+### REQ-SYSTEM-009-D-2 — 동기화 이력 기록
+
+**Given** 등록된 데이터 소스의 schedule_cron 시각이 도래하고
+**When** 동기화가 실행되면
+**Then** data_sync_history 에 (source_id, sync_started_at, sync_finished_at, records_total, records_inserted, records_updated, records_failed, status) 행이 1건 추가되고 external_data_source.last_sync_at + last_status 가 갱신된다.
+
+### REQ-SYSTEM-009-D-3 — 정합성 검증 (스키마 변경 / 결측치)
+
+**Given** 데이터 소스 응답의 필수 필드 `region_code` 가 누락된 상태에서
+**When** 동기화가 실행되면
+**Then** 트랜잭션이 ROLLBACK 되고 data_sync_history.status=FAILURE, error_summary 에 `SCHEMA_MISMATCH: region_code missing` 가 기록된다.
+
+**And When** 응답 행 중 결측치 비율 ≥ 5% 또는 IQR 이상치 비율 ≥ 1% 이면
+**Then** 동일하게 ROLLBACK + status=FAILURE + error_summary 에 비율이 기록된다.
+
+### REQ-SYSTEM-009-D-4 — 실패 재시도 + CRITICAL 알림
+
+**Given** 동기화가 1차 실패했고
+**When** 10분 후 재시도가 실행되어 성공하면
+**Then** 재시도 횟수가 data_sync_history 에 기록되고 audit_log INFO 로 적재된다.
+
+**And When** 3회 재시도 모두 실패하면
+**Then** audit_log severity=CRITICAL, action=SYNC_FAILURE 행이 적재되고 운영자 알림 큐에 push 된다.
+
+### REQ-SYSTEM-009-D-5 — 단일 인스턴스 보장 (1차)
+
+**Given** 1차 운영 환경(단일 노드)에서
+**When** 동일 source_id 의 동기화가 동시에 두 번 트리거되어도
+**Then** Spring `@Scheduled` 단일 인스턴스 특성상 직렬 실행되며 data_sync_history 에 중복 RUNNING 행이 생기지 않는다 (멀티노드 전환 시 ShedLock 도입은 후속 SPEC, research.md §10.4).
+
+---
+
+## L-RFP. RFP 성능 임계값 (REQ-SYSTEM-010-D, PER-001~004)
+
+### REQ-SYSTEM-010-D-1 — 검색·조회 p95 < 3초
+
+**Given** 운영 환경에서 데이터가 적재된 상태에서
+**When** JMeter 시나리오로 검색·목록·상세 API 를 50 RPS, 5분 동안 호출하면
+**Then** Prometheus `http_server_requests_seconds_bucket` 의 p95 가 3초 미만으로 측정된다.
+
+**And When** p95 ≥ 3초 가 5분 연속 발생하면
+**Then** Prometheus 알람 룰 `ApiLatencyHigh` 가 발화되어 운영자 알림 큐에 push 된다.
+
+### REQ-SYSTEM-010-D-2 — 배치 SLA (일별 < 10분, 월별 < 1시간)
+
+**Given** 일별 통계 배치 + 일별 외부데이터 동기화 가 동일 시각 트리거되면
+**When** 배치가 실행되면
+**Then** 시작부터 10분 이내 완료되며 `batch_job_duration_seconds{job_name="daily_stats"}` 가 600 미만으로 기록된다.
+
+**And** 월별 archive 배치는 1시간 이내(`< 3600`) 완료된다.
+
+### REQ-SYSTEM-010-D-3 — 50 RPS 처리량
+
+**Given** JMeter 50 RPS, 10분 부하 시나리오에서
+**When** 시스템이 요청을 처리하면
+**Then** 오류율 < 1% 이며 p95 < 3초 를 충족한다.
+
+### REQ-SYSTEM-010-D-4 — 동시 사용자 1,000 + 임계 안내
+
+**Given** 활성 세션 수가 950 인 상태에서 (`session_active_gauge` ≥ 900)
+**When** 비-로그인 사용자가 페이지를 요청하면
+**Then** HTTP 503 + `Location: /maintenance/peak.html` 또는 응답 본문에 지연 안내 메시지가 반환된다.
+
+**And When** 로그인된 ROLE=USER/ADMIN 요청이 들어오면
+**Then** 200 OK 가 반환된다.
+
+### REQ-SYSTEM-010-D-5 — 자원 사용률 < 90%
+
+**Given** Prometheus + node_exporter 메트릭이 수집되는 상태에서
+**When** 평균 CPU 사용률이 5분 연속 90% 이상이면
+**Then** 알람 룰 `NodeCpuHigh` 가 발화되어 운영자 알림 큐에 push 된다.
+
+**And** 메모리(`NodeMemHigh`), 디스크 I/O(`NodeDiskHigh`) 도 동일하게 동작한다.
+
+### REQ-SYSTEM-010-D-6 — Prometheus 룰 파일 존재
+
+**Given** 배포 산출물에서
+**When** `deploy/prometheus/rules/{api.yml, batch.yml, resource.yml}` 파일을 검사하면
+**Then** 위 5개 알람 룰(ApiLatencyHigh, BatchSlaBreach, NodeCpuHigh, NodeMemHigh, NodeDiskHigh) 정의가 모두 존재한다.
+
+---
+
+## QG-D-6: RFP PER 임계값 (v0.2 신규)
+
+- [ ] 검색·조회 API p95 < 3초 (Prometheus + JMeter 검증)
+- [ ] 일별 배치 < 10분, 월별 배치 < 1시간 (`batch_job_duration_seconds` 이력)
+- [ ] 50 RPS 부하 오류율 < 1%
+- [ ] 동시 사용자 임계(900) 초과 시 503 + 안내 페이지 정상 동작
+- [ ] CPU/Mem/Disk 평균 사용률 90% 미만 (5분 평균)
+- [ ] Prometheus 알람 룰 5종 (ApiLatencyHigh, BatchSlaBreach, NodeCpuHigh, NodeMemHigh, NodeDiskHigh) 정의·적용
+
+---
+
 ## M. 검증 환경 / 도구
 
 | 영역 | 도구 |

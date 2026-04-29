@@ -301,3 +301,132 @@ id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY
 _문서 버전: v0.1_
 _작성일: 2026-04-29_
 _본 SPEC의 결정 사항은 spec.md §4~§9, acceptance.md A~H에 반영되었다._
+
+---
+
+## 9. RFP 통합 결정 (v0.2 amendment, 2026-04-29)
+
+본 절은 SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-010/SFR-015를 SPEC-CMS-002 v0.2 §13~§15에 반영하는 과정에서 검토한 의사결정과 근거를 기록한다. 결정 자체는 spec.md에 명시되며, 본 절은 사유와 대안 분석을 제공한다.
+
+### 9.1 4단계 RBAC 도입 사유 (REQ-AUTH-013-D)
+
+#### 의사결정
+
+기존 v0.1의 3개 시스템 역할(SYSADMIN, CONTENT_ADMIN, USER)을 v0.2에서 4단계 표준(SUPER_ADMIN, DEPT_ADMIN, EDITOR, VIEWER)으로 확장한다. 단, v0.1 시드는 그대로 유지하고 v0.2 시드를 추가하는 비파괴 방식을 채택한다.
+
+#### 근거
+
+- RFP SFR-014 명시 요구: "최고/부서/Editor/Viewer 4단계 RBAC"
+- 공공기관 운영 표준: 최고관리자 + 부서별 위임관리자 + 작성자 + 조회 사용자 패턴이 일반적
+- v0.1의 SYSADMIN ⊃ CONTENT_ADMIN ⊃ USER는 위임 단계가 부족 — DEPT_ADMIN이라는 중간 위임 계층을 추가해 SUPER_ADMIN의 부담 분산
+- VIEWER 역할은 외부 감사·점검 인력에게 부여할 수 있어 컴플라이언스 대응에 유리
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| v0.1 3단계 유지 + RBAC 매핑만 보강 | RFP SFR-014 명시 요구 불충족, 외부 감사 시 표준 4단계 명칭 부재 |
+| 5단계 (SUPER_ADMIN/DEPT_HEAD/DEPT_ADMIN/EDITOR/VIEWER) | 1차 출시 복잡도 증가, RFP 4단계 요건 초과 |
+| ABAC(속성 기반) 도입 | 역할 위임 단순성 상실, OPA 등 외부 엔진 의존성 추가, 1차 미도입 |
+
+#### 마이그레이션 전략
+
+- v0.1 SYSADMIN 보유자는 자동으로 SUPER_ADMIN과 동등 권한 (alias)
+- 운영 시 SUPER_ADMIN 사용 권장, SYSADMIN은 점진적 deprecation (별도 SPEC 검토)
+- v0.2 신규 설치는 SUPER_ADMIN을 기본 시드로
+
+### 9.2 organization 트리 모델 — Adjacency + Materialized Path
+
+#### 의사결정
+
+`organization` 테이블에 `parent_id`(Adjacency List)와 `path`(Materialized Path, `/1/3/12/`) 두 컬럼을 모두 보유한다. depth ≤ 5 제약은 CHECK constraint로 강제한다.
+
+#### 근거
+
+- Adjacency List 단독: 트리 깊이 검색이 재귀 CTE 필요 — 성능·복잡도
+- Materialized Path 단독: 부모 변경 시 모든 후손 path 갱신 필요 — 쓰기 비용
+- 두 모델 병행: 쓰기는 Adjacency 단순, 읽기(자기 부서 prefix LIKE)는 Path로 O(log n)
+- depth ≤ 5: 공공기관 조직 트리 통상 본부 → 처 → 과 → 팀 → 셀(5단계)로 충분
+- DEPT_ADMIN의 자기 부서 사용자 필터링이 핵심 사용 사례 — `users.organization_id` JOIN + `org.path LIKE '/1/3/%'`로 단일 인덱스 스캔
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| Nested Sets (lft/rgt) | 삽입·삭제 시 전체 lft/rgt 갱신 비용 큼, 1차 운영 부담 |
+| Closure Table 별도 | 추가 테이블 + 트랜잭션 복잡도, 5단계 깊이 제한이면 path로 충분 |
+| LDAP 외부 디렉토리 위임 | 외부 의존성, 자체 프로젝트는 PostgreSQL 단일 책임 원칙 |
+
+#### path 컬럼 갱신 전략
+
+- 신규 INSERT 시: 부모 path + `/{new_id}/`
+- parent_id 변경 시(부서 이전): 트리거 또는 application 서비스 layer에서 후손 path 일괄 UPDATE — 1차는 application layer 처리(트리거 디버깅 어려움)
+- `idx_organization_path text_pattern_ops`로 prefix LIKE 검색 인덱스 가속
+
+### 9.3 SSO Provider 인터페이스 — Strategy 패턴
+
+#### 의사결정
+
+`SsoProvider` 인터페이스 + `NoOpSsoProvider`(기본) + 자리표시자(`SamlSsoProvider`, `OidcSsoProvider`) 패키지 트리 보유. 1차 빌드는 `auth.sso.enabled=false`(기본)로 NoOp만 활성화.
+
+#### 근거
+
+- 자체 프로젝트는 JWT 자체 발급이 기본 (부모 SPEC §3.2 비목표)
+- SFR-010은 비즈패스파인더 응찰 시나리오 한정으로 옵션화 (SPEC-CMS-001 v0.2 §16.1 SPEC-CMS-MIG-001 DEPRECATED 결정 반영)
+- 그러나 미래 공공기관 통합로그인 도입 가능성에 대비해 인터페이스 자리표시자만 유지하면 후속 SPEC 작성 시 큰 리팩터링 없이 어댑터만 추가 가능
+- Strategy 패턴 + Spring `@ConditionalOnProperty`는 1차 빌드에 SSO 코드가 포함되지 않도록 깔끔하게 분리
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| 인터페이스 자체를 v0.2에서 제거 | 미래 SSO 도입 시 인증 흐름 전체 리팩터링 필요 |
+| Spring Security `AuthenticationProvider` 직접 확장 | 일반 로그인과 결합 강해 옵션화·테스트 분리 어려움 |
+| OAuth2 Resource Server (`spring-security-oauth2-jose`) 즉시 도입 | 1차 미요구, JWT 자체 발급 모델과 중복 |
+
+#### 자리표시자 구현 노트
+
+- `SamlSsoProvider`/`OidcSsoProvider`는 v0.2에 패키지·클래스 skeleton만 (모든 메서드 `throw UnsupportedOperationException`)
+- 별도 SPEC(예: `SPEC-CMS-SSO-001`)에서 OpenSAML / Spring Security OAuth2 의존성 추가 후 실제 구현
+- `auth.sso.enabled` 프로퍼티 + `auth.sso.provider` (saml|oidc)로 런타임 분기
+
+### 9.4 권한 변경 이력 분리 사유 (audit_log 대비)
+
+#### 의사결정
+
+`audit_log`(REQ-CROSS-004)와 별개로 `permission_change_history` 전용 테이블을 신설한다. 두 테이블은 동일 트랜잭션에서 함께 INSERT된다 (이중 기록).
+
+#### 근거
+
+- audit_log는 모든 도메인 이벤트의 통합 로그 — 데이터 양이 매우 많음 (게시판·콘텐츠·시스템 모든 이벤트)
+- 권한 컴플라이언스 보고는 "누가 누구에게 언제 어떤 권한을 부여·회수했는가"를 빠르게 검색 필요 — audit_log 전체 스캔은 비효율
+- 전용 테이블에 `target_user_id`, `change_type`, `target_resource` 컬럼 인덱스 보유 시 검색 p95 < 50ms 달성 가능
+- 분리하지 않으면 audit_log에 권한 변경만 필터링하는 복잡 쿼리 + JSONB 파싱 비용 발생
+- 컴플라이언스 감사 시 권한 변경 이력만 별도 export 요구가 일반적 — 전용 테이블이 운영 편의
+
+#### 트레이드오프
+
+- 단점: 동일 정보 이중 저장 — 디스크 ~10% 추가 (권한 변경은 전체 이벤트 중 소수)
+- 단점: 트랜잭션 일관성 유지 필요 — 동일 트랜잭션 내 양쪽 INSERT, 실패 시 롤백
+- 장점: 검색·통계·보고 성능 + audit_log를 인증 도메인 외 이벤트로 단순화
+
+#### 대안 검토
+
+| 옵션 | 거부 사유 |
+|------|----------|
+| audit_log만 사용 + 인덱스 최적화 | 통합 로그의 행 수가 너무 많아 단일 인덱스로 한계 |
+| audit_log View로 권한 변경만 추출 | View는 매번 base table 스캔 — 성능 미해결 |
+| 외부 로그 시스템(예: Elasticsearch) 위임 | 1차 인프라 단순화 원칙과 충돌 |
+
+#### change_type 분류 근거
+
+- `GRANT/REVOKE`: 단일 권한 직접 부여·회수
+- `ROLE_ASSIGN/ROLE_UNASSIGN`: 역할 매핑 추가·제거
+- `PERM_ATTACH/PERM_DETACH`: 역할-권한 매핑 변경
+- `DENIED_ATTEMPT`: REQ-AUTH-016-D-2 비인가 시도 차단 — 기존 audit_log critical과 별개로 권한 검색 화면에서 함께 보기 위한 분류
+
+---
+
+_문서 버전: v0.2 (2026-04-29 RFP 통합 amendment)_
+_작성일: 2026-04-29_
+_v0.2 amendment 결정 사항은 spec.md §13~§15, acceptance.md H~L에 반영되었다._

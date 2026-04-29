@@ -467,4 +467,114 @@
 
 ---
 
+## N. 알림 템플릿 (REQ-CONTENT-011-D, v0.2 추가)
+
+### AC-NOTIF-1 템플릿 등록 + 채널 검증 (011-D-1)
+- **Given** CONTENT_ADMIN 인증
+- **When** `POST /api/v1/content/notification-templates` body=`{code:'WELCOME', channel:'KAKAO', category:'AUTH', title:'환영', body_template:'{{user.name}}님 환영합니다', variables:[{name:'user.name',type:'string',required:true}], locale:'ko'}`
+- **Then** 201 + status='DRAFT', version=1, (code, channel, locale, version) 유일성 보장.
+
+### AC-NOTIF-2 미선언 변수 거부 (011-D-2)
+- **Given** body_template='{{user.name}}님 {{policy.title}} 신청', variables=[{name:'user.name',...}] (policy.title 미선언)
+- **When** 등록 호출
+- **Then** 400 + `{"code":"TEMPLATE_VARIABLE_UNDECLARED", "missing":["policy.title"]}`.
+
+### AC-NOTIF-3 미사용 변수 경고 (011-D-2)
+- **Given** body_template='{{user.name}} 환영', variables=[{name:'user.name'},{name:'policy.title'}]
+- **When** 등록
+- **Then** 201 + 응답 헤더 `X-Warning: TEMPLATE_VARIABLE_UNUSED` (policy.title 미사용 알림), 데이터는 저장.
+
+### AC-NOTIF-4 미리보기 렌더링 (011-D-3)
+- **Given** template body='{{user.name}}님 {{policy.title}} 안내'
+- **When** `POST .../{id}/preview` body=`{user:{name:'홍길동'}, policy:{title:'공공정책'}}`
+- **Then** 200 + 본문 `{"rendered":"홍길동님 공공정책 안내"}`.
+
+### AC-NOTIF-5 미리보기 변수 누락 보고 (011-D-3)
+- **Given** template body='{{user.name}} {{policy.title}}'
+- **When** preview body=`{user:{name:'홍길동'}}` (policy 누락)
+- **Then** 200 + rendered='홍길동 {{policy.title}}' + 응답 헤더 `X-Preview-Missing: policy.title`.
+
+### AC-NOTIF-6 카카오 검수 잠금 (011-D-4)
+- **Given** channel='KAKAO', status='PENDING_REVIEW'
+- **When** `PUT .../{id}` body 변경
+- **Then** 409 + `{"code":"TEMPLATE_REVIEW_LOCKED"}`.
+
+### AC-NOTIF-7 검수 결과 등록 (011-D-4)
+- **Given** status='PENDING_REVIEW'
+- **When** `POST .../{id}/review-result` body=`{result:'APPROVED', reviewed_at:'2026-05-01T00:00:00Z', reason:'OK'}`
+- **Then** 200 + status='APPROVED', notification_template_history에 새 version 기록.
+
+### AC-NOTIF-8 APPROVED 본문 변경 시 새 version 분기 (011-D-5)
+- **Given** version=1, status='APPROVED'
+- **When** body_template 변경 PUT
+- **Then** 새 row INSERT (code 동일, version=2, status='DRAFT'), 기존 version=1 행은 그대로 유지.
+
+---
+
+## O. 메타데이터 표준 (REQ-CONTENT-012-D, v0.2 추가)
+
+### AC-META-1 page 메타 컬럼 NOT NULL (012-D-1)
+- **Given** page 신규 INSERT (classification_code 미지정)
+- **When** 직접 SQL INSERT
+- **Then** DB 제약(NOT NULL)에 의해 거부, default 'GENERAL' 적용 시 통과.
+
+### AC-META-2 사전 미등록 코드 거부 (012-D-2)
+- **Given** metadata_dictionary에 entry_type='CLASSIFICATION', code='POLICY' 등록 / 'UNKNOWN' 미등록
+- **When** page 등록 시 classification_code='UNKNOWN'
+- **Then** 400 + `{"code":"META_CLASSIFICATION_UNKNOWN"}`.
+
+### AC-META-3 메타데이터 변경 이력 (012-D-3)
+- **Given** page id=10, classification_code='GENERAL'
+- **When** PUT 으로 classification_code='POLICY'로 변경
+- **Then** metadata_history에 (target_namespace='page', target_id=10, before.classification_code='GENERAL', after.classification_code='POLICY') 1행 INSERT.
+
+### AC-META-4 외부 메타데이터 export JSON (012-D-4)
+- **Given** since='2026-04-01T00:00:00Z'
+- **When** `GET /api/v1/content/metadata/export?since=2026-04-01T00:00:00Z&format=json`
+- **Then** 200 + `application/json`, 페이지당 1000건 페이지네이션, 각 항목에 (namespace, id, s_meta_id, da_sharp_id, classification_code, retention_period, metadata_extra) 포함.
+
+### AC-META-5 외부 메타데이터 export XML (012-D-4, optional)
+- **Given** since 동일
+- **When** `?format=xml`
+- **Then** 200 + `application/xml`, 동일 데이터셋의 XML 직렬화.
+
+---
+
+## P. 다국어 강화 (REQ-CONTENT-013-D, v0.2 추가)
+
+### AC-I18N-PLUS-1 양쪽 누락 검증 (013-D-1)
+- **Given** site.supported_languages=['ko','en'], page id=5에 ko title 존재, en title 누락
+- **When** `POST .../pages/5/publish`
+- **Then** 200 + status='PUBLISHED' (차단 없음) + missing_translation 1행(en, page, 5, title) INSERT + 응답 헤더 `X-Missing-Translation-Count: 1`.
+
+### AC-I18N-PLUS-2 일괄 export XLIFF (013-D-2)
+- **Given** namespace='page', language='en' 리소스 5건
+- **When** `GET /api/v1/content/i18n/export?namespace=page&language=en&format=xliff`
+- **Then** 200 + `application/x-xliff+xml`, 본문이 XLIFF 1.2 스키마 통과.
+
+### AC-I18N-PLUS-3 일괄 import 트랜잭션 (013-D-2)
+- **Given** XLIFF 파일 100행 (95건 정상, 5건 namespace 잘못)
+- **When** `POST /api/v1/content/i18n/import` (multipart)
+- **Then** 200 + 리포트 `{success:95, failed:5, skipped:0}`, 정상 95건은 i18n_resource UPSERT, 실패 5건은 응답 본문에 사유 명시.
+
+### AC-I18N-PLUS-4 다국어 검색 인덱스 분리 (013-D-3)
+- **Given** page 본문 ko='공공정책 안내', en='Public Policy Guide'
+- **When** PUT 후 `SELECT tsv_ko, tsv_en FROM page WHERE id=...`
+- **Then** tsv_ko는 to_tsvector('simple', '공공정책 안내') 결과, tsv_en은 to_tsvector('english', 'Public Policy Guide') 결과 (서로 다른 lexeme 집합).
+
+---
+
+### QG-C-6 RFP 비기능 (v0.2 추가)
+- 알림 템플릿 미리보기 p95 < 300ms (1KB 본문, 변수 10개) — k6 측정
+- 메타데이터 export 변경 1만 건 p95 < 5s (페이지네이션 1000건 단위)
+- 다국어 import XLIFF 5천 행 p95 < 30s (청크 500건)
+- 모든 콘텐츠 등록 시 classification_code NOT NULL DB 제약 검증
+- 메타데이터 변경 시 metadata_history 100% 기록 (트랜잭션 검증)
+- 카카오 APPROVED 템플릿 본문 변경 시 항상 새 version 분기, 기존 row 보존(integration test)
+- ko/en 별도 tsvector 인덱스 EXPLAIN으로 사용 확인 (검색 쿼리 시 GIN 인덱스 hit)
+
+---
+
 _총 인수기준: 75건 (A:4, B:9, C:4, D:3, E:14, F:5, G:6, H:7, I:5, J:6, K:2, L:2, M:4, INT:3) + Quality Gate 5건_
+_v0.2 추가: 17건 (N:8, O:5, P:4) + Quality Gate 1건(QG-C-6)_
+_v0.2 누계: 92건 + Quality Gate 6건_

@@ -9,13 +9,17 @@
 | 부모 SPEC | SPEC-CMS-001 (Umbrella) |
 | 동급 SPEC | SPEC-CMS-002 (회원·권한 Bundle A) — 권한 검사 흐름 의존 |
 | 작성일 | 2026-04-29 |
+| 최종 수정 | 2026-04-29 (v0.2 — RFP §15.2/§17 통합) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Draft (v0.2) |
 | 우선순위 | P0 (A에 의존, A와 병렬로 C/D 진행 가능) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | cop/bbs(일반게시판), cop/ntc(공지사항), cop/com/faq(FAQ), cop/com/qna(Q&A), cop/cmm/fms(첨부파일) |
+| 기존 비즈패스파인더 차용 모듈 | 발간자료(자료실), 설문조사 — RFP §10.1 기반 |
 
 본 SPEC은 SPEC-CMS-001 §6.2 REQ-BOARD-001~010 및 §6.5 REQ-CROSS-002·004·005 횡단 관심사를 Bundle B 범위로 상세화한다. 게시판 마스터, 게시글, 댓글, 첨부파일, 공지사항, FAQ, Q&A의 모든 REST API, DDL, 시퀀스, 권한 매트릭스, 보안 정책(특히 XSS·파일 업로드)을 구현 단계 의사결정 수준까지 확정한다.
+
+**v0.2 보강 (2026-04-29)**: RFP 분석을 통해 도출된 SFR-014(다중 게시판 유형), 기존 비즈패스파인더 발간자료/설문조사 모듈, SFR-008(Q&A 답변 적기 알림)을 §15(RFP 통합 신규 요구사항)로 추가했다. 기존 §1~§14는 보존되며, 신규 REQ-BOARD-011-D ~ REQ-BOARD-014-D은 SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-008 매핑에 정렬한다.
 
 ---
 
@@ -1108,8 +1112,318 @@ if (safe.isBlank()) throw new FileNameInvalidException();
 
 ---
 
-## 14. 변경 이력
+## 14. RFP 통합 신규 요구사항 (v0.2)
+
+> 본 절은 RFP(`.moai/refs/rfp-summary.md`) §1 SFR-008(적기 알림 게이트) 및 §10.1 기존 비즈패스파인더 차용 모듈, SPEC-CMS-001 v0.2 §15.2 SFR-014(다중 게시판 유형) 매핑에 따라 추가된 sub-REQ다. 기존 §5의 REQ-BOARD-001-D~010-D는 보존되며, 신규 011-D~014-D는 본 절에서만 정의된다.
+
+### 14.1 REQ-BOARD-011-D 게시판 유형 enum 확장 (SPEC-CMS-001 v0.2 §15.2 SFR-014 매핑)
+
+기존 `bbs_master.type` enum(NORMAL, NOTICE, FAQ, QNA, GALLERY)을 RFP 다중 게시판 유형 요구에 맞춰 7종으로 확장한다.
+
+- **REQ-BOARD-011-D-1 (enum 확장 — Ubiquitous)**
+  시스템은 `bbs_master.type`을 (NORMAL, NOTICE, QNA, FAQ, GALLERY, PUBLICATION, SURVEY)의 7개 값만 허용해야 한다. CHECK 제약은 `chk_bbs_master_type` 명칭을 유지하되 enum 목록을 위 7개로 갱신한다.
+- **REQ-BOARD-011-D-2 (유형별 템플릿 매핑 — Ubiquitous)**
+  시스템은 게시판 유형별 화면 레이아웃·기본 컬럼 정의를 위해 `bbs_type_template` 테이블(type, layout_template_id, default_columns jsonb, default_sort, default_filter jsonb)을 보유해야 한다. 마스터 조회 응답 시 type에 매칭되는 템플릿 메타를 함께 반환해야 한다.
+- **REQ-BOARD-011-D-3 (유형별 정렬·필터 기본값 — State-driven)**
+  type=NOTICE인 게시판은 기본 정렬을 `is_notice DESC, notice_from DESC, created_at DESC`로 적용하고, type=GALLERY는 기본 레이아웃을 그리드(3열)로, type=PUBLICATION은 `publication_year DESC, publication_month DESC` 정렬을, type=SURVEY는 `start_at DESC` 정렬을 기본으로 사용해야 한다.
+- **REQ-BOARD-011-D-4 (게시판 유형 변경 제한 — Unwanted/State-driven)**
+  특정 게시판에 활성 게시글(`bbs_post.status='PUBLISHED'` AND `deleted_at IS NULL`)이 1건이라도 존재하는 동안, 시스템은 `PUT /api/v1/boards/{id}`로 type 변경을 시도하는 요청을 400 `BOARD_TYPE_CHANGE_BLOCKED`로 거부해야 한다. (기존 REQ-BOARD-001-D-2는 code/type을 모두 거부했으므로 본 sub-REQ는 그 사유를 명시화한다.)
+
+### 14.2 REQ-BOARD-012-D 발간자료(자료실) (RFP §10.1 기존 비즈패스파인더 발간자료 모듈 차용)
+
+연도·월·문서종류·카테고리 트리·다운로드 통계·다중 첨부 압축 다운로드를 지원하는 PUBLICATION 유형 게시판의 도메인 확장.
+
+- **REQ-BOARD-012-D-1 (발간자료 메타 컬럼 — Ubiquitous)**
+  시스템은 type=PUBLICATION 게시판의 게시글에 대해 `publication_year SMALLINT`, `publication_month SMALLINT`, `document_type VARCHAR(30)` (REPORT, BROCHURE, RESEARCH, GUIDE, OTHER), `file_count INT NOT NULL DEFAULT 0` 컬럼을 `bbs_post.metadata JSONB` 또는 별도 `bbs_post_publication_meta` 테이블로 보존해야 한다(권장: 별도 테이블, 1:1 FK).
+- **REQ-BOARD-012-D-2 (카테고리 트리 — Ubiquitous)**
+  시스템은 발간자료 카테고리를 `publication_category(id, code, name, parent_id, sort_order, depth)` 자기참조 인접리스트(Adjacency List)로 보유하고, depth ≤ 3을 INSERT 트리거로 강제해야 한다. 게시글은 `bbs_post.publication_category_id` FK를 통해 단일 leaf 카테고리에 매핑된다.
+- **REQ-BOARD-012-D-3 (다운로드 통계 집계 — Event-driven)**
+  발간자료 첨부파일 다운로드가 성공했을 때, 시스템은 `publication_download_stat(post_id, attachment_id, day, month, download_count)` 테이블에 일별/월별 카운터를 UPSERT 갱신해야 한다(`ON CONFLICT (post_id, attachment_id, day) DO UPDATE`).
+- **REQ-BOARD-012-D-4 (압축 다운로드 — Event-driven)**
+  사용자가 `POST /api/v1/posts/{id}/download-zip {attachmentIds:[...]}`을 호출하면, 시스템은 (a) 모든 첨부의 게시글 read 권한 + scan_status='CLEAN' 검증 (b) 합계 용량 ≤ 500MB 검증 (c) 합계 ≤ 50MB는 동기 zip 패키징 응답, > 50MB는 비동기 작업 큐에 enqueue하고 202 + `{jobId}`를 반환한 뒤 완료 시 서명 URL을 알림으로 발송해야 한다(research.md §9.2).
+- **REQ-BOARD-012-D-5 (발간자료 검색 — Event-driven)**
+  사용자가 `GET /api/v1/publications?year=&month=&documentType=&categoryId=&keyword=` 를 호출하면, 시스템은 모든 파라미터를 AND 조건으로 결합하여 페이징 응답해야 한다(keyword는 §10.2 trigram + FTS 동일 정책).
+
+### 14.3 REQ-BOARD-013-D 설문조사 (RFP §10.1 기존 비즈패스파인더 설문조사 모듈 차용)
+
+다중 질문 유형, 익명/식별 응답, 결과 통계 시각화를 지원하는 SURVEY 유형 게시판의 도메인 확장.
+
+- **REQ-BOARD-013-D-1 (survey 마스터 — Ubiquitous)**
+  시스템은 `survey(id, title VARCHAR(500), description_html TEXT, start_at TIMESTAMPTZ, end_at TIMESTAMPTZ, target_role_codes JSONB, is_anonymous BOOLEAN, max_responses INT, status VARCHAR(20))` 테이블을 보유해야 한다. status는 (DRAFT, OPEN, CLOSED, HIDDEN)을 CHECK로 강제하고, `chk_survey_period CHECK (end_at > start_at)` 제약을 적용한다.
+- **REQ-BOARD-013-D-2 (survey_question — Ubiquitous)**
+  시스템은 `survey_question(id, survey_id FK, question_text TEXT, question_type VARCHAR(20), required BOOLEAN, sort_order INT, options JSONB)` 테이블을 보유해야 한다. question_type은 (SINGLE, MULTI, TEXT, RATING, DATE)을 CHECK로 강제하며, `options` jsonb는 SINGLE/MULTI에 한해 `[{value, label}]` 배열을 보관한다.
+- **REQ-BOARD-013-D-3 (survey_response — Ubiquitous)**
+  시스템은 `survey_response(id, survey_id FK, respondent_id FK NULL, respondent_ip_hash VARCHAR(64) NOT NULL, started_at TIMESTAMPTZ, submitted_at TIMESTAMPTZ NULL)` 테이블을 보유해야 한다. `chk_response_anon CHECK (respondent_id IS NOT NULL OR respondent_ip_hash IS NOT NULL)` 제약을 두고, `is_anonymous=TRUE`인 설문은 응답 시 respondent_id를 NULL로 강제 저장한다(개인정보 분리, REQ-CROSS-002).
+- **REQ-BOARD-013-D-4 (survey_answer — Ubiquitous)**
+  시스템은 `survey_answer(id, response_id FK, question_id FK, answer_text TEXT, answer_options JSONB, answer_rating SMALLINT, answer_date DATE)` 테이블을 보유해야 한다. question_type별 사용 컬럼은 (SINGLE/MULTI: answer_options, TEXT: answer_text, RATING: answer_rating, DATE: answer_date)로 분기한다.
+- **REQ-BOARD-013-D-5 (결과 통계 시각화 — Event-driven)**
+  ADMIN이 `GET /api/v1/surveys/{id}/results`를 호출하면, 시스템은 질문별로 `{questionId, type, distribution: [{option|range, count, percentage}], totalResponses}` 구조의 응답 분포 데이터를 반환해야 한다. RATING은 1~5 분포, DATE는 일/주/월 버킷팅, TEXT는 응답 수만 집계.
+- **REQ-BOARD-013-D-6 (설문 권한 — State-driven)**
+  설문 작성·수정·삭제는 `CONTENT:WRITE`(EDITOR+) 이상, 응답 등록은 인증 사용자(VIEWER+) 또는 (is_anonymous=TRUE 시) 익명, 결과 조회는 `SURVEY:ADMIN`(ADMIN+)만 허용해야 한다. 설문 생애주기 외(start_at 이전 또는 end_at 이후) 응답 시도는 400 `SURVEY_PERIOD_INVALID`로 거부한다.
+
+### 14.4 REQ-BOARD-014-D Q&A 답변 알림 연동 (SPEC-CMS-001 v0.2 §15.2 SFR-008 매핑)
+
+기존 REQ-BOARD-008-D-4(인앱 + 이메일 알림)를 멱등성·재시도·옵트아웃 정책으로 강화한다. 카카오 알림톡은 SPEC-CMS-007(추가 알림 채널)에서 다룬다.
+
+- **REQ-BOARD-014-D-1 (알림 발송 트리거 — Event-driven)**
+  Q&A status가 PENDING → ANSWERED로 전환되었을 때, 시스템은 (a) 인앱 알림(notification 테이블)에 INSERT (b) `qna_notification_optout` 테이블에서 questioner의 EMAIL 옵트아웃 미존재 시 SMTP 큐에 enqueue (c) 양 채널 모두 `qna_notification_log` 테이블에 발송 기록을 적재해야 한다.
+- **REQ-BOARD-014-D-2 (멱등성 — Ubiquitous)**
+  시스템은 `qna_notification_log(qna_id, answerer_id, channel, sent_at)`에 `UNIQUE(qna_id, answerer_id, channel)` 제약을 두어 동일 답변·동일 채널 중복 발송을 차단해야 한다. 재발송 요청 시 409 `NOTIFICATION_ALREADY_SENT`를 반환한다.
+- **REQ-BOARD-014-D-3 (재시도 — State-driven)**
+  알림 발송이 실패한 동안(`qna_notification_log.status='FAILED'`), 시스템은 지수 백오프(1분, 2분, 4분)로 최대 3회 재시도해야 한다. 3회 모두 실패 시 status='DEAD_LETTER'로 전환하고 ADMIN에게 운영 알림을 발송한다.
+- **REQ-BOARD-014-D-4 (옵트아웃 — Optional)**
+  사용자가 `PUT /api/v1/me/notifications/preferences {qnaAnswer: {email: false}}`를 호출하면, 시스템은 `qna_notification_optout(user_id, channel, opted_out_at)` 테이블에 INSERT(또는 ON CONFLICT DO UPDATE)해야 한다. 인앱 채널은 옵트아웃 불가(서비스 사용 정보 분류).
+
+---
+
+## 15. RFP 통합 신규 테이블 (v0.2 DDL)
+
+> 본 절은 §14 신규 sub-REQ를 지원하는 PostgreSQL 16 DDL을 정의한다. 기존 §4.2 8개 테이블에 더해 9개 테이블을 추가한다. Flyway V2_* 마이그레이션 파일로 분리 권장.
+
+### 15.1 `bbs_type_template` (게시판 유형별 레이아웃 매핑 — REQ-BOARD-011-D-2)
+
+```sql
+CREATE TABLE bbs_type_template (
+    type                VARCHAR(20)  PRIMARY KEY,
+    layout_template_id  VARCHAR(50)  NOT NULL,
+    default_columns     JSONB        NOT NULL,
+    default_sort        VARCHAR(100) NOT NULL,
+    default_filter      JSONB,
+    description         TEXT,
+    updated_at          TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_type_template_type CHECK (type IN ('NORMAL','NOTICE','QNA','FAQ','GALLERY','PUBLICATION','SURVEY'))
+);
+INSERT INTO bbs_type_template(type, layout_template_id, default_columns, default_sort, default_filter, description) VALUES
+  ('NORMAL',     'list-default',    '["title","author","createdAt","viewCount"]'::jsonb, 'createdAt,desc', NULL, '일반 게시판'),
+  ('NOTICE',     'list-notice',     '["title","author","noticeFrom","noticeUntil"]'::jsonb, 'isNotice,desc;noticeFrom,desc;createdAt,desc', NULL, '공지사항'),
+  ('QNA',        'list-qna',        '["title","status","createdAt","answeredAt"]'::jsonb, 'createdAt,desc', '{"status":["PENDING","ANSWERED"]}'::jsonb, 'Q&A'),
+  ('FAQ',        'list-faq',        '["categoryCode","question","sortOrder"]'::jsonb, 'sortOrder,asc', NULL, 'FAQ'),
+  ('GALLERY',    'grid-3col',       '["thumbnail","title","author","viewCount"]'::jsonb, 'createdAt,desc', NULL, '갤러리(그리드 3열)'),
+  ('PUBLICATION','list-publication','["thumbnail","title","publicationYear","documentType","downloadCount"]'::jsonb, 'publicationYear,desc;publicationMonth,desc', NULL, '발간자료'),
+  ('SURVEY',     'list-survey',     '["title","status","startAt","endAt","responseCount"]'::jsonb, 'startAt,desc', NULL, '설문조사');
+```
+
+### 15.2 `bbs_post_publication_meta` (발간자료 메타 — REQ-BOARD-012-D-1)
+
+```sql
+CREATE TABLE bbs_post_publication_meta (
+    post_id                  BIGINT PRIMARY KEY REFERENCES bbs_post(id) ON DELETE CASCADE,
+    publication_year         SMALLINT     NOT NULL,
+    publication_month        SMALLINT,
+    document_type            VARCHAR(30)  NOT NULL,
+    publication_category_id  BIGINT       REFERENCES publication_category(id) ON DELETE SET NULL,
+    file_count               INT          NOT NULL DEFAULT 0,
+    isbn                     VARCHAR(30),
+    publisher                VARCHAR(200),
+    metadata                 JSONB,
+    CONSTRAINT chk_pub_year     CHECK (publication_year BETWEEN 1900 AND 2100),
+    CONSTRAINT chk_pub_month    CHECK (publication_month IS NULL OR publication_month BETWEEN 1 AND 12),
+    CONSTRAINT chk_doc_type     CHECK (document_type IN ('REPORT','BROCHURE','RESEARCH','GUIDE','OTHER'))
+);
+CREATE INDEX idx_pub_meta_year_month ON bbs_post_publication_meta(publication_year DESC, publication_month DESC);
+CREATE INDEX idx_pub_meta_doc_type   ON bbs_post_publication_meta(document_type);
+CREATE INDEX idx_pub_meta_category   ON bbs_post_publication_meta(publication_category_id) WHERE publication_category_id IS NOT NULL;
+```
+
+### 15.3 `publication_category` (발간자료 카테고리 트리 — REQ-BOARD-012-D-2)
+
+```sql
+CREATE TABLE publication_category (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code        VARCHAR(50)  NOT NULL UNIQUE,
+    name        VARCHAR(200) NOT NULL,
+    parent_id   BIGINT       REFERENCES publication_category(id) ON DELETE RESTRICT,
+    depth       SMALLINT     NOT NULL DEFAULT 1,
+    sort_order  INT          NOT NULL DEFAULT 0,
+    status      VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_pub_cat_depth  CHECK (depth BETWEEN 1 AND 3),
+    CONSTRAINT chk_pub_cat_status CHECK (status IN ('ACTIVE','INACTIVE'))
+);
+CREATE INDEX idx_pub_cat_parent ON publication_category(parent_id, sort_order);
+
+-- depth 자동 계산 + 3단계 초과 차단 트리거
+CREATE OR REPLACE FUNCTION publication_category_depth_check() RETURNS trigger AS $$
+DECLARE parent_depth SMALLINT;
+BEGIN
+  IF NEW.parent_id IS NULL THEN
+    NEW.depth := 1;
+  ELSE
+    SELECT depth INTO parent_depth FROM publication_category WHERE id = NEW.parent_id;
+    IF parent_depth IS NULL THEN
+      RAISE EXCEPTION 'PUBLICATION_CATEGORY_PARENT_NOT_FOUND';
+    END IF;
+    NEW.depth := parent_depth + 1;
+    IF NEW.depth > 3 THEN
+      RAISE EXCEPTION 'PUBLICATION_CATEGORY_DEPTH_EXCEEDED: 최대 3단계까지 허용';
+    END IF;
+  END IF;
+  RETURN NEW;
+END $$ LANGUAGE plpgsql;
+CREATE TRIGGER trg_pub_cat_depth BEFORE INSERT OR UPDATE OF parent_id ON publication_category
+FOR EACH ROW EXECUTE FUNCTION publication_category_depth_check();
+```
+
+### 15.4 `publication_download_stat` (다운로드 통계 — REQ-BOARD-012-D-3)
+
+```sql
+CREATE TABLE publication_download_stat (
+    post_id         BIGINT      NOT NULL REFERENCES bbs_post(id) ON DELETE CASCADE,
+    attachment_id   BIGINT      NOT NULL REFERENCES bbs_attachment(id) ON DELETE CASCADE,
+    stat_date       DATE        NOT NULL,
+    stat_month      VARCHAR(7)  NOT NULL,  -- 'YYYY-MM'
+    download_count  BIGINT      NOT NULL DEFAULT 0,
+    PRIMARY KEY (post_id, attachment_id, stat_date)
+);
+CREATE INDEX idx_pub_dl_stat_month ON publication_download_stat(stat_month, post_id);
+CREATE INDEX idx_pub_dl_stat_post  ON publication_download_stat(post_id, stat_date DESC);
+```
+
+### 15.5 `survey` / `survey_question` / `survey_response` / `survey_answer` (설문조사 — REQ-BOARD-013-D-1~4)
+
+```sql
+CREATE TABLE survey (
+    id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    bbs_id            BIGINT       REFERENCES bbs_master(id) ON DELETE SET NULL,  -- type=SURVEY 마스터에 옵션 연결
+    title             VARCHAR(500) NOT NULL,
+    description_html  TEXT,
+    description_text  TEXT,
+    start_at          TIMESTAMPTZ  NOT NULL,
+    end_at            TIMESTAMPTZ  NOT NULL,
+    target_role_codes JSONB,
+    is_anonymous      BOOLEAN      NOT NULL DEFAULT FALSE,
+    max_responses     INT,
+    response_count    INT          NOT NULL DEFAULT 0,
+    status            VARCHAR(20)  NOT NULL DEFAULT 'DRAFT',
+    created_by        BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    created_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted_at        TIMESTAMPTZ,
+    CONSTRAINT chk_survey_status CHECK (status IN ('DRAFT','OPEN','CLOSED','HIDDEN')),
+    CONSTRAINT chk_survey_period CHECK (end_at > start_at)
+);
+CREATE INDEX idx_survey_status_period ON survey(status, start_at, end_at) WHERE deleted_at IS NULL;
+CREATE INDEX idx_survey_bbs           ON survey(bbs_id) WHERE bbs_id IS NOT NULL;
+
+CREATE TABLE survey_question (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    survey_id     BIGINT       NOT NULL REFERENCES survey(id) ON DELETE CASCADE,
+    question_text TEXT         NOT NULL,
+    question_type VARCHAR(20)  NOT NULL,
+    required      BOOLEAN      NOT NULL DEFAULT FALSE,
+    sort_order    INT          NOT NULL DEFAULT 0,
+    options       JSONB,
+    CONSTRAINT chk_question_type CHECK (question_type IN ('SINGLE','MULTI','TEXT','RATING','DATE')),
+    CONSTRAINT chk_question_options CHECK (
+      (question_type IN ('SINGLE','MULTI') AND options IS NOT NULL) OR
+      (question_type IN ('TEXT','RATING','DATE'))
+    )
+);
+CREATE INDEX idx_survey_question_survey ON survey_question(survey_id, sort_order);
+
+CREATE TABLE survey_response (
+    id                  BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    survey_id           BIGINT       NOT NULL REFERENCES survey(id) ON DELETE CASCADE,
+    respondent_id       BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    respondent_ip_hash  VARCHAR(64)  NOT NULL,
+    started_at          TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    submitted_at        TIMESTAMPTZ,
+    CONSTRAINT chk_response_anon CHECK (respondent_id IS NOT NULL OR respondent_ip_hash IS NOT NULL)
+);
+CREATE INDEX idx_survey_response_survey ON survey_response(survey_id, submitted_at DESC) WHERE submitted_at IS NOT NULL;
+CREATE INDEX idx_survey_response_user   ON survey_response(respondent_id, survey_id) WHERE respondent_id IS NOT NULL;
+-- 동일 사용자 1회 응답 강제(익명 설문은 IP 해시 + survey 조합)
+CREATE UNIQUE INDEX uq_survey_response_user_once ON survey_response(survey_id, respondent_id) WHERE respondent_id IS NOT NULL;
+
+CREATE TABLE survey_answer (
+    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    response_id     BIGINT       NOT NULL REFERENCES survey_response(id) ON DELETE CASCADE,
+    question_id     BIGINT       NOT NULL REFERENCES survey_question(id) ON DELETE CASCADE,
+    answer_text     TEXT,
+    answer_options  JSONB,
+    answer_rating   SMALLINT,
+    answer_date     DATE,
+    CONSTRAINT chk_answer_rating CHECK (answer_rating IS NULL OR answer_rating BETWEEN 1 AND 5)
+);
+CREATE INDEX idx_survey_answer_response ON survey_answer(response_id);
+CREATE INDEX idx_survey_answer_question ON survey_answer(question_id);
+```
+
+### 15.6 `qna_notification_optout` (Q&A 알림 옵트아웃 — REQ-BOARD-014-D-4)
+
+```sql
+CREATE TABLE qna_notification_optout (
+    user_id      BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    channel      VARCHAR(20)  NOT NULL,
+    opted_out_at TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, channel),
+    CONSTRAINT chk_optout_channel CHECK (channel IN ('EMAIL','KAKAO','SMS'))
+    -- INAPP 채널은 옵트아웃 불가(서비스 운영 정보 분류)
+);
+```
+
+### 15.7 `qna_notification_log` (Q&A 알림 발송 로그 — REQ-BOARD-014-D-1~3)
+
+```sql
+CREATE TABLE qna_notification_log (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    qna_id       BIGINT       NOT NULL REFERENCES qna(id) ON DELETE CASCADE,
+    answerer_id  BIGINT       REFERENCES users(id) ON DELETE SET NULL,
+    recipient_id BIGINT       NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    channel      VARCHAR(20)  NOT NULL,
+    status       VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    retry_count  SMALLINT     NOT NULL DEFAULT 0,
+    last_error   TEXT,
+    sent_at      TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_qna_notif_channel CHECK (channel IN ('INAPP','EMAIL','KAKAO','SMS')),
+    CONSTRAINT chk_qna_notif_status  CHECK (status IN ('PENDING','SENT','FAILED','DEAD_LETTER'))
+);
+-- 멱등성: 동일 답변·동일 채널 중복 발송 차단
+CREATE UNIQUE INDEX uq_qna_notif_idem ON qna_notification_log(qna_id, answerer_id, channel) WHERE status IN ('SENT','PENDING');
+CREATE INDEX idx_qna_notif_pending  ON qna_notification_log(status, created_at) WHERE status IN ('PENDING','FAILED');
+CREATE INDEX idx_qna_notif_recipient ON qna_notification_log(recipient_id, created_at DESC);
+```
+
+---
+
+## 16. RFP 통합 비기능 요구사항 (v0.2 — RFP §17 횡단 정책 매핑)
+
+### 16.1 PER-003 검색·목록 응답시간 (SPEC-CMS-001 v0.2 §17 매핑)
+
+| 항목 | 목표 | 측정 조건 |
+|------|------|-----------|
+| 검색 응답 (게시글·FAQ·Q&A·발간자료 통합) | < 3초 | 10만 건 인덱스, JMeter 50 동시 사용자, p95 |
+| 게시글 목록 p95 | < 300ms | 1만 건 데이터, 게시판 단일, 페이지 0~10 (기존 §11과 동일) |
+| 발간자료 검색 (연도+카테고리+키워드 복합) | < 500ms | 5만 건, p95 |
+| 설문조사 결과 통계 집계 | < 1초 | 1만 응답 × 20문항, p95 |
+
+기존 §11 성능 목표는 유지하며, 본 절은 RFP가 명시한 검색 3초 게이트(PER-003)를 추가한다.
+
+### 16.2 SER-004 강화 — 첨부파일 다운로드 보안 강화 (SPEC-CMS-001 v0.2 §17 매핑)
+
+기존 REQ-BOARD-005-D-* 정책에 더해, 다음을 강제한다:
+
+- **SER-004-D-1 (매직넘버 재검증 — Ubiquitous)**: 다운로드 시점에도 stored 파일의 매직넘버를 재검사(샘플링 10%)하여 업로드 후 디스크 변조 탐지. 불일치 시 451 `FILE_TAMPERED` 반환.
+- **SER-004-D-2 (다운로드 권한 재검증 — Event-driven)**: 서명 URL 검증 통과 후에도 게시글 read 권한·is_secret·is_private을 재조회(캐시 우회). 권한 변경 직후 캐시 잔존으로 인한 우회 차단.
+- **SER-004-D-3 (URL 변조 방지 강화 — Ubiquitous)**: 서명 URL의 query 파라미터(token, expires, sig 외) 추가 시 sig 재계산 실패로 거부. 파라미터 화이트리스트(token, expires, sig)만 인정.
+
+### 16.3 DAR-007 메타데이터 분류체계 코드 (SPEC-CMS-001 v0.2 §17 매핑)
+
+- **DAR-007-D-1 (메타데이터 컬럼 — Ubiquitous)**: `bbs_master`에 `taxonomy_code VARCHAR(50)` 컬럼을 추가하고, 사전 정의된 S-Meta 호환 분류체계 코드(예: `GOV.SUPPORT.NOTICE`, `GOV.PUBLICATION.RESEARCH`, `GOV.QNA.GENERAL`)를 `code` 테이블 그룹 `S_META_TAXONOMY`에 연결한다.
+- **DAR-007-D-2 (메타데이터 응답 — Event-driven)**: 마스터 조회 응답에 `taxonomyCode`와 `taxonomyLabel`(현재 locale 기준)을 포함해야 한다. 미설정 시 NULL 반환(기존 마스터 회귀 방지).
+
+```sql
+ALTER TABLE bbs_master ADD COLUMN taxonomy_code VARCHAR(50);
+CREATE INDEX idx_bbs_master_taxonomy ON bbs_master(taxonomy_code) WHERE taxonomy_code IS NOT NULL;
+COMMENT ON COLUMN bbs_master.taxonomy_code IS 'S-Meta 호환 분류체계 코드 — code 테이블 S_META_TAXONOMY 그룹 참조';
+```
+
+---
+
+## 17. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성. SPEC-CMS-001 §6.2 REQ-BOARD-001~010을 sub-REQ-D-* 형식(35개)으로 상세화. PostgreSQL 16 DDL 8개 테이블 + 인덱스·트리거. 35개 REST API. 4개 시퀀스 다이어그램. OWASP HTML Sanitizer 정책. ClamAV 비동기 스캔. 서명 URL TTL 15분. PostgreSQL FTS + pg_trgm 1차 검색 정책 확정. 한글 형태소 분석기는 후속(research.md §5). 본 SPEC의 권한 컬럼은 SPEC-CMS-002 `permissions` 테이블 참조. menu 테이블·`code` 테이블은 SPEC-CMS-004/005에서 정의 예정. |
+| v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강(SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-008 매핑). §14 신규 sub-REQ 4개 부모(011-D~014-D)·19개 자식 추가: 게시판 유형 enum 7종(NORMAL, NOTICE, QNA, FAQ, GALLERY, PUBLICATION, SURVEY) 및 type 변경 차단 게이트, 발간자료 메타·카테고리 트리(depth ≤ 3)·다운로드 통계·zip 압축 다운로드, 설문조사 5종 질문(SINGLE/MULTI/TEXT/RATING/DATE)·익명/식별 응답 분리·결과 통계 시각화, Q&A 답변 알림 멱등성·재시도 3회·옵트아웃. §15 신규 DDL 9개 테이블(bbs_type_template, bbs_post_publication_meta, publication_category, publication_download_stat, survey, survey_question, survey_response, survey_answer, qna_notification_optout, qna_notification_log) — Flyway V2_*. §16 RFP 비기능(PER-003 검색 < 3초, SER-004 강화 — 다운로드 매직넘버 재검사·권한 재검증·URL 변조 방지, DAR-007 S-Meta 분류체계). 기존 §1~§13은 보존. |

@@ -947,8 +947,239 @@ SMTP_PASSWORD=
 
 ---
 
-## 13. 변경 이력
+## 13. RFP 통합 보강 (v0.2 신규)
+
+> 본 절은 RFP §SFR-013(KPI 통합 대시보드), §SFR-015(외부 연계 로그 분리), §SFR-001/SFR-011(외부 공공데이터 수집), §PER-001~004(성능 임계값) 요구를 Bundle D에 통합하기 위한 신규 부모 REQ 4종(REQ-SYSTEM-007-D ~ 010-D)을 정의한다. (SPEC-CMS-001 v0.2 §15.2 SFR-013/015 + §17.1 PER 임계값 매핑)
+
+### 13.1 REQ-SYSTEM-007-D: KPI 통합 대시보드 (RFP SFR-013 매핑)
+
+기존 REQ-SYSTEM-003-D(운영 대시보드)는 단일 사이트 KPI 위젯·추이만 제공하므로, RFP가 요구하는 다차원 KPI(기간/기능/업종) 정의·관리, 다중 KPI 일괄 조회, 대용량 엑셀 다운로드를 충족하기 위해 별도 KPI 정의/값 모델과 스트리밍 다운로드를 도입한다.
+
+- **REQ-SYSTEM-007-D-1 (KPI 정의 — Ubiquitous)**
+  시스템은 `kpi_definition` 테이블에 (id, code, name, description, calculation_query, refresh_interval_min, status)을 관리해야 하며, 운영자는 `GET|POST|PUT /api/v1/system/kpi/definitions` 로 KPI 메타정보 CRUD를 수행할 수 있어야 한다. `calculation_query`는 사전 검증된 SELECT 문(템플릿)이며, INSERT/UPDATE/DELETE/DDL 문은 거부되어야 한다.
+- **REQ-SYSTEM-007-D-2 (KPI 값 적재 — Event-driven)**
+  KPI별 `refresh_interval_min` 주기로 실행되는 `KpiRefreshScheduler`는 `calculation_query`를 실행하여 결과를 `kpi_value(id, kpi_id, dimension jsonb, value_numeric, value_text, calculated_at)`에 적재해야 한다. `dimension`은 (period, feature, industry) 키를 가지는 jsonb로, 동일 (kpi_id, dimension)에 대해 최신 값만 유지하고 이전 값은 `kpi_value_history`로 이관해야 한다.
+- **REQ-SYSTEM-007-D-3 (대시보드 API — Ubiquitous)**
+  시스템은 `GET /api/v1/system/kpi/dashboard?codes=PV,UV,STAY,DL`로 다중 KPI 위젯 데이터를 일괄 조회할 수 있어야 하며, `GET /api/v1/system/kpi/series?code=PV&period=30d&dimension=feature`로 차트용 시계열 데이터를 반환해야 한다. 응답에는 (KPI 메타, 최신값, 시계열, 갱신시각)을 포함해야 한다.
+- **REQ-SYSTEM-007-D-4 (엑셀 스트리밍 다운로드 — Ubiquitous)**
+  시스템은 `GET /api/v1/system/kpi/export?code=PV&from=YYYY-MM-DD&to=YYYY-MM-DD&format=xlsx|csv`를 통해 수십만 행 규모의 KPI 데이터를 OOM 없이 다운로드할 수 있어야 한다. xlsx는 Apache POI `SXSSFWorkbook`(window=100)으로, csv는 SQL → ResponseBody Stream(`ResultSet` fetchSize=1000)으로 처리하며, 응답 헤더에 `Transfer-Encoding: chunked`를 사용해야 한다. (research.md §10.1, §10.2 참조)
+- **REQ-SYSTEM-007-D-5 (핵심 KPI 8종 — Ubiquitous)**
+  시스템은 운영 출시 시점에 다음 8개 KPI를 `kpi_definition` 시드 데이터로 등록해야 한다: ① 페이지뷰(PV), ② 고유 방문자(UV), ③ 평균 체류시간(STAY_AVG_SEC), ④ 다운로드 수(DL_COUNT), ⑤ 공감·공유 합계(REACTION_TOTAL), ⑥ 정책매칭 신청 전환율(POLICY_APPLY_CVR), ⑦ 알림 도달률(NOTI_DELIVERY_RATE), ⑧ 오류율(ERROR_RATE). 각 KPI는 SPEC-CMS-003/004 통계 테이블 또는 access_log/audit_log/notification_send/integration_log 와 연계되어야 한다.
+
+### 13.2 REQ-SYSTEM-008-D: 외부 연계 로그 분리 (RFP SFR-015 매핑)
+
+기존 audit_log는 비즈니스 도메인 이벤트(C/U/D, 권한 변경)만 적재한다. RFP SFR-015는 외부 시스템 연계(SSO, 알림톡, 메일, 공공데이터 API) 로그를 별도로 분리·6개월 보관할 것을 요구하므로 신규 `integration_log` 모델을 도입한다.
+
+- **REQ-SYSTEM-008-D-1 (연계 로그 모델 — Ubiquitous)**
+  시스템은 `integration_log(id, integration_type, target_system, request_id, status, duration_ms, response_code, error_message, payload_hash, occurred_at)` 테이블을 운영해야 한다. `integration_type`은 (`SSO_AUTH`, `KAKAO_NOTI`, `MAIL_SEND`, `EXTERNAL_API`, `PUBLIC_DATA`) 중 하나이며, `status`는 (`SUCCESS`, `FAILURE`, `TIMEOUT`)이다. 모든 외부 호출 클라이언트(WebClient, JavaMailSender 등)는 `IntegrationLogInterceptor`를 통해 자동 적재되어야 한다.
+- **REQ-SYSTEM-008-D-2 (월별 PARTITION — Ubiquitous)**
+  `integration_log`는 access_log와 동일하게 `PARTITION BY RANGE (occurred_at)` 월별 파티션을 적용해야 하며, 월별 파티션 자동 생성은 REQ-SYSTEM-001-D-4 `@Scheduled`(매월 25일 02:00) 작업에 통합되어야 한다.
+- **REQ-SYSTEM-008-D-3 (알림·메일 발송 이력 view — Ubiquitous)**
+  시스템은 `integration_log`(KAKAO_NOTI/MAIL_SEND)와 `notification_send`(SPEC-CMS-002 §M)를 LEFT JOIN한 `v_notification_history` 뷰를 제공하여, 운영자가 `GET /api/v1/system/integration-logs/notifications?type=KAKAO|MAIL&from=...&to=...`로 발송 이력(수신자, 결과, 사유, 외부 응답코드)을 단일 응답으로 조회할 수 있어야 한다.
+- **REQ-SYSTEM-008-D-4 (6개월 보관 + 자동 폐기 — Event-driven)**
+  매월 1일 04:00에 `IntegrationLogArchiveJob`은 6개월 초과 `integration_log` 파티션을 `integration_log_archive`(콜드 테이블, 같은 스키마, 인덱스 최소)로 이관 후 원본 파티션을 DROP해야 한다. `integration_log_archive`는 개인정보보호법 보존 기간(추가 0개월) 경과 후 폐기되며, 폐기 이벤트는 audit_log severity=INFO로 적재되어야 한다.
+
+### 13.3 REQ-SYSTEM-009-D: 외부 공공데이터 수집 배치 (RFP SFR-001 / SFR-011 매핑)
+
+RFP SFR-001(외부 공공데이터 수집)·SFR-011(스케줄링 기반 데이터 동기화)을 충족하기 위해 외부 데이터 소스 등록·동기화·정합성 검증·실패 알림 메커니즘을 도입한다.
+
+- **REQ-SYSTEM-009-D-1 (데이터 소스 등록 — Ubiquitous)**
+  시스템은 `external_data_source(id, code, name, endpoint, schedule_cron, last_sync_at, last_status, owner_dept_id)` 테이블을 운영해야 하며, 운영자는 `GET|POST|PUT|DELETE /api/v1/system/external-sources`를 통해 데이터 소스 메타를 관리할 수 있어야 한다. `schedule_cron`은 Quartz/Spring cron 표현식이다.
+- **REQ-SYSTEM-009-D-2 (동기화 이력 — Ubiquitous)**
+  각 동기화 실행은 `data_sync_history(id, source_id, sync_started_at, sync_finished_at, records_total, records_inserted, records_updated, records_failed, error_summary)`에 기록되어야 하며, 운영자는 `GET /api/v1/system/external-sources/{id}/history?limit=100`로 최근 이력을 조회할 수 있어야 한다.
+- **REQ-SYSTEM-009-D-3 (정합성 검증 — Ubiquitous)**
+  동기화 시 시스템은 응답 스키마 변경(필수 필드 누락, 타입 불일치)을 감지해야 하며, 결측치 비율 ≥ 5% 또는 이상치 비율 ≥ 1%(IQR 기반) 발생 시 동기화를 ROLLBACK하고 `data_sync_history.error_summary`에 사유를 기록해야 한다.
+- **REQ-SYSTEM-009-D-4 (실패 재시도 + CRITICAL 알림 — Event-driven)**
+  동기화 실패 시 시스템은 10분 간격으로 최대 3회 재시도해야 하며, 3회 모두 실패하면 audit_log severity=CRITICAL과 운영자 알림 큐(REQ-CROSS-001-D-6 재사용)에 push해야 한다. 1차 운영은 Spring `@Scheduled` 단일 인스턴스로 실행하며, 멀티노드 전환 시 ShedLock을 도입한다(research.md §10.4).
+
+### 13.4 REQ-SYSTEM-010-D: RFP 성능 임계값 (PER-001~004 매핑)
+
+RFP는 검색·조회 응답시간, 배치 SLA, 동시 처리량, 동시 사용자, 자원 사용률 등 정량 임계값을 명시한다. 본 절은 SPEC-CMS-001 §17.1 PER 매핑을 Bundle D에서 직접 검증·관측 가능하도록 요구사항으로 고정한다.
+
+- **REQ-SYSTEM-010-D-1 (검색·조회 p95 — Ubiquitous, RFP PER-003)**
+  시스템은 모든 검색·목록·상세 조회 API의 p95 응답시간이 3초 미만이어야 하며, Prometheus `http_server_requests_seconds_bucket` 메트릭으로 측정·노출해야 한다. p95 ≥ 3초가 5분 연속 발생 시 알람 룰 `ApiLatencyHigh`로 운영자에게 통지해야 한다.
+- **REQ-SYSTEM-010-D-2 (배치 SLA — Ubiquitous, RFP PER-003)**
+  일별 배치(REQ-SYSTEM-002-D-1, REQ-SYSTEM-009-D 일별 동기화)는 시작 후 10분 이내, 월별 배치(REQ-SYSTEM-002-D-2, REQ-SYSTEM-008-D-4 archive)는 1시간 이내에 완료되어야 한다. 배치 시작·종료 시각과 소요시간은 audit_log + Prometheus `batch_job_duration_seconds`(label=job_name)에 기록해야 한다.
+- **REQ-SYSTEM-010-D-3 (동시 처리량 — Ubiquitous, RFP PER-004)**
+  시스템은 초당 50건 이상의 요청을 정상 처리할 수 있어야 하며(부하 테스트 검증), JMeter 50 RPS 시나리오에서 오류율 < 1%, p95 < 3초를 충족해야 한다.
+- **REQ-SYSTEM-010-D-4 (동시 사용자 1,000명 + 임계 안내 — State-driven, RFP PER-004)**
+  시스템은 동시 활성 사용자 1,000명까지 정상 응답해야 하며, 동시 활성 세션이 임계 90% (900명) 이상인 동안 시스템은 신규 비-로그인 요청에 대해 HTTP 503 + 지연 안내 페이지(`/maintenance/peak.html`)를 반환해야 한다. 동시 사용자 카운트는 `session_active_gauge`(Prometheus)로 노출한다.
+- **REQ-SYSTEM-010-D-5 (시스템 자원 — Ubiquitous, RFP PER-002)**
+  시스템 자원(CPU, 메모리, 디스크 I/O, 네트워크) 평균 사용률은 90% 미만이어야 하며, Prometheus 알람 룰(`NodeCpuHigh`, `NodeMemHigh`, `NodeDiskHigh`)로 90% 초과 5분 지속 시 운영자에게 통지해야 한다. 룰 정의는 `deploy/prometheus/rules/resource.yml`에 포함되어야 한다.
+
+---
+
+## 14. 추가 데이터 모델 (v0.2 신규)
+
+### 14.1 `kpi_definition` / `kpi_value` / `kpi_value_history`
+
+```sql
+CREATE TABLE kpi_definition (
+    id                    BIGSERIAL    PRIMARY KEY,
+    code                  VARCHAR(50)  NOT NULL UNIQUE,
+    name                  VARCHAR(200) NOT NULL,
+    description           TEXT         NULL,
+    calculation_query     TEXT         NOT NULL,                     -- 사전 검증된 SELECT 템플릿
+    refresh_interval_min  INTEGER      NOT NULL DEFAULT 60,
+    status                VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
+    created_at            TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_kpi_status CHECK (status IN ('ACTIVE','INACTIVE'))
+);
+
+CREATE TABLE kpi_value (
+    id              BIGSERIAL    PRIMARY KEY,
+    kpi_id          BIGINT       NOT NULL REFERENCES kpi_definition(id) ON DELETE CASCADE,
+    dimension       JSONB        NOT NULL DEFAULT '{}'::jsonb,        -- {period, feature, industry}
+    value_numeric   NUMERIC(20,4) NULL,
+    value_text      TEXT         NULL,
+    calculated_at   TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_kpi_value UNIQUE (kpi_id, dimension)
+);
+CREATE INDEX idx_kpi_value_calc      ON kpi_value(kpi_id, calculated_at DESC);
+CREATE INDEX idx_kpi_value_dim_gin   ON kpi_value USING GIN (dimension);
+
+CREATE TABLE kpi_value_history (
+    id              BIGSERIAL    PRIMARY KEY,
+    kpi_id          BIGINT       NOT NULL,
+    dimension       JSONB        NOT NULL,
+    value_numeric   NUMERIC(20,4) NULL,
+    value_text      TEXT         NULL,
+    calculated_at   TIMESTAMPTZ  NOT NULL,
+    archived_at     TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_kpi_history_kpi_time ON kpi_value_history(kpi_id, calculated_at DESC);
+```
+
+### 14.2 `integration_log` / `integration_log_archive` (월별 PARTITION)
+
+```sql
+CREATE TABLE integration_log (
+    id                BIGSERIAL,
+    integration_type  VARCHAR(30)  NOT NULL,
+    target_system     VARCHAR(100) NOT NULL,
+    request_id        VARCHAR(100) NULL,
+    status            VARCHAR(20)  NOT NULL,
+    duration_ms       INTEGER      NOT NULL DEFAULT 0,
+    response_code     VARCHAR(20)  NULL,
+    error_message     TEXT         NULL,
+    payload_hash      CHAR(64)     NULL,                       -- SHA-256, 원문은 저장 금지
+    occurred_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id, occurred_at),
+    CONSTRAINT chk_intg_type   CHECK (integration_type IN ('SSO_AUTH','KAKAO_NOTI','MAIL_SEND','EXTERNAL_API','PUBLIC_DATA')),
+    CONSTRAINT chk_intg_status CHECK (status IN ('SUCCESS','FAILURE','TIMEOUT'))
+) PARTITION BY RANGE (occurred_at);
+
+CREATE TABLE integration_log_y2026m04 PARTITION OF integration_log
+    FOR VALUES FROM ('2026-04-01') TO ('2026-05-01');
+CREATE TABLE integration_log_y2026m05 PARTITION OF integration_log
+    FOR VALUES FROM ('2026-05-01') TO ('2026-06-01');
+
+CREATE INDEX idx_intg_log_time_type   ON integration_log(occurred_at DESC, integration_type);
+CREATE INDEX idx_intg_log_status_time ON integration_log(status, occurred_at DESC) WHERE status <> 'SUCCESS';
+CREATE INDEX idx_intg_log_request     ON integration_log(request_id) WHERE request_id IS NOT NULL;
+
+CREATE TABLE integration_log_archive (
+    id                BIGSERIAL,
+    integration_type  VARCHAR(30)  NOT NULL,
+    target_system     VARCHAR(100) NOT NULL,
+    request_id        VARCHAR(100) NULL,
+    status            VARCHAR(20)  NOT NULL,
+    duration_ms       INTEGER      NOT NULL DEFAULT 0,
+    response_code     VARCHAR(20)  NULL,
+    error_message     TEXT         NULL,
+    payload_hash      CHAR(64)     NULL,
+    occurred_at       TIMESTAMPTZ  NOT NULL,
+    archived_at       TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+CREATE INDEX idx_intg_archive_occurred ON integration_log_archive(occurred_at DESC);
+```
+
+`v_notification_history` 뷰(REQ-SYSTEM-008-D-3):
+
+```sql
+CREATE OR REPLACE VIEW v_notification_history AS
+SELECT
+    il.id            AS integration_log_id,
+    il.integration_type,
+    il.target_system,
+    il.status        AS delivery_status,
+    il.response_code,
+    il.error_message,
+    il.duration_ms,
+    il.occurred_at,
+    ns.id            AS notification_send_id,
+    ns.recipient,
+    ns.template_code,
+    ns.payload_summary
+FROM integration_log il
+LEFT JOIN notification_send ns
+       ON ns.integration_log_id = il.id
+WHERE il.integration_type IN ('KAKAO_NOTI','MAIL_SEND');
+```
+
+> 주: `notification_send.integration_log_id`는 SPEC-CMS-002 v0.2에서 추가될 FK 컬럼을 가정한다.
+
+### 14.3 `external_data_source` / `data_sync_history`
+
+```sql
+CREATE TABLE external_data_source (
+    id              BIGSERIAL    PRIMARY KEY,
+    code            VARCHAR(50)  NOT NULL UNIQUE,
+    name            VARCHAR(200) NOT NULL,
+    endpoint        TEXT         NOT NULL,
+    schedule_cron   VARCHAR(100) NOT NULL,
+    last_sync_at    TIMESTAMPTZ  NULL,
+    last_status     VARCHAR(20)  NULL,
+    owner_dept_id   BIGINT       NULL,
+    status          VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE',
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_eds_status      CHECK (status IN ('ACTIVE','INACTIVE')),
+    CONSTRAINT chk_eds_last_status CHECK (last_status IS NULL OR last_status IN ('SUCCESS','FAILURE','TIMEOUT','SKIPPED'))
+);
+CREATE INDEX idx_eds_status ON external_data_source(status, last_sync_at DESC);
+
+CREATE TABLE data_sync_history (
+    id                  BIGSERIAL    PRIMARY KEY,
+    source_id           BIGINT       NOT NULL REFERENCES external_data_source(id) ON DELETE CASCADE,
+    sync_started_at     TIMESTAMPTZ  NOT NULL,
+    sync_finished_at    TIMESTAMPTZ  NULL,
+    records_total       INTEGER      NOT NULL DEFAULT 0,
+    records_inserted    INTEGER      NOT NULL DEFAULT 0,
+    records_updated     INTEGER      NOT NULL DEFAULT 0,
+    records_failed      INTEGER      NOT NULL DEFAULT 0,
+    error_summary       TEXT         NULL,
+    status              VARCHAR(20)  NOT NULL DEFAULT 'RUNNING',
+    CONSTRAINT chk_dsh_status CHECK (status IN ('RUNNING','SUCCESS','FAILURE','TIMEOUT','ROLLED_BACK'))
+);
+CREATE INDEX idx_dsh_source_time ON data_sync_history(source_id, sync_started_at DESC);
+```
+
+---
+
+## 15. RFP 비기능 횡단 적용 (v0.2 신규)
+
+본 절은 SPEC-CMS-001 v0.2 §17 RFP 비기능 횡단을 Bundle D에서 실제 관측·검증 가능한 방법으로 고정한다.
+
+| RFP 항목 | Bundle D 매핑 | 검증 방법 |
+|---------|-------------|---------|
+| PER-001 무중단 연속 가동 | 점검 모드(REQ-SYSTEM-005-D) + Docker 헬스체크(REQ-CROSS-008-D-3) | 점검 모드 외 가용성 99.9%/월 모니터링 |
+| PER-002 자원 사용률 < 90% | REQ-SYSTEM-010-D-5 + Prometheus rules `resource.yml` | `NodeCpuHigh`/`NodeMemHigh`/`NodeDiskHigh` 알람 미발생 5분 평균 |
+| PER-003 응답·배치 SLA | REQ-SYSTEM-010-D-1, REQ-SYSTEM-010-D-2 | `http_server_requests_seconds_bucket` p95 + `batch_job_duration_seconds` |
+| PER-004 동시 50 RPS / 1,000 사용자 | REQ-SYSTEM-010-D-3, REQ-SYSTEM-010-D-4 | JMeter 부하 테스트 + `session_active_gauge` |
+| SFR-013 KPI 통합 | REQ-SYSTEM-007-D 전체 | KPI 8종 시드 + 엑셀 다운로드 통합 테스트 |
+| SFR-015 외부 연계 로그 분리 | REQ-SYSTEM-008-D 전체 | `integration_log` 분리 + 6개월 archive 통합 테스트 |
+| SFR-001 / SFR-011 외부 데이터 수집 | REQ-SYSTEM-009-D 전체 | `external_data_source` + `data_sync_history` 통합 테스트 |
+
+Prometheus 알람 룰 정의 위치: `deploy/prometheus/rules/{api.yml, batch.yml, resource.yml}`. 1차 출시 시 룰 파일은 본 SPEC RUN 단계에서 함께 작성·배포한다.
+
+---
+
+## 16. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 (Bundle D 상세). REQ-SYSTEM-001~006 + REQ-CROSS-001/007/008 상세화. |
+| v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강. REQ-SYSTEM-007-D(KPI 통합 대시보드, SFR-013), 008-D(외부 연계 로그 분리, SFR-015), 009-D(외부 공공데이터 수집, SFR-001/011), 010-D(성능 임계값, PER-001~004) 4개 신규 부모 REQ + sub-REQ 18개 추가. §13 RFP 통합 보강, §14 추가 데이터 모델(kpi_definition/kpi_value/integration_log/external_data_source/data_sync_history DDL), §15 비기능 횡단 적용 매핑 신설. (SPEC-CMS-001 v0.2 §15.2 SFR-013/015 + §17.1 PER 임계값 매핑) |
