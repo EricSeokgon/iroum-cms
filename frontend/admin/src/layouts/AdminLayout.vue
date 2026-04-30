@@ -139,6 +139,32 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 시스템 관리 그룹 (SPEC-CMS-005) -->
+        <el-sub-menu index="system" :aria-label="t('nav.system')">
+          <template #title>
+            <el-icon><i-ep-setting /></el-icon>
+            <span>{{ t('nav.system') }}</span>
+          </template>
+          <el-menu-item index="/system/dashboard">
+            <span>{{ t('nav.systemDashboard') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/access-logs">
+            <span>{{ t('nav.systemAccessLogs') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/codes">
+            <span>{{ t('nav.systemCodes') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/settings">
+            <span>{{ t('nav.systemSettings') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/maintenance">
+            <span>{{ t('nav.systemMaintenance') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/audit-logs">
+            <span>{{ t('nav.systemAuditLogs') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 
@@ -210,6 +236,9 @@
         </div>
       </el-header>
 
+      <!-- 점검 모드 배너 (SPEC-CMS-005) -->
+      <MaintenanceBanner />
+
       <!-- 메인 콘텐츠 -->
       <el-main id="main-content" role="main" class="bg-gray-50 p-6" tabindex="-1">
         <router-view />
@@ -224,6 +253,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
 
 // 권한 기반 메뉴 노출 헬퍼
 function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string): boolean {

@@ -30,7 +30,189 @@
     "contentPopups": "Popups",
     "contentBanners": "Banners",
     "contentI18n": "i18n Resources",
-    "contentSeoRedirects": "SEO Redirects"
+    "contentSeoRedirects": "SEO Redirects",
+    "system": "System",
+    "systemDashboard": "Dashboard",
+    "systemAccessLogs": "Access Logs",
+    "systemCodes": "Common Codes",
+    "systemSettings": "System Settings",
+    "systemMaintenance": "Maintenance",
+    "systemAuditLogs": "Audit Logs"
+  },
+  "system": {
+    "dashboard": {
+      "title": "System Dashboard",
+      "refresh": "Refresh",
+      "autoRefresh": "Auto Refresh",
+      "forceRefresh": "Force Refresh",
+      "lastFetched": "Last Updated",
+      "kpi": {
+        "todayVisits": "Today Visits",
+        "todayUnique": "Today Unique",
+        "todayPageViews": "Today Page Views",
+        "todaySignups": "Today Signups",
+        "errorRate": "Error Rate (24h)",
+        "avgResponse": "Avg Response (24h)",
+        "lockedAccounts": "Locked Accounts",
+        "auditLog24h": "Audit Logs (24h)",
+        "auditCritical": "Critical Events",
+        "healthStatus": "Health Status",
+        "vsYesterday": "vs Yesterday"
+      },
+      "chart": {
+        "title": "Visit Trends",
+        "days": "d",
+        "visits": "Visits",
+        "pageViews": "Page Views",
+        "errors": "Errors"
+      },
+      "topPages": {
+        "title": "Top 10 Pages",
+        "7d": "7d",
+        "30d": "30d",
+        "rank": "Rank",
+        "url": "URL",
+        "views": "Views",
+        "avgResponse": "Avg Response",
+        "errorRate": "Error Rate"
+      }
+    },
+    "accessLog": {
+      "title": "Access Logs",
+      "exportCsv": "Export CSV",
+      "filter": {
+        "period": "Period",
+        "status": "Status",
+        "ipHash": "IP Hash",
+        "userId": "User ID"
+      },
+      "col": {
+        "time": "Time",
+        "url": "URL",
+        "status": "Status",
+        "responseTime": "Response Time",
+        "ipHash": "IP Hash",
+        "userAgent": "User-Agent",
+        "referrer": "Referrer",
+        "userId": "User ID"
+      },
+      "detail": {
+        "title": "Access Log Detail"
+      }
+    },
+    "code": {
+      "group": {
+        "title": "Code Groups",
+        "add": "Add Group",
+        "edit": "Edit Group",
+        "col": {
+          "code": "Code",
+          "name": "Name",
+          "status": "Status",
+          "sortOrder": "Order"
+        },
+        "restrictError": "Cannot delete a group that is in use",
+        "deleteConfirm": "Delete this group?"
+      },
+      "add": "Add Code",
+      "edit": "Edit Code",
+      "col": {
+        "selectGroup": "Select a group on the left",
+        "code": "Code",
+        "name": "Name",
+        "value": "Value",
+        "sortOrder": "Order",
+        "status": "Status"
+      },
+      "deleteConfirm": "Delete this code?",
+      "uniqueError": "Code already exists",
+      "bulkTest": "Bulk Fetch Test",
+      "bulkTestPlaceholder": "Group codes (e.g. A,B,C)"
+    },
+    "setting": {
+      "title": "System Settings",
+      "col": {
+        "key": "Key",
+        "value": "Value",
+        "type": "Type",
+        "description": "Description",
+        "updatedAt": "Updated At",
+        "updatedBy": "Updated By"
+      },
+      "editJson": "Edit JSON",
+      "jsonPlaceholder": "Enter valid JSON",
+      "jsonValid": "Valid JSON",
+      "jsonInvalid": "Invalid JSON format",
+      "saveSuccess": "Setting saved (audit log recorded)"
+    },
+    "maintenance": {
+      "title": "Maintenance Management",
+      "add": "Add Maintenance",
+      "edit": "Edit Maintenance",
+      "activate": "Activate Now",
+      "cancel": "Cancel",
+      "activateConfirm": "Activate maintenance immediately?",
+      "cancelConfirm": "Cancel this maintenance?",
+      "activateSuccess": "Maintenance activated",
+      "cancelSuccess": "Maintenance cancelled",
+      "col": {
+        "period": "Period",
+        "status": "Status",
+        "message": "Message",
+        "allowAdmin": "Allow Admin"
+      },
+      "field": {
+        "messageKo": "Korean Message",
+        "messageEn": "English Message"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "active": "Active",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "validation": {
+        "startBeforeEnd": "Start time must be before end time"
+      },
+      "banner": {
+        "active": "Maintenance in Progress",
+        "until": "Ends at",
+        "endsIn": "Ends in"
+      }
+    },
+    "auditLog": {
+      "title": "Audit Logs",
+      "exportCsv": "Export CSV",
+      "filter": {
+        "action": "Action",
+        "severity": "Severity",
+        "result": "Result",
+        "entityType": "Entity Type"
+      },
+      "col": {
+        "eventTime": "Event Time",
+        "actor": "Actor",
+        "action": "Action",
+        "entityType": "Entity Type",
+        "entityId": "Entity ID",
+        "severity": "Severity",
+        "result": "Result",
+        "ipAddress": "IP Address",
+        "detail": "Detail"
+      },
+      "result": {
+        "success": "Success",
+        "failure": "Failure"
+      },
+      "detail": {
+        "title": "Audit Log Detail",
+        "before": "Before",
+        "after": "After"
+      },
+      "criticalPanel": {
+        "title": "Unresolved Critical Events"
+      }
+    }
   },
   "auth": {
     "login": {
@@ -151,8 +333,23 @@
     "delete": "Delete",
     "create": "Create",
     "search": "Search",
+    "reset": "Reset",
+    "all": "All",
     "yes": "Yes",
     "no": "No",
+    "active": "Active",
+    "inactive": "Inactive",
+    "confirm": "Confirm",
+    "to": "to",
+    "startDate": "Start",
+    "endDate": "End",
+    "required": "This field is required",
+    "saveSuccess": "Saved successfully",
+    "saveError": "Failed to save",
+    "deleteSuccess": "Deleted successfully",
+    "deleteError": "Failed to delete",
+    "loadError": "Failed to load data",
+    "exportError": "Failed to export",
     "actions": "Actions",
     "loading": "Loading...",
     "error": {

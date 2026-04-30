@@ -213,6 +213,43 @@ const router = createRouter({
           component: () => import('@/views/content/SeoRedirectManagerView.vue'),
           meta: { title: 'SEO 리다이렉트' },
         },
+        // ── 시스템 관리 라우트 (SPEC-CMS-005) ──────────────────────────────
+        {
+          path: 'system/dashboard',
+          name: 'system-dashboard',
+          component: () => import('@/views/system/SystemDashboardView.vue'),
+          meta: { title: '시스템 대시보드', permissions: ['SYSTEM:DASHBOARD'] },
+        },
+        {
+          path: 'system/access-logs',
+          name: 'system-access-logs',
+          component: () => import('@/views/system/AccessLogView.vue'),
+          meta: { title: '접속 로그', permissions: ['SYSTEM:LOG:READ'] },
+        },
+        {
+          path: 'system/codes',
+          name: 'system-codes',
+          component: () => import('@/views/system/CodeManagerView.vue'),
+          meta: { title: '공통 코드 관리', permissions: ['SYSTEM:CODE:READ'] },
+        },
+        {
+          path: 'system/settings',
+          name: 'system-settings',
+          component: () => import('@/views/system/SystemSettingView.vue'),
+          meta: { title: '시스템 설정', permissions: ['SYSTEM:SETTING:READ'] },
+        },
+        {
+          path: 'system/maintenance',
+          name: 'system-maintenance',
+          component: () => import('@/views/system/MaintenanceManagerView.vue'),
+          meta: { title: '점검 모드', permissions: ['SYSTEM:MAINT:READ'] },
+        },
+        {
+          path: 'system/audit-logs',
+          name: 'system-audit-logs',
+          component: () => import('@/views/system/AuditLogView.vue'),
+          meta: { title: '감사 로그', permissions: ['SYSTEM:AUDIT:READ'] },
+        },
       ],
     },
 

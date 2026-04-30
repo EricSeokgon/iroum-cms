@@ -30,7 +30,189 @@
     "contentPopups": "팝업 관리",
     "contentBanners": "배너 관리",
     "contentI18n": "다국어 리소스",
-    "contentSeoRedirects": "SEO 리다이렉트"
+    "contentSeoRedirects": "SEO 리다이렉트",
+    "system": "시스템 관리",
+    "systemDashboard": "대시보드",
+    "systemAccessLogs": "접속 로그",
+    "systemCodes": "공통 코드",
+    "systemSettings": "시스템 설정",
+    "systemMaintenance": "점검 모드",
+    "systemAuditLogs": "감사 로그"
+  },
+  "system": {
+    "dashboard": {
+      "title": "시스템 대시보드",
+      "refresh": "새로고침",
+      "autoRefresh": "자동 갱신",
+      "forceRefresh": "강제 재계산",
+      "lastFetched": "마지막 갱신",
+      "kpi": {
+        "todayVisits": "오늘 방문수",
+        "todayUnique": "오늘 순방문",
+        "todayPageViews": "오늘 페이지뷰",
+        "todaySignups": "오늘 신규가입",
+        "errorRate": "오류율(24h)",
+        "avgResponse": "평균응답(24h)",
+        "lockedAccounts": "잠긴 계정",
+        "auditLog24h": "감사로그(24h)",
+        "auditCritical": "CRITICAL 이벤트",
+        "healthStatus": "서버 상태",
+        "vsYesterday": "전일 대비"
+      },
+      "chart": {
+        "title": "방문 추이",
+        "days": "일",
+        "visits": "방문",
+        "pageViews": "페이지뷰",
+        "errors": "오류"
+      },
+      "topPages": {
+        "title": "인기 페이지 Top 10",
+        "7d": "7일",
+        "30d": "30일",
+        "rank": "순위",
+        "url": "URL",
+        "views": "조회수",
+        "avgResponse": "평균응답",
+        "errorRate": "오류율"
+      }
+    },
+    "accessLog": {
+      "title": "접속 로그",
+      "exportCsv": "CSV 내보내기",
+      "filter": {
+        "period": "기간",
+        "status": "상태코드",
+        "ipHash": "IP 해시",
+        "userId": "사용자ID"
+      },
+      "col": {
+        "time": "시각",
+        "url": "URL",
+        "status": "상태",
+        "responseTime": "응답시간",
+        "ipHash": "IP 해시",
+        "userAgent": "User-Agent",
+        "referrer": "Referrer",
+        "userId": "사용자ID"
+      },
+      "detail": {
+        "title": "접속 로그 상세"
+      }
+    },
+    "code": {
+      "group": {
+        "title": "코드 그룹",
+        "add": "그룹 추가",
+        "edit": "그룹 수정",
+        "col": {
+          "code": "코드",
+          "name": "이름",
+          "status": "상태",
+          "sortOrder": "정렬"
+        },
+        "restrictError": "사용 중인 그룹은 삭제할 수 없습니다",
+        "deleteConfirm": "그룹을 삭제하시겠습니까?"
+      },
+      "add": "코드 추가",
+      "edit": "코드 수정",
+      "col": {
+        "selectGroup": "좌측에서 그룹을 선택하세요",
+        "code": "코드",
+        "name": "이름",
+        "value": "값",
+        "sortOrder": "정렬",
+        "status": "상태"
+      },
+      "deleteConfirm": "코드를 삭제하시겠습니까?",
+      "uniqueError": "이미 존재하는 코드입니다",
+      "bulkTest": "벌크 조회 테스트",
+      "bulkTestPlaceholder": "그룹코드 (예: A,B,C)"
+    },
+    "setting": {
+      "title": "시스템 설정",
+      "col": {
+        "key": "설정 키",
+        "value": "값",
+        "type": "타입",
+        "description": "설명",
+        "updatedAt": "수정일시",
+        "updatedBy": "수정자"
+      },
+      "editJson": "JSON 편집",
+      "jsonPlaceholder": "JSON 형식으로 입력하세요",
+      "jsonValid": "유효한 JSON입니다",
+      "jsonInvalid": "유효하지 않은 JSON 형식입니다",
+      "saveSuccess": "설정이 저장되었습니다 (감사 로그 기록됨)"
+    },
+    "maintenance": {
+      "title": "점검 모드 관리",
+      "add": "점검 추가",
+      "edit": "점검 수정",
+      "activate": "즉시 활성화",
+      "cancel": "취소/해제",
+      "activateConfirm": "점검을 즉시 활성화하시겠습니까?",
+      "cancelConfirm": "점검을 취소하시겠습니까?",
+      "activateSuccess": "점검이 활성화되었습니다",
+      "cancelSuccess": "점검이 취소되었습니다",
+      "col": {
+        "period": "점검 기간",
+        "status": "상태",
+        "message": "점검 메시지",
+        "allowAdmin": "관리자 허용"
+      },
+      "field": {
+        "messageKo": "한국어 메시지",
+        "messageEn": "영문 메시지"
+      },
+      "status": {
+        "scheduled": "예약됨",
+        "active": "진행중",
+        "completed": "완료됨",
+        "cancelled": "취소됨"
+      },
+      "validation": {
+        "startBeforeEnd": "시작일은 종료일보다 앞이어야 합니다"
+      },
+      "banner": {
+        "active": "점검 진행 중",
+        "until": "종료 예정",
+        "endsIn": "남은 시간"
+      }
+    },
+    "auditLog": {
+      "title": "통합 감사 로그",
+      "exportCsv": "CSV 내보내기",
+      "filter": {
+        "action": "액션",
+        "severity": "중요도",
+        "result": "결과",
+        "entityType": "엔티티 유형"
+      },
+      "col": {
+        "eventTime": "발생 시각",
+        "actor": "행위자",
+        "action": "액션",
+        "entityType": "엔티티 유형",
+        "entityId": "엔티티 ID",
+        "severity": "중요도",
+        "result": "결과",
+        "ipAddress": "IP 주소",
+        "detail": "상세"
+      },
+      "result": {
+        "success": "성공",
+        "failure": "실패"
+      },
+      "detail": {
+        "title": "감사 로그 상세",
+        "before": "변경 전",
+        "after": "변경 후"
+      },
+      "criticalPanel": {
+        "title": "미해결 CRITICAL 이벤트"
+      }
+    }
   },
   "auth": {
     "login": {
@@ -150,8 +332,23 @@
     "delete": "삭제",
     "create": "생성",
     "search": "검색",
+    "reset": "초기화",
+    "all": "전체",
     "yes": "예",
     "no": "아니오",
+    "active": "활성",
+    "inactive": "비활성",
+    "confirm": "확인",
+    "to": "~",
+    "startDate": "시작일",
+    "endDate": "종료일",
+    "required": "필수 항목입니다",
+    "saveSuccess": "저장되었습니다",
+    "saveError": "저장에 실패했습니다",
+    "deleteSuccess": "삭제되었습니다",
+    "deleteError": "삭제에 실패했습니다",
+    "loadError": "데이터 조회에 실패했습니다",
+    "exportError": "내보내기에 실패했습니다",
     "actions": "액션",
     "loading": "불러오는 중...",
     "error": {
