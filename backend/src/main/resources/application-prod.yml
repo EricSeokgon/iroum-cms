@@ -24,10 +24,11 @@ logging:
   level:
     root: INFO
     kr.co.ircp.cms: INFO
-    org.springframework.security: WARN
-  pattern:
-    console: >-
-      {"timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}","level":"%p","logger":"%logger{36}","message":"%m"}%n
+    org.springframework.security: INFO
+    org.flywaydb: INFO
+    com.zaxxer.hikari: WARN
+  # logback-spring.xml의 prod 프로파일이 JSON 인코더를 처리하므로 pattern 불필요
+  # (LogstashEncoder가 @timestamp, @version, MDC 필드를 자동 포함)
 
 # 운영에서 Swagger UI 비활성화 (nginx로 차단하더라도 이중 보호)
 springdoc:
@@ -40,3 +41,15 @@ management:
   endpoint:
     health:
       show-details: never
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+  info:
+    build:
+      enabled: true
+  metrics:
+    tags:
+      application: iroum-cms

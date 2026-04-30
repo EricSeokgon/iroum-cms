@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.audit.service;
 
 import kr.co.ircp.cms.domain.audit.entity.AuditLog;
+import kr.co.ircp.cms.domain.audit.notification.CriticalAuditNotifier;
 import kr.co.ircp.cms.domain.audit.repository.AuditLogMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,12 @@ public class AuditLogServiceImpl implements AuditLogService {
     private static final Logger log = LoggerFactory.getLogger(AuditLogServiceImpl.class);
 
     private final AuditLogMapper auditLogMapper;
+    private final CriticalAuditNotifier criticalAuditNotifier;
 
-    public AuditLogServiceImpl(AuditLogMapper auditLogMapper) {
+    public AuditLogServiceImpl(AuditLogMapper auditLogMapper,
+                               CriticalAuditNotifier criticalAuditNotifier) {
         this.auditLogMapper = auditLogMapper;
+        this.criticalAuditNotifier = criticalAuditNotifier;
     }
 
     /**
@@ -56,6 +60,10 @@ public class AuditLogServiceImpl implements AuditLogService {
                     .build();
 
             auditLogMapper.insert(entity);
+
+            // REQ-CROSS-001-D-6: CRITICAL severity 시 알림 큐에 push
+            criticalAuditNotifier.enqueue(entry);
+
         } catch (Exception e) {
             // 감사 로그 실패는 비즈니스 로직에 영향을 주지 않아야 함
             log.error("감사 로그 적재 실패 (non-blocking) action={} entityType={} actorId={}",

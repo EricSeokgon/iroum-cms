@@ -1,0 +1,46 @@
+# iroum-cms Docker 빌드 컨텍스트 제외 목록
+# Docker 빌드 시 전송되는 파일 크기를 최소화하여 빌드 속도 향상
+
+# ─── VCS / 개발 도구 ─────────────────────────────────────────────
+.git
+.gitignore
+.gitattributes
+.github
+
+# ─── MoAI / IDE 설정 ─────────────────────────────────────────────
+.moai
+.claude
+.idea
+.vscode
+*.iml
+
+# ─── Node.js / 프론트엔드 빌드 산출물 ───────────────────────────
+**/node_modules
+**/dist
+**/.nuxt
+**/.output
+**/.vite
+
+# ─── Java / Gradle 빌드 산출물 ──────────────────────────────────
+backend/build
+backend/.gradle
+backend/out
+
+# ─── 운영 환경 변수 (절대 포함 금지) ────────────────────────────
+deploy/.env
+*.env
+!*.env.example
+
+# ─── 문서 / 테스트 리포트 ───────────────────────────────────────
+docs
+**/*.md
+!backend/src/main/**
+**/test-results
+**/coverage
+
+# ─── OS 임시 파일 ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*~

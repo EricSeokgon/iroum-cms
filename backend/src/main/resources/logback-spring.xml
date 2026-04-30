@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  logback-spring.xml — SPEC-CMS-005 REQ-CROSS-007-D-2
+  - 기본(dev/local): 사람이 읽을 수 있는 패턴 출력
+  - 운영(prod):       logstash-logback-encoder JSON stdout
+  - MDC 필드: traceId, spanId, userId, requestId, clientIp
+-->
+<configuration>
+
+  <!-- ─── 운영 프로파일: JSON stdout ─────────────────────────────────────── -->
+  <springProfile name="prod">
+    <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        <!-- MDC 필드를 JSON 최상위에 포함 -->
+        <includeMdcKeyName>traceId</includeMdcKeyName>
+        <includeMdcKeyName>spanId</includeMdcKeyName>
+        <includeMdcKeyName>userId</includeMdcKeyName>
+        <includeMdcKeyName>requestId</includeMdcKeyName>
+        <includeMdcKeyName>clientIp</includeMdcKeyName>
+        <!-- JSON 버전 고정 -->
+        <customFields>{"@version":"1"}</customFields>
+        <!-- 스택 트레이스: 예외 발생 시 stackTrace 필드에 포함 -->
+        <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+          <maxDepthPerCause>30</maxDepthPerCause>
+          <shortenedClassNameLength>20</shortenedClassNameLength>
+          <rootCauseFirst>true</rootCauseFirst>
+        </throwableConverter>
+      </encoder>
+    </appender>
+
+    <!-- 운영 로거 레벨 -->
+    <root level="INFO">
+      <appender-ref ref="JSON_STDOUT" />
+    </root>
+    <logger name="kr.co.ircp.cms"               level="INFO"  additivity="false">
+      <appender-ref ref="JSON_STDOUT" />
+    </logger>
+    <logger name="org.springframework.security"  level="INFO"  additivity="false">
+      <appender-ref ref="JSON_STDOUT" />
+    </logger>
+    <logger name="org.flywaydb"                  level="INFO"  additivity="false">
+      <appender-ref ref="JSON_STDOUT" />
+    </logger>
+    <logger name="com.zaxxer.hikari"             level="WARN"  additivity="false">
+      <appender-ref ref="JSON_STDOUT" />
+    </logger>
+  </springProfile>
+
+  <!-- ─── 개발/기본 프로파일: 사람이 읽을 수 있는 패턴 ───────────────────────── -->
+  <springProfile name="!prod">
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+      <encoder>
+        <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%thread] %cyan(%logger{36}) — %msg%n</pattern>
+        <charset>UTF-8</charset>
+      </encoder>
+    </appender>
+
+    <!-- 개발 로거 레벨 -->
+    <root level="INFO">
+      <appender-ref ref="CONSOLE" />
+    </root>
+    <logger name="kr.co.ircp.cms"               level="DEBUG" additivity="false">
+      <appender-ref ref="CONSOLE" />
+    </logger>
+    <logger name="org.springframework.security"  level="INFO"  additivity="false">
+      <appender-ref ref="CONSOLE" />
+    </logger>
+    <logger name="org.flywaydb"                  level="INFO"  additivity="false">
+      <appender-ref ref="CONSOLE" />
+    </logger>
+    <logger name="com.zaxxer.hikari"             level="WARN"  additivity="false">
+      <appender-ref ref="CONSOLE" />
+    </logger>
+    <logger name="org.mybatis"                   level="INFO"  additivity="false">
+      <appender-ref ref="CONSOLE" />
+    </logger>
+  </springProfile>
+
+</configuration>

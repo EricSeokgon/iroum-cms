@@ -49,11 +49,18 @@ public class AuditLogAspect {
     }
 
     /**
-     * @AuditLog 메서드를 감싸 감사 로그를 비동기 적재한다.
+     * @AuditLog 어노테이션 또는 Service C/U/D 메서드 패턴 매칭 시 감사 로그를 비동기 적재한다.
+     *
+     * <p>REQ-CROSS-001-D-1/2 — @AuditLog가 붙은 메서드와
+     * 도메인 Service의 create/update/delete 접두사 메서드 모두 자동 포착.
      *
      * <p>비즈니스 로직 결과(성공/예외)는 그대로 전파하며, 감사 로그 실패는 흡수한다.
      */
-    @Around("@annotation(auditLog)")
+    @Around("@annotation(auditLog) || (" +
+            "  execution(* kr.co.ircp.cms.domain..*Service.create*(..)) ||" +
+            "  execution(* kr.co.ircp.cms.domain..*Service.update*(..)) ||" +
+            "  execution(* kr.co.ircp.cms.domain..*Service.delete*(..))" +
+            ")")
     public Object around(ProceedingJoinPoint pjp, AuditLog auditLog) throws Throwable {
         Instant start = Instant.now();
         Object result = null;
@@ -91,34 +98,60 @@ public class AuditLogAspect {
             // entityId 추출 — 파라미터 중 "id"라는 이름 우선
             String entityId = extractEntityId(pjp);
 
-            // 캡처 옵션
-            String beforeJson = null;
-            if (auditLog.captureArgs()) {
-                beforeJson = toJson(pjp.getArgs());
-            }
-            String afterJson = null;
-            if (auditLog.captureReturn() && result != null && thrown == null) {
-                afterJson = toJson(result);
-            }
-
             String resultStatus = thrown == null ? "SUCCESS" : "FAILURE";
             String failureReason = thrown == null
                     ? null
                     : thrown.getClass().getSimpleName() + ": " + thrown.getMessage();
 
+            // @AuditLog가 없는 패턴 매칭 케이스: action을 메서드명에서 추론
+            String action;
+            String entityType;
+            String severity;
+            if (auditLog != null) {
+                action     = auditLog.action();
+                entityType = auditLog.entityType();
+                severity   = auditLog.severity();
+            } else {
+                // 메서드명 prefix에서 action 추론
+                String methodName = pjp.getSignature().getName().toLowerCase();
+                if (methodName.startsWith("create")) {
+                    action = "CREATE";
+                } else if (methodName.startsWith("update")) {
+                    action = "UPDATE";
+                } else if (methodName.startsWith("delete")) {
+                    action = "DELETE";
+                } else {
+                    action = "AUTO";
+                }
+                entityType = pjp.getSignature().getDeclaringType().getSimpleName();
+                severity   = "INFO";
+            }
+
+            // 캡처 옵션 — @AuditLog가 있을 때만 beforeJson/afterJson 캡처
+            String beforeJson = null;
+            String afterJson  = null;
+            if (auditLog != null) {
+                if (auditLog.captureArgs()) {
+                    beforeJson = toJson(pjp.getArgs());
+                }
+                if (auditLog.captureReturn() && result != null && thrown == null) {
+                    afterJson = toJson(result);
+                }
+            }
+
             auditLogService.record(new AuditLogRecord(
                     Instant.now(),
                     actorId,
                     actorRole,
-                    auditLog.action(),
-                    auditLog.entityType(),
+                    action,
+                    entityType,
                     entityId,
                     beforeJson,
                     afterJson,
                     MDC.get("ipAddress"),
                     MDC.get("userAgent"),
                     MDC.get("traceId"),
-                    auditLog.severity(),
+                    severity,
                     resultStatus,
                     failureReason,
                     durationMs

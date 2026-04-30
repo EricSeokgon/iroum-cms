@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.config;
 
+import kr.co.ircp.cms.common.log.MdcLoggingFilter;
 import kr.co.ircp.cms.domain.system.accesslog.filter.AccessLogFilter;
 import kr.co.ircp.cms.domain.system.maintenance.filter.MaintenanceFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -25,9 +26,20 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FilterRegistrationConfig {
 
-    // @MX:NOTE: [AUTO] FilterRegistrationBean 순서 — AccessLog(10) < Maintenance(20) < Security(기본)
+    // @MX:NOTE: [AUTO] FilterRegistrationBean 순서
+    // Order 5  — MdcLoggingFilter: 모든 필터 최우선, MDC를 주입하여 이후 로그에 traceId 포함
+    // Order 10 — AccessLogFilter: MDC 이후 시작 시각 기록
+    // Order 20 — MaintenanceFilter: Security 이후 역할 확인
     // Security FilterChain 기본 order = Integer.MAX_VALUE - 5; Servlet Filter order가 더 낮으면 먼저 실행
-    // 큰 숫자 = 늦게 실행. Security보다 높은 order 값을 주면 Security 이후에 동작
+
+    @Bean
+    public FilterRegistrationBean<MdcLoggingFilter> mdcLoggingFilterRegistration(
+            MdcLoggingFilter filter) {
+        FilterRegistrationBean<MdcLoggingFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setOrder(5);  // AccessLogFilter(10)보다 먼저 실행 — traceId 주입 최우선
+        reg.addUrlPatterns("/*");
+        return reg;
+    }
 
     @Bean
     public FilterRegistrationBean<AccessLogFilter> accessLogFilterRegistration(

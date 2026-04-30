@@ -114,6 +114,9 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
 
+    // ─── Logback JSON 인코더 (REQ-CROSS-007-D-2 — 운영 프로파일 JSON 로그) ─────────
+    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
+
     // ─── HTML Sanitizer (SPEC-CMS-004, REQ-CONTENT-006-D-1) ──────────────────
     // OWASP XSS 방어: RICH_TEXT / MARKDOWN / IMAGE 블록 payload sanitize용
     implementation("org.jsoup:jsoup:1.17.2")
