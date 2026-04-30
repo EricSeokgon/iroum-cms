@@ -39,7 +39,7 @@
             <CommentForm
               :placeholder="t('board.comments.replyPlaceholder')"
               :saving="saving"
-              @submit="(content) => submitComment(content, comment.id)"
+              @submit="(content: string) => submitComment(content, comment.id)"
               @cancel="replyTargetId = null"
             />
           </div>
@@ -64,7 +64,7 @@
       <CommentForm
         :placeholder="t('board.comments.placeholder')"
         :saving="saving"
-        @submit="(content) => submitComment(content, null)"
+        @submit="(content: string) => submitComment(content, null)"
       />
     </div>
   </el-card>
@@ -118,44 +118,42 @@ const CommentItem = defineAsyncComponent(() =>
   })
 )
 
-const CommentForm = defineAsyncComponent(() =>
-  Promise.resolve({
-    props: { placeholder: String, saving: Boolean },
-    emits: ['submit', 'cancel'],
-    setup(props: { placeholder?: string; saving?: boolean }, { emit }: { emit: (event: string, ...args: unknown[]) => void }) {
-      const content = ref('')
-      function onSubmit() {
-        if (!content.value.trim()) return
-        emit('submit', content.value.trim())
-        content.value = ''
-      }
-      return { content, onSubmit }
-    },
-    template: `
-      <div class="flex flex-col gap-2">
-        <textarea
-          v-model="content"
-          :placeholder="placeholder"
-          class="w-full rounded border border-gray-200 p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
-          rows="3"
-          :aria-label="placeholder"
-        />
-        <div class="flex gap-2">
-          <button
-            class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
-            :disabled="saving"
-            @click="onSubmit"
-          >등록</button>
-          <button
-            v-if="$attrs.onCancel"
-            class="rounded border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
-            @click="$emit('cancel')"
-          >취소</button>
-        </div>
+const CommentForm = {
+  props: { placeholder: String, saving: Boolean },
+  emits: ['submit', 'cancel'],
+  setup(props: { placeholder?: string; saving?: boolean }, { emit }: { emit: (event: string, ...args: unknown[]) => void }) {
+    const content = ref('')
+    function onSubmit() {
+      if (!content.value.trim()) return
+      emit('submit', content.value.trim())
+      content.value = ''
+    }
+    return { content, onSubmit }
+  },
+  template: `
+    <div class="flex flex-col gap-2">
+      <textarea
+        v-model="content"
+        :placeholder="placeholder"
+        class="w-full rounded border border-gray-200 p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+        rows="3"
+        :aria-label="placeholder"
+      />
+      <div class="flex gap-2">
+        <button
+          class="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          :disabled="saving"
+          @click="onSubmit"
+        >등록</button>
+        <button
+          v-if="$attrs.onCancel"
+          class="rounded border border-gray-200 px-3 py-1 text-sm text-gray-600 hover:bg-gray-50"
+          @click="$emit('cancel')"
+        >취소</button>
       </div>
-    `,
-  })
-)
+    </div>
+  `,
+}
 
 interface Props {
   postId: number

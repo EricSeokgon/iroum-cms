@@ -8,5 +8,8 @@
     ".": "./src/index.ts",
     "./types/*": "./src/types/*",
     "./api/*": "./src/api/*"
+  },
+  "dependencies": {
+    "axios": "^1.7.9"
   }
 }

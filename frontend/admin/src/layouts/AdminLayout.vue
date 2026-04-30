@@ -107,6 +107,38 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 콘텐츠 관리 그룹 (SPEC-CMS-004) -->
+        <el-sub-menu index="content" :aria-label="t('nav.content')">
+          <template #title>
+            <el-icon><i-ep-grid /></el-icon>
+            <span>{{ t('nav.content') }}</span>
+          </template>
+          <el-menu-item index="/content/site">
+            <span>{{ t('nav.contentSite') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/menus">
+            <span>{{ t('nav.contentMenus') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/templates">
+            <span>{{ t('nav.contentTemplates') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/pages">
+            <span>{{ t('nav.contentPages') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/popups">
+            <span>{{ t('nav.contentPopups') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/banners">
+            <span>{{ t('nav.contentBanners') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/i18n">
+            <span>{{ t('nav.contentI18n') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/content/seo-redirects">
+            <span>{{ t('nav.contentSeoRedirects') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 

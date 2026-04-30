@@ -21,7 +21,16 @@
     "board": "Content",
     "boardMasters": "Board Management",
     "media": "Media Library",
-    "mediaCollections": "Media Collections"
+    "mediaCollections": "Media Collections",
+    "content": "Content Management",
+    "contentSite": "Site Info",
+    "contentMenus": "Menu Management",
+    "contentTemplates": "Page Templates",
+    "contentPages": "Pages",
+    "contentPopups": "Popups",
+    "contentBanners": "Banners",
+    "contentI18n": "i18n Resources",
+    "contentSeoRedirects": "SEO Redirects"
   },
   "auth": {
     "login": {
@@ -138,6 +147,10 @@
     "cancel": "Cancel",
     "back": "Back",
     "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "search": "Search",
     "yes": "Yes",
     "no": "No",
     "actions": "Actions",
@@ -739,6 +752,319 @@
         "description": "Description",
         "itemCount": "Items",
         "createdAt": "Created At"
+      }
+    }
+  },
+  "content": {
+    "site": {
+      "title": "Site Info",
+      "edit": "Edit",
+      "saved": "Site info saved",
+      "saveError": "Failed to save site info",
+      "field": {
+        "code": "Site Code",
+        "name": "Site Name",
+        "domain": "Domain",
+        "defaultLanguage": "Default Language",
+        "supportedLanguages": "Supported Languages",
+        "status": "Status"
+      },
+      "status": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
+      "error": { "nameRequired": "Site name is required", "domainRequired": "Domain is required" }
+    },
+    "menu": {
+      "tree": { "title": "Menu Tree", "label": "Menu Tree", "empty": "No menus found" },
+      "add": "Add Menu",
+      "addChild": "Add Child Menu",
+      "hidden": "Hidden",
+      "selectHint": "Select a menu to view details",
+      "permissions": "Permissions",
+      "created": "Menu created",
+      "createError": "Failed to create menu",
+      "saved": "Menu saved",
+      "saveError": "Failed to save menu",
+      "deleted": "Menu deleted",
+      "deleteError": "Failed to delete menu",
+      "toggleError": "Failed to toggle visibility",
+      "moveError": "Failed to move menu",
+      "deleteConfirm": "Delete this menu and all children?",
+      "field": {
+        "code": "Code",
+        "name": "Menu Name",
+        "url": "URL",
+        "urlPlaceholder": "/about or https://...",
+        "target": "Link Target",
+        "visible": "Visible",
+        "depth": "Depth",
+        "path": "Full Path",
+        "parent": "Parent Menu"
+      },
+      "createDialog": { "title": "Add Menu", "depthError": "Maximum depth is 5" },
+      "error": { "codeRequired": "Code is required", "nameRequired": "Menu name is required" }
+    },
+    "perm": {
+      "dialog": { "title": "Permission Mapping", "label": "Permission Codes", "saved": "Permissions saved", "saveError": "Failed to save permissions" }
+    },
+    "template": {
+      "title": "Page Templates",
+      "add": "Add Template",
+      "empty": "No templates found",
+      "saved": "Template saved",
+      "saveError": "Failed to save template",
+      "statusChanged": "Status changed",
+      "field": {
+        "code": "Code",
+        "name": "Template Name",
+        "layoutType": "Layout",
+        "hasContentSlot": "{{CONTENT}} Slot",
+        "htmlTemplate": "HTML Template",
+        "htmlPlaceholder": "<!DOCTYPE html>...\nMust include {{CONTENT}} placeholder",
+        "cssAssets": "CSS URLs",
+        "jsAssets": "JS URLs",
+        "status": "Status",
+        "slotOk": "{{CONTENT}} slot detected",
+        "slotMissing": "Missing {{CONTENT}} slot (content cannot be injected)"
+      },
+      "status": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
+      "createDialog": { "title": "Add Template" },
+      "editDialog": { "title": "Edit Template" },
+      "error": {
+        "codeRequired": "Code is required",
+        "nameRequired": "Template name is required",
+        "htmlRequired": "HTML template is required",
+        "loadFailed": "Failed to load templates",
+        "inUse": "Cannot deactivate a template in use",
+        "statusFailed": "Failed to change status"
+      }
+    },
+    "page": {
+      "list": { "title": "Pages", "add": "Add Page", "empty": "No pages found", "filterStatus": "Filter by status" },
+      "created": "Page created",
+      "createError": "Failed to create page",
+      "status": { "DRAFT": "Draft", "SCHEDULED": "Scheduled", "PUBLISHED": "Published", "RETRACTED": "Retracted" },
+      "field": {
+        "code": "Code",
+        "slug": "Slug",
+        "slugHint": "Lowercase letters, numbers, hyphens, slashes only",
+        "title": "Title",
+        "template": "Template",
+        "status": "Status",
+        "version": "Version",
+        "updatedAt": "Updated At"
+      },
+      "seo": {
+        "title": "SEO Title",
+        "titlePlaceholder": "Title shown in search engines (max 60 chars)",
+        "description": "SEO Description",
+        "descriptionPlaceholder": "Description shown in search results (max 160 chars)",
+        "keywords": "Keywords",
+        "keywordsPlaceholder": "keyword1, keyword2",
+        "ogImage": "OG Image URL",
+        "canonical": "Canonical URL"
+      },
+      "action": {
+        "publish": "Publish",
+        "publishConfirm": "Publish this page?",
+        "publishSuccess": "Published",
+        "publishError": "Failed to publish",
+        "schedule": "Schedule",
+        "scheduleSuccess": "Scheduled for publication",
+        "scheduleError": "Failed to schedule",
+        "cancelSchedule": "Cancel Schedule",
+        "cancelScheduleConfirm": "Cancel scheduled publication?",
+        "cancelScheduleSuccess": "Schedule cancelled",
+        "cancelScheduleError": "Failed to cancel schedule",
+        "retract": "Retract",
+        "retractReason": "Enter reason for retraction",
+        "retractReasonHint": "Not shown to users",
+        "retractSuccess": "Retracted",
+        "retractError": "Failed to retract",
+        "rollbackSuccess": "Rolled back to previous version"
+      },
+      "editor": {
+        "seo": "SEO Settings",
+        "info": "Page Info",
+        "blocks": "Content Blocks",
+        "actions": "Publishing",
+        "saveSeo": "Save SEO",
+        "saveBlocks": "Save Blocks",
+        "seoSaved": "SEO settings saved",
+        "seoError": "Failed to save SEO settings",
+        "blocksSaved": "Block order saved",
+        "blocksError": "Failed to save blocks",
+        "history": "Version History",
+        "preview": "Generate Preview Link",
+        "previewLink": "Preview Link",
+        "previewError": "Failed to generate preview link"
+      },
+      "history": {
+        "title": "Page Version History",
+        "version": "Version",
+        "publishedBy": "Published By",
+        "publishedAt": "Published At",
+        "editedAt": "Edited At",
+        "summary": "Change Summary",
+        "rollback": "Rollback to this version",
+        "rollbackConfirm": "Roll back to this version?",
+        "compare": "Compare",
+        "selectTwo": "Select 2 versions to compare"
+      },
+      "scheduleDialog": { "title": "Schedule Publication", "placeholder": "Select date and time" },
+      "createDialog": { "title": "Add Page" },
+      "error": {
+        "codeRequired": "Code is required",
+        "titleRequired": "Title is required",
+        "slugRequired": "Slug is required",
+        "slugPattern": "Slug: lowercase letters, numbers, hyphens, slashes only",
+        "templateRequired": "Template is required",
+        "loadFailed": "Failed to load pages"
+      }
+    },
+    "block": {
+      "add": "Add Block",
+      "empty": "No blocks. Add a block to get started.",
+      "types": { "RICH_TEXT": "Rich Text", "IMAGE": "Image", "HTML": "HTML (Advanced)", "MARKDOWN": "Markdown", "EMBED": "Embed" },
+      "field": {
+        "type": "Block Type",
+        "altText": "Alt Text",
+        "altTextPlaceholder": "Describe the image (required for accessibility)",
+        "altTextRequired": "Alt text is required for accessibility",
+        "imageUrl": "Image URL",
+        "selectMedia": "Select from Media Library",
+        "htmlWarning": "HTML blocks are SYSADMIN-only and carry XSS risk",
+        "markdownPreview": "Preview",
+        "embedPlaceholder": "YouTube/Vimeo/KakaoMap URL or embed code",
+        "richTextPlaceholder": "Enter content here"
+      },
+      "saved": "Block saved",
+      "saveError": "Failed to save block",
+      "deleted": "Block deleted",
+      "deleteError": "Failed to delete block",
+      "deleteConfirm": "Delete this block?"
+    },
+    "diff": { "before": "Before", "after": "After" },
+    "popup": {
+      "title": "Popup Management",
+      "add": "Add Popup",
+      "empty": "No popups found",
+      "saved": "Popup saved",
+      "saveError": "Failed to save popup",
+      "deleted": "Popup deleted",
+      "deleteError": "Failed to delete popup",
+      "toggleError": "Failed to toggle popup",
+      "deleteConfirm": "Delete this popup?",
+      "preview": "Position Preview",
+      "previewAriaLabel": "Popup position preview",
+      "previewSite": "Site area",
+      "previewPopup": "Popup",
+      "field": {
+        "name": "Popup Name",
+        "contentHtml": "HTML Content",
+        "position": "Position",
+        "posX": "X Position",
+        "posY": "Y Position",
+        "width": "Width",
+        "showFrom": "Show From",
+        "showUntil": "Show Until",
+        "showUntilHint": "Leave empty for manual close",
+        "targetType": "Target Audience",
+        "targetRoleCodes": "Target Roles",
+        "isActive": "Active",
+        "period": "Display Period"
+      },
+      "createDialog": { "title": "Add Popup" },
+      "editDialog": { "title": "Edit Popup" },
+      "error": {
+        "nameRequired": "Popup name is required",
+        "contentRequired": "Content is required",
+        "positionRequired": "Position is required",
+        "showFromRequired": "Show from date is required",
+        "loadFailed": "Failed to load popups"
+      }
+    },
+    "banner": {
+      "title": "Banner Management",
+      "add": "Add Banner",
+      "empty": "No banners found",
+      "noImage": "No Image",
+      "inactive": "Inactive",
+      "altTextRequired": "Alt text required for accessibility",
+      "clickCount": "Clicks",
+      "saved": "Banner saved",
+      "saveError": "Failed to save banner",
+      "deleted": "Banner deleted",
+      "deleteError": "Failed to delete banner",
+      "toggleError": "Failed to toggle banner",
+      "deleteConfirm": "Delete this banner?",
+      "field": {
+        "groupCode": "Group Code",
+        "title": "Title",
+        "imageUrl": "Image URL",
+        "altText": "Alt Text",
+        "altTextPlaceholder": "Describe the image (required)",
+        "linkUrl": "Link URL",
+        "linkTarget": "Link Target",
+        "sortOrder": "Sort Order",
+        "isActive": "Active"
+      },
+      "createDialog": { "title": "Add Banner" },
+      "editDialog": { "title": "Edit Banner" },
+      "error": {
+        "groupRequired": "Group code is required",
+        "titleRequired": "Title is required",
+        "imageRequired": "Image URL is required",
+        "altTextRequired": "Alt text is required (accessibility)",
+        "loadFailed": "Failed to load banners"
+      }
+    },
+    "i18n": {
+      "title": "i18n Resources",
+      "bulkSave": "Save All",
+      "bulkSaved": "Changes saved",
+      "bulkSaveError": "Failed to save changes",
+      "noDirty": "No changes to save",
+      "addField": "Add Resource",
+      "fieldAdded": "Resource added",
+      "addError": "Failed to add resource",
+      "empty": "No resources found",
+      "emptyValue": "(empty)",
+      "filterNamespace": "Filter namespace",
+      "filterKey": "Filter key",
+      "field": { "namespace": "Namespace", "resourceId": "Resource Key" },
+      "addFieldDialog": { "title": "Add Resource" },
+      "error": {
+        "namespaceRequired": "Namespace is required",
+        "resourceIdRequired": "Resource key is required",
+        "noValues": "Enter at least one value",
+        "loadFailed": "Failed to load resources"
+      }
+    },
+    "seo": {
+      "title": "SEO Redirects",
+      "add": "Add Redirect",
+      "empty": "No redirect rules found",
+      "saved": "Redirect saved",
+      "saveError": "Failed to save redirect",
+      "deleted": "Redirect deleted",
+      "deleteError": "Failed to delete redirect",
+      "deleteConfirm": "Delete this redirect rule?",
+      "searchPlaceholder": "Search by path",
+      "field": {
+        "fromPath": "From Path",
+        "fromPathHint": "Absolute path starting with /",
+        "toPath": "To Path or URL",
+        "httpStatus": "HTTP Status",
+        "isActive": "Active"
+      },
+      "status": { "301": "301 Permanent", "302": "302 Temporary", "307": "307 Temporary Redirect", "308": "308 Permanent Redirect" },
+      "createDialog": { "title": "Add Redirect" },
+      "editDialog": { "title": "Edit Redirect" },
+      "error": {
+        "fromPathRequired": "From path is required",
+        "fromPathPattern": "From path must start with /",
+        "toPathRequired": "To path is required",
+        "httpStatusRequired": "HTTP status is required",
+        "loadFailed": "Failed to load redirects"
       }
     }
   }

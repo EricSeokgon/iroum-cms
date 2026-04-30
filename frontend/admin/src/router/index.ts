@@ -157,6 +157,62 @@ const router = createRouter({
           props: true,
           meta: { title: '게시글 수정' },
         },
+        // ── 콘텐츠 관리 라우트 (SPEC-CMS-004) ──────────────────────────────
+        {
+          path: 'content/site',
+          name: 'content-site',
+          component: () => import('@/views/content/SiteView.vue'),
+          meta: { title: '사이트 정보' },
+        },
+        {
+          path: 'content/menus',
+          name: 'content-menus',
+          component: () => import('@/views/content/MenuTreeView.vue'),
+          meta: { title: '메뉴 관리' },
+        },
+        {
+          path: 'content/templates',
+          name: 'content-templates',
+          component: () => import('@/views/content/TemplateManagerView.vue'),
+          meta: { title: '페이지 템플릿' },
+        },
+        {
+          path: 'content/pages',
+          name: 'content-pages',
+          component: () => import('@/views/content/PageListView.vue'),
+          meta: { title: '페이지 목록' },
+        },
+        {
+          path: 'content/pages/:id/edit',
+          name: 'content-page-edit',
+          component: () => import('@/views/content/PageEditorView.vue'),
+          props: true,
+          meta: { title: '페이지 편집기' },
+        },
+        {
+          path: 'content/popups',
+          name: 'content-popups',
+          component: () => import('@/views/content/PopupManagerView.vue'),
+          meta: { title: '팝업 관리' },
+        },
+        {
+          path: 'content/banners',
+          name: 'content-banners',
+          component: () => import('@/views/content/BannerManagerView.vue'),
+          meta: { title: '배너 관리' },
+        },
+        {
+          path: 'content/i18n',
+          name: 'content-i18n',
+          component: () => import('@/views/content/I18nEditorView.vue'),
+          meta: { title: '다국어 리소스' },
+        },
+        {
+          path: 'content/seo-redirects',
+          name: 'content-seo-redirects',
+          component: () => import('@/views/content/SeoRedirectManagerView.vue'),
+          meta: { title: 'SEO 리다이렉트' },
+        },
       ],
     },
 

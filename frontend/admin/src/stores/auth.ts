@@ -33,7 +33,7 @@ export const useAuthStore = defineStore('auth', () => {
   // ── 상태 ──────────────────────────────────────────────────────────────────
   const accessToken = ref<string | null>(null)
   const expiresAt = ref<number | null>(null)    // Unix ms
-  const user = ref<{ id: number; username: string } | null>(null)
+  const user = ref<{ id: number; username: string; roleCodes: string[] } | null>(null)
 
   // ── 게터 ──────────────────────────────────────────────────────────────────
   const isAuthenticated = computed(
@@ -46,7 +46,7 @@ export const useAuthStore = defineStore('auth', () => {
     expiresAt.value = Date.now() + expiresInSeconds * 1000
     try {
       const payload = decodeJwt(token)
-      user.value = { id: payload.uid, username: payload.sub }
+      user.value = { id: payload.uid, username: payload.sub, roleCodes: payload.roles ?? [] }
     } catch {
       user.value = null
     }
