@@ -13,6 +13,7 @@ import kr.co.ircp.cms.domain.content.page.exception.PageStatusTransitionExceptio
 import kr.co.ircp.cms.domain.content.page.mapper.ContentBlockMapper;
 import kr.co.ircp.cms.domain.content.page.mapper.PageHistoryMapper;
 import kr.co.ircp.cms.domain.content.page.mapper.PageMapper;
+import kr.co.ircp.cms.domain.content.seo.service.SeoRedirectService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,12 +45,13 @@ class PageServiceTest {
     @Mock private PageMapper pageMapper;
     @Mock private ContentBlockMapper contentBlockMapper;
     @Mock private PageHistoryMapper pageHistoryMapper;
+    @Mock private SeoRedirectService seoRedirectService;
 
     private PageService pageService;
 
     @BeforeEach
     void setUp() {
-        pageService = new PageServiceImpl(pageMapper, contentBlockMapper, pageHistoryMapper);
+        pageService = new PageServiceImpl(pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService);
     }
 
     private Page stubPage(long id, String status, String slug) {

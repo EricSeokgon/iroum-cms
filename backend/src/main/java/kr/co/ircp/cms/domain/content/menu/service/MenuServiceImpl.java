@@ -13,6 +13,8 @@ import kr.co.ircp.cms.domain.content.menu.exception.MenuCodeDuplicateException;
 import kr.co.ircp.cms.domain.content.menu.exception.MenuDepthExceededException;
 import kr.co.ircp.cms.domain.content.menu.mapper.MenuMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,11 +44,10 @@ public class MenuServiceImpl implements MenuService {
     /**
      * 메뉴 생성.
      * REQ-CONTENT-001-D-1: depth 검증, code 유일성, path/depth 자동 계산
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 Caffeine 캐시 무효화 ("menu:tree:{siteId}") 추가
      */
     @Override
     @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
     public MenuResponse createMenu(MenuRequest request) {
         // 코드 유일성 검증
         if (menuMapper.existsBySiteIdAndCode(request.siteId(), request.code())) {
@@ -101,10 +102,9 @@ public class MenuServiceImpl implements MenuService {
     /**
      * 사이트 전체 메뉴 트리 조회 (공개용, 권한 필터 없음).
      * REQ-CONTENT-001-D-2
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 Caffeine 캐시 도입 ("menu:tree:{siteId}", TTL 5분)
      */
     @Override
+    @Cacheable(value = "menuTree", key = "#siteId")
     public List<MenuTreeNode> getMenuTree(Long siteId) {
         List<Menu> menus = menuMapper.findBySiteId(siteId);
         return buildTree(menus, null, true);
@@ -127,6 +127,7 @@ public class MenuServiceImpl implements MenuService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
     public MenuResponse changeOrder(Long id, MenuOrderRequest request) {
         Menu menu = menuMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메뉴를 찾을 수 없습니다. id=" + id));
@@ -144,6 +145,7 @@ public class MenuServiceImpl implements MenuService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
     public MenuResponse moveMenu(Long id, MenuMoveRequest request) {
         Menu menu = menuMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메뉴를 찾을 수 없습니다. id=" + id));
@@ -192,6 +194,7 @@ public class MenuServiceImpl implements MenuService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
     public MenuResponse toggleVisibility(Long id, boolean isVisible) {
         Menu menu = menuMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메뉴를 찾을 수 없습니다. id=" + id));
@@ -206,6 +209,7 @@ public class MenuServiceImpl implements MenuService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
     public void deleteMenu(Long id) {
         menuMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("메뉴를 찾을 수 없습니다. id=" + id));

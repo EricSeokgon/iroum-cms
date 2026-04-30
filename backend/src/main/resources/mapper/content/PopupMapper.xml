@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    팝업 매퍼 XML.
+    REQ-CONTENT-008-D: 팝업 CRUD + 활성 팝업 조회
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.popup.mapper.PopupMapper">
+
+    <resultMap id="popupResultMap" type="kr.co.ircp.cms.domain.content.popup.entity.Popup">
+        <id     property="id"              column="id"/>
+        <result property="siteId"          column="site_id"/>
+        <result property="title"           column="title"/>
+        <result property="contentHtml"     column="content_html"/>
+        <result property="position"        column="position"/>
+        <result property="xOffset"         column="x_offset"/>
+        <result property="yOffset"         column="y_offset"/>
+        <result property="width"           column="width"/>
+        <result property="height"          column="height"/>
+        <result property="showFrom"        column="show_from"/>
+        <result property="showUntil"       column="show_until"/>
+        <result property="showTodayClose"  column="show_today_close"/>
+        <result property="displayPriority" column="display_priority"/>
+        <result property="targetType"      column="target_type"/>
+        <result property="status"          column="status"/>
+        <result property="createdAt"       column="created_at"/>
+        <result property="updatedAt"       column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="popupResultMap">
+        SELECT * FROM popup WHERE id = #{id}
+    </select>
+
+    <select id="findBySiteId" resultMap="popupResultMap">
+        SELECT * FROM popup WHERE site_id = #{siteId} ORDER BY display_priority DESC, created_at DESC
+    </select>
+
+    <select id="findActiveByTimeWindow" resultMap="popupResultMap">
+        SELECT * FROM popup
+        WHERE site_id = #{siteId}
+          AND status = 'ACTIVE'
+          AND show_from  &lt;= #{now}
+          AND show_until &gt;= #{now}
+        ORDER BY display_priority DESC
+    </select>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.content.popup.entity.Popup"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO popup (site_id, title, content_html, position, x_offset, y_offset,
+                           width, height, show_from, show_until, show_today_close,
+                           display_priority, target_type, target_role_codes, status)
+        VALUES (#{siteId}, #{title}, #{contentHtml}, #{position}, #{xOffset}, #{yOffset},
+                #{width}, #{height}, #{showFrom}, #{showUntil}, #{showTodayClose},
+                #{displayPriority}, #{targetType},
+                CAST(#{targetRoleCodes, typeHandler=org.apache.ibatis.type.JsonTypeHandler} AS jsonb),
+                #{status})
+    </insert>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.popup.entity.Popup">
+        UPDATE popup SET title = #{title}, content_html = #{contentHtml},
+                         position = #{position}, show_from = #{showFrom}, show_until = #{showUntil},
+                         show_today_close = #{showTodayClose}, display_priority = #{displayPriority},
+                         target_type = #{targetType},
+                         target_role_codes = CAST(#{targetRoleCodes, typeHandler=org.apache.ibatis.type.JsonTypeHandler} AS jsonb),
+                         updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM popup WHERE id = #{id}
+    </delete>
+
+</mapper>

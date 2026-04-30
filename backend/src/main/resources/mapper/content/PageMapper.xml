@@ -86,6 +86,12 @@
         SELECT * FROM page WHERE status = 'SCHEDULED' AND scheduled_at &lt;= CURRENT_TIMESTAMP
     </select>
 
+    <select id="findPublishedBySiteId" resultMap="pageResultMap">
+        SELECT * FROM page
+        WHERE site_id = #{siteId} AND status = 'PUBLISHED' AND deleted_at IS NULL
+        ORDER BY updated_at DESC
+    </select>
+
     <insert id="insertSeoRedirect">
         INSERT INTO seo_redirect (from_path, to_path, reason)
         VALUES (#{fromPath}, #{toPath}, #{reason})

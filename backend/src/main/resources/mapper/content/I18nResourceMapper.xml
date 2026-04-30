@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    다국어 리소스 매퍼 XML.
+    REQ-CONTENT-010-D: 다국어 리소스 조회 + bulk upsert
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.i18n.mapper.I18nResourceMapper">
+
+    <resultMap id="i18nResultMap" type="kr.co.ircp.cms.domain.content.i18n.entity.I18nResource">
+        <id     property="id"         column="id"/>
+        <result property="namespace"  column="namespace"/>
+        <result property="resourceId" column="resource_id"/>
+        <result property="language"   column="language"/>
+        <result property="fieldName"  column="field_name"/>
+        <result property="value"      column="value"/>
+        <result property="createdAt"  column="created_at"/>
+        <result property="updatedAt"  column="updated_at"/>
+    </resultMap>
+
+    <select id="findByNamespaceAndResourceIdAndLanguage" resultMap="i18nResultMap">
+        SELECT * FROM i18n_resource
+        WHERE namespace   = #{namespace}
+          AND resource_id = #{resourceId}
+          AND language    = #{language}
+    </select>
+
+    <insert id="upsertBatch">
+        INSERT INTO i18n_resource (namespace, resource_id, language, field_name, value)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.namespace}, #{item.resourceId}, #{item.language}, #{item.fieldName}, #{item.value})
+        </foreach>
+        ON CONFLICT (namespace, resource_id, language, field_name)
+        DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP
+    </insert>
+
+</mapper>

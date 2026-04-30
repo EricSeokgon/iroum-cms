@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    SEO 리다이렉트 매퍼 XML.
+    REQ-CONTENT-005-D-8: URL 리다이렉트 관리
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.seo.mapper.SeoRedirectMapper">
+
+    <resultMap id="seoRedirectResultMap" type="kr.co.ircp.cms.domain.content.seo.entity.SeoRedirect">
+        <id     property="id"         column="id"/>
+        <result property="fromPath"   column="from_path"/>
+        <result property="toPath"     column="to_path"/>
+        <result property="httpStatus" column="http_status"/>
+        <result property="active"     column="is_active"/>
+        <result property="reason"     column="reason"/>
+        <result property="createdAt"  column="created_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="seoRedirectResultMap">
+        SELECT * FROM seo_redirect ORDER BY created_at DESC
+    </select>
+
+    <select id="findActiveByFromPath" resultMap="seoRedirectResultMap">
+        SELECT * FROM seo_redirect
+        WHERE from_path = #{fromPath} AND is_active = TRUE
+        LIMIT 1
+    </select>
+
+    <insert id="upsert" parameterType="kr.co.ircp.cms.domain.content.seo.entity.SeoRedirect"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO seo_redirect (from_path, to_path, http_status, is_active, reason)
+        VALUES (#{fromPath}, #{toPath}, #{httpStatus}, #{active}, #{reason})
+        ON CONFLICT (from_path) DO UPDATE
+            SET to_path     = #{toPath},
+                http_status = #{httpStatus},
+                is_active   = TRUE,
+                reason      = #{reason}
+    </insert>
+
+    <delete id="deleteById">
+        DELETE FROM seo_redirect WHERE id = #{id}
+    </delete>
+
+    <update id="deactivate">
+        UPDATE seo_redirect SET is_active = FALSE WHERE id = #{id}
+    </update>
+
+</mapper>

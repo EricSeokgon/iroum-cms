@@ -51,6 +51,10 @@ dependencies {
     // AOP — AspectJ 위빙 지원 (@AuditLog Aspect, SPEC-CMS-005 §7)
     implementation("org.springframework.boot:spring-boot-starter-aop")
 
+    // ─── Caffeine 캐시 (REQ-CONTENT-007-D-3) ─────────────────────────────────
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+
     // ─── MyBatis ──────────────────────────────────────────────────────────
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:$mybatisStarterVersion")
 

@@ -51,6 +51,9 @@ public interface PageMapper {
     /** 예약 발행 배치 대상 목록 */
     List<Page> findScheduledDue();
 
+    /** 사이트별 PUBLISHED 페이지 목록 (sitemap 생성용) */
+    List<Page> findPublishedBySiteId(@Param("siteId") Long siteId);
+
     /** seo_redirect 자동 INSERT (slug 변경 시) */
     void insertSeoRedirect(
             @Param("fromPath") String fromPath,

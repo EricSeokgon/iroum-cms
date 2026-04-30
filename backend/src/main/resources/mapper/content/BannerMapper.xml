@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    배너 매퍼 XML.
+    REQ-CONTENT-009-D: 배너 CRUD + 클릭 카운트 + 활성 배너 조회
+-->
+<mapper namespace="kr.co.ircp.cms.domain.content.banner.mapper.BannerMapper">
+
+    <resultMap id="bannerResultMap" type="kr.co.ircp.cms.domain.content.banner.entity.Banner">
+        <id     property="id"              column="id"/>
+        <result property="siteId"          column="site_id"/>
+        <result property="bannerGroupCode" column="banner_group_code"/>
+        <result property="title"           column="title"/>
+        <result property="imageUrl"        column="image_url"/>
+        <result property="linkUrl"         column="link_url"/>
+        <result property="linkTarget"      column="link_target"/>
+        <result property="altText"         column="alt_text"/>
+        <result property="displayFrom"     column="display_from"/>
+        <result property="displayUntil"    column="display_until"/>
+        <result property="sortOrder"       column="sort_order"/>
+        <result property="clickCount"      column="click_count"/>
+        <result property="status"          column="status"/>
+        <result property="createdAt"       column="created_at"/>
+        <result property="updatedAt"       column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="bannerResultMap">
+        SELECT * FROM banner WHERE id = #{id}
+    </select>
+
+    <select id="findActiveByGroupAndTimeWindow" resultMap="bannerResultMap">
+        SELECT * FROM banner
+        WHERE banner_group_code = #{bannerGroupCode}
+          AND status = 'ACTIVE'
+          AND display_from  &lt;= #{now}
+          AND display_until &gt;= #{now}
+        ORDER BY sort_order ASC
+    </select>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.content.banner.entity.Banner"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO banner (site_id, banner_group_code, title, image_url, link_url, link_target,
+                            alt_text, display_from, display_until, sort_order, click_count, status)
+        VALUES (#{siteId}, #{bannerGroupCode}, #{title}, #{imageUrl}, #{linkUrl}, #{linkTarget},
+                #{altText}, #{displayFrom}, #{displayUntil}, #{sortOrder}, 0, #{status})
+    </insert>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.content.banner.entity.Banner">
+        UPDATE banner SET title = #{title}, image_url = #{imageUrl}, link_url = #{linkUrl},
+                          alt_text = #{altText}, display_from = #{displayFrom},
+                          display_until = #{displayUntil}, sort_order = #{sortOrder},
+                          updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM banner WHERE id = #{id}
+    </delete>
+
+    <update id="incrementClickCount">
+        UPDATE banner SET click_count = click_count + 1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+</mapper>

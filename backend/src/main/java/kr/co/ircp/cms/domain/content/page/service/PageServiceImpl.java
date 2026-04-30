@@ -13,7 +13,10 @@ import kr.co.ircp.cms.domain.content.page.exception.PageStatusTransitionExceptio
 import kr.co.ircp.cms.domain.content.page.mapper.ContentBlockMapper;
 import kr.co.ircp.cms.domain.content.page.mapper.PageHistoryMapper;
 import kr.co.ircp.cms.domain.content.page.mapper.PageMapper;
+import kr.co.ircp.cms.domain.content.seo.service.SeoRedirectService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,15 +43,15 @@ public class PageServiceImpl implements PageService {
     private final PageMapper pageMapper;
     private final ContentBlockMapper contentBlockMapper;
     private final PageHistoryMapper pageHistoryMapper;
+    private final SeoRedirectService seoRedirectService;
 
     /**
      * 페이지 생성.
      * REQ-CONTENT-005-D-1: slug 패턴 검증, 유일성 검증, status='DRAFT' 초기값
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 slug 변경 시 "page:slug:{slug}" 캐시 무효화
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"sitemap"}, allEntries = true)
     public PageResponse createPage(PageCreateRequest request, Long createdBy) {
         // slug 패턴 검증
         if (!SLUG_PATTERN.matcher(request.slug()).matches()) {
@@ -103,9 +106,10 @@ public class PageServiceImpl implements PageService {
         pageHistoryMapper.insert(history);
 
         // slug 변경 시 seo_redirect 자동 INSERT (REQ-CONTENT-005-D-8)
+        // Step 2: pageMapper.insertSeoRedirect 직접 호출 → SeoRedirectService 추상화로 변경
         String oldSlug = existing.getSlug();
         if (request.slug() != null && !request.slug().equals(oldSlug)) {
-            pageMapper.insertSeoRedirect(
+            seoRedirectService.upsertFromSlugChange(
                     "/" + oldSlug,
                     "/" + request.slug(),
                     "SLUG_CHANGE_PAGE_ID:" + id
@@ -131,11 +135,10 @@ public class PageServiceImpl implements PageService {
     /**
      * 페이지 즉시 발행.
      * REQ-CONTENT-005-D-3: DRAFT/RETRACTED → PUBLISHED. 이미 PUBLISHED면 예외.
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 "page:slug:{slug}" 캐시 무효화
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"pageBySlug", "sitemap"}, allEntries = true)
     public PageResponse publishPage(Long id, PagePublishRequest request, Long publishedBy) {
         Page page = pageMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
@@ -177,11 +180,10 @@ public class PageServiceImpl implements PageService {
     /**
      * 페이지 철회.
      * REQ-CONTENT-005-D-5: PUBLISHED → RETRACTED
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 "page:slug:{slug}" 캐시 무효화
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"pageBySlug", "sitemap"}, allEntries = true)
     public PageResponse retractPage(Long id, Long retractedBy) {
         Page page = pageMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
@@ -238,10 +240,9 @@ public class PageServiceImpl implements PageService {
     /**
      * slug 기반 공개 페이지 조회.
      * REQ-CONTENT-005-D: PUBLISHED 상태만 반환
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 "page:slug:{slug}" Caffeine 캐시 도입 (TTL 10분)
      */
     @Override
+    @Cacheable(value = "pageBySlug", key = "#siteId + ':' + #slug")
     public PageResponse getPublishedPageBySlug(Long siteId, String slug) {
         Page page = pageMapper.findBySiteIdAndSlug(siteId, slug)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. slug=" + slug));
