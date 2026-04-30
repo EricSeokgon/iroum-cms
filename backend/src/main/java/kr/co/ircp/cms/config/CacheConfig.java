@@ -14,13 +14,18 @@ import java.util.concurrent.TimeUnit;
 /**
  * Caffeine 캐시 설정.
  * REQ-CONTENT-007-D-3: 서비스 레이어 캐시 도입
+ * REQ-SYSTEM-004-D: 공통코드 캐시 (codes, codeGroups — TTL 1시간)
+ * REQ-SYSTEM-002-D: 대시보드 KPI 캐시 (dashboard — TTL 60초)
  *
  * <p>캐시별 TTL:
  * <ul>
- *   <li>menuTree  — TTL 5분,  max 100 entries</li>
- *   <li>pageBySlug — TTL 10분, max 1000 entries</li>
- *   <li>sitemap    — TTL 1시간, max 10 entries</li>
- *   <li>popupActive — TTL 1분,  max 100 entries</li>
+ *   <li>menuTree     — TTL 5분,   max 100 entries</li>
+ *   <li>pageBySlug   — TTL 10분,  max 1000 entries</li>
+ *   <li>sitemap      — TTL 1시간, max 10 entries</li>
+ *   <li>popupActive  — TTL 1분,   max 100 entries</li>
+ *   <li>codes        — TTL 1시간, max 500 entries (공통코드)</li>
+ *   <li>codeGroups   — TTL 1시간, max 100 entries (공통코드 그룹)</li>
+ *   <li>dashboard    — TTL 60초,  max 10 entries  (대시보드 KPI)</li>
  * </ul>
  */
 @Configuration
@@ -43,7 +48,19 @@ public class CacheConfig {
         CaffeineCache popupActive = build("popupActive",
                 Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.MINUTES).maximumSize(100));
 
-        manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive));
+        // REQ-SYSTEM-004-D: 공통코드 캐시
+        CaffeineCache codes = build("codes",
+                Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(500));
+
+        CaffeineCache codeGroups = build("codeGroups",
+                Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(100));
+
+        // REQ-SYSTEM-002-D: 대시보드 KPI 캐시 (60초 TTL)
+        CaffeineCache dashboard = build("dashboard",
+                Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).maximumSize(10));
+
+        manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
+                codes, codeGroups, dashboard));
         return manager;
     }
 

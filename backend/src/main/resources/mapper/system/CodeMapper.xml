@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.system.code.mapper.CodeMapper">
+
+    <resultMap id="CodeRM" type="kr.co.ircp.cms.domain.system.code.entity.Code">
+        <id     property="id"          column="id"/>
+        <result property="groupCode"   column="group_code"/>
+        <result property="code"        column="code"/>
+        <result property="name"        column="name"/>
+        <result property="description" column="description"/>
+        <result property="sortOrder"   column="sort_order"/>
+        <result property="status"      column="status"/>
+        <result property="extraData"   column="extra_data"/>
+        <result property="createdAt"   column="created_at"/>
+        <result property="updatedAt"   column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.system.code.entity.Code"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO code (group_code, code, name, description, sort_order, status, extra_data)
+        VALUES (#{groupCode}, #{code}, #{name}, #{description},
+                COALESCE(#{sortOrder}, 0), COALESCE(#{status}, 'ACTIVE'), #{extraData}::jsonb)
+    </insert>
+
+    <select id="findById" resultMap="CodeRM">
+        SELECT id, group_code, code, name, description, sort_order, status,
+               extra_data::text AS extra_data, created_at, updated_at
+        FROM code WHERE id = #{id}
+    </select>
+
+    <select id="findActiveByGroupCode" resultMap="CodeRM">
+        SELECT id, group_code, code, name, description, sort_order, status,
+               extra_data::text AS extra_data, created_at, updated_at
+        FROM code
+        WHERE group_code = #{groupCode} AND status = 'ACTIVE'
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="findActiveByGroupCodes" resultMap="CodeRM">
+        SELECT id, group_code, code, name, description, sort_order, status,
+               extra_data::text AS extra_data, created_at, updated_at
+        FROM code
+        WHERE group_code IN
+        <foreach item="gc" collection="groupCodes" open="(" separator="," close=")">
+            #{gc}
+        </foreach>
+        AND status = 'ACTIVE'
+        ORDER BY group_code ASC, sort_order ASC
+    </select>
+
+    <update id="update" parameterType="kr.co.ircp.cms.domain.system.code.entity.Code">
+        UPDATE code
+        SET code = #{code}, name = #{name}, description = #{description},
+            sort_order = #{sortOrder}, extra_data = #{extraData}::jsonb,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM code WHERE id = #{id}
+    </delete>
+
+    <select id="existsByGroupCodeAndCode" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM code WHERE group_code = #{groupCode} AND code = #{code})
+    </select>
+
+    <select id="existsByGroupCodeAndCodeExcludeId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM code
+            WHERE group_code = #{groupCode} AND code = #{code} AND id != #{excludeId}
+        )
+    </select>
+
+</mapper>

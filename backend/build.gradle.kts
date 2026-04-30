@@ -55,6 +55,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
+    // ─── Micrometer Prometheus (REQ-SYSTEM-006-D) ────────────────────────────
+    implementation("io.micrometer:micrometer-registry-prometheus")
+
+    // ─── Spring Retry (REQ-SYSTEM-002-D 배치 재시도) ──────────────────────────
+    implementation("org.springframework.retry:spring-retry")
+
     // ─── MyBatis ──────────────────────────────────────────────────────────
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:$mybatisStarterVersion")
 

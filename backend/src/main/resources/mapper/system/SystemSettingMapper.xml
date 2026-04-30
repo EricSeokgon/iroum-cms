@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.system.setting.mapper.SystemSettingMapper">
+
+    <resultMap id="SettingRM" type="kr.co.ircp.cms.domain.system.setting.entity.SystemSetting">
+        <id     property="key"         column="key"/>
+        <result property="value"       column="value"/>
+        <result property="valueType"   column="value_type"/>
+        <result property="description" column="description"/>
+        <result property="createdAt"   column="created_at"/>
+        <result property="updatedAt"   column="updated_at"/>
+    </resultMap>
+
+    <!-- ON CONFLICT upsert: key PK 충돌 시 value/description 갱신 -->
+    <insert id="upsert" parameterType="kr.co.ircp.cms.domain.system.setting.entity.SystemSetting">
+        INSERT INTO system_setting (key, value, value_type, description)
+        VALUES (#{key}, #{value}, #{valueType}, #{description})
+        ON CONFLICT (key) DO UPDATE SET
+            value       = EXCLUDED.value,
+            description = EXCLUDED.description,
+            updated_at  = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="findByKey" resultMap="SettingRM">
+        SELECT key, value, value_type, description, created_at, updated_at
+        FROM system_setting
+        WHERE key = #{key}
+    </select>
+
+    <select id="findAll" resultMap="SettingRM">
+        SELECT key, value, value_type, description, created_at, updated_at
+        FROM system_setting
+        ORDER BY key ASC
+    </select>
+
+</mapper>

@@ -2,7 +2,9 @@ package kr.co.ircp.cms.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -16,6 +18,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Configuration
 @EnableAsync
+@EnableScheduling
+@EnableRetry
 public class AsyncConfig {
 
     // @MX:WARN: [AUTO] auditExecutor — CallerRunsPolicy 사용. 큐 포화 시 호출 스레드가 직접 실행
@@ -29,6 +33,24 @@ public class AsyncConfig {
         executor.setThreadNamePrefix("audit-");
         // 큐 포화 시 callerRuns — 감사 로그 유실보다 지연이 낫다
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * 접속 로그 비동기 저장 전용 실행기.
+     * REQ-SYSTEM-001-D: AccessLogFilter → AccessLogService 비동기 저장
+     * auditExecutor 재사용 대신 분리하여 접속 로그 폭증이 감사 로그에 영향을 주지 않도록 설계.
+     */
+    @Bean(name = "accessLogExecutor")
+    public Executor accessLogExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("access-log-");
+        // 큐 포화 시 조용히 폐기 (접속 로그 유실보다 응답 영향을 방지)
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         executor.initialize();
         return executor;
     }

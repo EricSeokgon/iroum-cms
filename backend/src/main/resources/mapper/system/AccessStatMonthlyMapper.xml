@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.system.stats.mapper.AccessStatMonthlyMapper">
+
+    <resultMap id="MonthlyRM" type="kr.co.ircp.cms.domain.system.stats.entity.AccessStatMonthly">
+        <result property="statMonth"      column="stat_month"/>
+        <result property="siteId"         column="site_id"/>
+        <result property="totalVisits"    column="total_visits"/>
+        <result property="uniqueVisitors" column="unique_visitors"/>
+        <result property="pageViews"      column="page_views"/>
+        <result property="avgResponseMs"  column="avg_response_ms"/>
+        <result property="errorCount"     column="error_count"/>
+    </resultMap>
+
+    <resultMap id="TopPageRM" type="kr.co.ircp.cms.domain.system.stats.dto.TopPageResponse">
+        <result property="pageUrl" column="page_url"/>
+        <result property="count"   column="visit_count"/>
+        <result property="rank"    column="rank"/>
+    </resultMap>
+
+    <!-- 전월 daily → monthly UPSERT -->
+    <update id="upsertForMonth">
+        INSERT INTO access_stat_monthly (stat_month, site_id, total_visits, unique_visitors,
+                                         page_views, avg_response_ms, error_count,
+                                         top_pages, top_referrers, top_browsers)
+        SELECT
+            #{statMonth},
+            #{siteId},
+            COALESCE(SUM(total_visits),    0) AS total_visits,
+            COALESCE(SUM(unique_visitors), 0) AS unique_visitors,
+            COALESCE(SUM(page_views),      0) AS page_views,
+            COALESCE(AVG(avg_response_ms)::int, 0) AS avg_response_ms,
+            COALESCE(SUM(error_count),     0) AS error_count,
+            '[]'::jsonb,
+            '[]'::jsonb,
+            '[]'::jsonb
+        FROM access_stat_daily
+        WHERE TO_CHAR(stat_date, 'YYYY-MM') = #{statMonth}
+          AND site_id = #{siteId}
+        ON CONFLICT (stat_month, site_id) DO UPDATE SET
+            total_visits    = EXCLUDED.total_visits,
+            unique_visitors = EXCLUDED.unique_visitors,
+            page_views      = EXCLUDED.page_views,
+            avg_response_ms = EXCLUDED.avg_response_ms,
+            error_count     = EXCLUDED.error_count
+    </update>
+
+    <select id="findByMonthAndSite" resultMap="MonthlyRM">
+        SELECT stat_month, site_id, total_visits, unique_visitors, page_views,
+               avg_response_ms, error_count
+        FROM access_stat_monthly
+        WHERE stat_month = #{statMonth} AND site_id = #{siteId}
+    </select>
+
+    <!-- Top Pages: access_log 직접 집계 -->
+    <select id="findTopPages" resultMap="TopPageRM">
+        SELECT
+            page_url,
+            COUNT(*) AS visit_count,
+            ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rank
+        FROM access_log
+        WHERE site_id = #{siteId}
+          AND created_at >= NOW() - (#{days} || ' days')::INTERVAL
+        GROUP BY page_url
+        ORDER BY visit_count DESC
+        LIMIT 10
+    </select>
+
+</mapper>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.system.accesslog.mapper.AccessLogMapper">
+
+    <resultMap id="AccessLogRM" type="kr.co.ircp.cms.domain.system.accesslog.entity.AccessLog">
+        <id     property="id"             column="id"/>
+        <result property="siteId"         column="site_id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="sessionId"      column="session_id"/>
+        <result property="ipHash"         column="ip_hash"/>
+        <result property="userAgent"      column="user_agent"/>
+        <result property="referrer"       column="referrer"/>
+        <result property="pageUrl"        column="page_url"/>
+        <result property="statusCode"     column="status_code"/>
+        <result property="responseTimeMs" column="response_time_ms"/>
+        <result property="createdAt"      column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.system.accesslog.entity.AccessLog">
+        INSERT INTO access_log (site_id, user_id, session_id, ip_hash, user_agent, referrer,
+                                page_url, status_code, response_time_ms, created_at)
+        VALUES (#{siteId}, #{userId}, #{sessionId}, #{ipHash}, #{userAgent}, #{referrer},
+                #{pageUrl}, #{statusCode}, #{responseTimeMs},
+                COALESCE(#{createdAt}, CURRENT_TIMESTAMP))
+    </insert>
+
+    <select id="findBySearch" resultMap="AccessLogRM">
+        SELECT id, site_id, user_id, session_id, ip_hash, user_agent, referrer,
+               page_url, status_code, response_time_ms, created_at
+        FROM access_log
+        <where>
+            <if test="req.from != null">
+                AND created_at &gt;= #{req.from}::date
+            </if>
+            <if test="req.to != null">
+                AND created_at &lt; #{req.to}::date + INTERVAL '1 day'
+            </if>
+            <if test="req.statusCode != null">
+                AND status_code = #{req.statusCode}
+            </if>
+            <if test="req.pageUrl != null and req.pageUrl != ''">
+                AND page_url ILIKE '%' || #{req.pageUrl} || '%'
+            </if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{req.size} OFFSET #{req.offset}
+    </select>
+
+    <select id="countBySearch" resultType="long">
+        SELECT COUNT(*)
+        FROM access_log
+        <where>
+            <if test="req.from != null">
+                AND created_at &gt;= #{req.from}::date
+            </if>
+            <if test="req.to != null">
+                AND created_at &lt; #{req.to}::date + INTERVAL '1 day'
+            </if>
+            <if test="req.statusCode != null">
+                AND status_code = #{req.statusCode}
+            </if>
+            <if test="req.pageUrl != null and req.pageUrl != ''">
+                AND page_url ILIKE '%' || #{req.pageUrl} || '%'
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.system.stats.mapper.AccessStatDailyMapper">
+
+    <resultMap id="DailyRM" type="kr.co.ircp.cms.domain.system.stats.entity.AccessStatDaily">
+        <result property="statDate"       column="stat_date"/>
+        <result property="siteId"         column="site_id"/>
+        <result property="totalVisits"    column="total_visits"/>
+        <result property="uniqueVisitors" column="unique_visitors"/>
+        <result property="uniqueSessions" column="unique_sessions"/>
+        <result property="pageViews"      column="page_views"/>
+        <result property="avgResponseMs"  column="avg_response_ms"/>
+        <result property="errorCount"     column="error_count"/>
+    </resultMap>
+
+    <resultMap id="TrendRM" type="kr.co.ircp.cms.domain.system.stats.dto.TrendItemResponse">
+        <result property="date"      column="stat_date"/>
+        <result property="visits"    column="total_visits"/>
+        <result property="pageViews" column="page_views"/>
+        <result property="errors"    column="error_count"/>
+    </resultMap>
+
+    <!-- 전일 access_log → access_stat_daily UPSERT -->
+    <update id="upsertForDate">
+        INSERT INTO access_stat_daily (stat_date, site_id, total_visits, unique_visitors,
+                                       unique_sessions, page_views, avg_response_ms, error_count)
+        SELECT
+            #{targetDate}::date,
+            #{siteId},
+            COUNT(*)                              AS total_visits,
+            COUNT(DISTINCT ip_hash)               AS unique_visitors,
+            COUNT(DISTINCT session_id)            AS unique_sessions,
+            COUNT(*)                              AS page_views,
+            COALESCE(AVG(response_time_ms)::int,0) AS avg_response_ms,
+            COUNT(*) FILTER (WHERE status_code >= 500) AS error_count
+        FROM access_log
+        WHERE created_at >= #{targetDate}::date
+          AND created_at  < #{targetDate}::date + INTERVAL '1 day'
+          AND site_id = #{siteId}
+        ON CONFLICT (stat_date, site_id) DO UPDATE SET
+            total_visits    = EXCLUDED.total_visits,
+            unique_visitors = EXCLUDED.unique_visitors,
+            unique_sessions = EXCLUDED.unique_sessions,
+            page_views      = EXCLUDED.page_views,
+            avg_response_ms = EXCLUDED.avg_response_ms,
+            error_count     = EXCLUDED.error_count
+    </update>
+
+    <select id="findByDateAndSite" resultMap="DailyRM">
+        SELECT stat_date, site_id, total_visits, unique_visitors, unique_sessions,
+               page_views, avg_response_ms, error_count
+        FROM access_stat_daily
+        WHERE stat_date = #{statDate} AND site_id = #{siteId}
+    </select>
+
+    <select id="findTrend30Days" resultMap="TrendRM">
+        SELECT stat_date, total_visits, page_views, error_count
+        FROM access_stat_daily
+        WHERE site_id = #{siteId}
+          AND stat_date >= CURRENT_DATE - INTERVAL '30 days'
+        ORDER BY stat_date ASC
+    </select>
+
+    <select id="findToday" resultMap="DailyRM">
+        SELECT stat_date, site_id, total_visits, unique_visitors, unique_sessions,
+               page_views, avg_response_ms, error_count
+        FROM access_stat_daily
+        WHERE stat_date = CURRENT_DATE AND site_id = #{siteId}
+    </select>
+
+    <select id="findLast24hStats" resultMap="DailyRM">
+        SELECT
+            CURRENT_DATE AS stat_date,
+            #{siteId}   AS site_id,
+            COUNT(*)    AS total_visits,
+            COUNT(DISTINCT ip_hash)    AS unique_visitors,
+            COUNT(DISTINCT session_id) AS unique_sessions,
+            COUNT(*)                   AS page_views,
+            COALESCE(AVG(response_time_ms)::int, 0) AS avg_response_ms,
+            COUNT(*) FILTER (WHERE status_code >= 500) AS error_count
+        FROM access_log
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+          AND site_id = #{siteId}
+    </select>
+
+</mapper>
