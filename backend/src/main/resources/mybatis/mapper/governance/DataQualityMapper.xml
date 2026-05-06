@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.DataQualityMapper">
+
+    <resultMap id="DataQualityRuleRM"
+               type="kr.co.ircp.cms.domain.governance.entity.DataQualityRule">
+        <id     property="id"            column="id"/>
+        <result property="targetTable"   column="target_table"/>
+        <result property="targetColumn"  column="target_column"/>
+        <result property="ruleType"      column="rule_type"/>
+        <result property="threshold"     column="threshold"/>
+        <result property="rangeMin"      column="range_min"/>
+        <result property="rangeMax"      column="range_max"/>
+        <result property="severity"      column="severity"/>
+        <result property="status"        column="status"/>
+        <result property="scheduleCron"  column="schedule_cron"/>
+        <result property="description"   column="description"/>
+        <result property="createdAt"     column="created_at"/>
+        <result property="updatedAt"     column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="DataQualityReportRM"
+               type="kr.co.ircp.cms.domain.governance.entity.DataQualityReport">
+        <id     property="id"            column="id"/>
+        <result property="ruleId"        column="rule_id"/>
+        <result property="checkedAt"     column="checked_at"/>
+        <result property="measuredValue" column="measured_value"/>
+        <result property="violation"     column="violation"/>
+        <result property="detail"        column="detail"/>
+        <result property="notified"      column="notified"/>
+    </resultMap>
+
+    <select id="findRuleById" resultMap="DataQualityRuleRM">
+        SELECT * FROM data_quality_rule WHERE id = #{id}
+    </select>
+
+    <select id="findActiveRules" resultMap="DataQualityRuleRM">
+        SELECT * FROM data_quality_rule
+        WHERE status = 'ACTIVE'
+        ORDER BY id
+    </select>
+
+    <insert id="insertRule"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataQualityRule"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO data_quality_rule (
+            target_table, target_column, rule_type, threshold,
+            range_min, range_max, severity, status, schedule_cron, description
+        ) VALUES (
+            #{targetTable}, #{targetColumn}, #{ruleType}, #{threshold},
+            #{rangeMin}, #{rangeMax},
+            COALESCE(#{severity},'WARN'), COALESCE(#{status},'ACTIVE'),
+            COALESCE(#{scheduleCron},'0 0 6 * * *'),
+            #{description}
+        )
+    </insert>
+
+    <insert id="insertReport"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataQualityReport"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO data_quality_report (
+            rule_id, checked_at, measured_value, violation, detail, notified
+        ) VALUES (
+            #{ruleId},
+            COALESCE(#{checkedAt}, CURRENT_TIMESTAMP),
+            #{measuredValue}, #{violation}, #{detail},
+            COALESCE(#{notified}, FALSE)
+        )
+    </insert>
+
+    <select id="findReportsByRule" resultMap="DataQualityReportRM">
+        SELECT * FROM data_quality_report
+        WHERE rule_id = #{ruleId}
+        ORDER BY checked_at DESC
+        LIMIT 100
+    </select>
+
+    <select id="findRulesFiltered" resultMap="DataQualityRuleRM">
+        SELECT * FROM data_quality_rule
+        <where>
+            <if test="p.targetTable != null">AND target_table = #{p.targetTable}</if>
+            <if test="p.ruleType    != null">AND rule_type    = #{p.ruleType}</if>
+            <if test="p.status      != null">AND status       = #{p.status}</if>
+        </where>
+        ORDER BY id
+    </select>
+
+    <update id="updateRule"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataQualityRule">
+        UPDATE data_quality_rule SET
+            target_table  = #{targetTable},
+            target_column = #{targetColumn},
+            rule_type     = #{ruleType},
+            threshold     = #{threshold},
+            range_min     = #{rangeMin},
+            range_max     = #{rangeMax},
+            severity      = #{severity},
+            status        = #{status},
+            schedule_cron = #{scheduleCron},
+            description   = #{description},
+            updated_at    = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteRule">
+        DELETE FROM data_quality_rule WHERE id = #{id}
+    </delete>
+
+    <select id="countReportsByRuleId" resultType="int">
+        SELECT COUNT(*) FROM data_quality_report WHERE rule_id = #{ruleId}
+    </select>
+
+    <update id="updateReportNotified">
+        UPDATE data_quality_report SET notified = TRUE WHERE id = #{id}
+    </update>
+
+    <select id="findReportsFiltered" resultMap="DataQualityReportRM">
+        SELECT r.* FROM data_quality_report r
+        <if test="p.severity != null">JOIN data_quality_rule q ON q.id = r.rule_id</if>
+        <where>
+            <if test="p.ruleId    != null">AND r.rule_id   = #{p.ruleId}</if>
+            <if test="p.violation != null">AND r.violation = #{p.violation}</if>
+            <if test="p.severity  != null">AND q.severity  = #{p.severity}</if>
+        </where>
+        ORDER BY r.checked_at DESC
+        LIMIT #{p.size} OFFSET #{p.offset}
+    </select>
+
+    <select id="countReportsFiltered" resultType="int">
+        SELECT COUNT(*) FROM data_quality_report r
+        <if test="p.severity != null">JOIN data_quality_rule q ON q.id = r.rule_id</if>
+        <where>
+            <if test="p.ruleId    != null">AND r.rule_id   = #{p.ruleId}</if>
+            <if test="p.violation != null">AND r.violation = #{p.violation}</if>
+            <if test="p.severity  != null">AND q.severity  = #{p.severity}</if>
+        </where>
+    </select>
+
+    <!-- NULL_RATIO 측정: target_column이 NULL인 행 비율. -->
+    <select id="measureNullRatio" resultType="java.math.BigDecimal">
+        SELECT CASE WHEN COUNT(*) = 0 THEN 0
+                    ELSE (COUNT(*) FILTER (WHERE ${targetColumn} IS NULL))::numeric
+                         / COUNT(*)::numeric
+               END
+        FROM ${targetTable}
+    </select>
+
+    <!-- UNIQUE 측정: target_column 중복 그룹 수 (group by + having). -->
+    <select id="measureDuplicateGroups" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT ${targetColumn}
+            FROM ${targetTable}
+            WHERE ${targetColumn} IS NOT NULL
+            GROUP BY ${targetColumn}
+            HAVING COUNT(*) > 1
+        ) AS dup_groups
+    </select>
+
+    <!--
+        FRESHNESS 측정: 가장 최근 created_at 이후 경과 시간(시).
+        호출 측에서 적절한 timestamp 컬럼이 created_at임을 보장해야 한다.
+        테이블이 없거나 비었으면 NULL→9999로 처리.
+    -->
+    <select id="measureFreshnessHours" resultType="java.math.BigDecimal">
+        SELECT COALESCE(
+            EXTRACT(EPOCH FROM (NOW() - MAX(created_at))) / 3600.0,
+            9999.0
+        )::numeric
+        FROM ${targetTable}
+    </select>
+</mapper>

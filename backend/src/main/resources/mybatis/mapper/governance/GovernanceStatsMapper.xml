@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.GovernanceStatsMapper">
+
+    <resultMap id="BoardStatsDailyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.BoardStatsDaily">
+        <id     property="statDate"        column="stat_date"/>
+        <id     property="boardId"         column="board_id"/>
+        <result property="totalViews"      column="total_views"/>
+        <result property="uniqueVisitors"  column="unique_visitors"/>
+        <result property="postCount"       column="post_count"/>
+        <result property="commentCount"    column="comment_count"/>
+        <result property="avgResponseMs"   column="avg_response_ms"/>
+        <result property="aggregatedAt"    column="aggregated_at"/>
+    </resultMap>
+
+    <resultMap id="ContentViewStatsDailyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.ContentViewStatsDaily">
+        <id     property="statDate"       column="stat_date"/>
+        <id     property="contentId"      column="content_id"/>
+        <result property="viewCount"      column="view_count"/>
+        <result property="uniqueViewers"  column="unique_viewers"/>
+        <result property="avgDwellSec"    column="avg_dwell_sec"/>
+        <result property="aggregatedAt"   column="aggregated_at"/>
+    </resultMap>
+
+    <resultMap id="BoardStatsMonthlyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.BoardStatsMonthly">
+        <id     property="statMonth"      column="stat_month"/>
+        <id     property="boardId"        column="board_id"/>
+        <result property="totalViews"     column="total_views"/>
+        <result property="uniqueVisitors" column="unique_visitors"/>
+        <result property="postCount"      column="post_count"/>
+        <result property="commentCount"   column="comment_count"/>
+        <result property="aggregatedAt"   column="aggregated_at"/>
+    </resultMap>
+
+    <resultMap id="ContentViewStatsMonthlyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.ContentViewStatsMonthly">
+        <id     property="statMonth"      column="stat_month"/>
+        <id     property="contentId"      column="content_id"/>
+        <result property="viewCount"      column="view_count"/>
+        <result property="uniqueViewers"  column="unique_viewers"/>
+        <result property="aggregatedAt"   column="aggregated_at"/>
+    </resultMap>
+
+    <resultMap id="PolicyMatchStatsMonthlyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.PolicyMatchStatsMonthly">
+        <id     property="statMonth"           column="stat_month"/>
+        <id     property="policyId"            column="policy_id"/>
+        <result property="matchCount"          column="match_count"/>
+        <result property="applyCount"          column="apply_count"/>
+        <result property="applyConversionRate" column="apply_conversion_rate"/>
+        <result property="successCount"        column="success_count"/>
+        <result property="aggregatedAt"        column="aggregated_at"/>
+    </resultMap>
+
+    <resultMap id="SafetyStatsMonthlyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.SafetyStatsMonthly">
+        <id     property="statMonth"        column="stat_month"/>
+        <id     property="incidentCategory" column="incident_category"/>
+        <result property="incidentCount"    column="incident_count"/>
+        <result property="casualtyCount"    column="casualty_count"/>
+        <result property="severityAvg"      column="severity_avg"/>
+        <result property="aggregatedAt"     column="aggregated_at"/>
+    </resultMap>
+
+    <!--
+        REQ-DATA-001: page_url 정규식 '/board/{code}/...' 매칭으로 board_id 집계.
+        의존 테이블 'boards', 'bbs_post', 'bbs_comment'가 없을 수 있으므로,
+        information_schema에서 boards 존재 여부를 먼저 확인하는 ON-CONFLICT-FREE 방식으로 처리.
+        Step 1에서는 access_log만으로 page_url 패턴을 추출하고
+        board_id=1을 기본값으로 (단일 게시판 시드)간이 집계한다.
+        boards 테이블이 마이그레이션되면 Step 2에서 정식 매핑으로 확장.
+    -->
+    <update id="upsertBoardStatsDaily">
+        INSERT INTO board_stats_daily
+            (stat_date, board_id, total_views, unique_visitors, post_count, comment_count, avg_response_ms, aggregated_at)
+        SELECT
+            #{targetDate}::date AS stat_date,
+            COALESCE(
+                NULLIF((regexp_match(page_url, '^/board/(\d+)'))[1], '')::bigint,
+                1
+            ) AS board_id,
+            COUNT(*)::int                              AS total_views,
+            COUNT(DISTINCT ip_hash)::int               AS unique_visitors,
+            0::int                                     AS post_count,
+            0::int                                     AS comment_count,
+            COALESCE(AVG(response_time_ms)::int, 0)    AS avg_response_ms,
+            NOW()                                      AS aggregated_at
+        FROM access_log
+        WHERE created_at &gt;= #{targetDate}::date
+          AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+          AND page_url ~ '^/board/'
+        GROUP BY board_id
+        ON CONFLICT (stat_date, board_id) DO UPDATE SET
+            total_views     = EXCLUDED.total_views,
+            unique_visitors = EXCLUDED.unique_visitors,
+            post_count      = EXCLUDED.post_count,
+            comment_count   = EXCLUDED.comment_count,
+            avg_response_ms = EXCLUDED.avg_response_ms,
+            aggregated_at   = NOW()
+    </update>
+
+    <update id="upsertBoardStatsMonthly">
+        INSERT INTO board_stats_monthly
+            (stat_month, board_id, total_views, unique_visitors, post_count, comment_count, aggregated_at)
+        SELECT
+            #{targetMonth} AS stat_month,
+            board_id,
+            SUM(total_views)::int     AS total_views,
+            SUM(unique_visitors)::int AS unique_visitors,
+            SUM(post_count)::int      AS post_count,
+            SUM(comment_count)::int   AS comment_count,
+            NOW()
+        FROM board_stats_daily
+        WHERE TO_CHAR(stat_date, 'YYYY-MM') = #{targetMonth}
+        GROUP BY board_id
+        ON CONFLICT (stat_month, board_id) DO UPDATE SET
+            total_views     = EXCLUDED.total_views,
+            unique_visitors = EXCLUDED.unique_visitors,
+            post_count      = EXCLUDED.post_count,
+            comment_count   = EXCLUDED.comment_count,
+            aggregated_at   = NOW()
+    </update>
+
+    <!-- REQ-DATA-002: page_url '/contents/{id}' 패턴 → content_view_stats_daily UPSERT -->
+    <update id="upsertContentViewStatsDaily">
+        INSERT INTO content_view_stats_daily
+            (stat_date, content_id, view_count, unique_viewers, avg_dwell_sec, aggregated_at)
+        SELECT
+            #{targetDate}::date AS stat_date,
+            (regexp_match(page_url, '^/contents/(\d+)'))[1]::bigint AS content_id,
+            COUNT(*)::int            AS view_count,
+            COUNT(DISTINCT ip_hash)::int AS unique_viewers,
+            30::int                  AS avg_dwell_sec,
+            NOW()
+        FROM access_log
+        WHERE created_at &gt;= #{targetDate}::date
+          AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+          AND page_url ~ '^/contents/\d+'
+        GROUP BY content_id
+        ON CONFLICT (stat_date, content_id) DO UPDATE SET
+            view_count     = EXCLUDED.view_count,
+            unique_viewers = EXCLUDED.unique_viewers,
+            avg_dwell_sec  = EXCLUDED.avg_dwell_sec,
+            aggregated_at  = NOW()
+    </update>
+
+    <update id="upsertContentViewStatsMonthly">
+        INSERT INTO content_view_stats_monthly
+            (stat_month, content_id, view_count, unique_viewers, aggregated_at)
+        SELECT
+            #{targetMonth} AS stat_month,
+            content_id,
+            SUM(view_count)::int     AS view_count,
+            SUM(unique_viewers)::int AS unique_viewers,
+            NOW()
+        FROM content_view_stats_daily
+        WHERE TO_CHAR(stat_date, 'YYYY-MM') = #{targetMonth}
+        GROUP BY content_id
+        ON CONFLICT (stat_month, content_id) DO UPDATE SET
+            view_count     = EXCLUDED.view_count,
+            unique_viewers = EXCLUDED.unique_viewers,
+            aggregated_at  = NOW()
+    </update>
+
+    <!--
+        REQ-DATA-003: SPEC-CMS-007 미반영. 의존 테이블 미존재 시 0건 처리.
+        호출 측 Job이 countTable로 사전 검증.
+    -->
+    <update id="upsertPolicyMatchStatsMonthly">
+        INSERT INTO policy_match_stats_monthly
+            (stat_month, policy_id, match_count, apply_count, apply_conversion_rate, success_count, aggregated_at)
+        VALUES (#{targetMonth}, 0, 0, 0, 0, 0, NOW())
+        ON CONFLICT (stat_month, policy_id) DO NOTHING
+    </update>
+
+    <!-- REQ-DATA-004: SPEC-CMS-006 미반영 시 0건 처리. -->
+    <update id="upsertSafetyStatsMonthly">
+        INSERT INTO safety_stats_monthly
+            (stat_month, incident_category, incident_count, casualty_count, severity_avg, aggregated_at)
+        VALUES (#{targetMonth}, 'PLACEHOLDER', 0, 0, 0, NOW())
+        ON CONFLICT (stat_month, incident_category) DO NOTHING
+    </update>
+
+    <select id="countTable" resultType="int">
+        SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = current_schema() AND table_name = #{tableName}
+    </select>
+
+    <select id="countBoardStatsDaily" resultType="int">
+        SELECT COUNT(*) FROM board_stats_daily WHERE stat_date = #{statDate}
+    </select>
+
+    <select id="findBoardStatsDaily" resultMap="BoardStatsDailyRM">
+        SELECT * FROM board_stats_daily WHERE stat_date = #{statDate}
+    </select>
+
+    <select id="findContentViewStatsDaily" resultMap="ContentViewStatsDailyRM">
+        SELECT * FROM content_view_stats_daily WHERE stat_date = #{statDate}
+    </select>
+
+    <!-- ─── 범위 조회 (REST 노출용) ─────────────────────────────────────── -->
+
+    <select id="findBoardStatsDailyRange" resultMap="BoardStatsDailyRM">
+        SELECT * FROM board_stats_daily
+        <where>
+            <if test="p.boardId != null">AND board_id = #{p.boardId}</if>
+            <if test="p.from    != null">AND stat_date &gt;= #{p.from}</if>
+            <if test="p.to      != null">AND stat_date &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_date DESC, board_id
+        LIMIT 1000
+    </select>
+
+    <select id="findBoardStatsMonthlyRange" resultMap="BoardStatsMonthlyRM">
+        SELECT * FROM board_stats_monthly
+        <where>
+            <if test="p.boardId != null">AND board_id = #{p.boardId}</if>
+            <if test="p.from    != null">AND stat_month &gt;= #{p.from}</if>
+            <if test="p.to      != null">AND stat_month &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_month DESC, board_id
+        LIMIT 1000
+    </select>
+
+    <select id="findContentViewStatsDailyRange" resultMap="ContentViewStatsDailyRM">
+        SELECT * FROM content_view_stats_daily
+        <where>
+            <if test="p.contentId != null">AND content_id = #{p.contentId}</if>
+            <if test="p.from      != null">AND stat_date &gt;= #{p.from}</if>
+            <if test="p.to        != null">AND stat_date &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_date DESC, content_id
+        LIMIT 1000
+    </select>
+
+    <select id="findContentViewStatsMonthlyRange" resultMap="ContentViewStatsMonthlyRM">
+        SELECT * FROM content_view_stats_monthly
+        <where>
+            <if test="p.contentId != null">AND content_id = #{p.contentId}</if>
+            <if test="p.from      != null">AND stat_month &gt;= #{p.from}</if>
+            <if test="p.to        != null">AND stat_month &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_month DESC, content_id
+        LIMIT 1000
+    </select>
+
+    <select id="findPolicyMatchStatsRange" resultMap="PolicyMatchStatsMonthlyRM">
+        SELECT * FROM policy_match_stats_monthly
+        <where>
+            <if test="p.policyId != null">AND policy_id = #{p.policyId}</if>
+            <if test="p.from     != null">AND stat_month &gt;= #{p.from}</if>
+            <if test="p.to       != null">AND stat_month &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_month DESC, policy_id
+        LIMIT 1000
+    </select>
+
+    <select id="findSafetyStatsRange" resultMap="SafetyStatsMonthlyRM">
+        SELECT * FROM safety_stats_monthly
+        <where>
+            <if test="p.category != null">AND incident_category = #{p.category}</if>
+            <if test="p.from     != null">AND stat_month &gt;= #{p.from}</if>
+            <if test="p.to       != null">AND stat_month &lt;= #{p.to}</if>
+        </where>
+        ORDER BY stat_month DESC, incident_category
+        LIMIT 1000
+    </select>
+</mapper>

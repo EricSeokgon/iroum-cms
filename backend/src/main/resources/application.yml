@@ -34,11 +34,13 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,backupStatus
       base-path: /actuator
   endpoint:
     health:
       show-details: when-authorized
+    backupStatus:
+      enabled: true
   info:
     env:
       enabled: true

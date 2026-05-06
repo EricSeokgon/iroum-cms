@@ -23,8 +23,8 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V17 마이그레이션 총 16개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    private static final int EXPECTED_MIGRATION_COUNT = 16;
+    // @MX:NOTE: [AUTO] V1~V18 마이그레이션 총 17개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    private static final int EXPECTED_MIGRATION_COUNT = 17;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -53,6 +53,6 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 .toList();
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                "12", "13", "14", "15", "16", "17");
+                "12", "13", "14", "15", "16", "17", "18");
     }
 }

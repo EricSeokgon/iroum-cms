@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.DataDictionaryMapper">
+
+    <resultMap id="DataDictionaryRM"
+               type="kr.co.ircp.cms.domain.governance.entity.DataDictionary">
+        <id     property="id"             column="id"/>
+        <result property="tableName"      column="table_name"/>
+        <result property="columnName"     column="column_name"/>
+        <result property="logicalNameKo"  column="logical_name_ko"/>
+        <result property="logicalNameEn"  column="logical_name_en"/>
+        <result property="dataDomain"     column="data_domain"/>
+        <result property="dataType"       column="data_type"/>
+        <result property="description"    column="description"/>
+        <result property="isPii"          column="is_pii"/>
+        <result property="isRequired"     column="is_required"/>
+        <result property="status"         column="status"/>
+        <result property="createdAt"      column="created_at"/>
+        <result property="updatedAt"      column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="DataDictionaryHistoryRM"
+               type="kr.co.ircp.cms.domain.governance.entity.DataDictionaryHistory">
+        <id     property="id"             column="id"/>
+        <result property="dictionaryId"   column="dictionary_id"/>
+        <result property="fieldChanged"   column="field_changed"/>
+        <result property="oldValue"       column="old_value"/>
+        <result property="newValue"       column="new_value"/>
+        <result property="changedBy"      column="changed_by"/>
+        <result property="changedAt"      column="changed_at"/>
+    </resultMap>
+
+    <resultMap id="SchemaColumnRM"
+               type="kr.co.ircp.cms.domain.governance.repository.DataDictionaryMapper$SchemaColumn">
+        <result property="tableName"  column="table_name"/>
+        <result property="columnName" column="column_name"/>
+    </resultMap>
+
+    <select id="findById" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary WHERE id = #{id}
+    </select>
+
+    <select id="findByTableAndColumn" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary
+        WHERE table_name = #{tableName} AND column_name = #{columnName}
+    </select>
+
+    <select id="findAll" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary ORDER BY table_name, column_name
+    </select>
+
+    <select id="findByTable" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary
+        WHERE table_name = #{tableName}
+        ORDER BY column_name
+    </select>
+
+    <insert id="insert"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataDictionary"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO data_dictionary (
+            table_name, column_name, logical_name_ko, logical_name_en,
+            data_domain, data_type, description, is_pii, is_required, status
+        ) VALUES (
+            #{tableName}, #{columnName}, #{logicalNameKo}, #{logicalNameEn},
+            #{dataDomain}, #{dataType}, #{description},
+            COALESCE(#{isPii}, FALSE), COALESCE(#{isRequired}, FALSE),
+            COALESCE(#{status},'ACTIVE')
+        )
+    </insert>
+
+    <update id="update"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataDictionary">
+        UPDATE data_dictionary SET
+            logical_name_ko = #{logicalNameKo},
+            logical_name_en = #{logicalNameEn},
+            data_domain     = #{dataDomain},
+            data_type       = #{dataType},
+            description     = #{description},
+            is_pii          = #{isPii},
+            is_required     = #{isRequired},
+            status          = #{status},
+            updated_at      = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <insert id="insertHistory"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.DataDictionaryHistory"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO data_dictionary_history (
+            dictionary_id, field_changed, old_value, new_value, changed_by
+        ) VALUES (
+            #{dictionaryId}, #{fieldChanged}, #{oldValue}, #{newValue}, #{changedBy}
+        )
+    </insert>
+
+    <select id="findHistory" resultMap="DataDictionaryHistoryRM">
+        SELECT * FROM data_dictionary_history
+        WHERE dictionary_id = #{dictionaryId}
+        ORDER BY changed_at DESC
+    </select>
+
+    <select id="findActualSchemaColumns" resultMap="SchemaColumnRM">
+        SELECT table_name, column_name
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name NOT LIKE 'flyway%'
+          AND table_name NOT LIKE 'pg_%'
+        ORDER BY table_name, column_name
+    </select>
+
+    <select id="findFiltered" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary
+        <where>
+            <if test="p.tableName != null">AND table_name = #{p.tableName}</if>
+            <if test="p.domain    != null">AND data_domain = #{p.domain}</if>
+            <if test="p.status    != null">AND status = #{p.status}</if>
+        </where>
+        ORDER BY table_name, column_name
+        LIMIT #{p.size} OFFSET #{p.offset}
+    </select>
+
+    <select id="countFiltered" resultType="int">
+        SELECT COUNT(*) FROM data_dictionary
+        <where>
+            <if test="p.tableName != null">AND table_name = #{p.tableName}</if>
+            <if test="p.domain    != null">AND data_domain = #{p.domain}</if>
+            <if test="p.status    != null">AND status = #{p.status}</if>
+        </where>
+    </select>
+
+    <select id="findAllForExport" resultMap="DataDictionaryRM">
+        SELECT * FROM data_dictionary
+        WHERE status = 'ACTIVE'
+        ORDER BY table_name, column_name
+    </select>
+
+    <update id="softDelete">
+        UPDATE data_dictionary
+        SET status = 'REMOVED', updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+</mapper>

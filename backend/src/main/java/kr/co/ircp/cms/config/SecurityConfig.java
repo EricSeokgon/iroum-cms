@@ -56,7 +56,8 @@ public class SecurityConfig {
                     "/swagger-ui/**",
                     "/swagger-ui.html",
                     "/actuator/health",
-                    "/actuator/info"
+                    "/actuator/info",
+                    "/actuator/backupStatus"
                 ).permitAll()
                 // REQ-BOARD-001~003: 게시판·게시글·댓글 목록·상세 공개 조회 허용
                 .requestMatchers(

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.BatchExecutionLogMapper">
+
+    <resultMap id="BatchExecutionLogRM"
+               type="kr.co.ircp.cms.domain.governance.entity.BatchExecutionLog">
+        <id     property="id"               column="id"/>
+        <result property="jobName"          column="job_name"/>
+        <result property="jobGroup"         column="job_group"/>
+        <result property="startedAt"        column="started_at"/>
+        <result property="finishedAt"       column="finished_at"/>
+        <result property="durationMs"       column="duration_ms"/>
+        <result property="status"           column="status"/>
+        <result property="recordsProcessed" column="records_processed"/>
+        <result property="recordsFailed"    column="records_failed"/>
+        <result property="errorSummary"     column="error_summary"/>
+        <result property="retryCount"       column="retry_count"/>
+        <result property="triggeredBy"      column="triggered_by"/>
+        <result property="operatorId"       column="operator_id"/>
+    </resultMap>
+
+    <insert id="insert"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.BatchExecutionLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO batch_execution_log (
+            job_name, job_group, started_at, status,
+            records_processed, records_failed, retry_count,
+            triggered_by, operator_id
+        ) VALUES (
+            #{jobName}, #{jobGroup}, #{startedAt}, #{status},
+            COALESCE(#{recordsProcessed},0), COALESCE(#{recordsFailed},0),
+            COALESCE(#{retryCount},0),
+            COALESCE(#{triggeredBy},'SCHEDULE'), #{operatorId}
+        )
+    </insert>
+
+    <update id="update"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.BatchExecutionLog">
+        UPDATE batch_execution_log
+        SET status            = #{status},
+            finished_at       = #{finishedAt},
+            duration_ms       = #{durationMs},
+            records_processed = COALESCE(#{recordsProcessed}, records_processed),
+            records_failed    = COALESCE(#{recordsFailed},    records_failed),
+            error_summary     = #{errorSummary},
+            retry_count       = COALESCE(#{retryCount}, retry_count)
+        WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="BatchExecutionLogRM">
+        SELECT * FROM batch_execution_log WHERE id = #{id}
+    </select>
+
+    <select id="findByGroup" resultMap="BatchExecutionLogRM">
+        SELECT * FROM batch_execution_log
+        WHERE job_group = #{jobGroup}
+        <if test="from != null">
+            AND started_at >= #{from}
+        </if>
+        <if test="to != null">
+            AND started_at &lt; #{to}
+        </if>
+        ORDER BY started_at DESC
+        LIMIT 200
+    </select>
+
+    <delete id="deleteOlderThan">
+        DELETE FROM batch_execution_log WHERE started_at &lt; #{threshold}
+    </delete>
+
+    <select id="findFiltered" resultMap="BatchExecutionLogRM">
+        SELECT * FROM batch_execution_log
+        <where>
+            <if test="p.jobGroup != null">AND job_group = #{p.jobGroup}</if>
+            <if test="p.status   != null">AND status    = #{p.status}</if>
+            <if test="p.from     != null">AND started_at &gt;= #{p.from}</if>
+            <if test="p.to       != null">AND started_at &lt;  #{p.to}</if>
+        </where>
+        ORDER BY started_at DESC
+        LIMIT #{p.size} OFFSET #{p.offset}
+    </select>
+
+    <select id="countFiltered" resultType="int">
+        SELECT COUNT(*) FROM batch_execution_log
+        <where>
+            <if test="p.jobGroup != null">AND job_group = #{p.jobGroup}</if>
+            <if test="p.status   != null">AND status    = #{p.status}</if>
+            <if test="p.from     != null">AND started_at &gt;= #{p.from}</if>
+            <if test="p.to       != null">AND started_at &lt;  #{p.to}</if>
+        </where>
+    </select>
+</mapper>

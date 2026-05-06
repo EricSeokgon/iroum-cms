@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.RecoveryDrillMapper">
+
+    <resultMap id="RecoveryDrillLogRM"
+               type="kr.co.ircp.cms.domain.governance.entity.RecoveryDrillLog">
+        <id     property="id"             column="id"/>
+        <result property="drillDate"      column="drill_date"/>
+        <result property="drillType"      column="drill_type"/>
+        <result property="result"         column="result"/>
+        <result property="rtoActualMin"   column="rto_actual_min"/>
+        <result property="rpoActualMin"   column="rpo_actual_min"/>
+        <result property="rtoTargetMin"   column="rto_target_min"/>
+        <result property="rpoTargetMin"   column="rpo_target_min"/>
+        <result property="performedBy"    column="performed_by"/>
+        <result property="checklistJson"  column="checklist_json"/>
+        <result property="notes"          column="notes"/>
+        <result property="createdAt"      column="created_at"/>
+    </resultMap>
+
+    <insert id="insert"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.RecoveryDrillLog"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recovery_drill_log (
+            drill_date, drill_type, result, rto_actual_min, rpo_actual_min,
+            rto_target_min, rpo_target_min, performed_by, checklist_json, notes
+        ) VALUES (
+            #{drillDate}, #{drillType}, #{result}, #{rtoActualMin}, #{rpoActualMin},
+            COALESCE(#{rtoTargetMin}, 240), COALESCE(#{rpoTargetMin}, 60),
+            #{performedBy}, CAST(#{checklistJson} AS JSONB), #{notes}
+        )
+    </insert>
+
+    <select id="findById" resultMap="RecoveryDrillLogRM">
+        SELECT * FROM recovery_drill_log WHERE id = #{id}
+    </select>
+
+    <select id="findByDateRange" resultMap="RecoveryDrillLogRM">
+        SELECT * FROM recovery_drill_log
+        WHERE drill_date BETWEEN #{from} AND #{to}
+        ORDER BY drill_date DESC
+    </select>
+
+    <select id="countRecentDrills" resultType="int">
+        SELECT COUNT(*) FROM recovery_drill_log WHERE drill_date >= #{from}
+    </select>
+
+    <select id="findFiltered" resultMap="RecoveryDrillLogRM">
+        SELECT * FROM recovery_drill_log
+        <where>
+            <if test="p.drillType != null">AND drill_type = #{p.drillType}</if>
+            <if test="p.result    != null">AND result     = #{p.result}</if>
+            <if test="p.year      != null">AND EXTRACT(YEAR FROM drill_date) = #{p.year}</if>
+        </where>
+        ORDER BY drill_date DESC
+    </select>
+</mapper>

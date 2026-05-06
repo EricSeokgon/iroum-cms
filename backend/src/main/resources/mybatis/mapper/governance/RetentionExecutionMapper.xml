@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.RetentionExecutionMapper">
+
+    <!--
+        REQ-GOV-007: personal_data_access_log 6개월 경과 → archive 이관.
+        Step 1: INSERT-SELECT를 archive 테이블에 적재 (idempotent — accessed_at 동일 행은 PK 중복).
+        archive 테이블은 V9에서 LIKE personal_data_access_log INCLUDING ALL로 생성됨.
+    -->
+    <insert id="archivePersonalDataAccessLog">
+        INSERT INTO personal_data_access_log_archive
+        SELECT * FROM personal_data_access_log
+        WHERE accessed_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+        ON CONFLICT (id) DO NOTHING
+    </insert>
+
+    <!--
+        archive 후 source DELETE.
+        APPEND-ONLY 트리거(V9 pda_no_delete)는 운영 단계 절차로 별도 우회 처리.
+        Step 1 테스트는 archive 적재까지만 검증한다.
+    -->
+    <delete id="deletePersonalDataAccessLog">
+        DELETE FROM personal_data_access_log
+        WHERE accessed_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </delete>
+
+    <delete id="deleteLoginHistory">
+        DELETE FROM login_history
+        WHERE created_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </delete>
+
+    <delete id="deleteAccessLog">
+        DELETE FROM access_log
+        WHERE created_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </delete>
+
+    <select id="integrationLogExists" resultType="int">
+        SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = current_schema()
+          AND table_name = 'integration_log'
+    </select>
+
+    <!--
+        integration_log은 SPEC-CMS-005에서 후속 마이그레이션. 미존재 시 호출되지 않음.
+        호출 전 integrationLogExists()로 사전 검증.
+    -->
+    <insert id="archiveIntegrationLog">
+        INSERT INTO integration_log_archive
+        SELECT * FROM integration_log
+        WHERE created_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </insert>
+
+    <delete id="deleteIntegrationLog">
+        DELETE FROM integration_log
+        WHERE created_at &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </delete>
+
+    <!--
+        REQ-GOV-008: audit_log 5년 정책. archive 테이블 보장 (CREATE IF NOT EXISTS).
+        파티션 DETACH 자동화는 Step 2 또는 후속 SPEC.
+    -->
+    <update id="ensureAuditLogArchive">
+        CREATE TABLE IF NOT EXISTS audit_log_archive (LIKE audit_log INCLUDING ALL)
+    </update>
+
+    <insert id="archiveAuditLog">
+        INSERT INTO audit_log_archive
+        SELECT * FROM audit_log a
+        WHERE event_time &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+          AND NOT EXISTS (SELECT 1 FROM audit_log_archive ar WHERE ar.id = a.id)
+    </insert>
+
+    <delete id="deleteAuditLogArchived">
+        DELETE FROM audit_log
+        WHERE event_time &lt; NOW() - (#{retentionMonths}::int * INTERVAL '1 month')
+    </delete>
+</mapper>

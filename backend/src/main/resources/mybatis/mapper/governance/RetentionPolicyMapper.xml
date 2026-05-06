@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.governance.repository.RetentionPolicyMapper">
+
+    <resultMap id="RetentionPolicyRM"
+               type="kr.co.ircp.cms.domain.governance.entity.RetentionPolicy">
+        <id     property="id"               column="id"/>
+        <result property="targetTable"      column="target_table"/>
+        <result property="policyType"       column="policy_type"/>
+        <result property="retentionMonths"  column="retention_months"/>
+        <result property="archiveTable"     column="archive_table"/>
+        <result property="anonymizeColumns" column="anonymize_columns"/>
+        <result property="scheduleCron"     column="schedule_cron"/>
+        <result property="status"           column="status"/>
+        <result property="description"      column="description"/>
+        <result property="updatedBy"        column="updated_by"/>
+        <result property="updatedAt"        column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="RetentionPolicyRM">
+        SELECT * FROM retention_policy WHERE id = #{id}
+    </select>
+
+    <select id="findByTargetTable" resultMap="RetentionPolicyRM">
+        SELECT * FROM retention_policy WHERE target_table = #{targetTable}
+    </select>
+
+    <select id="findAll" resultMap="RetentionPolicyRM">
+        SELECT * FROM retention_policy ORDER BY target_table
+    </select>
+
+    <insert id="insert"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.RetentionPolicy"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO retention_policy (
+            target_table, policy_type, retention_months, archive_table,
+            anonymize_columns, schedule_cron, status, description, updated_by
+        ) VALUES (
+            #{targetTable}, #{policyType}, #{retentionMonths}, #{archiveTable},
+            CAST(#{anonymizeColumns} AS JSONB), #{scheduleCron},
+            COALESCE(#{status},'ACTIVE'), #{description}, #{updatedBy}
+        )
+    </insert>
+
+    <update id="update"
+            parameterType="kr.co.ircp.cms.domain.governance.entity.RetentionPolicy">
+        UPDATE retention_policy SET
+            policy_type      = #{policyType},
+            retention_months = #{retentionMonths},
+            archive_table    = #{archiveTable},
+            schedule_cron    = #{scheduleCron},
+            status           = #{status},
+            description      = #{description},
+            updated_by       = #{updatedBy},
+            updated_at       = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+</mapper>
