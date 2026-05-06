@@ -32,8 +32,26 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue'),
+          component: () => import('@/views/dashboard/DashboardMainView.vue'),
           meta: { title: '대시보드' },
+        },
+        {
+          path: 'dashboard/summary',
+          name: 'dashboard-summary',
+          component: () => import('@/views/DashboardView.vue'),
+          meta: { title: '대시보드 (요약)' },
+        },
+        {
+          path: 'dashboard/widgets',
+          name: 'dashboard-widgets',
+          component: () => import('@/views/dashboard/WidgetManageView.vue'),
+          meta: { title: '위젯 관리', permissions: ['SUPER_ADMIN'] },
+        },
+        {
+          path: 'dashboard/export-history',
+          name: 'dashboard-export-history',
+          component: () => import('@/views/dashboard/ExportHistoryView.vue'),
+          meta: { title: '내보내기 이력' },
         },
         {
           path: 'users',
