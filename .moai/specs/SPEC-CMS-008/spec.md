@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-008
 version: 0.4.0
-status: Draft
+status: Implemented
 created: 2026-04-29
-updated: 2026-04-29
+updated: 2026-05-06
 author: manager-spec
 priority: P0
 parent: SPEC-CMS-001 v0.4

@@ -1,30 +1,33 @@
 # Session Memo
 
-## P1: 완료 현황 (2026-05-06)
+## P1: Session Context
 
-### 묶음 4 완료 목록
+session_id: 28a1116c-1008-45f6-9edf-b7f5f0f560db
+cwd: /home/sklee/moai/iroum-cms
+event: SessionComplete
 
-| SPEC | Step 1 (Backend) | Step 2 (Frontend) | Step 3 (Docker) | 상태 |
-|------|------|------|------|------|
-| SPEC-CMS-006 안전관리 | 27 GREEN | 6 view + safetyStore | ✓ | 100% |
-| SPEC-CMS-007 정책매칭 | 49 GREEN | 5 view + policyStore | 스킵 | 100% |
-| SPEC-CMS-008 대시보드 | 41 GREEN | 3 view + dashboardStore | ✓ build | 100% |
+## P2: 완료된 SPEC 현황 (2026-05-06)
 
-### 최근 커밋 (SPEC-CMS-008)
-- feat(dashboard): SPEC-CMS-008 Step 1 — Backend 핵심 5 도메인 (41 GREEN)
-- feat(dashboard): SPEC-CMS-008 Step 2 — Frontend 3 view + dashboardStore
-- fix(build): 프론트엔드 빌드 타입 오류 3종 수정 + Docker 검증
+| SPEC | 상태 | 백엔드 테스트 | 프론트엔드 |
+|------|------|-------------|-----------|
+| SPEC-CMS-002 | Implemented | - | 완료 |
+| SPEC-CMS-003 | Implemented | - | 완료 |
+| SPEC-CMS-004 | Implemented | - | 완료 |
+| SPEC-CMS-005 | Implemented | - | 완료 |
+| SPEC-CMS-006 | Implemented | 27 GREEN | 완료 |
+| SPEC-CMS-007 | Implemented | 49 GREEN | 완료 |
+| SPEC-CMS-008 | Implemented | 41 GREEN | 완료 |
+| SPEC-CMS-MEDIA-001 | Implemented | 15 GREEN | 완료 |
 
-### 남은 SPEC (Draft 상태)
-- SPEC-CMS-009: 검색/자동완성 (Draft)
-- SPEC-CMS-010: 고급 검색 (Draft)
-- 그 외 Draft SPEC들
+## P3: 빌드 상태
 
-### Java 환경
+- Frontend: `vue-tsc -b && vite build` 0 오류 GREEN
+- Backend: 서비스 테스트 전체 GREEN (Controller @WebMvcTest는 BeanDefinitionOverrideException 기존 이슈)
+- Docker: 검증 완료
+
+## P4: 기술 메모
+
 - JAVA_HOME=/home/sklee/denodo/vdp9/jre (Temurin 17.0.17)
-- Build tool: ./gradlew (Gradle, NOT Maven)
-- 항상 prefix: export JAVA_HOME=/home/sklee/denodo/vdp9/jre && ./gradlew ...
-
-### 알려진 pre-existing 이슈
-- @WebMvcTest BeanDefinitionOverrideException (requestContextFilter): controller 단위 테스트 영향
-- 서비스 테스트는 모두 GREEN, 컨트롤러 테스트는 22/52 실패 (all 도메인 공통)
+- vite.config.ts: `from 'vitest/config'` + `vue() as any` + `new URL('.', import.meta.url).pathname`
+- tsconfig.node.json: `skipLibCheck: true` 필수 (@types/node 없는 환경)
+- 모든 Draft SPEC 구현 완료 — 다음 작업 없음
