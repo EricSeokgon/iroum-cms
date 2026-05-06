@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import kr.co.ircp.cms.support.WebMvcTestInfraConfig;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>SPEC-CMS-002 REQ-AUTH-011 — 본인 로그인 이력 HTTP 계층 검증.
  */
 @WebMvcTest(MyLoginHistoryController.class)
+@Import(WebMvcTestInfraConfig.class)
 @DisplayName("MyLoginHistoryController WebMvc 테스트")
 class MyLoginHistoryControllerTest {
 

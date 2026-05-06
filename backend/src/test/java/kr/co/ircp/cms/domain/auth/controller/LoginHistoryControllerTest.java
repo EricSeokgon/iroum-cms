@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import kr.co.ircp.cms.support.WebMvcTestInfraConfig;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>SPEC-CMS-002 REQ-AUTH-011 — HTTP 계층 검증 (200 응답, 403 인가 거부, 필터 파라미터 전파, 날짜 파싱).
  */
 @WebMvcTest(LoginHistoryController.class)
+@Import(WebMvcTestInfraConfig.class)
 @DisplayName("LoginHistoryController WebMvc 테스트")
 class LoginHistoryControllerTest {
 

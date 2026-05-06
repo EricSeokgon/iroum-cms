@@ -19,9 +19,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import kr.co.ircp.cms.support.WebMvcTestInfraConfig;
 
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * REQ-MEDIA-001, REQ-MEDIA-003, REQ-MEDIA-004, REQ-MEDIA-005
  */
 @WebMvcTest(MediaController.class)
+@Import(WebMvcTestInfraConfig.class)
 @TestPropertySource(properties = "spring.main.allow-bean-definition-overriding=true")
 class MediaControllerTest {
 

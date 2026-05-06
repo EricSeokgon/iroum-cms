@@ -22,6 +22,7 @@ import kr.co.ircp.cms.domain.auth.exception.VerificationCooldownException;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
 import kr.co.ircp.cms.domain.auth.service.VerificationService;
+import kr.co.ircp.cms.support.WebMvcTestInfraConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -66,7 +67,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // @MX:NOTE: [AUTO] Step 2 GREEN — UOE 기반 5xx 검증에서 실제 HTTP 시나리오 검증으로 전환
 @WebMvcTest(AuthController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, WebMvcTestInfraConfig.class})
 @DisplayName("AuthController GREEN 단계 테스트")
 class AuthControllerTest {
 

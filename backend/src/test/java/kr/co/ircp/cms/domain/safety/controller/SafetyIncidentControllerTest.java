@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(SafetyIncidentController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
 @DisplayName("SafetyIncidentController — REQ-SAFETY-001")
 class SafetyIncidentControllerTest {
 

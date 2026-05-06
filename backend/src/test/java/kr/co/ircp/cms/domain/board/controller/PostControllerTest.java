@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(PostController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
 @DisplayName("PostController GREEN 테스트 (REQ-BOARD-002)")
 class PostControllerTest {
 

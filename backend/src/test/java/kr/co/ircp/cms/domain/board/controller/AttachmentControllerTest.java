@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(AttachmentController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
 @DisplayName("AttachmentController GREEN 테스트 (REQ-BOARD-004, REQ-BOARD-005)")
 class AttachmentControllerTest {
 

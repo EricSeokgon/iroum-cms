@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(PermissionChangeController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
 @DisplayName("PermissionChangeController 단위 테스트")
 class PermissionChangeControllerTest {
 

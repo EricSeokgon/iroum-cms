@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(BbsMasterController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
-@Import(GlobalExceptionHandler.class)
+@Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
 @DisplayName("GlobalExceptionHandler — 게시판 도메인 예외 매핑 (REQ-BOARD-001~005)")
 class BoardExceptionHandlerTest {
 

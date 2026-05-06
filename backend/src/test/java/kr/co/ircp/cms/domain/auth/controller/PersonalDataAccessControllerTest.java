@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
+import kr.co.ircp.cms.support.WebMvcTestInfraConfig;
 
 import java.time.Instant;
 import java.util.List;
@@ -31,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>REQ-AUTH-018-D-2 — 관리자 전용 엔드포인트 접근 제어 검증.
  */
 @WebMvcTest({PersonalDataAccessController.class, MyPersonalDataAccessController.class})
+@Import(WebMvcTestInfraConfig.class)
 @DisplayName("PersonalDataAccessController WebMvc 테스트")
 class PersonalDataAccessControllerTest {
 
