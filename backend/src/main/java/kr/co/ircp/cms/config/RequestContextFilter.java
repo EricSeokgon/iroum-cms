@@ -23,7 +23,7 @@ import java.util.UUID;
  */
 // @MX:WARN: [AUTO] MDC는 ThreadLocal 기반 — finally에서 반드시 clear() 필요
 // @MX:REASON: MDC.clear() 누락 시 스레드 풀 재사용 환경에서 이전 요청 데이터가 누출됨
-@Component
+@Component("cmsRequestContextFilter")
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class RequestContextFilter extends OncePerRequestFilter {
 
