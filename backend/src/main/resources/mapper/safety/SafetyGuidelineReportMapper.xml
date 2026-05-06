@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyGuidelineReportMapper">
+
+    <resultMap id="reportResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyGuidelineReport">
+        <id property="id" column="id"/>
+        <result property="uuid" column="uuid"/>
+        <result property="companyProfileId" column="company_profile_id"/>
+        <result property="templateId" column="template_id"/>
+        <result property="riskGrade" column="risk_grade"/>
+        <result property="matchedIncidentsJsonb" column="matched_incidents_jsonb"/>
+        <result property="contentHtml" column="content_html"/>
+        <result property="contentPdfPath" column="content_pdf_path"/>
+        <result property="generatedAt" column="generated_at"/>
+        <result property="accessedCount" column="accessed_count"/>
+    </resultMap>
+
+    <sql id="selectColumns">
+        id, uuid, company_profile_id, template_id, risk_grade,
+        matched_incidents_jsonb::text AS matched_incidents_jsonb,
+        content_html, content_pdf_path, generated_at, accessed_count
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_guideline_report (company_profile_id, template_id, risk_grade,
+            matched_incidents_jsonb, content_html)
+        VALUES (#{companyProfileId}, #{templateId}, #{riskGrade},
+            COALESCE(#{matchedIncidentsJsonb}, '[]')::jsonb, #{contentHtml})
+    </insert>
+
+    <select id="findByUuid" resultMap="reportResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_report WHERE uuid = #{uuid}
+    </select>
+
+    <select id="findById" resultMap="reportResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_report WHERE id = #{id}
+    </select>
+
+    <select id="findByCompanyProfileId" resultMap="reportResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_report
+        WHERE company_profile_id = #{companyProfileId}
+        ORDER BY generated_at DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByCompanyProfileId" resultType="long">
+        SELECT COUNT(*) FROM safety_guideline_report WHERE company_profile_id = #{companyProfileId}
+    </select>
+
+    <select id="findAll" resultMap="reportResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_report
+        ORDER BY generated_at DESC LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM safety_guideline_report
+    </select>
+
+    <update id="updatePdfPath">
+        UPDATE safety_guideline_report SET content_pdf_path = #{pdfPath} WHERE uuid = #{uuid}
+    </update>
+
+    <update id="incrementAccessedCount">
+        UPDATE safety_guideline_report SET accessed_count = accessed_count + 1 WHERE uuid = #{uuid}
+    </update>
+</mapper>

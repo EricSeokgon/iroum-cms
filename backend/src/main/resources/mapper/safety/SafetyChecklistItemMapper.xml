@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyChecklistItemMapper">
+
+    <resultMap id="itemResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyChecklistItem">
+        <id property="id" column="id"/>
+        <result property="templateId" column="template_id"/>
+        <result property="category" column="category"/>
+        <result property="itemText" column="item_text"/>
+        <result property="severity" column="severity"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="status" column="status"/>
+    </resultMap>
+
+    <select id="findByTemplateId" resultMap="itemResultMap">
+        SELECT * FROM safety_checklist_item
+        WHERE template_id = #{templateId} AND status = 'ACTIVE'
+        ORDER BY sort_order, id
+    </select>
+
+    <select id="findById" resultMap="itemResultMap">
+        SELECT * FROM safety_checklist_item WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_checklist_item (template_id, category, item_text, severity, sort_order, status)
+        VALUES (#{templateId}, #{category}, #{itemText},
+            COALESCE(#{severity}, 'NORMAL'),
+            COALESCE(#{sortOrder}, 0),
+            COALESCE(#{status}, 'ACTIVE'))
+    </insert>
+
+    <update id="update">
+        UPDATE safety_checklist_item SET
+            category = COALESCE(#{category}, category),
+            item_text = COALESCE(#{itemText}, item_text),
+            severity = COALESCE(#{severity}, severity),
+            sort_order = COALESCE(#{sortOrder}, sort_order),
+            status = COALESCE(#{status}, status)
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        UPDATE safety_checklist_item SET status = 'INACTIVE' WHERE id = #{id}
+    </delete>
+</mapper>

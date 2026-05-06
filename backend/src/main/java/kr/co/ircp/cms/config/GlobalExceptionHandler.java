@@ -33,6 +33,12 @@ import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyChecklistItemNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyIncidentNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyKeywordNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyProfileNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyReportNotFoundException;
+import kr.co.ircp.cms.domain.safety.exception.SafetyTemplateNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -514,6 +520,62 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Board Attachment Disabled");
         detail.setProperty("code", "BOARD_ATTACHMENT_DISABLED");
+        return detail;
+    }
+
+    // ─── REQ-SAFETY-001~005 안전경영 가이드라인 + 사고사례 매칭 예외 ──────────
+
+    /** 사고사례 미존재 → 404. REQ-SAFETY-001 */
+    @ExceptionHandler(SafetyIncidentNotFoundException.class)
+    public ProblemDetail handleSafetyIncidentNotFound(SafetyIncidentNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Incident Not Found");
+        detail.setProperty("code", "SAFETY_INCIDENT_NOT_FOUND");
+        return detail;
+    }
+
+    /** 안전 키워드 미존재 → 404. REQ-SAFETY-002 */
+    @ExceptionHandler(SafetyKeywordNotFoundException.class)
+    public ProblemDetail handleSafetyKeywordNotFound(SafetyKeywordNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Keyword Not Found");
+        detail.setProperty("code", "SAFETY_KEYWORD_NOT_FOUND");
+        return detail;
+    }
+
+    /** 기업 안전 프로필 미존재 → 404. REQ-SAFETY-002 */
+    @ExceptionHandler(SafetyProfileNotFoundException.class)
+    public ProblemDetail handleSafetyProfileNotFound(SafetyProfileNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Profile Not Found");
+        detail.setProperty("code", "SAFETY_PROFILE_NOT_FOUND");
+        return detail;
+    }
+
+    /** 가이드라인 템플릿 미존재 → 404. REQ-SAFETY-005 */
+    @ExceptionHandler(SafetyTemplateNotFoundException.class)
+    public ProblemDetail handleSafetyTemplateNotFound(SafetyTemplateNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Template Not Found");
+        detail.setProperty("code", "SAFETY_TEMPLATE_NOT_FOUND");
+        return detail;
+    }
+
+    /** 가이드라인 보고서 미존재 → 404. REQ-SAFETY-003 */
+    @ExceptionHandler(SafetyReportNotFoundException.class)
+    public ProblemDetail handleSafetyReportNotFound(SafetyReportNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Report Not Found");
+        detail.setProperty("code", "SAFETY_REPORT_NOT_FOUND");
+        return detail;
+    }
+
+    /** 체크리스트 항목 미존재 → 404. REQ-SAFETY-004 */
+    @ExceptionHandler(SafetyChecklistItemNotFoundException.class)
+    public ProblemDetail handleSafetyChecklistItemNotFound(SafetyChecklistItemNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Safety Checklist Item Not Found");
+        detail.setProperty("code", "SAFETY_CHECKLIST_ITEM_NOT_FOUND");
         return detail;
     }
 }

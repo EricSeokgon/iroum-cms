@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyMatchResultMapper">
+
+    <resultMap id="matchResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyMatchResult">
+        <id property="id" column="id"/>
+        <result property="companyProfileId" column="company_profile_id"/>
+        <result property="incidentId" column="incident_id"/>
+        <result property="similarityScore" column="similarity_score"/>
+        <result property="matchReason" column="match_reason"/>
+        <result property="generatedAt" column="generated_at"/>
+        <result property="expiresAt" column="expires_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_match_result (company_profile_id, incident_id, similarity_score, match_reason)
+        VALUES (#{companyProfileId}, #{incidentId}, #{similarityScore}, #{matchReason}::jsonb)
+    </insert>
+
+    <select id="findActiveCacheByProfileId" resultMap="matchResultMap">
+        SELECT id, company_profile_id, incident_id, similarity_score,
+               match_reason::text AS match_reason, generated_at, expires_at
+        FROM safety_match_result
+        WHERE company_profile_id = #{companyProfileId} AND expires_at > now()
+        ORDER BY similarity_score DESC, generated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteByProfileId">
+        DELETE FROM safety_match_result WHERE company_profile_id = #{companyProfileId}
+    </delete>
+
+    <delete id="deleteExpired">
+        DELETE FROM safety_match_result WHERE expires_at &lt;= now()
+    </delete>
+</mapper>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-006 REQ-SAFETY-001 — 사고사례 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyIncidentMapper">
+
+    <resultMap id="incidentResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyIncident">
+        <id property="id" column="id"/>
+        <result property="sourceType" column="source_type"/>
+        <result property="industryCode" column="industry_code"/>
+        <result property="occupationCode" column="occupation_code"/>
+        <result property="processType" column="process_type"/>
+        <result property="incidentType" column="incident_type"/>
+        <result property="occurredAt" column="occurred_at"/>
+        <result property="severity" column="severity"/>
+        <result property="casualties" column="casualties"/>
+        <result property="location" column="location"/>
+        <result property="summary" column="summary"/>
+        <result property="detailedCause" column="detailed_cause"/>
+        <result property="preventionLesson" column="prevention_lesson"/>
+        <result property="sourceUrl" column="source_url"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findFiltered" resultMap="incidentResultMap">
+        SELECT * FROM safety_incident
+        WHERE status &lt;&gt; 'ARCHIVED'
+        <if test="industryCode != null">AND industry_code = #{industryCode}</if>
+        <if test="incidentType != null">AND incident_type = #{incidentType}</if>
+        <if test="severity != null">AND severity = #{severity}</if>
+        ORDER BY occurred_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countFiltered" resultType="long">
+        SELECT COUNT(*) FROM safety_incident
+        WHERE status &lt;&gt; 'ARCHIVED'
+        <if test="industryCode != null">AND industry_code = #{industryCode}</if>
+        <if test="incidentType != null">AND incident_type = #{incidentType}</if>
+        <if test="severity != null">AND severity = #{severity}</if>
+    </select>
+
+    <select id="findById" resultMap="incidentResultMap">
+        SELECT * FROM safety_incident WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_incident (source_type, industry_code, occupation_code, process_type,
+            incident_type, occurred_at, severity, casualties, location,
+            summary, detailed_cause, prevention_lesson, source_url, status)
+        VALUES (#{sourceType}, #{industryCode}, #{occupationCode}, #{processType},
+            #{incidentType}, #{occurredAt}, #{severity}, #{casualties}, #{location},
+            #{summary}, #{detailedCause}, #{preventionLesson}, #{sourceUrl},
+            COALESCE(#{status}, 'PUBLISHED'))
+    </insert>
+
+    <update id="update">
+        UPDATE safety_incident SET
+            industry_code   = COALESCE(#{industryCode},   industry_code),
+            occupation_code = COALESCE(#{occupationCode}, occupation_code),
+            process_type    = COALESCE(#{processType},    process_type),
+            incident_type   = COALESCE(#{incidentType},   incident_type),
+            occurred_at     = COALESCE(#{occurredAt},     occurred_at),
+            severity        = COALESCE(#{severity},       severity),
+            casualties      = COALESCE(#{casualties},     casualties),
+            location        = COALESCE(#{location},       location),
+            summary         = COALESCE(#{summary},        summary),
+            detailed_cause  = COALESCE(#{detailedCause},  detailed_cause),
+            prevention_lesson = COALESCE(#{preventionLesson}, prevention_lesson),
+            status          = COALESCE(#{status},         status),
+            updated_at      = now()
+        WHERE id = #{id}
+    </update>
+
+    <update id="archiveById">
+        UPDATE safety_incident SET status = 'ARCHIVED', updated_at = now() WHERE id = #{id}
+    </update>
+
+    <select id="findCandidatesForMatching" resultMap="incidentResultMap">
+        SELECT DISTINCT si.* FROM safety_incident si
+        JOIN safety_incident_keyword sik ON sik.incident_id = si.id
+        WHERE si.status = 'PUBLISHED'
+        <if test="keywordIds != null and keywordIds.size() > 0">
+            AND sik.keyword_id IN
+            <foreach collection="keywordIds" item="kwId" open="(" close=")" separator=",">
+                #{kwId}
+            </foreach>
+        </if>
+        ORDER BY (CASE WHEN si.industry_code = #{industryCode} THEN 0 ELSE 1 END),
+                 si.occurred_at DESC
+    </select>
+</mapper>

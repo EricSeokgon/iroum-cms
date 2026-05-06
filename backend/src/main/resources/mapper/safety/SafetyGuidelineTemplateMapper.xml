@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyGuidelineTemplateMapper">
+
+    <resultMap id="templateResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyGuidelineTemplate">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="applicableIndustryCodes" column="applicable_industry_codes"
+                javaType="java.util.List" jdbcType="ARRAY" typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="applicableGrades" column="applicable_grades"
+                javaType="java.util.List" jdbcType="ARRAY" typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="structure" column="structure"/>
+        <result property="status" column="status"/>
+        <result property="version" column="version"/>
+        <result property="reviewStatus" column="review_status"/>
+        <result property="reviewedBy" column="reviewed_by"/>
+        <result property="reviewedAt" column="reviewed_at"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <sql id="selectColumns">
+        id, code, name, description,
+        applicable_industry_codes, applicable_grades,
+        structure::text AS structure,
+        status, version, review_status, reviewed_by, reviewed_at, created_by, created_at
+    </sql>
+
+    <select id="findAll" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template
+        WHERE status &lt;&gt; 'ARCHIVED' OR status IS NULL
+        ORDER BY code, version DESC
+    </select>
+
+    <select id="findById" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template
+        WHERE code = #{code} ORDER BY version DESC LIMIT 1
+    </select>
+
+    <select id="findLatestPublishedFor" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template
+        WHERE status = 'PUBLISHED'
+          AND #{industryCode} = ANY(applicable_industry_codes)
+          AND #{grade}        = ANY(applicable_grades)
+        ORDER BY version DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_guideline_template
+            (code, name, description, applicable_industry_codes, applicable_grades,
+             structure, status, version, review_status, reviewed_by, created_by)
+        VALUES (#{code}, #{name}, #{description},
+            #{applicableIndustryCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            #{applicableGrades,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            COALESCE(#{structure}, '{}')::jsonb,
+            COALESCE(#{status}, 'DRAFT'),
+            COALESCE(#{version}, 'v1.0'),
+            #{reviewStatus}, #{reviewedBy}, #{createdBy})
+    </insert>
+
+    <update id="update">
+        UPDATE safety_guideline_template SET
+            name = COALESCE(#{name}, name),
+            description = COALESCE(#{description}, description),
+            applicable_industry_codes = COALESCE(#{applicableIndustryCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY}, applicable_industry_codes),
+            applicable_grades = COALESCE(#{applicableGrades,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY}, applicable_grades),
+            structure = COALESCE(#{structure}::jsonb, structure),
+            status = COALESCE(#{status}, status),
+            version = COALESCE(#{version}, version),
+            review_status = COALESCE(#{reviewStatus}, review_status),
+            reviewed_by = COALESCE(#{reviewedBy}, reviewed_by),
+            reviewed_at = CASE WHEN #{reviewStatus} IS NOT NULL THEN now() ELSE reviewed_at END
+        WHERE id = #{id}
+    </update>
+
+    <update id="archiveById">
+        UPDATE safety_guideline_template SET status = 'ARCHIVED' WHERE id = #{id}
+    </update>
+
+    <update id="archivePublishedByCode">
+        UPDATE safety_guideline_template SET status = 'ARCHIVED'
+        WHERE code = #{code} AND status = 'PUBLISHED'
+    </update>
+</mapper>

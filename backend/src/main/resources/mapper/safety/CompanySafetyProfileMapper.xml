@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.CompanySafetyProfileMapper">
+
+    <resultMap id="profileResultMap" type="kr.co.ircp.cms.domain.safety.entity.CompanySafetyProfile">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="industryCode" column="industry_code"/>
+        <result property="subIndustry" column="sub_industry"/>
+        <result property="employeeCount" column="employee_count"/>
+        <result property="primaryProcess" column="primary_process"/>
+        <result property="hazardFactors" column="hazard_factors"/>
+        <result property="riskScore" column="risk_score"/>
+        <result property="riskGrade" column="risk_grade"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="profileResultMap">
+        SELECT id, company_id, industry_code, sub_industry, employee_count, primary_process,
+               hazard_factors::text AS hazard_factors, risk_score, risk_grade, updated_at
+        FROM company_safety_profile WHERE id = #{id}
+    </select>
+
+    <select id="findByCompanyId" resultMap="profileResultMap">
+        SELECT id, company_id, industry_code, sub_industry, employee_count, primary_process,
+               hazard_factors::text AS hazard_factors, risk_score, risk_grade, updated_at
+        FROM company_safety_profile WHERE company_id = #{companyId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO company_safety_profile (company_id, industry_code, sub_industry,
+            employee_count, primary_process, hazard_factors, risk_score, risk_grade)
+        VALUES (#{companyId}, #{industryCode}, #{subIndustry},
+            #{employeeCount}, #{primaryProcess},
+            COALESCE(#{hazardFactors}, '[]')::jsonb,
+            #{riskScore}, #{riskGrade})
+    </insert>
+
+    <update id="update">
+        UPDATE company_safety_profile SET
+            industry_code   = COALESCE(#{industryCode},   industry_code),
+            sub_industry    = COALESCE(#{subIndustry},    sub_industry),
+            employee_count  = COALESCE(#{employeeCount},  employee_count),
+            primary_process = COALESCE(#{primaryProcess}, primary_process),
+            hazard_factors  = COALESCE(#{hazardFactors}::jsonb, hazard_factors),
+            risk_score      = COALESCE(#{riskScore},      risk_score),
+            risk_grade      = COALESCE(#{riskGrade},      risk_grade),
+            updated_at      = now()
+        WHERE id = #{id}
+    </update>
+</mapper>

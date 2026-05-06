@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-006 REQ-SAFETY-002 — 키워드 사전 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyKeywordMapper">
+
+    <resultMap id="keywordResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyKeyword">
+        <id property="id" column="id"/>
+        <result property="category" column="category"/>
+        <result property="code" column="code"/>
+        <result property="term" column="term"/>
+        <result property="description" column="description"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="synonymResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyKeywordSynonym">
+        <id property="id" column="id"/>
+        <result property="keywordId" column="keyword_id"/>
+        <result property="synonym" column="synonym"/>
+    </resultMap>
+
+    <select id="findByCategory" resultMap="keywordResultMap">
+        SELECT * FROM safety_keyword
+        WHERE status = 'ACTIVE'
+        <if test="category != null">AND category = #{category}</if>
+        ORDER BY category, term
+    </select>
+
+    <select id="findById" resultMap="keywordResultMap">
+        SELECT * FROM safety_keyword WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="keywordResultMap">
+        SELECT * FROM safety_keyword WHERE code = #{code}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_keyword (category, code, term, description, status)
+        VALUES (#{category}, #{code}, #{term}, #{description}, COALESCE(#{status}, 'ACTIVE'))
+    </insert>
+
+    <update id="update">
+        UPDATE safety_keyword SET
+            category = COALESCE(#{category}, category),
+            term = COALESCE(#{term}, term),
+            description = COALESCE(#{description}, description),
+            status = COALESCE(#{status}, status)
+        WHERE id = #{id}
+    </update>
+
+    <update id="deactivateById">
+        UPDATE safety_keyword SET status = 'INACTIVE' WHERE id = #{id}
+    </update>
+
+    <!-- 동의어 -->
+    <select id="findSynonymsByKeywordId" resultMap="synonymResultMap">
+        SELECT * FROM safety_keyword_synonym WHERE keyword_id = #{keywordId}
+    </select>
+
+    <insert id="insertSynonym" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_keyword_synonym (keyword_id, synonym)
+        VALUES (#{keywordId}, #{synonym})
+        ON CONFLICT (keyword_id, synonym) DO NOTHING
+    </insert>
+
+    <delete id="deleteSynonymsByKeywordId">
+        DELETE FROM safety_keyword_synonym WHERE keyword_id = #{keywordId}
+    </delete>
+
+    <!-- 텍스트 토큰 목록과 키워드 term/synonym을 매칭. 1차: 정확 일치(LOWER) -->
+    <select id="findMatchingKeywords" resultMap="keywordResultMap">
+        <if test="texts == null or texts.size() == 0">
+            SELECT * FROM safety_keyword WHERE 1 = 0
+        </if>
+        <if test="texts != null and texts.size() > 0">
+            SELECT DISTINCT k.* FROM safety_keyword k
+            LEFT JOIN safety_keyword_synonym s ON s.keyword_id = k.id
+            WHERE k.status = 'ACTIVE'
+              AND (
+                LOWER(k.term) IN
+                <foreach collection="texts" item="t" open="(" close=")" separator=",">LOWER(#{t})</foreach>
+                OR LOWER(s.synonym) IN
+                <foreach collection="texts" item="t" open="(" close=")" separator=",">LOWER(#{t})</foreach>
+              )
+        </if>
+    </select>
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.safety.repository.SafetyIncidentKeywordMapper">
+
+    <resultMap id="mappingResultMap" type="kr.co.ircp.cms.domain.safety.entity.SafetyIncidentKeyword">
+        <result property="incidentId" column="incident_id"/>
+        <result property="keywordId" column="keyword_id"/>
+        <result property="weight" column="weight"/>
+        <result property="category" column="category"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO safety_incident_keyword (incident_id, keyword_id, weight)
+        VALUES (#{incidentId}, #{keywordId}, COALESCE(#{weight}, 1.00))
+        ON CONFLICT (incident_id, keyword_id) DO UPDATE SET weight = EXCLUDED.weight
+    </insert>
+
+    <delete id="deleteByIncidentId">
+        DELETE FROM safety_incident_keyword WHERE incident_id = #{incidentId}
+    </delete>
+
+    <select id="findKeywordsByIncidentId" resultMap="mappingResultMap">
+        SELECT sik.incident_id, sik.keyword_id, sik.weight, k.category
+        FROM safety_incident_keyword sik
+        JOIN safety_keyword k ON k.id = sik.keyword_id
+        WHERE sik.incident_id = #{incidentId}
+    </select>
+</mapper>
