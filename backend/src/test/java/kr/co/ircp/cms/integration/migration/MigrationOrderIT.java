@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Flyway 마이그레이션 순서 검증 통합 테스트.
  *
- * <p>V1~V9 전체 9개 마이그레이션이 올바른 순서로 적용되었는지
+ * <p>전체 마이그레이션이 올바른 순서로 적용되었는지
  * flyway_schema_history 테이블을 직접 조회하여 검증한다.
  *
  * <p>SPEC-CMS-002 — 마이그레이션 누락·순서 오류 조기 탐지.
@@ -23,8 +23,8 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V9 마이그레이션 총 9개 — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    private static final int EXPECTED_MIGRATION_COUNT = 9;
+    // @MX:NOTE: [AUTO] V1~V17 마이그레이션 총 16개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    private static final int EXPECTED_MIGRATION_COUNT = 16;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -35,9 +35,9 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 "WHERE type = 'SQL' " +
                 "ORDER BY installed_rank ASC");
 
-        // then — 9개 모두 성공
+        // then — 16개 모두 성공
         assertThat(rows)
-                .as("Flyway V1~V9 마이그레이션이 모두 적용되어야 합니다")
+                .as("Flyway 마이그레이션이 모두 적용되어야 합니다")
                 .hasSize(EXPECTED_MIGRATION_COUNT);
 
         // then — 모든 마이그레이션 성공 상태
@@ -47,10 +47,12 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                                 .as("마이그레이션 %s 가 실패 상태입니다", row.get("version"))
                                 .isTrue());
 
-        // then — 버전 1~9 순서 검증
+        // then — 버전 순서 검증 (V11 없음)
         List<String> versions = rows.stream()
                 .map(row -> (String) row.get("version"))
                 .toList();
-        assertThat(versions).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
+        assertThat(versions).containsExactly(
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
+                "12", "13", "14", "15", "16", "17");
     }
 }

@@ -9,17 +9,17 @@
         <result property="requestId" column="request_id"
                 typeHandler="kr.co.ircp.cms.domain.auth.repository.typehandler.UuidTypeHandler"/>
         <result property="channel" column="channel"
-                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+                javaType="kr.co.ircp.cms.domain.auth.entity.VerificationChannel"/>
         <result property="target" column="target"/>
         <result property="purpose" column="purpose"
-                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+                javaType="kr.co.ircp.cms.domain.auth.entity.VerificationPurpose"/>
         <result property="codeHash" column="code_hash"/>
         <result property="createdAt" column="created_at"/>
         <result property="expiresAt" column="expires_at"/>
         <result property="attempts" column="attempts"/>
         <result property="maxAttempts" column="max_attempts"/>
         <result property="status" column="status"
-                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+                javaType="kr.co.ircp.cms.domain.auth.entity.VerificationStatus"/>
         <result property="verifiedAt" column="verified_at"/>
         <result property="verifiedToken" column="verified_token"/>
         <result property="requesterIpHash" column="requester_ip_hash"/>

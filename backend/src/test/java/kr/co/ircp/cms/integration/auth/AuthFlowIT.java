@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * (spring.mail.host=localhost, 실제 SMTP 없음). 이메일 관련 플로우는 별도 단위 테스트에서 커버.
  */
 // @MX:NOTE: [AUTO] AuthFlowIT — SPEC-CMS-002 Bundle A 핵심 E2E 검증
+// @MX:NOTE: [AUTO] 클래스 레벨 @Transactional — setUp()이 각 테스트 트랜잭션에 참여하여 롤백, 중복키 방지
+@Transactional
 class AuthFlowIT extends AbstractIntegrationTest {
 
     @Autowired

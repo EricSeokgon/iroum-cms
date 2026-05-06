@@ -17,7 +17,7 @@
         <result property="path"        column="path"/>
         <result property="sortOrder"   column="sort_order"/>
         <result property="status"      column="status"
-                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+                javaType="kr.co.ircp.cms.domain.auth.entity.OrganizationStatus"/>
         <result property="createdAt"   column="created_at"/>
         <result property="updatedAt"   column="updated_at"/>
         <result property="deletedAt"   column="deleted_at"/>
@@ -80,7 +80,7 @@
         INSERT INTO organization (code, name, description, parent_id, depth, path,
                                   sort_order, status, created_at, updated_at)
         VALUES (#{code}, #{name}, #{description}, #{parentId}, #{depth},
-                #{path}, #{sortOrder},
+                COALESCE(#{path}, '/'), #{sortOrder},
                 COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
                 NOW(), NOW())
     </insert>

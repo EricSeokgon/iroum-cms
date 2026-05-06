@@ -35,6 +35,11 @@ class PersonalDataAccessTriggerIT extends AbstractIntegrationTest {
     @BeforeEach
     @Transactional
     void setUpUsers() {
+        // 이전 테스트 커밋 데이터 정리:
+        // APPEND-ONLY 트리거는 BEFORE DELETE FOR EACH ROW — TRUNCATE는 row-level 트리거 우회
+        jdbcTemplate.execute("TRUNCATE TABLE personal_data_access_log");
+        jdbcTemplate.update("DELETE FROM users WHERE username IN ('pda_viewer_it', 'pda_target_it')");
+
         User viewer = User.builder()
                 .username("pda_viewer_it")
                 .email("pda_viewer@example.com")
