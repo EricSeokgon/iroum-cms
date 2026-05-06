@@ -8,7 +8,7 @@
 | 제목 | 데이터 거버넌스 (Data Governance — 표준 사전·보존 정책·통계 파이프라인 확장·품질 모니터링·RTO/RPO) |
 | 작성일 | 2026-05-06 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented (Backend) |
 | 우선순위 | P1 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-005 (시스템·배치·감사로그 인프라), SPEC-CMS-002 (personal_data_access_log), SPEC-CMS-006 (안전경영 사고 데이터), SPEC-CMS-007 (정책사업 매칭 데이터), SPEC-CMS-003 (게시판 access_log 소스), SPEC-CMS-004 (콘텐츠 view 소스) |
@@ -795,3 +795,18 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-05-06 | manager-spec | 초안 작성. SPEC-CMS-001 §15.2 SFR-001/011, §15.5 DAR-001/007/009, §17.3 데이터 거버넌스를 상세화. 5개 축(데이터 표준 사전, 보존·이관 정책 자동화, 통계 집계 파이프라인 확장, 데이터 품질 모니터링, RTO/RPO 지원)에 REQ-GOV-001~012 + REQ-DATA-001~008 (총 20개 부모 REQ) 정의. 9개 신규 테이블 DDL (data_dictionary, data_dictionary_history, retention_policy, batch_execution_log, board_stats_daily/monthly, content_view_stats/monthly, policy_match_stats, safety_stats_monthly, data_quality_rule, data_quality_report, recovery_drill_log). 27개 REST 엔드포인트. 14개 배치 잡 명세. SPEC-CMS-005 인프라(access_log/audit_log/AOP/Actuator/Docker)를 입력으로 사용하며 재정의하지 않음을 명시. 1차 비범위에 OpenTelemetry, Elasticsearch, TimescaleDB, AI 품질 예측, Kafka 실시간, S-Meta 외부 API 연동 명시. |
+| v0.2 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (Backend). Step 1+2 백엔드 구현 완료 (554 GREEN). 구현 메모 섹션 추가. |
+
+---
+
+## 구현 메모 (Implementation Notes)
+
+- **구현 완료일**: 2026-05-07
+- **구현 범위**: Step 1 (마이그레이션 + 도메인) + Step 2 (REST API 27개 + Actuator)
+- **테스트**: 554 GREEN (통합 테스트 포함)
+- **미구현**: Step 3 Frontend (거버넌스 관리화면) — 향후 구현 예정
+- **참조 커밋**: ade9be9 (SPEC-CMS-009 풀스택 백엔드), 56e3f9d (UserMapper 수정)
+- **특이사항**:
+  - UserMapper의 organization_id 컬럼 추가로 사용자-조직 연계 조회 지원
+  - email 컬럼명 email_enc → email 수정 (실제 스키마 반영)
+  - 554개 테스트 중 Testcontainers IT 클래스는 Docker 소켓 환경에서만 실행 가능

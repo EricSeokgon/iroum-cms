@@ -18,11 +18,12 @@ event: SessionComplete
 | SPEC-CMS-007 | Implemented | 49 GREEN | 완료 |
 | SPEC-CMS-008 | Implemented | 41 GREEN | 완료 |
 | SPEC-CMS-MEDIA-001 | Implemented | 15 GREEN | 완료 |
+| SPEC-CMS-009 | Implemented (BE) | 554 GREEN | 미구현 (향후) |
 
 ## P3: 빌드 상태
 
 - Frontend: `vue-tsc -b && vite build` 0 오류 GREEN
-- Backend: 499/525 GREEN, 26 FAIL (전부 Testcontainers Docker 인프라 이슈 — 코드 문제 아님)
+- Backend: 554 GREEN (SPEC-CMS-009 포함)
 - Docker: 검증 완료
 
 ## P4: 기술 메모
@@ -30,7 +31,7 @@ event: SessionComplete
 - JAVA_HOME=/home/sklee/denodo/vdp9/jre (Temurin 17.0.17)
 - vite.config.ts: `from 'vitest/config'` + `vue() as any` + `new URL('.', import.meta.url).pathname`
 - tsconfig.node.json: `skipLibCheck: true` 필수 (@types/node 없는 환경)
-- 모든 Draft SPEC 구현 완료 — 다음 작업 없음
+- SPEC-CMS-009 백엔드 완료 — Frontend(Step 3) 미구현
 
 ## P5: 테스트 수정 이력
 
