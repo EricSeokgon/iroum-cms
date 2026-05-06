@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.repository.ChartDatasetCacheMapper">
+
+    <resultMap id="cacheMap" type="kr.co.ircp.cms.domain.dashboard.entity.ChartDatasetCache">
+        <id property="id" column="id"/>
+        <result property="cacheKey" column="cache_key"/>
+        <result property="widgetId" column="widget_id"/>
+        <result property="dataset" column="dataset"/>
+        <result property="generatedAt" column="generated_at"/>
+        <result property="expiresAt" column="expires_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chart_dataset_cache (cache_key, widget_id, dataset, generated_at, expires_at)
+        VALUES (#{cacheKey}, #{widgetId}, #{dataset}::jsonb, NOW(), #{expiresAt})
+        ON CONFLICT (cache_key) DO UPDATE
+        SET dataset = EXCLUDED.dataset,
+            generated_at = EXCLUDED.generated_at,
+            expires_at = EXCLUDED.expires_at
+    </insert>
+
+    <select id="findActiveByCacheKey" resultMap="cacheMap">
+        SELECT id, cache_key, widget_id,
+               dataset::text AS dataset,
+               generated_at, expires_at
+        FROM chart_dataset_cache
+        WHERE cache_key = #{cacheKey} AND expires_at > NOW()
+    </select>
+
+    <update id="expireByWidgetIds">
+        UPDATE chart_dataset_cache SET expires_at = NOW()
+        WHERE widget_id IN
+        <foreach collection="widgetIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <update id="expireByCacheKeyPrefix">
+        UPDATE chart_dataset_cache SET expires_at = NOW()
+        WHERE cache_key LIKE CONCAT(#{prefix}, '%') AND expires_at > NOW()
+    </update>
+
+    <update id="expireAll">
+        UPDATE chart_dataset_cache SET expires_at = NOW() WHERE expires_at > NOW()
+    </update>
+
+    <select id="countActive" resultType="long">
+        SELECT count(*) FROM chart_dataset_cache WHERE expires_at > NOW()
+    </select>
+
+    <select id="countExpired" resultType="long">
+        SELECT count(*) FROM chart_dataset_cache WHERE expires_at &lt;= NOW()
+    </select>
+</mapper>

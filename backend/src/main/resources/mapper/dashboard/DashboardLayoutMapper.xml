@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper">
+
+    <resultMap id="layoutMap" type="kr.co.ircp.cms.domain.dashboard.entity.DashboardLayout">
+        <id property="id" column="id"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="gridConfig" column="grid_config"/>
+        <result property="sharedWith" column="shared_with"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="layoutWidgetMap" type="kr.co.ircp.cms.domain.dashboard.entity.DashboardLayoutWidget">
+        <result property="layoutId" column="layout_id"/>
+        <result property="widgetId" column="widget_id"/>
+        <result property="instanceId" column="instance_id"/>
+        <result property="position" column="position"/>
+        <result property="configOverride" column="config_override"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <insert id="insertLayout" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dashboard_layout (owner_id, name, description, is_default, grid_config, shared_with)
+        VALUES (#{ownerId}, #{name}, #{description}, #{isDefault},
+                COALESCE(#{gridConfig},'{"columns":12,"row_height":80}')::jsonb,
+                #{sharedWith,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler})
+    </insert>
+
+    <update id="updateLayout">
+        UPDATE dashboard_layout
+        SET name = #{name},
+            description = #{description},
+            grid_config = #{gridConfig}::jsonb,
+            shared_with = #{sharedWith,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteLayout">
+        DELETE FROM dashboard_layout WHERE id = #{id}
+    </delete>
+
+    <select id="findById" resultMap="layoutMap">
+        SELECT id, owner_id, name, description, is_default,
+               grid_config::text AS grid_config,
+               shared_with, created_at, updated_at
+        FROM dashboard_layout WHERE id = #{id}
+    </select>
+
+    <select id="findByOwnerOrShared" resultMap="layoutMap">
+        SELECT DISTINCT id, owner_id, name, description, is_default,
+               grid_config::text AS grid_config,
+               shared_with, created_at, updated_at
+        FROM dashboard_layout
+        WHERE owner_id = #{ownerId}
+        <if test="roleCodes != null and roleCodes.size() > 0">
+            OR shared_with &amp;&amp; ARRAY[
+            <foreach collection="roleCodes" item="r" separator=",">#{r}</foreach>
+            ]::text[]
+        </if>
+        ORDER BY is_default DESC, updated_at DESC
+    </select>
+
+    <update id="clearDefaultForOwner">
+        UPDATE dashboard_layout SET is_default = FALSE
+        WHERE owner_id = #{ownerId} AND is_default = TRUE
+    </update>
+
+    <update id="setDefault">
+        UPDATE dashboard_layout SET is_default = #{isDefault}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <insert id="insertWidget">
+        INSERT INTO dashboard_layout_widget (layout_id, widget_id, instance_id, position, config_override, sort_order)
+        VALUES (#{layoutId}, #{widgetId}, #{instanceId}, #{position}::jsonb, COALESCE(#{configOverride},'{}')::jsonb, #{sortOrder})
+    </insert>
+
+    <delete id="deleteWidgetsByLayoutId">
+        DELETE FROM dashboard_layout_widget WHERE layout_id = #{layoutId}
+    </delete>
+
+    <select id="findWidgetsByLayoutId" resultMap="layoutWidgetMap">
+        SELECT layout_id, widget_id, instance_id,
+               position::text AS position,
+               config_override::text AS config_override,
+               sort_order
+        FROM dashboard_layout_widget
+        WHERE layout_id = #{layoutId}
+        ORDER BY sort_order ASC, instance_id ASC
+    </select>
+</mapper>

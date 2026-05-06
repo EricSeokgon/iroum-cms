@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.repository.SavedViewMapper">
+
+    <resultMap id="viewMap" type="kr.co.ircp.cms.domain.dashboard.entity.SavedView">
+        <id property="id" column="id"/>
+        <result property="ownerId" column="owner_id"/>
+        <result property="dashboardId" column="dashboard_id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="filterState" column="filter_state"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="isShared" column="is_shared"/>
+        <result property="sharedWith" column="shared_with"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="lastUsedAt" column="last_used_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO saved_view (owner_id, dashboard_id, name, description, filter_state,
+                                is_default, is_shared, shared_with)
+        VALUES (#{ownerId}, #{dashboardId}, #{name}, #{description},
+                #{filterState}::jsonb, #{isDefault}, #{isShared},
+                #{sharedWith,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler})
+    </insert>
+
+    <update id="update">
+        UPDATE saved_view
+        SET name = #{name},
+            description = #{description},
+            filter_state = #{filterState}::jsonb,
+            is_default = #{isDefault},
+            is_shared = #{isShared},
+            shared_with = #{sharedWith,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">DELETE FROM saved_view WHERE id = #{id}</delete>
+
+    <select id="findById" resultMap="viewMap">
+        SELECT id, owner_id, dashboard_id, name, description,
+               filter_state::text AS filter_state,
+               is_default, is_shared, shared_with,
+               created_at, last_used_at
+        FROM saved_view WHERE id = #{id}
+    </select>
+
+    <select id="findByOwnerAndDashboard" resultMap="viewMap">
+        SELECT id, owner_id, dashboard_id, name, description,
+               filter_state::text AS filter_state,
+               is_default, is_shared, shared_with,
+               created_at, last_used_at
+        FROM saved_view
+        WHERE owner_id = #{ownerId}
+        <if test="dashboardId != null">AND dashboard_id = #{dashboardId}</if>
+        ORDER BY last_used_at DESC
+    </select>
+
+    <update id="touchLastUsedAt">
+        UPDATE saved_view SET last_used_at = NOW() WHERE id = #{id}
+    </update>
+</mapper>

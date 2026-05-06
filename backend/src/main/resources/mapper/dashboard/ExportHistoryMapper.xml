@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.repository.ExportHistoryMapper">
+
+    <resultMap id="exportMap" type="kr.co.ircp.cms.domain.dashboard.entity.ExportHistory">
+        <id property="id" column="id"/>
+        <result property="requestorId" column="requestor_id"/>
+        <result property="exportType" column="export_type"/>
+        <result property="scope" column="scope"/>
+        <result property="filePath" column="file_path"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="rowCount" column="row_count"/>
+        <result property="status" column="status"/>
+        <result property="progressPct" column="progress_pct"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="requestedAt" column="requested_at"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="expiresAt" column="expires_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO export_history (requestor_id, export_type, scope, status, progress_pct)
+        VALUES (#{requestorId}, #{exportType}, #{scope}::jsonb, COALESCE(#{status},'PROCESSING'), COALESCE(#{progressPct},0))
+    </insert>
+
+    <update id="update">
+        UPDATE export_history
+        SET file_path = #{filePath},
+            size_bytes = #{sizeBytes},
+            row_count = #{rowCount},
+            status = #{status},
+            progress_pct = #{progressPct},
+            error_message = #{errorMessage},
+            completed_at = #{completedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateProgress">
+        UPDATE export_history SET progress_pct = #{progressPct} WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="exportMap">
+        SELECT id, requestor_id, export_type,
+               scope::text AS scope,
+               file_path, size_bytes, row_count, status, progress_pct,
+               error_message, requested_at, completed_at, expires_at
+        FROM export_history WHERE id = #{id}
+    </select>
+
+    <select id="findByRequestor" resultMap="exportMap">
+        SELECT id, requestor_id, export_type,
+               scope::text AS scope,
+               file_path, size_bytes, row_count, status, progress_pct,
+               error_message, requested_at, completed_at, expires_at
+        FROM export_history
+        WHERE requestor_id = #{requestorId}
+        <if test="status != null">AND status = #{status}</if>
+        ORDER BY requested_at DESC
+    </select>
+</mapper>

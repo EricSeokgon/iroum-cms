@@ -33,6 +33,14 @@ import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.ExportAccessDeniedException;
+import kr.co.ircp.cms.domain.dashboard.exception.ExportExpiredException;
+import kr.co.ircp.cms.domain.dashboard.exception.ExportNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
+import kr.co.ircp.cms.domain.dashboard.exception.SavedViewNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleConflictException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleNotFoundException;
 import kr.co.ircp.cms.domain.policy.matching.exception.CompanyMatchInputNotFoundException;
@@ -618,6 +626,80 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         detail.setTitle("Dispatch Schedule Conflict");
         detail.setProperty("code", "DISPATCH_SCHEDULE_CONFLICT");
+        return detail;
+    }
+
+    // ─── REQ-VIZ-001~006 시각화 대시보드 예외 (SPEC-CMS-008) ───────────────────
+
+    /** 위젯 미존재 → 404. REQ-VIZ-001 */
+    @ExceptionHandler(DashboardWidgetNotFoundException.class)
+    public ProblemDetail handleDashboardWidgetNotFound(DashboardWidgetNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Dashboard Widget Not Found");
+        detail.setProperty("code", "DASHBOARD_WIDGET_NOT_FOUND");
+        return detail;
+    }
+
+    /** 레이아웃 미존재 → 404. REQ-VIZ-002 */
+    @ExceptionHandler(DashboardLayoutNotFoundException.class)
+    public ProblemDetail handleDashboardLayoutNotFound(DashboardLayoutNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Dashboard Layout Not Found");
+        detail.setProperty("code", "DASHBOARD_LAYOUT_NOT_FOUND");
+        return detail;
+    }
+
+    /** 저장된 뷰 미존재 → 404. REQ-VIZ-004 */
+    @ExceptionHandler(SavedViewNotFoundException.class)
+    public ProblemDetail handleSavedViewNotFound(SavedViewNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Saved View Not Found");
+        detail.setProperty("code", "SAVED_VIEW_NOT_FOUND");
+        return detail;
+    }
+
+    /** Export 미존재 → 404. REQ-VIZ-006 */
+    @ExceptionHandler(ExportNotFoundException.class)
+    public ProblemDetail handleExportNotFound(ExportNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Export Not Found");
+        detail.setProperty("code", "EXPORT_NOT_FOUND");
+        return detail;
+    }
+
+    /** Export 만료 → 410 Gone. REQ-VIZ-006-D-5 */
+    @ExceptionHandler(ExportExpiredException.class)
+    public ProblemDetail handleExportExpired(ExportExpiredException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.GONE, ex.getMessage());
+        detail.setTitle("Export Expired");
+        detail.setProperty("code", "EXPORT_EXPIRED");
+        return detail;
+    }
+
+    /** Export 권한 거부 → 403. REQ-VIZ-006-D-5 */
+    @ExceptionHandler(ExportAccessDeniedException.class)
+    public ProblemDetail handleExportAccessDenied(ExportAccessDeniedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Export Access Denied");
+        detail.setProperty("code", "EXPORT_ACCESS_DENIED");
+        return detail;
+    }
+
+    /** 위젯 권한 거부 → 403. REQ-VIZ-001-D-3 */
+    @ExceptionHandler(WidgetAccessDeniedException.class)
+    public ProblemDetail handleWidgetAccessDenied(WidgetAccessDeniedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Widget Access Denied");
+        detail.setProperty("code", "WIDGET_ACCESS_DENIED");
+        return detail;
+    }
+
+    /** CUSTOM_QUERY 위젯 DDL/DML 토큰 거부 → 400. REQ-VIZ-005-D-2 */
+    @ExceptionHandler(InvalidWidgetQueryException.class)
+    public ProblemDetail handleInvalidWidgetQuery(InvalidWidgetQueryException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Invalid Widget Query");
+        detail.setProperty("code", "INVALID_WIDGET_QUERY");
         return detail;
     }
 }

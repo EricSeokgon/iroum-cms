@@ -128,6 +128,11 @@ dependencies {
     implementation("org.apache.commons:commons-imaging:1.0.0-alpha5")
     // imgscalr: 썸네일 생성 (REQ-MEDIA-002-D-3)
     implementation("org.imgscalr:imgscalr-lib:4.2")
+
+    // ─── Apache POI (SPEC-CMS-008 REQ-VIZ-006-D-1, 엑셀 스트리밍 export) ────────
+    // SXSSFWorkbook 으로 100만 행 OOM 없이 청크 단위 시트 작성.
+    implementation("org.apache.poi:poi:5.2.5")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
 }
 
 // ─── 빌드 설정 ────────────────────────────────────────────────────────────

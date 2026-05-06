@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper">
+
+    <resultMap id="widgetMap" type="kr.co.ircp.cms.domain.dashboard.entity.DashboardWidget">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="widgetType" column="widget_type"/>
+        <result property="dataSource" column="data_source"/>
+        <result property="dataSourceConfig" column="data_source_config"/>
+        <result property="defaultConfig" column="default_config"/>
+        <result property="availableDimensions" column="available_dimensions"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="requiredRoleCodes" column="required_role_codes"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="status" column="status"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dashboard_widget (
+            code, name, description, widget_type, data_source,
+            data_source_config, default_config,
+            available_dimensions, required_role_codes,
+            status, created_by
+        ) VALUES (
+            #{code}, #{name}, #{description}, #{widgetType}, #{dataSource},
+            #{dataSourceConfig}::jsonb, #{defaultConfig}::jsonb,
+            #{availableDimensions,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            #{requiredRoleCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            COALESCE(#{status},'ACTIVE'), #{createdBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE dashboard_widget
+        SET name = #{name},
+            description = #{description},
+            widget_type = #{widgetType},
+            data_source = #{dataSource},
+            data_source_config = #{dataSourceConfig}::jsonb,
+            default_config = #{defaultConfig}::jsonb,
+            available_dimensions = #{availableDimensions,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            required_role_codes = #{requiredRoleCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
+            status = #{status},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE dashboard_widget SET status = #{status}, updated_at = NOW() WHERE id = #{id}
+    </update>
+
+    <select id="findById" resultMap="widgetMap">
+        SELECT id, code, name, description, widget_type, data_source,
+               data_source_config::text AS data_source_config,
+               default_config::text AS default_config,
+               available_dimensions, required_role_codes,
+               status, created_by, created_at, updated_at
+        FROM dashboard_widget WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="widgetMap">
+        SELECT id, code, name, description, widget_type, data_source,
+               data_source_config::text AS data_source_config,
+               default_config::text AS default_config,
+               available_dimensions, required_role_codes,
+               status, created_by, created_at, updated_at
+        FROM dashboard_widget WHERE code = #{code}
+    </select>
+
+    <select id="findAll" resultMap="widgetMap">
+        SELECT id, code, name, description, widget_type, data_source,
+               data_source_config::text AS data_source_config,
+               default_config::text AS default_config,
+               available_dimensions, required_role_codes,
+               status, created_by, created_at, updated_at
+        FROM dashboard_widget
+        <where>
+            <if test="widgetType != null">AND widget_type = #{widgetType}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT count(*) FROM dashboard_widget
+        <where>
+            <if test="widgetType != null">AND widget_type = #{widgetType}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+    </select>
+</mapper>
