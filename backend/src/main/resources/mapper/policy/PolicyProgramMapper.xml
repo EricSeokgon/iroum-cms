@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.program.repository.PolicyProgramMapper">
+
+    <resultMap id="policyProgramMap" type="kr.co.ircp.cms.domain.policy.program.entity.PolicyProgram">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="ministry" column="ministry"/>
+        <result property="programName" column="program_name"/>
+        <result property="programNameI18n" column="program_name_i18n"/>
+        <result property="descriptionHtml" column="description_html"/>
+        <result property="targetIndustries" column="target_industries"
+                javaType="java.util.List" jdbcType="ARRAY"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="targetRegions" column="target_regions"
+                javaType="java.util.List" jdbcType="ARRAY"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="minEmployees" column="min_employees"/>
+        <result property="maxEmployees" column="max_employees"/>
+        <result property="minRevenue" column="min_revenue"/>
+        <result property="maxRevenue" column="max_revenue"/>
+        <result property="minBusinessAgeMonths" column="min_business_age_months"/>
+        <result property="maxBusinessAgeMonths" column="max_business_age_months"/>
+        <result property="applicationStart" column="application_start"/>
+        <result property="applicationEnd" column="application_end"/>
+        <result property="budgetTotal" column="budget_total"/>
+        <result property="budgetPerCompany" column="budget_per_company"/>
+        <result property="sourceUrl" column="source_url"/>
+        <result property="sourceApiId" column="source_api_id"/>
+        <result property="sourceId" column="source_id"/>
+        <result property="lastSyncedAt" column="last_synced_at"/>
+        <result property="importWarnings" column="import_warnings"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="cols">
+        id, code, ministry, program_name, program_name_i18n::text AS program_name_i18n,
+        description_html, target_industries, target_regions,
+        min_employees, max_employees, min_revenue, max_revenue,
+        min_business_age_months, max_business_age_months,
+        application_start, application_end, budget_total, budget_per_company,
+        source_url, source_api_id, source_id, last_synced_at,
+        import_warnings::text AS import_warnings, status,
+        created_at, updated_at
+    </sql>
+
+    <select id="findById" resultMap="policyProgramMap">
+        SELECT <include refid="cols"/>
+        FROM policy_program
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="policyProgramMap">
+        SELECT <include refid="cols"/>
+        FROM policy_program
+        WHERE code = #{code}
+    </select>
+
+    <select id="findFiltered" resultMap="policyProgramMap">
+        SELECT <include refid="cols"/>
+        FROM policy_program
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="industry != null">AND #{industry} = ANY(target_industries)</if>
+            <if test="region != null">AND #{region} = ANY(target_regions)</if>
+            <if test="keyword != null and keyword != ''">
+                AND (program_name ILIKE CONCAT('%', #{keyword}, '%')
+                     OR description_html ILIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        ORDER BY application_end DESC NULLS LAST, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countFiltered" resultType="long">
+        SELECT COUNT(*)
+        FROM policy_program
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="industry != null">AND #{industry} = ANY(target_industries)</if>
+            <if test="region != null">AND #{region} = ANY(target_regions)</if>
+            <if test="keyword != null and keyword != ''">
+                AND (program_name ILIKE CONCAT('%', #{keyword}, '%')
+                     OR description_html ILIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findActiveForMatching" resultMap="policyProgramMap">
+        SELECT <include refid="cols"/>
+        FROM policy_program
+        WHERE status = 'ACTIVE'
+          AND (application_end IS NULL OR application_end >= now())
+        ORDER BY application_end ASC NULLS LAST
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO policy_program (
+            code, ministry, program_name, program_name_i18n, description_html,
+            target_industries, target_regions,
+            min_employees, max_employees, min_revenue, max_revenue,
+            min_business_age_months, max_business_age_months,
+            application_start, application_end,
+            budget_total, budget_per_company, source_url, source_api_id, source_id,
+            status
+        ) VALUES (
+            #{code}, #{ministry}, #{programName}, #{programNameI18n}::jsonb, #{descriptionHtml},
+            #{targetIndustries,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            #{targetRegions,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            #{minEmployees}, #{maxEmployees}, #{minRevenue}, #{maxRevenue},
+            #{minBusinessAgeMonths}, #{maxBusinessAgeMonths},
+            #{applicationStart}, #{applicationEnd},
+            #{budgetTotal}, #{budgetPerCompany}, #{sourceUrl}, #{sourceApiId}, #{sourceId},
+            #{status}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE policy_program
+        SET program_name           = #{programName},
+            program_name_i18n      = #{programNameI18n}::jsonb,
+            description_html       = #{descriptionHtml},
+            target_industries      = #{targetIndustries,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            target_regions         = #{targetRegions,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            min_employees          = #{minEmployees},
+            max_employees          = #{maxEmployees},
+            min_revenue            = #{minRevenue},
+            max_revenue            = #{maxRevenue},
+            min_business_age_months = #{minBusinessAgeMonths},
+            max_business_age_months = #{maxBusinessAgeMonths},
+            application_start      = #{applicationStart},
+            application_end        = #{applicationEnd},
+            budget_total           = #{budgetTotal},
+            budget_per_company     = #{budgetPerCompany},
+            source_url             = #{sourceUrl},
+            status                 = #{status},
+            updated_at             = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM policy_program WHERE id = #{id}
+    </delete>
+</mapper>

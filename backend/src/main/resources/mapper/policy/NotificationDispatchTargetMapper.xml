@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.dispatch.repository.NotificationDispatchTargetMapper">
+
+    <resultMap id="targetMap" type="kr.co.ircp.cms.domain.policy.dispatch.entity.NotificationDispatchTarget">
+        <id property="id" column="id"/>
+        <result property="scheduleId" column="schedule_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="sendId" column="send_id"/>
+        <result property="idempotencyKey" column="idempotency_key"/>
+        <result property="channel" column="channel"/>
+        <result property="status" column="status"/>
+        <result property="evaluatedAt" column="evaluated_at"/>
+        <result property="sentAt" column="sent_at"/>
+        <result property="failedReason" column="failed_reason"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification_dispatch_target (
+            schedule_id, user_id, send_id, idempotency_key, channel, status, failed_reason
+        ) VALUES (
+            #{scheduleId}, #{userId}, #{sendId}, #{idempotencyKey}, #{channel},
+            COALESCE(#{status}, 'PENDING'), #{failedReason}
+        )
+    </insert>
+
+    <select id="findByScheduleId" resultMap="targetMap">
+        SELECT id, schedule_id, user_id, send_id, idempotency_key, channel, status,
+               evaluated_at, sent_at, failed_reason
+        FROM notification_dispatch_target
+        WHERE schedule_id = #{scheduleId}
+        ORDER BY id
+    </select>
+
+    <update id="updateStatus">
+        UPDATE notification_dispatch_target
+        SET status = #{status},
+            failed_reason = #{failedReason},
+            sent_at = CASE WHEN #{status} = 'SENT' THEN now() ELSE sent_at END,
+            evaluated_at = CASE WHEN evaluated_at IS NULL THEN now() ELSE evaluated_at END
+        WHERE id = #{id}
+    </update>
+</mapper>

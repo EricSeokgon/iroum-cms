@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.matching.repository.CompanyMatchInputMapper">
+
+    <resultMap id="companyInputMap" type="kr.co.ircp.cms.domain.policy.matching.entity.CompanyMatchInput">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="industryCodes" column="industry_codes"
+                javaType="java.util.List" jdbcType="ARRAY"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="regionCodes" column="region_codes"
+                javaType="java.util.List" jdbcType="ARRAY"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="employeeCount" column="employee_count"/>
+        <result property="annualRevenue" column="annual_revenue"/>
+        <result property="businessAgeMonths" column="business_age_months"/>
+        <result property="certifications" column="certifications"
+                javaType="java.util.List" jdbcType="ARRAY"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
+        <result property="customAttrs" column="custom_attrs"/>
+        <result property="lastUpdatedAt" column="last_updated_at"/>
+    </resultMap>
+
+    <select id="findByCompanyId" resultMap="companyInputMap">
+        SELECT id, company_id, industry_codes, region_codes,
+               employee_count, annual_revenue, business_age_months,
+               certifications, custom_attrs::text AS custom_attrs, last_updated_at
+        FROM company_match_input
+        WHERE company_id = #{companyId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO company_match_input (
+            company_id, industry_codes, region_codes,
+            employee_count, annual_revenue, business_age_months,
+            certifications, custom_attrs
+        ) VALUES (
+            #{companyId},
+            #{industryCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            #{regionCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            #{employeeCount}, #{annualRevenue}, #{businessAgeMonths},
+            #{certifications,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            COALESCE(#{customAttrs}, '{}')::jsonb
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE company_match_input SET
+            industry_codes      = #{industryCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            region_codes        = #{regionCodes,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            employee_count      = #{employeeCount},
+            annual_revenue      = #{annualRevenue},
+            business_age_months = #{businessAgeMonths},
+            certifications      = #{certifications,typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler,jdbcType=ARRAY},
+            custom_attrs        = COALESCE(#{customAttrs}, '{}')::jsonb,
+            last_updated_at     = now()
+        WHERE id = #{id}
+    </update>
+</mapper>

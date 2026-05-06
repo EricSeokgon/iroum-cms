@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.subscription.repository.NotificationSubscriptionMapper">
+
+    <resultMap id="subMap" type="kr.co.ircp.cms.domain.policy.subscription.entity.NotificationSubscription">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="channel" column="channel"/>
+        <result property="category" column="category"/>
+        <result property="optedIn" column="opted_in"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="source" column="source"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="subMap">
+        SELECT id, user_id, channel, category, opted_in, updated_at, source
+        FROM notification_subscription
+        WHERE user_id = #{userId}
+        ORDER BY channel, category
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO notification_subscription (user_id, channel, category, opted_in, source)
+        VALUES (#{userId}, #{channel}, #{category}, #{optedIn}, COALESCE(#{source}, 'USER'))
+        ON CONFLICT (user_id, channel, category)
+        DO UPDATE SET opted_in   = EXCLUDED.opted_in,
+                      source     = EXCLUDED.source,
+                      updated_at = now()
+    </insert>
+
+    <select id="isOptedIn" resultType="boolean">
+        SELECT COALESCE((
+            SELECT opted_in FROM notification_subscription
+            WHERE user_id = #{userId} AND channel = #{channel} AND category = #{category}
+            LIMIT 1
+        ), TRUE)
+    </select>
+</mapper>

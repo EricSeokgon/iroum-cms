@@ -33,6 +33,10 @@ import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleConflictException;
+import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleNotFoundException;
+import kr.co.ircp.cms.domain.policy.matching.exception.CompanyMatchInputNotFoundException;
+import kr.co.ircp.cms.domain.policy.program.exception.PolicyProgramNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyChecklistItemNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyIncidentNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyKeywordNotFoundException;
@@ -576,6 +580,44 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Safety Checklist Item Not Found");
         detail.setProperty("code", "SAFETY_CHECKLIST_ITEM_NOT_FOUND");
+        return detail;
+    }
+
+    // ─── REQ-POLICY-001~005 정책 매칭·발송 예외 (SPEC-CMS-007) ──────────────
+
+    /** 정책사업 미존재 → 404. REQ-POLICY-001 */
+    @ExceptionHandler(PolicyProgramNotFoundException.class)
+    public ProblemDetail handlePolicyProgramNotFound(PolicyProgramNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Policy Program Not Found");
+        detail.setProperty("code", "POLICY_PROGRAM_NOT_FOUND");
+        return detail;
+    }
+
+    /** 기업 프로필(매칭 입력) 미존재 → 404. REQ-POLICY-002 */
+    @ExceptionHandler(CompanyMatchInputNotFoundException.class)
+    public ProblemDetail handleCompanyMatchInputNotFound(CompanyMatchInputNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Company Match Input Not Found");
+        detail.setProperty("code", "COMPANY_MATCH_INPUT_NOT_FOUND");
+        return detail;
+    }
+
+    /** 발송 예약 미존재 → 404. REQ-POLICY-003 */
+    @ExceptionHandler(DispatchScheduleNotFoundException.class)
+    public ProblemDetail handleDispatchScheduleNotFound(DispatchScheduleNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Dispatch Schedule Not Found");
+        detail.setProperty("code", "DISPATCH_SCHEDULE_NOT_FOUND");
+        return detail;
+    }
+
+    /** 발송 예약 상태 충돌 → 409. REQ-POLICY-003 */
+    @ExceptionHandler(DispatchScheduleConflictException.class)
+    public ProblemDetail handleDispatchScheduleConflict(DispatchScheduleConflictException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Dispatch Schedule Conflict");
+        detail.setProperty("code", "DISPATCH_SCHEDULE_CONFLICT");
         return detail;
     }
 }

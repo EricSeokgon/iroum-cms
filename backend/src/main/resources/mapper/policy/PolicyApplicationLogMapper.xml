@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.tracking.repository.PolicyApplicationLogMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO policy_application_log (
+            user_id, policy_id, source, notification_send_id, action,
+            user_agent, ip_address
+        ) VALUES (
+            #{userId}, #{policyId}, #{source}, #{notificationSendId}, #{action},
+            #{userAgent}, #{ipAddress}::inet
+        )
+    </insert>
+
+    <select id="countByPolicyAndAction" resultType="long">
+        SELECT COUNT(*) FROM policy_application_log
+        WHERE policy_id = #{policyId} AND action = #{action}
+    </select>
+</mapper>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.policy.matching.repository.PolicyMatchScoreMapper">
+
+    <resultMap id="scoreMap" type="kr.co.ircp.cms.domain.policy.matching.entity.PolicyMatchScore">
+        <id property="id" column="id"/>
+        <result property="companyId" column="company_id"/>
+        <result property="policyId" column="policy_id"/>
+        <result property="score" column="score"/>
+        <result property="grade" column="grade"/>
+        <result property="scoreBreakdown" column="score_breakdown"/>
+        <result property="matchedAt" column="matched_at"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="viewedAt" column="viewed_at"/>
+        <result property="appliedAt" column="applied_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO policy_match_score (
+            company_id, policy_id, score, grade, score_breakdown,
+            matched_at, expires_at
+        ) VALUES (
+            #{companyId}, #{policyId}, #{score}, #{grade},
+            COALESCE(#{scoreBreakdown}, '{}')::jsonb,
+            #{matchedAt}, #{expiresAt}
+        )
+    </insert>
+
+    <select id="findActiveCacheByCompanyId" resultMap="scoreMap">
+        SELECT id, company_id, policy_id, score, grade,
+               score_breakdown::text AS score_breakdown,
+               matched_at, expires_at, viewed_at, applied_at
+        FROM policy_match_score
+        WHERE company_id = #{companyId} AND expires_at > now()
+        ORDER BY score DESC, matched_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteByCompanyId">
+        DELETE FROM policy_match_score WHERE company_id = #{companyId}
+    </delete>
+
+    <delete id="deleteExpired">
+        DELETE FROM policy_match_score WHERE expires_at &lt;= now()
+    </delete>
+</mapper>
