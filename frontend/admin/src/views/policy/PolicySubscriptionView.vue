@@ -23,7 +23,7 @@
           min-width="140"
         >
           <template #default="{ row }">
-            <el-switch v-model="matrix[row.category][ch.value]" />
+            <el-switch v-model="matrix[(row.category as DispatchType)][ch.value]" />
           </template>
         </el-table-column>
       </el-table>

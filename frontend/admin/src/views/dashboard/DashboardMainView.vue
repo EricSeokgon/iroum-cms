@@ -530,6 +530,7 @@ const EmptyCard = defineComponent({
 
 // ECharts 옵션 빌더
 interface ChartOption {
+  [key: string]: unknown
   title?: { text: string; show?: boolean }
   tooltip?: Record<string, unknown>
   legend?: Record<string, unknown>

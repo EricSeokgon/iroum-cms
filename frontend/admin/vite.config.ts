@@ -1,14 +1,18 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+
+// import.meta.url은 ESM 모듈에서 현재 파일의 URL을 반환함
+// fileURLToPath 없이 pathname 직접 사용 (Linux/WSL 환경)
+const baseDir = new URL('.', import.meta.url).pathname
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  plugins: [vue() as any],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '@iroum/shared': fileURLToPath(new URL('../shared/src', import.meta.url)),
+      '@': baseDir + 'src',
+      '@iroum/shared': baseDir + '../shared/src',
     },
   },
   server: {
