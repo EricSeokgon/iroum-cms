@@ -339,6 +339,49 @@ const router = createRouter({
           component: () => import('@/views/policy/PolicyDispatchView.vue'),
           meta: { title: '알림 발송 예약 관리', permissions: ['POLICY:DISPATCH:READ'] },
         },
+        // ── 데이터 거버넌스 라우트 (SPEC-CMS-009) ──────────────────────────
+        {
+          path: 'governance/dictionary',
+          name: 'governance-dictionary',
+          component: () => import('@/views/governance/DataDictionaryView.vue'),
+          meta: { title: '데이터 표준 사전', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/retention-policies',
+          name: 'governance-retention',
+          component: () => import('@/views/governance/RetentionPolicyView.vue'),
+          meta: { title: '데이터 보존 정책', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/batch-logs',
+          name: 'governance-batch-logs',
+          component: () => import('@/views/governance/BatchLogsView.vue'),
+          meta: { title: '배치 실행 이력', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/quality-rules',
+          name: 'governance-quality-rules',
+          component: () => import('@/views/governance/QualityRuleView.vue'),
+          meta: { title: '데이터 품질 룰', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/quality-reports',
+          name: 'governance-quality-reports',
+          component: () => import('@/views/governance/QualityReportView.vue'),
+          meta: { title: '품질 리포트', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/recovery-drills',
+          name: 'governance-recovery-drills',
+          component: () => import('@/views/governance/RecoveryDrillView.vue'),
+          meta: { title: '백업/복구 시험', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'governance/stats',
+          name: 'governance-stats',
+          component: () => import('@/views/governance/GovernanceStatsView.vue'),
+          meta: { title: '거버넌스 통계', permissions: ['ADMIN'] },
+        },
       ],
     },
 

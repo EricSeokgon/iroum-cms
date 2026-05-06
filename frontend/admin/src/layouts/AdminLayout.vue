@@ -165,6 +165,32 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- 데이터 거버넌스 그룹 (SPEC-CMS-009) -->
+        <el-sub-menu index="governance" :aria-label="t('nav.governance')">
+          <template #title>
+            <el-icon><i-ep-data-line /></el-icon>
+            <span>{{ t('nav.governance') }}</span>
+          </template>
+          <el-menu-item index="/governance/dictionary">
+            <span>{{ t('nav.governanceDictionary') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/governance/retention-policies">
+            <span>{{ t('nav.governanceRetention') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/governance/batch-logs">
+            <span>{{ t('nav.governanceBatchLogs') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/governance/quality-rules">
+            <span>{{ t('nav.governanceQualityRules') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/governance/quality-reports">
+            <span>{{ t('nav.governanceQualityReports') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/governance/recovery-drills">
+            <span>{{ t('nav.governanceRecoveryDrills') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 

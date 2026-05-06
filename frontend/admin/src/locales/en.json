@@ -37,7 +37,14 @@
     "systemCodes": "Common Codes",
     "systemSettings": "System Settings",
     "systemMaintenance": "Maintenance",
-    "systemAuditLogs": "Audit Logs"
+    "systemAuditLogs": "Audit Logs",
+    "governance": "Data Governance",
+    "governanceDictionary": "Data Dictionary",
+    "governanceRetention": "Retention Policies",
+    "governanceBatchLogs": "Batch Logs",
+    "governanceQualityRules": "Quality Rules",
+    "governanceQualityReports": "Quality Reports",
+    "governanceRecoveryDrills": "Recovery Drills"
   },
   "system": {
     "dashboard": {

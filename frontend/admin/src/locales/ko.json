@@ -37,7 +37,14 @@
     "systemCodes": "공통 코드",
     "systemSettings": "시스템 설정",
     "systemMaintenance": "점검 모드",
-    "systemAuditLogs": "감사 로그"
+    "systemAuditLogs": "감사 로그",
+    "governance": "데이터 거버넌스",
+    "governanceDictionary": "데이터 표준 사전",
+    "governanceRetention": "보존 정책",
+    "governanceBatchLogs": "배치 실행 이력",
+    "governanceQualityRules": "품질 룰",
+    "governanceQualityReports": "품질 리포트",
+    "governanceRecoveryDrills": "복구 시험"
   },
   "system": {
     "dashboard": {
