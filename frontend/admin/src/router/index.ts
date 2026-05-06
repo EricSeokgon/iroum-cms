@@ -250,6 +250,45 @@ const router = createRouter({
           component: () => import('@/views/system/AuditLogView.vue'),
           meta: { title: '감사 로그', permissions: ['SYSTEM:AUDIT:READ'] },
         },
+        // ── 안전관리 라우트 (SPEC-CMS-006) ─────────────────────────────────
+        {
+          path: 'safety/incidents',
+          name: 'safety-incidents',
+          component: () => import('@/views/safety/IncidentListView.vue'),
+          meta: { title: '사고사례 관리' },
+        },
+        {
+          path: 'safety/incidents/:id',
+          name: 'safety-incident-detail',
+          component: () => import('@/views/safety/IncidentDetailView.vue'),
+          props: true,
+          meta: { title: '사고사례 상세' },
+        },
+        {
+          path: 'safety/profile',
+          name: 'safety-profile',
+          component: () => import('@/views/safety/SafetyProfileView.vue'),
+          meta: { title: '기업 안전 프로필' },
+        },
+        {
+          path: 'safety/match',
+          name: 'safety-match',
+          component: () => import('@/views/safety/MatchResultView.vue'),
+          meta: { title: '사고사례 매칭 결과' },
+        },
+        {
+          path: 'safety/reports/:uuid',
+          name: 'safety-report-detail',
+          component: () => import('@/views/safety/GuidelineReportView.vue'),
+          props: true,
+          meta: { title: '가이드라인 보고서' },
+        },
+        {
+          path: 'admin/safety/templates',
+          name: 'safety-templates',
+          component: () => import('@/views/safety/TemplateManageView.vue'),
+          meta: { title: '가이드라인 템플릿 관리', permissions: ['SAFETY:TEMPLATE:READ'] },
+        },
       ],
     },
 
