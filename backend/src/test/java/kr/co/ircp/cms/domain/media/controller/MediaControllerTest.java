@@ -55,7 +55,7 @@ class MediaControllerTest {
 
     @BeforeEach
     void setUp() {
-        principal = new JwtPrincipal(1L, "testuser", Set.of("ROLE_EDITOR"), Set.of());
+        principal = new JwtPrincipal(1L, "testuser", Set.of("EDITOR"), Set.of());
     }
 
     @Test

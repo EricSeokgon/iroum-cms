@@ -165,7 +165,7 @@ CREATE TABLE policy_match_score (
     CONSTRAINT chk_pms_score CHECK (score >= 0.00 AND score <= 100.00),
     CONSTRAINT uq_pms_active UNIQUE (company_id, policy_id, matched_at)
 );
-CREATE INDEX idx_pms_company_score ON policy_match_score(company_id, score DESC) WHERE expires_at > now();
+CREATE INDEX idx_pms_company_score ON policy_match_score(company_id, score DESC, expires_at);
 CREATE INDEX idx_pms_expires       ON policy_match_score(expires_at) WHERE applied_at IS NULL;
 
 -- ============================================================

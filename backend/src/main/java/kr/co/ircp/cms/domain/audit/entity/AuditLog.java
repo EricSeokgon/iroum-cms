@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.audit.entity;
 
 import lombok.Builder;
 import lombok.Data;
+import org.apache.ibatis.type.Alias;
 
 import java.time.Instant;
 
@@ -11,6 +12,7 @@ import java.time.Instant;
  * <p>SPEC-CMS-005 v0.2.1 §4.2 — audit_log 테이블 매핑.
  * APPEND-ONLY 정책: DB 트리거가 UPDATE/DELETE를 차단한다.
  */
+@Alias("AuditLogEntity")
 @Data
 @Builder
 public class AuditLog {

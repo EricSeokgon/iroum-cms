@@ -3,11 +3,13 @@ package kr.co.ircp.cms.domain.content.template.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import org.apache.ibatis.type.Alias;
 
 /**
  * 템플릿 생성·수정 요청 DTO.
  * REQ-CONTENT-004-D-1: 템플릿 등록
  */
+@Alias("ContentTemplateRequest")
 public record TemplateRequest(
         @NotBlank @Size(max = 50)
         String code,

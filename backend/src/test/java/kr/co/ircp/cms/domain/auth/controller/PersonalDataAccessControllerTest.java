@@ -20,6 +20,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -85,7 +86,7 @@ class PersonalDataAccessControllerTest {
     void myAccess_returns200_withPaged() throws Exception {
         PageResponse<PersonalDataAccessEntry> page = PageResponse.of(
                 List.of(sampleEntry()), 0, 20, 1L);
-        when(service.findByTarget(anyInt(), anyInt(), anyInt())).thenReturn(page);
+        when(service.findByTarget(anyLong(), anyInt(), anyInt())).thenReturn(page);
 
         mockMvc.perform(get("/api/v1/me/personal-data-access")
                         .with(csrf())

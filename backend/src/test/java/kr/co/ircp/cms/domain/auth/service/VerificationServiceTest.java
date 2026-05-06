@@ -76,6 +76,12 @@ class VerificationServiceTest {
         given(requestMapper.findLatestActiveByTarget(anyString(), anyString(), any()))
             .willReturn(Optional.empty());
         given(passwordPolicyService.hash(anyString())).willReturn("$2a$12$hash");
+        // DB가 INSERT 시 requestId를 채우는 동작을 모방
+        org.mockito.Mockito.doAnswer(invocation -> {
+            VerificationRequest vr = invocation.getArgument(0);
+            vr.setRequestId(UUID.randomUUID());
+            return null;
+        }).when(requestMapper).insert(any());
 
         // when
         VerifyRequestResponse response = sut.request(req, IP, UA);

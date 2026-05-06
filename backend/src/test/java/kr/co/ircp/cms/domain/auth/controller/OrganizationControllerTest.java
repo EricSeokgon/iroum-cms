@@ -60,7 +60,7 @@ class OrganizationControllerTest {
     private ObjectMapper objectMapper;
 
     private static final JwtPrincipal ADMIN_PRINCIPAL =
-            new JwtPrincipal(1L, "1", Set.of("ROLE_SUPER_ADMIN"));
+            new JwtPrincipal(1L, "1", Set.of("SUPER_ADMIN"));
 
     @Test
     @DisplayName("GET /api/v1/organizations/tree — 200 OK 트리 반환")
@@ -78,17 +78,13 @@ class OrganizationControllerTest {
     @Test
     @DisplayName("GET /api/v1/organizations/tree — 관리자 역할 없으면 403")
     void getTree_returns403_whenNoAdminRole() throws Exception {
-        JwtPrincipal viewer = new JwtPrincipal(2L, "2", Set.of("ROLE_VIEWER"));
-
-        // Security 비활성화 테스트이므로 @PreAuthorize는 동작하지 않음
-        // 실제 운영에서는 403이 발생하나, 여기서는 서비스 모킹으로 검증
-        // 403 시나리오는 Spring Security 통합 테스트에서 별도 검증 필요
-        // 이 테스트는 역할 없는 principal로 서비스가 호출되지 않는지 확인
-        when(orgService.getTree()).thenReturn(List.of());
+        // EnableMethodSecurity 활성화 후 @PreAuthorize 검증이 동작하므로
+        // VIEWER 역할만 가진 사용자는 SUPER_ADMIN/DEPT_ADMIN 요구를 만족하지 못해 403 반환
+        JwtPrincipal viewer = new JwtPrincipal(2L, "2", Set.of("VIEWER"));
 
         mockMvc.perform(get("/api/v1/organizations/tree")
                         .with(SecurityMockMvcRequestPostProcessors.user(viewer)))
-                .andExpect(status().isOk()); // WebMvcTest+Security비활성 환경에서는 통과
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -122,7 +118,7 @@ class OrganizationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.properties.code").value("ORG_CODE_DUPLICATE"));
+                .andExpect(jsonPath("$.code").value("ORG_CODE_DUPLICATE"));
     }
 
     @Test
@@ -134,7 +130,7 @@ class OrganizationControllerTest {
         mockMvc.perform(delete("/api/v1/organizations/1")
                         .with(SecurityMockMvcRequestPostProcessors.user(ADMIN_PRINCIPAL)))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.properties.code").value("ORG_HAS_CHILDREN"));
+                .andExpect(jsonPath("$.code").value("ORG_HAS_CHILDREN"));
     }
 
     @Test

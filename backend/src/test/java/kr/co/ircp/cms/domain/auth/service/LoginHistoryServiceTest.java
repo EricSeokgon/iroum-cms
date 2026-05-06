@@ -114,16 +114,16 @@ class LoginHistoryServiceTest {
     }
 
     @Test
-    @DisplayName("findPage — page=1이면 offset=20으로 계산")
+    @DisplayName("findPage — page=1이면 offset=10으로 계산 (page * size)")
     void findPage_calculatesOffsetCorrectly() {
-        when(mapper.findPage(eq(20), eq(10), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), anyString()))
+        when(mapper.findPage(eq(10), eq(10), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), anyString()))
                 .thenReturn(List.of());
         when(mapper.countAll(isNull(), isNull(), isNull(), isNull(), isNull(), isNull()))
                 .thenReturn(0L);
 
         service.findPage(1, 10, "createdAt,desc", null, null, null, null, null, null);
 
-        verify(mapper).findPage(20, 10, null, null, null, null, null, null, "createdAt,desc");
+        verify(mapper).findPage(10, 10, null, null, null, null, null, null, "createdAt,desc");
     }
 
     // ──────────────────────────────────────────────────────────────

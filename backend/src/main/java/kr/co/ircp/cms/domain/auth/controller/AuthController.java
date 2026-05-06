@@ -67,7 +67,7 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest) {
         String ipAddress = httpRequest.getRemoteAddr();
-        String userAgent = httpRequest.getHeader("User-Agent");
+        String userAgent = resolveUserAgent(httpRequest);
 
         AuthService.LoginOutcome outcome = authService.login(request, ipAddress, userAgent);
 
@@ -91,7 +91,7 @@ public class AuthController {
             throw new InvalidCredentialsException("refresh_token cookie missing");
         }
         String ipAddress = httpRequest.getRemoteAddr();
-        String userAgent = httpRequest.getHeader("User-Agent");
+        String userAgent = resolveUserAgent(httpRequest);
 
         RefreshResult result = authService.refresh(refreshToken, ipAddress, userAgent);
 
@@ -180,7 +180,7 @@ public class AuthController {
             @Valid @RequestBody VerifyRequestRequest req,
             HttpServletRequest httpRequest) {
         String ip = extractIp(httpRequest);
-        String ua = httpRequest.getHeader("User-Agent");
+        String ua = resolveUserAgent(httpRequest);
         VerifyRequestResponse response = verificationService.request(req, ip, ua);
         return ResponseEntity.ok(response);
     }
@@ -210,7 +210,7 @@ public class AuthController {
             @Valid @RequestBody PasswordResetRequestDto req,
             HttpServletRequest httpRequest) {
         String ip = extractIp(httpRequest);
-        String ua = httpRequest.getHeader("User-Agent");
+        String ua = resolveUserAgent(httpRequest);
         authService.requestPasswordReset(req.email(), ip, ua);
         return ResponseEntity.ok(new PasswordResetRequestResponse(
             "이메일이 등록되어 있다면 인증 코드를 발송했습니다."));
@@ -235,5 +235,16 @@ public class AuthController {
     private String extractIp(HttpServletRequest req) {
         String xff = req.getHeader("X-Forwarded-For");
         return (xff != null && !xff.isBlank()) ? xff.split(",")[0].trim() : req.getRemoteAddr();
+    }
+
+    /**
+     * User-Agent 헤더 추출 — null인 경우 빈 문자열로 정규화.
+     *
+     * <p>다운스트림 서비스에 null이 전파되지 않도록 하고, 테스트의 {@code anyString()}
+     * Mockito 매처가 일치하도록 보장한다.
+     */
+    private String resolveUserAgent(HttpServletRequest req) {
+        String ua = req.getHeader("User-Agent");
+        return ua != null ? ua : "";
     }
 }

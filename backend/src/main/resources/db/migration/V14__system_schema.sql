@@ -156,17 +156,17 @@ CREATE INDEX idx_maintenance_active ON maintenance (start_at, end_at)
 
 -- ─── 권한 시드: SYSTEM 도메인 9개 권한 ──────────────────────────────────────────
 -- SPEC-CMS-002 permissions 테이블 (V6에 생성된 테이블)에 시드 추가
-INSERT INTO permissions (name, description) VALUES
-    ('SYSTEM:DASHBOARD',      '운영 대시보드 조회'),
-    ('SYSTEM:STATS',          '통계 조회'),
-    ('SYSTEM:CODE:READ',      '공통코드 조회'),
-    ('SYSTEM:CODE:WRITE',     '공통코드 관리'),
-    ('SYSTEM:SETTING:READ',   '시스템 설정 조회'),
-    ('SYSTEM:SETTING:WRITE',  '시스템 설정 관리'),
-    ('SYSTEM:MAINT:READ',     '점검 관리 조회'),
-    ('SYSTEM:MAINT:WRITE',    '점검 관리'),
-    ('SYSTEM:LOG:READ',       '접속로그·감사로그 조회')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO permissions (code, resource, action, description) VALUES
+    ('SYSTEM:DASHBOARD',      'SYSTEM', 'READ',  '운영 대시보드 조회'),
+    ('SYSTEM:STATS',          'SYSTEM', 'READ',  '통계 조회'),
+    ('SYSTEM:CODE:READ',      'SYSTEM', 'READ',  '공통코드 조회'),
+    ('SYSTEM:CODE:WRITE',     'SYSTEM', 'WRITE', '공통코드 관리'),
+    ('SYSTEM:SETTING:READ',   'SYSTEM', 'READ',  '시스템 설정 조회'),
+    ('SYSTEM:SETTING:WRITE',  'SYSTEM', 'WRITE', '시스템 설정 관리'),
+    ('SYSTEM:MAINT:READ',     'SYSTEM', 'READ',  '점검 관리 조회'),
+    ('SYSTEM:MAINT:WRITE',    'SYSTEM', 'WRITE', '점검 관리'),
+    ('SYSTEM:LOG:READ',       'SYSTEM', 'READ',  '접속로그·감사로그 조회')
+ON CONFLICT (code) DO NOTHING;
 
 -- ─── 공통코드 그룹 시드 (3개) ─────────────────────────────────────────────────
 INSERT INTO code_group (group_code, name, description) VALUES

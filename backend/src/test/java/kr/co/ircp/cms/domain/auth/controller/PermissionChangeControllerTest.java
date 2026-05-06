@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
@@ -53,6 +54,7 @@ class PermissionChangeControllerTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
+    @WithMockUser(authorities = "AUDIT:READ")
     @DisplayName("GET /audit/permission-changes — 200 + 페이징 응답 반환")
     void list_returns200WithPagedResult() throws Exception {
         PermissionChangeEntry entry = new PermissionChangeEntry(
@@ -72,6 +74,7 @@ class PermissionChangeControllerTest {
     }
 
     @Test
+    @WithMockUser(authorities = "AUDIT:READ")
     @DisplayName("GET /audit/permission-changes — targetUserId 파라미터 서비스로 전달")
     void list_propagatesFilterParams() throws Exception {
         PageResponse<PermissionChangeEntry> empty = PageResponse.of(List.of(), 0, 20, 0L);
@@ -90,6 +93,7 @@ class PermissionChangeControllerTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
+    @WithMockUser(authorities = "AUDIT:READ")
     @DisplayName("GET /audit/permission-changes/users/{userId} — 200 + 사용자별 페이징 반환")
     void byUser_returns200WithPagedResult() throws Exception {
         PermissionChangeEntry entry = new PermissionChangeEntry(

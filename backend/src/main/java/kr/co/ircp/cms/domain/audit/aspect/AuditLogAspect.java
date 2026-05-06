@@ -56,15 +56,19 @@ public class AuditLogAspect {
      *
      * <p>비즈니스 로직 결과(성공/예외)는 그대로 전파하며, 감사 로그 실패는 흡수한다.
      */
-    @Around("@annotation(auditLog) || (" +
+    @Around("@annotation(kr.co.ircp.cms.domain.audit.annotation.AuditLog) || (" +
             "  execution(* kr.co.ircp.cms.domain..*Service.create*(..)) ||" +
             "  execution(* kr.co.ircp.cms.domain..*Service.update*(..)) ||" +
             "  execution(* kr.co.ircp.cms.domain..*Service.delete*(..))" +
             ")")
-    public Object around(ProceedingJoinPoint pjp, AuditLog auditLog) throws Throwable {
+    public Object around(ProceedingJoinPoint pjp) throws Throwable {
         Instant start = Instant.now();
         Object result = null;
         Throwable thrown = null;
+
+        // 메서드 시그니처에서 @AuditLog 어노테이션 직접 추출
+        // (||) 결합 포인트컷에서 파라미터 바인딩 한계 회피 — AspectJ는 ||에서 어노테이션 바인딩 시 null 허용 안 함
+        AuditLog auditLog = extractAuditLog(pjp);
 
         try {
             result = pjp.proceed();
@@ -75,6 +79,16 @@ public class AuditLogAspect {
         } finally {
             long ms = Duration.between(start, Instant.now()).toMillis();
             captureAuditLog(pjp, auditLog, result, thrown, (int) ms);
+        }
+    }
+
+    /** 메서드 시그니처에서 @AuditLog 어노테이션 추출 (없으면 null). */
+    private AuditLog extractAuditLog(ProceedingJoinPoint pjp) {
+        try {
+            MethodSignature sig = (MethodSignature) pjp.getSignature();
+            return sig.getMethod().getAnnotation(AuditLog.class);
+        } catch (Exception e) {
+            return null;
         }
     }
 

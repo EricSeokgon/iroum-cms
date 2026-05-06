@@ -36,7 +36,7 @@
             COUNT(*) FILTER (WHERE status_code >= 500) AS error_count
         FROM access_log
         WHERE created_at >= #{targetDate}::date
-          AND created_at  < #{targetDate}::date + INTERVAL '1 day'
+          AND created_at  &lt; #{targetDate}::date + INTERVAL '1 day'
           AND site_id = #{siteId}
         ON CONFLICT (stat_date, site_id) DO UPDATE SET
             total_visits    = EXCLUDED.total_visits,

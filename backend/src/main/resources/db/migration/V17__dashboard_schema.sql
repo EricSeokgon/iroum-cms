@@ -128,7 +128,7 @@ CREATE TABLE chart_dataset_cache (
     expires_at      TIMESTAMPTZ  NOT NULL
 );
 CREATE INDEX idx_cache_expires
-    ON chart_dataset_cache(expires_at) WHERE expires_at > NOW();
+    ON chart_dataset_cache(expires_at);
 CREATE INDEX idx_cache_widget ON chart_dataset_cache(widget_id);
 COMMENT ON TABLE chart_dataset_cache IS '차트 데이터셋 캐시 (TTL 5분). REQ-VIZ-005-D-3';
 

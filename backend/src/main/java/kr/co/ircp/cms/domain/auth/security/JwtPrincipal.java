@@ -38,7 +38,10 @@ public record JwtPrincipal(long userId, String username, Set<String> roles, Set<
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Stream.concat(roles.stream(), permissions.stream())
+        // 역할은 'ROLE_' prefix를 붙여 hasRole() 호환; 권한은 그대로 사용
+        return Stream.concat(
+                        roles.stream().map(r -> "ROLE_" + r),
+                        permissions.stream())
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toSet());
     }

@@ -54,6 +54,8 @@ import kr.co.ircp.cms.domain.safety.exception.SafetyTemplateNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -700,6 +702,20 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Invalid Widget Query");
         detail.setProperty("code", "INVALID_WIDGET_QUERY");
+        return detail;
+    }
+
+    /**
+     * Spring Security 인가 거부(@PreAuthorize 등) → 403 Forbidden.
+     *
+     * <p>Spring Security 6의 {@link AuthorizationDeniedException}과
+     * 레거시 {@link AccessDeniedException}을 모두 처리한다.
+     */
+    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    public ProblemDetail handleAuthorizationDenied(RuntimeException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access Denied");
+        detail.setTitle("Forbidden");
+        detail.setProperty("code", "ACCESS_DENIED");
         return detail;
     }
 }

@@ -60,8 +60,21 @@ COMMENT ON COLUMN menu.depth     IS '루트=1, 최대 5; 깊이 5 초과는 애�
 COMMENT ON COLUMN menu.is_visible IS 'FALSE면 시민에게 숨김. 운영자는 항상 접근 가능';
 COMMENT ON COLUMN menu.metadata  IS '확장 jsonb (예: public:true — 익명 노출 허용)';
 
--- ─── 3. menu_permissions FK 추가 (SPEC-CMS-002 §4.2.6 테이블 강화) ──────────
--- SPEC-CMS-002에서 생성된 menu_permissions 테이블에 menu FK를 정식 추가
+-- ─── 3a. menu_permissions (메뉴별 권한 매핑 - SPEC-CMS-002 §4.2.6) ──────────
+CREATE TABLE menu_permissions (
+    id              BIGINT       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    menu_id         BIGINT       NOT NULL,
+    role_code       VARCHAR(50)  NOT NULL REFERENCES roles(code) ON DELETE CASCADE,
+    permission_code VARCHAR(100) NOT NULL REFERENCES permissions(code) ON DELETE CASCADE,
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_menu_permission UNIQUE (menu_id, role_code, permission_code)
+);
+
+CREATE INDEX idx_menu_permissions_menu ON menu_permissions(menu_id);
+
+COMMENT ON TABLE  menu_permissions IS '메뉴별 권한 매핑 (역할-권한 조합). SPEC-CMS-002 §4.2.6';
+
+-- ─── 3b. menu_permissions FK 추가 (menu 테이블 생성 후) ──────────────────────
 ALTER TABLE menu_permissions
     ADD CONSTRAINT fk_menu_perms_menu
     FOREIGN KEY (menu_id) REFERENCES menu(id) ON DELETE CASCADE;

@@ -10,7 +10,7 @@
 
     <resultMap id="mediaAssetResultMap" type="kr.co.ircp.cms.domain.media.entity.MediaAsset">
         <id property="id" column="id"/>
-        <result property="uuid" column="uuid" typeHandler="org.apache.ibatis.type.UUIDTypeHandler"/>
+        <result property="uuid" column="uuid" typeHandler="kr.co.ircp.cms.domain.auth.repository.typehandler.UuidTypeHandler"/>
         <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
         <result property="originalFilename" column="original_filename"/>
         <result property="storedPath" column="stored_path"/>

@@ -7,7 +7,7 @@
                type="kr.co.ircp.cms.domain.auth.entity.VerificationRequest">
         <id property="id" column="id"/>
         <result property="requestId" column="request_id"
-                typeHandler="org.apache.ibatis.type.UUIDTypeHandler"/>
+                typeHandler="kr.co.ircp.cms.domain.auth.repository.typehandler.UuidTypeHandler"/>
         <result property="channel" column="channel"
                 typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
         <result property="target" column="target"/>

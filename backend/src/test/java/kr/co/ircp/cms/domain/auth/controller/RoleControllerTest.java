@@ -75,7 +75,7 @@ class RoleControllerTest {
         when(roleService.findAll()).thenReturn(roles);
 
         mockMvc.perform(get("/api/v1/roles")
-                        .with(SecurityMockMvcRequestPostProcessors.anonymous()))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].code").value("SUPER_ADMIN"))
@@ -94,7 +94,7 @@ class RoleControllerTest {
         when(roleService.findByCode("SUPER_ADMIN")).thenReturn(detail);
 
         mockMvc.perform(get("/api/v1/roles/SUPER_ADMIN")
-                        .with(SecurityMockMvcRequestPostProcessors.anonymous()))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("SUPER_ADMIN"))
                 .andExpect(jsonPath("$.isSystem").value(true));
@@ -136,7 +136,7 @@ class RoleControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.properties.code").value("ROLE_SYSTEM_PROTECTED"));
+                .andExpect(jsonPath("$.code").value("ROLE_SYSTEM_PROTECTED"));
     }
 
     @Test
@@ -149,7 +149,7 @@ class RoleControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.properties.code").value("ROLE_HAS_USERS"));
+                .andExpect(jsonPath("$.code").value("ROLE_HAS_USERS"));
     }
 
     @Test

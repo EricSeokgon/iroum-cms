@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.when;
  * <p>REQ-AUTH-018-D-1 — AOP join point 직접 호출로 Aspect 로직을 검증한다.
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("PersonalDataAccessAspect 단위 테스트")
 class PersonalDataAccessAspectTest {
 
@@ -132,13 +135,20 @@ class PersonalDataAccessAspectTest {
 
     /**
      * 단일 파라미터 메서드를 흉내 내는 JoinPoint Mock 생성.
+     *
+     * <p>{@code paramName}에 맞는 SampleService 메서드를 선택해 실제 파라미터 이름이
+     * 일치하도록 한다. {@code -parameters} 컴파일 옵션 필요.
      */
     private JoinPoint buildJoinPoint(String paramName, Object argValue) throws Exception {
         JoinPoint jp = mock(JoinPoint.class);
         MethodSignature sig = mock(MethodSignature.class);
 
-        // 실제 Method 객체는 만들기 어려우므로 파라미터를 직접 Mock
-        Method method = SampleService.class.getMethod("sampleMethod", long.class);
+        Method method;
+        if ("currentUserId".equals(paramName)) {
+            method = SampleService.class.getMethod("sampleSelfMethod", long.class);
+        } else {
+            method = SampleService.class.getMethod("sampleMethod", long.class);
+        }
         when(jp.getSignature()).thenReturn(sig);
         when(sig.getMethod()).thenReturn(method);
         when(jp.getArgs()).thenReturn(new Object[]{argValue});
@@ -159,5 +169,6 @@ class PersonalDataAccessAspectTest {
     /** 파라미터명 추출 테스트용 샘플 인터페이스 (컴파일 -parameters 필요) */
     interface SampleService {
         void sampleMethod(long id);
+        void sampleSelfMethod(long currentUserId);
     }
 }

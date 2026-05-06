@@ -51,7 +51,7 @@ class BoardExceptionHandlerTest {
         mockMvc.perform(get("/api/v1/boards/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Board Not Found"))
-                .andExpect(jsonPath("$.properties.code").value("BOARD_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("BOARD_NOT_FOUND"));
     }
 
     @Test
@@ -61,7 +61,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.properties.code").value("BOARD_CODE_DUPLICATE"));
+                .andExpect(jsonPath("$.code").value("BOARD_CODE_DUPLICATE"));
     }
 
     @Test
@@ -71,7 +71,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.properties.code").value("POST_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
     }
 
     @Test
@@ -81,7 +81,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.properties.code").value("COMMENT_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
 
     @Test
@@ -91,7 +91,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.properties.code").value("ATTACHMENT_NOT_FOUND"));
+                .andExpect(jsonPath("$.code").value("ATTACHMENT_NOT_FOUND"));
     }
 
     @Test
@@ -101,7 +101,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isPayloadTooLarge())
-                .andExpect(jsonPath("$.properties.code").value("ATTACHMENT_TOO_LARGE"));
+                .andExpect(jsonPath("$.code").value("ATTACHMENT_TOO_LARGE"));
     }
 
     @Test
@@ -111,7 +111,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.properties.code").value("ATTACHMENT_TYPE_INVALID"));
+                .andExpect(jsonPath("$.code").value("ATTACHMENT_TYPE_INVALID"));
     }
 
     @Test
@@ -121,7 +121,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.properties.code").value("ATTACHMENT_DOWNLOAD_DENIED"));
+                .andExpect(jsonPath("$.code").value("ATTACHMENT_DOWNLOAD_DENIED"));
     }
 
     @Test
@@ -131,7 +131,7 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.properties.code").value("BOARD_COMMENT_DISABLED"));
+                .andExpect(jsonPath("$.code").value("BOARD_COMMENT_DISABLED"));
     }
 
     @Test
@@ -141,6 +141,6 @@ class BoardExceptionHandlerTest {
 
         mockMvc.perform(get("/api/v1/boards/1"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.properties.code").value("BOARD_ATTACHMENT_DISABLED"));
+                .andExpect(jsonPath("$.code").value("BOARD_ATTACHMENT_DISABLED"));
     }
 }

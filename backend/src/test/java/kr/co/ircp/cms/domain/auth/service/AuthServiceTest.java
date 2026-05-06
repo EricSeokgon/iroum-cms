@@ -124,7 +124,7 @@ class AuthServiceTest {
 
         verify(loginHistoryMapper).insert(argThat(h ->
                 !h.isSuccess() && "USER_NOT_FOUND".equals(h.getFailureReason())));
-        verify(jwtTokenProvider, never()).generateAccessToken(any(), any(), any(), any());
+        verify(jwtTokenProvider, never()).generateAccessToken(anyLong(), any(), any(), any());
     }
 
     @Test
@@ -209,8 +209,8 @@ class AuthServiceTest {
         when(passwordPolicyService.matches(any(), any())).thenReturn(true);
         when(userMapper.findRoleCodesByUserId(6L)).thenReturn(Set.of());
         when(permissionService.findEffectivePermissionsForUser(6L)).thenReturn(Set.of());
-        when(jwtTokenProvider.generateAccessToken(any(), any(), any(), any())).thenReturn("at");
-        when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("rt");
+        when(jwtTokenProvider.generateAccessToken(anyLong(), any(), any(), any())).thenReturn("at");
+        when(jwtTokenProvider.generateRefreshToken(anyLong())).thenReturn("rt");
 
         authService.login(new LoginRequest("admin", "ValidP@ss123"), "1.2.3.4", "agent");
 
@@ -337,7 +337,7 @@ class AuthServiceTest {
         when(userMapper.findById(10L)).thenReturn(Optional.of(user));
         when(passwordPolicyService.matches("OldP@ss123", user.getPasswordHash())).thenReturn(true);
         when(passwordHistoryMapper.findRecentHashes(10L, 5)).thenReturn(List.of());
-        when(passwordPolicyService.matches("NewP@ss456!", any())).thenReturn(false);
+        when(passwordPolicyService.matches(eq("NewP@ss456!"), any())).thenReturn(false);
         when(passwordPolicyService.hash("NewP@ss456!")).thenReturn("$2a$12$newHash");
 
         authService.changePassword(10L, "OldP@ss123", "NewP@ss456!");

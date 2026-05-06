@@ -77,6 +77,11 @@ public class VerificationServiceImpl implements VerificationService {
 
         // 1. 채널 검증 — SMS는 v0.4+
         VerificationChannel channel;
+        // SMS 채널은 v0.4+ 기능 (Q-1 2026-04-29) - enum에 SMS가 없으므로 별도 체크
+        if ("SMS".equalsIgnoreCase(req.channel())) {
+            throw new UnsupportedOperationException(
+                "SMS 채널은 v0.4+ 기능입니다 (Q-1 사용자 결정 2026-04-29).");
+        }
         try {
             channel = VerificationChannel.valueOf(req.channel().toUpperCase());
         } catch (IllegalArgumentException e) {

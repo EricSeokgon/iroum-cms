@@ -82,7 +82,7 @@ class UserControllerTest {
                 .thenReturn(PageResponse.of(rows, 0, 20, 1L));
 
         mockMvc.perform(get("/api/v1/users")
-                        .with(SecurityMockMvcRequestPostProcessors.anonymous()))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray())
                 .andExpect(jsonPath("$.totalElements").value(1))
@@ -98,7 +98,7 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/v1/users")
                         .param("search", "admin")
-                        .with(SecurityMockMvcRequestPostProcessors.anonymous()))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isEmpty());
     }
@@ -151,7 +151,7 @@ class UserControllerTest {
         mockMvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req))
-                        .with(SecurityMockMvcRequestPostProcessors.anonymous()))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isBadRequest());
     }
 

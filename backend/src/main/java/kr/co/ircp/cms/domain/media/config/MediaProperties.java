@@ -2,7 +2,6 @@ package kr.co.ircp.cms.domain.media.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.List;
  * // @MX:REASON: MediaServiceImpl, LocalFileSystemStorage, MediaController에서 참조 (fan_in >= 3)
  */
 @Data
-@Component
 @ConfigurationProperties(prefix = "iroum.media")
 public class MediaProperties {
 

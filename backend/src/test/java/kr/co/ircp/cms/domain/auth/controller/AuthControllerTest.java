@@ -276,7 +276,7 @@ class AuthControllerTest {
                                 new VerifyRequestRequest("EMAIL", "user@example.com", "PASSWORD_RESET"))))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(header().string("Retry-After", "30"))
-                .andExpect(jsonPath("$.code").value("VERIFY_COOLDOWN"));
+                .andExpect(jsonPath("$.code").value("VERIFICATION_COOLDOWN"));
     }
 
     @Test

@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.content.template.dto;
 
 import kr.co.ircp.cms.domain.content.template.entity.Template;
+import org.apache.ibatis.type.Alias;
 
 import java.time.Instant;
 
@@ -8,6 +9,7 @@ import java.time.Instant;
  * 템플릿 응답 DTO.
  * REQ-CONTENT-004-D: 템플릿 조회 응답
  */
+@Alias("ContentTemplateResponse")
 public record TemplateResponse(
         Long id,
         String code,

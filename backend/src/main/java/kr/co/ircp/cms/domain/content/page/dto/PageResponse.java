@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.content.page.dto;
 
 import kr.co.ircp.cms.domain.content.page.entity.Page;
+import org.apache.ibatis.type.Alias;
 
 import java.time.Instant;
 
@@ -8,6 +9,7 @@ import java.time.Instant;
  * 페이지 응답 DTO.
  * REQ-CONTENT-005-D: 페이지 조회 응답
  */
+@Alias("ContentPageResponse")
 public record PageResponse(
         Long id,
         Long siteId,

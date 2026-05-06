@@ -22,6 +22,8 @@
         <result property="showTodayClose"  column="show_today_close"/>
         <result property="displayPriority" column="display_priority"/>
         <result property="targetType"      column="target_type"/>
+        <result property="targetRoleCodes" column="target_role_codes"
+                typeHandler="kr.co.ircp.cms.domain.auth.repository.typehandler.JsonListTypeHandler"/>
         <result property="status"          column="status"/>
         <result property="createdAt"       column="created_at"/>
         <result property="updatedAt"       column="updated_at"/>
@@ -52,7 +54,7 @@
         VALUES (#{siteId}, #{title}, #{contentHtml}, #{position}, #{xOffset}, #{yOffset},
                 #{width}, #{height}, #{showFrom}, #{showUntil}, #{showTodayClose},
                 #{displayPriority}, #{targetType},
-                CAST(#{targetRoleCodes, typeHandler=org.apache.ibatis.type.JsonTypeHandler} AS jsonb),
+                CAST(#{targetRoleCodes, typeHandler=kr.co.ircp.cms.domain.auth.repository.typehandler.JsonListTypeHandler} AS jsonb),
                 #{status})
     </insert>
 
@@ -61,7 +63,7 @@
                          position = #{position}, show_from = #{showFrom}, show_until = #{showUntil},
                          show_today_close = #{showTodayClose}, display_priority = #{displayPriority},
                          target_type = #{targetType},
-                         target_role_codes = CAST(#{targetRoleCodes, typeHandler=org.apache.ibatis.type.JsonTypeHandler} AS jsonb),
+                         target_role_codes = CAST(#{targetRoleCodes, typeHandler=kr.co.ircp.cms.domain.auth.repository.typehandler.JsonListTypeHandler} AS jsonb),
                          updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
     </update>
