@@ -289,6 +289,38 @@ const router = createRouter({
           component: () => import('@/views/safety/TemplateManageView.vue'),
           meta: { title: '가이드라인 템플릿 관리', permissions: ['SAFETY:TEMPLATE:READ'] },
         },
+        // ── 정책사업 매칭/발송 라우트 (SPEC-CMS-007) ────────────────────────
+        {
+          path: 'policy/programs',
+          name: 'policy-programs',
+          component: () => import('@/views/policy/PolicyListView.vue'),
+          meta: { title: '정책사업 관리' },
+        },
+        {
+          path: 'policy/programs/:id',
+          name: 'policy-program-detail',
+          component: () => import('@/views/policy/PolicyDetailView.vue'),
+          props: true,
+          meta: { title: '정책사업 상세' },
+        },
+        {
+          path: 'policy/match',
+          name: 'policy-match',
+          component: () => import('@/views/policy/PolicyMatchView.vue'),
+          meta: { title: '정책 매칭' },
+        },
+        {
+          path: 'policy/subscriptions',
+          name: 'policy-subscriptions',
+          component: () => import('@/views/policy/PolicySubscriptionView.vue'),
+          meta: { title: '알림 수신 동의' },
+        },
+        {
+          path: 'admin/policy/dispatch',
+          name: 'policy-dispatch',
+          component: () => import('@/views/policy/PolicyDispatchView.vue'),
+          meta: { title: '알림 발송 예약 관리', permissions: ['POLICY:DISPATCH:READ'] },
+        },
       ],
     },
 
