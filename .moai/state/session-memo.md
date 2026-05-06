@@ -22,7 +22,7 @@ event: SessionComplete
 ## P3: 빌드 상태
 
 - Frontend: `vue-tsc -b && vite build` 0 오류 GREEN
-- Backend: 서비스 테스트 전체 GREEN (Controller @WebMvcTest는 BeanDefinitionOverrideException 기존 이슈)
+- Backend: 499/525 GREEN, 26 FAIL (전부 Testcontainers Docker 인프라 이슈 — 코드 문제 아님)
 - Docker: 검증 완료
 
 ## P4: 기술 메모
@@ -31,3 +31,10 @@ event: SessionComplete
 - vite.config.ts: `from 'vitest/config'` + `vue() as any` + `new URL('.', import.meta.url).pathname`
 - tsconfig.node.json: `skipLibCheck: true` 필수 (@types/node 없는 환경)
 - 모든 Draft SPEC 구현 완료 — 다음 작업 없음
+
+## P5: 테스트 수정 이력
+
+- 137 → 63 → 26 실패 감소 (두 세션에 걸쳐 진행)
+- 잔여 26개: Testcontainers IT 클래스 8개 (AuthFlowIT, MigrationOrderIT 등) — Docker 소켓 연결 불가 환경 이슈
+- 주요 수정: V13 menu_permissions CREATE 추가, V14/V16/V17 마이그레이션 오류, MyBatis UuidTypeHandler, JwtPrincipal ROLE_ 접두사, @EnableMethodSecurity
+- 커밋: 942b19e
