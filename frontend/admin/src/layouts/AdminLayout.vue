@@ -269,6 +269,9 @@
                 <el-dropdown-item command="my-login-history">
                   {{ t('nav.myLoginHistory') }}
                 </el-dropdown-item>
+                <el-dropdown-item command="notifications">
+                  {{ t('nav.notifications') }}
+                </el-dropdown-item>
                 <el-dropdown-item command="logout" divided :loading="loggingOut">
                   {{ t('nav.logout') }}
                 </el-dropdown-item>
@@ -339,6 +342,8 @@ async function handleUserCommand(command: string): Promise<void> {
     router.push({ name: 'my-personal-data-access' })
   } else if (command === 'my-login-history') {
     router.push({ name: 'my-login-history' })
+  } else if (command === 'notifications') {
+    router.push({ name: 'notifications' })
   } else if (command === 'logout') {
     await handleLogout()
   }

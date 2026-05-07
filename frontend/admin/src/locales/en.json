@@ -14,6 +14,7 @@
     "personalDataAccess": "Personal Data Access Log",
     "myPersonalData": "My Personal Data Access",
     "myLoginHistory": "My Login History",
+    "notifications": "Notifications",
     "loginHistoryAudit": "Login History",
     "logout": "Logout",
     "sidebarLabel": "Admin Menu",
@@ -1413,5 +1414,11 @@
       "updated": "Survey updated successfully.",
       "deleted": "Survey deleted successfully."
     }
+  },
+  "notifications": {
+    "title": "Notification Settings",
+    "qnaAnswerEmail": "Q&A Answer Email Notifications",
+    "qnaAnswerEmailDesc": "Receive email notifications when your Q&A questions are answered",
+    "saved": "Settings saved"
   }
 }

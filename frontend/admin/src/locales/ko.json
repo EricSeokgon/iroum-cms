@@ -14,6 +14,7 @@
     "personalDataAccess": "회원정보 접근 이력",
     "myPersonalData": "내 회원정보 접근 이력",
     "myLoginHistory": "내 로그인 이력",
+    "notifications": "알림 설정",
     "loginHistoryAudit": "로그인 이력",
     "logout": "로그아웃",
     "sidebarLabel": "관리자 메뉴",
@@ -1466,5 +1467,11 @@
       "updated": "설문조사가 수정되었습니다.",
       "deleted": "설문조사가 삭제되었습니다."
     }
+  },
+  "notifications": {
+    "title": "알림 설정",
+    "qnaAnswerEmail": "Q&A 답변 이메일 알림",
+    "qnaAnswerEmailDesc": "내 Q&A 질문에 답변이 등록되면 이메일로 알림을 받습니다",
+    "saved": "설정이 저장되었습니다"
   }
 }

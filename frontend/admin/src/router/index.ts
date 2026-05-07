@@ -120,6 +120,12 @@ const router = createRouter({
           component: () => import('@/views/account/MyLoginHistoryView.vue'),
           meta: { title: '내 로그인 이력' },
         },
+        {
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/auth/NotificationSettingsView.vue'),
+          meta: { title: '알림 설정' },
+        },
         // ── 미디어 라우트 (SPEC-CMS-MEDIA-001) ───────────────────────────────
         {
           path: 'media',
