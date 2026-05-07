@@ -143,4 +143,18 @@ class BannerControllerTest {
         mockMvc.perform(post("/api/v1/content/banners/5/click"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("POST /banners — 인증 없이 접근 시 403 Forbidden")
+    void registerBanner_unauthenticated_returns403() throws Exception {
+        BannerRequest req = new BannerRequest(
+                1L, "MAIN_TOP", "배너", "https://img/x.png", null, "_self",
+                "alt", Instant.now().minus(1, ChronoUnit.HOURS),
+                Instant.now().plus(1, ChronoUnit.DAYS), 1
+        );
+        mockMvc.perform(post("/api/v1/content/banners")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -165,4 +165,13 @@ class CodeControllerTest {
 
         verify(codeService).delete(3L);
     }
+
+    @Test
+    @DisplayName("POST /codes — 인증 없이 접근 시 403 Forbidden")
+    void createCode_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/system/codes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"groupCode\":\"G1\",\"code\":\"C1\",\"name\":\"코드\",\"sortOrder\":1}"))
+                .andExpect(status().isForbidden());
+    }
 }

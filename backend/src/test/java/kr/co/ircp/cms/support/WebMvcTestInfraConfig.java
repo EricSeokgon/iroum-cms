@@ -11,6 +11,8 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -96,6 +98,16 @@ public class WebMvcTestInfraConfig {
     public SecurityFilterChain testSecurityFilterChain() {
         SecurityContextRepository repository = new HttpSessionSecurityContextRepository();
         SecurityContextHolderFilter contextFilter = new SecurityContextHolderFilter(repository);
-        return new DefaultSecurityFilterChain(AnyRequestMatcher.INSTANCE, contextFilter);
+
+        // 익명 인증 부여 — @PreAuthorize가 anonymous 주체를 인식할 수 있도록
+        AnonymousAuthenticationFilter anonymousFilter = new AnonymousAuthenticationFilter("test-key");
+
+        // AccessDeniedException → 403, AuthenticationException → 401 변환
+        ExceptionTranslationFilter exceptionFilter = new ExceptionTranslationFilter(
+                new org.springframework.security.web.authentication.Http403ForbiddenEntryPoint()
+        );
+
+        return new DefaultSecurityFilterChain(AnyRequestMatcher.INSTANCE,
+                contextFilter, anonymousFilter, exceptionFilter);
     }
 }

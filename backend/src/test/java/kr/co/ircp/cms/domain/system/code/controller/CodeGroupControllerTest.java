@@ -145,4 +145,13 @@ class CodeGroupControllerTest {
 
         verify(codeGroupService).delete(3L);
     }
+
+    @Test
+    @DisplayName("POST /code-groups — 인증 없이 접근 시 403 Forbidden")
+    void createCodeGroup_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/system/code-groups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"groupCode\":\"G1\",\"name\":\"그룹\"}"))
+                .andExpect(status().isForbidden());
+    }
 }

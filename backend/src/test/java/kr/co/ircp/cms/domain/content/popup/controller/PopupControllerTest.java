@@ -144,4 +144,20 @@ class PopupControllerTest {
         mockMvc.perform(delete("/api/v1/content/popups/5"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("POST /popups — 인증 없이 접근 시 403 Forbidden")
+    void createPopup_unauthenticated_returns403() throws Exception {
+        // @Valid 통과 후 @PreAuthorize에서 403이 반환되어야 하므로 모든 필수 필드를 채운다.
+        PopupRequest req = new PopupRequest(
+                1L, "팝업", "<p>내용</p>", "CENTER", null, null, 400, 300,
+                Instant.now().minus(1, ChronoUnit.HOURS),
+                Instant.now().plus(1, ChronoUnit.DAYS),
+                false, 1, "ALL", null
+        );
+        mockMvc.perform(post("/api/v1/content/popups")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }
