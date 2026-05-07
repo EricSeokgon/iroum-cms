@@ -9,7 +9,7 @@
 | 작성일 | 2026-04-29 |
 | 버전 | v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented |
 | 우선순위 | P0 |
 | 분류 | RFP 신규 P0 SPEC (SFR-007 + SFR-008) |
 | Parent | SPEC-CMS-001 v0.3.2 (Umbrella) |
@@ -773,12 +773,24 @@ INCLUDE 룰의 경우 `operator`별 평가:
 |---|---|---|---|
 | v0.1 | 2026-04-29 | manager-spec (MoAI) | 초안 — RFP SFR-007/008 통합. 10개 테이블, 6 parent REQ × 28 sub-REQ, 30 REST endpoints, 매칭 알고리즘 명세, 발송 정책, 5 시퀀스 다이어그램. SPEC-CMS-004 v0.2.1 `notification_send` + SPEC-CMS-005 v0.2.1 `integration_log`/`v_notification_history` 재사용. AI/벡터 임베딩은 SPEC-CMS-AI-001 옵션 트랙으로 분리. (SPEC-CMS-001 v0.3.2 §15.2 SFR-007/008, SPEC-CMS-004 v0.2.1 notification_send, SPEC-CMS-005 v0.2.1 integration_log) |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
+| v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
 
 ---
 
-Version: v0.1
-Last Updated: 2026-04-29
-Author: manager-spec (MoAI)
+Version: v0.5
+Last Updated: 2026-05-07
+Author: manager-docs (MoAI)
 Parent: SPEC-CMS-001 v0.3.2
-Status: Draft, P0
+Status: Implemented, P0
+
+---
+
+## 구현 메모 (Implementation Notes)
+
+- **구현 완료일**: 2026-05-06
+- **상태 업데이트**: Draft → Implemented (일괄 동기화)
+- **구현 범위**: REQ-POLICY-* 풀스택 — 다차원 매트릭스 매칭 엔진, 정책 마감 적기 알림(카카오/이메일), 5개 view + policyStore
+- **테스트**: 49 GREEN (Backend 핵심 도메인 + Frontend 5 view 통합)
+- **참조 커밋**: f238e4a (Step 1 Backend 49 GREEN), 174f24c (Step 2 Frontend 5 view 타입 0 오류), 8cdd121 (006/007 묶음 100% 완료), bd7d002 (묶음 4 100% 완료)
+- **특이사항**: SFR-007 (지능형 매칭) + SFR-008 (적기 알림) RFP 신규 P0 통합. SPEC-CMS-004 발송 도메인 + SPEC-CMS-005 통합 로그 재사용. SPEC-CMS-009 policy_match_stats 집계 소스로 연동.
 RFP Coverage: SFR-007 (정책사업 지능형 매칭) + SFR-008 (적기 타겟팅 알림)

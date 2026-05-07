@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-006 |
 | 제목 | 안전경영 가이드라인 + 사고사례 매칭 (Safety Management + Incident Matching) |
 | 상위 SPEC | SPEC-CMS-001 v0.3.2 (iroum-cms 통합 SPEC) |
-| 상태 | Draft v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
+| 상태 | Implemented |
 | 우선순위 | P0 (RFP SFR-005, SFR-006 직접 대응) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec |
@@ -753,3 +753,15 @@ DEPT_ADMIN 분기 키: SPEC-CMS-002의 `department_code` (SAFETY / CONTENT / GEN
 |---|---|---|---|
 | v0.1 | 2026-04-29 | manager-spec | 초안 작성 — RFP SFR-005/006 매핑, 9개 테이블 DDL, 5 parent REQ × 23 sub REQ, 28 endpoint, 4 시퀀스, 매칭 알고리즘 1차 keyword 기반 정의, AI/벡터는 SPEC-CMS-AI-001 옵션 분리 |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
+| v0.5 | 2026-05-07 | manager-docs | 상태 Draft v0.4 → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
+
+---
+
+## 구현 메모 (Implementation Notes)
+
+- **구현 완료일**: 2026-05-06
+- **상태 업데이트**: Draft v0.4 → Implemented (일괄 동기화)
+- **구현 범위**: 안전경영 풀스택 — 사고사례 관리, 키워드 매칭, 안전 프로필, 매칭 결과, 가이드라인 보고서, 템플릿 관리 (Frontend 6 view + safetyStore)
+- **테스트**: 41 GREEN (Backend 27 + Frontend 14)
+- **참조 커밋**: 56c7566 (Step 1 Backend 27 GREEN), 692f2e0 (Step 2 Frontend 6 view), 77ec390 (Step 3 Docker 통합), 8cdd121 (006/007 100% 풀스택), bd7d002 (묶음 4 100% 완료), f3db5a2 (사고 보고·체크리스트·가이드라인 매칭 강화)
+- **특이사항**: RFP SFR-005, SFR-006 직접 대응. SPEC-CMS-009 데이터 거버넌스 safety_stats_monthly 집계 소스로 연동.

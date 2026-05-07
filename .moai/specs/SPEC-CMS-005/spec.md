@@ -8,7 +8,7 @@
 | 제목 | 통계·로그·시스템관리 상세 (Bundle D — Statistics, Logs, System Administration) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented |
 | 우선순위 | P0 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-002 (login_history 통계 집계 대상) |
@@ -1201,3 +1201,15 @@ Prometheus 알람 룰 정의 위치: `deploy/prometheus/rules/{api.yml, batch.ym
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강. REQ-SYSTEM-007-D(KPI 통합 대시보드, SFR-013), 008-D(외부 연계 로그 분리, SFR-015), 009-D(외부 공공데이터 수집, SFR-001/011), 010-D(성능 임계값, PER-001~004) 4개 신규 부모 REQ + sub-REQ 18개 추가. §13 RFP 통합 보강, §14 추가 데이터 모델(kpi_definition/kpi_value/integration_log/external_data_source/data_sync_history DDL), §15 비기능 횡단 적용 매핑 신설. (SPEC-CMS-001 v0.2 §15.2 SFR-013/015 + §17.1 PER 임계값 매핑) |
 | v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-7 적용 (사용자 결정 2026-04-29) — `v_notification_history` 뷰를 LEFT JOIN → INNER JOIN으로 갱신. §13.2 REQ-SYSTEM-008-D-3 본문을 "별도 view (notification_send.integration_log_id FK 기반 INNER JOIN)"로 변경하고 INNER JOIN 채택 사유(IntegrationLogInterceptor 적재 보증)·INAPP 자동 제외 로직 명시. §14.2 view DDL을 DROP+CREATE로 갱신: `notification_send` driving table → `integration_log` INNER JOIN → `users` LEFT JOIN(수신자 username 노출), filter `integration_type IN ('KAKAO_NOTI','MAIL_SEND')`. COMMENT ON VIEW에 Q-7 결정 명시. acceptance.md J-RFP §REQ-SYSTEM-008-D-3-2 신규 G/W/T 추가(view 정합성 — 100건 INNER JOIN 무결성). v0.2 본문 §13.1·§13.3·§13.4·§14의 다른 테이블·§15는 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 부분 인프라 (audit_log, integration_log) 적용 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
+| v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
+
+---
+
+## 구현 메모 (Implementation Notes)
+
+- **구현 완료일**: 2026-05-06
+- **상태 업데이트**: Draft → Implemented (일괄 동기화)
+- **구현 범위**: REQ-SYSTEM-001~006 풀스택 — access_log/audit_log/integration_log 인프라, KPI 도메인, 일/월 배치, Actuator 엔드포인트, Logback JSON, Docker 배포
+- **테스트**: 107 GREEN (Backend 31 + Frontend 25 + Step 3+4 보강)
+- **참조 커밋**: 3e7bbbe (Step 1 Backend 6 도메인), ec19feb (Step 1 메모), 75dd9dd (Frontend 6 view + 5 component), a4995fb (Step 2 메모), f72c211 (Step 3+4 Logback JSON + audit 보강 + Docker)
+- **특이사항**: SPEC-CMS-009 데이터 거버넌스가 본 SPEC의 access_log/audit_log/AOP/Actuator/Docker 인프라를 입력으로 사용

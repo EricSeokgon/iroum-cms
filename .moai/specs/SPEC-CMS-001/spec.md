@@ -9,7 +9,7 @@
 | 작성일 | 2026-04-29 |
 | 버전 | v0.4 (2026-04-29 Bundle A 완성 + 운영 결정 통합) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented (1차 출시 완료) |
 | 우선순위 | P0 |
 | 분류 | Umbrella SPEC (후속 SPEC-CMS-002 ~ SPEC-CMS-010 + 옵션 트랙 분할) |
 | 참조 문서 | `.moai/project/product.md`, `.moai/project/structure.md`, `.moai/project/tech.md` |
@@ -722,3 +722,17 @@ SPEC-CMS-001 [umbrella v0.4]
 - Frontend: 85 GREEN tests, ~127 source files (admin SPA)
 - 누적 25 commits + Phase R-15 commit
 - 종단 동작: 로그인·사용자관리·조직트리·역할매트릭스·비번변경·OTP재설정·권한이력·접근로그·로그인이력 모두 풀스택 동작
+
+---
+
+## 구현 메모 (Implementation Notes)
+
+- **구현 완료일**: 2026-05-07
+- **상태 업데이트**: Draft → Implemented (1차 출시 완료) (일괄 동기화)
+- **구현 범위**: Bundle A (인증·권한), Bundle B (게시판), Bundle C (콘텐츠·메뉴), Bundle D (시스템·통계), 안전경영(SPEC-006), 정책사업(SPEC-007), 대시보드(SPEC-008), 데이터 거버넌스(SPEC-009), 미디어 라이브러리(MEDIA-001) 모두 풀스택 구현
+- **테스트**: 백엔드 554 GREEN (governance 포함), 프론트엔드 vue-tsc 0 에러
+- **참조 SPEC**: SPEC-CMS-002~009, SPEC-CMS-MEDIA-001 (모두 Implemented)
+- **특이사항**:
+  - SPEC-CMS-010 (통합 검색)은 P1 후속으로 보류, 실제 통합 검색은 향후 SPEC 작성 단계
+  - SPEC-CMS-AI-001 (AI/ML)은 별도 옵션 트랙으로 미착수
+  - Testcontainers 통합 테스트 26개는 Docker 소켓 환경에서만 GREEN
