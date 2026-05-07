@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    설문 답변 상세 매퍼 XML.
+    REQ-BOARD-013-D-3: 답변 일괄 INSERT
+    REQ-BOARD-013-D-5: 결과 통계 집계
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.SurveyAnswerMapper">
+
+    <resultMap id="surveyAnswerResultMap" type="kr.co.ircp.cms.domain.board.entity.SurveyAnswer">
+        <id property="id" column="id"/>
+        <result property="responseId" column="response_id"/>
+        <result property="questionId" column="question_id"/>
+        <result property="answerText" column="answer_text"/>
+        <result property="answerOptions" column="answer_options"/>
+        <result property="answerRating" column="answer_rating"/>
+        <result property="answerDate" column="answer_date"/>
+    </resultMap>
+
+    <!--
+        REQ-BOARD-013-D-3: 답변 일괄 INSERT (PostgreSQL multi-row VALUES).
+        answerRating 은 CHECK (answer_rating BETWEEN 1 AND 5) 제약.
+    -->
+    <insert id="insertBatch">
+        INSERT INTO survey_answer (
+            response_id, question_id, answer_text, answer_options, answer_rating, answer_date
+        ) VALUES
+        <foreach collection="answers" item="a" separator=",">
+            (
+                #{responseId},
+                #{a.questionId},
+                #{a.answerText},
+                <choose>
+                    <when test="a.answerOptions != null">#{a.answerOptions}::jsonb</when>
+                    <otherwise>NULL</otherwise>
+                </choose>,
+                #{a.answerRating},
+                #{a.answerDate}
+            )
+        </foreach>
+    </insert>
+
+    <!-- REQ-BOARD-013-R: 응답 헤더의 답변 전체 조회 -->
+    <select id="findByResponseId" resultMap="surveyAnswerResultMap">
+        SELECT
+            id, response_id, question_id,
+            answer_text,
+            answer_options::text AS answer_options,
+            answer_rating, answer_date
+        FROM survey_answer
+        WHERE response_id = #{responseId}
+        ORDER BY id
+    </select>
+
+    <!--
+        REQ-BOARD-013-D-5: 결과 통계 원시 집계.
+        설문에 속한 모든 질문 × 응답된 답변(submitted_at IS NOT NULL)을 LEFT JOIN.
+        반환 컬럼: question_id, question_text, question_type, total_responses, answer_count,
+                  answer_text, answer_options, answer_rating, answer_date
+        서비스 계층에서 question_type 별로 SurveyResultDto 분포를 가공한다.
+    -->
+    <select id="aggregateByQuestion" resultType="map">
+        SELECT
+            q.id            AS question_id,
+            q.question_text AS question_text,
+            q.question_type AS question_type,
+            (
+                SELECT COUNT(*)
+                FROM survey_response sr
+                WHERE sr.survey_id = #{surveyId}
+                  AND sr.submitted_at IS NOT NULL
+            )               AS total_responses,
+            COUNT(sa.id)    AS answer_count,
+            sa.answer_text  AS answer_text,
+            sa.answer_options::text AS answer_options,
+            sa.answer_rating AS answer_rating,
+            sa.answer_date  AS answer_date
+        FROM survey_question q
+        LEFT JOIN (
+            SELECT a.id, a.question_id, a.answer_text, a.answer_options,
+                   a.answer_rating, a.answer_date
+            FROM survey_answer a
+            JOIN survey_response r
+              ON r.id = a.response_id
+             AND r.submitted_at IS NOT NULL
+        ) sa ON sa.question_id = q.id
+        WHERE q.survey_id = #{surveyId}
+        GROUP BY q.id, q.question_text, q.question_type, q.sort_order,
+                 sa.answer_text, sa.answer_options, sa.answer_rating, sa.answer_date
+        ORDER BY q.sort_order, q.id
+    </select>
+
+</mapper>

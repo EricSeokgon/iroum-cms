@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    설문 응답 헤더 매퍼 XML.
+    REQ-BOARD-013-D-3: 응답 헤더 INSERT + 중복 응답 검사 + 제출 완료 처리
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.SurveyResponseMapper">
+
+    <resultMap id="surveyResponseResultMap" type="kr.co.ircp.cms.domain.board.entity.SurveyResponse">
+        <id property="id" column="id"/>
+        <result property="surveyId" column="survey_id"/>
+        <result property="respondentId" column="respondent_id"/>
+        <result property="respondentIpHash" column="respondent_ip_hash"/>
+        <result property="startedAt" column="started_at"/>
+        <result property="submittedAt" column="submitted_at"/>
+    </resultMap>
+
+    <!-- REQ-BOARD-013-D-3: 응답 헤더 INSERT (id 자동 채번) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_response (
+            survey_id, respondent_id, respondent_ip_hash, started_at
+        ) VALUES (
+            #{surveyId},
+            #{respondentId},
+            #{respondentIpHash},
+            <choose>
+                <when test="startedAt != null">#{startedAt}</when>
+                <otherwise>CURRENT_TIMESTAMP</otherwise>
+            </choose>
+        )
+    </insert>
+
+    <!-- REQ-BOARD-013-D-3: 동일 사용자 중복 응답 감지 (uq_survey_response_user_once 보조) -->
+    <select id="findByUserAndSurvey" resultMap="surveyResponseResultMap">
+        SELECT
+            id, survey_id, respondent_id, respondent_ip_hash, started_at, submitted_at
+        FROM survey_response
+        WHERE survey_id = #{surveyId}
+          AND respondent_id = #{respondentId}
+        LIMIT 1
+    </select>
+
+    <!-- REQ-BOARD-013-D-3: 응답 제출 완료 처리 -->
+    <update id="markSubmitted">
+        UPDATE survey_response
+        SET submitted_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

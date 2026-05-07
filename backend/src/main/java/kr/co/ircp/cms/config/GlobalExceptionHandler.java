@@ -36,6 +36,8 @@ import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PublicationNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.SurveyNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.SurveyPeriodInvalidException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.ExportAccessDeniedException;
@@ -579,6 +581,34 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Publication Not Found");
         detail.setProperty("code", "PUBLICATION_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 설문조사 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-013 — id에 해당하는 설문이 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(SurveyNotFoundException.class)
+    public ProblemDetail handleSurveyNotFound(SurveyNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Survey Not Found");
+        detail.setProperty("code", "SURVEY_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 설문 응답 가능 조건 위반 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-BOARD-013-D-3 — 설문 기간 외 / 응답 한도 초과 / 중복 응답.
+     */
+    @ExceptionHandler(SurveyPeriodInvalidException.class)
+    public ProblemDetail handleSurveyPeriodInvalid(SurveyPeriodInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Survey Period Invalid");
+        detail.setProperty("code", "SURVEY_PERIOD_INVALID");
         return detail;
     }
 

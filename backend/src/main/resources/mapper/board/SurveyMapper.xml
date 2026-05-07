@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    설문조사 마스터 매퍼 XML.
+    REQ-BOARD-013: 설문 CRUD + 페이징·검색 + 응답수 카운트
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.SurveyMapper">
+
+    <resultMap id="surveyResultMap" type="kr.co.ircp.cms.domain.board.entity.Survey">
+        <id property="id" column="id"/>
+        <result property="bbsId" column="bbs_id"/>
+        <result property="title" column="title"/>
+        <result property="descriptionHtml" column="description_html"/>
+        <result property="descriptionText" column="description_text"/>
+        <result property="startAt" column="start_at"/>
+        <result property="endAt" column="end_at"/>
+        <result property="targetRoleCodes" column="target_role_codes"/>
+        <result property="isAnonymous" column="is_anonymous"/>
+        <result property="maxResponses" column="max_responses"/>
+        <result property="responseCount" column="response_count"/>
+        <result property="status" column="status"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!-- 공통 SELECT 컬럼 -->
+    <sql id="selectColumns">
+        id,
+        bbs_id,
+        title,
+        description_html,
+        description_text,
+        start_at,
+        end_at,
+        target_role_codes::text AS target_role_codes,
+        is_anonymous,
+        max_responses,
+        response_count,
+        status,
+        created_by,
+        created_at,
+        updated_at,
+        deleted_at
+    </sql>
+
+    <!-- 공통 WHERE 절 (필터) -->
+    <sql id="whereFilters">
+        WHERE deleted_at IS NULL
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND title ILIKE '%' || #{keyword} || '%'
+        </if>
+    </sql>
+
+    <!-- REQ-BOARD-013-R: 필터 기반 페이징 조회 -->
+    <select id="findWithFilters" resultMap="surveyResultMap">
+        SELECT
+        <include refid="selectColumns"/>
+        FROM survey
+        <include refid="whereFilters"/>
+        ORDER BY start_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- REQ-BOARD-013-R: 필터 기반 카운트 -->
+    <select id="countWithFilters" resultType="long">
+        SELECT COUNT(*)
+        FROM survey
+        <include refid="whereFilters"/>
+    </select>
+
+    <!-- REQ-BOARD-013-R: 단건 조회 -->
+    <select id="findById" resultMap="surveyResultMap">
+        SELECT
+        <include refid="selectColumns"/>
+        FROM survey
+        WHERE id = #{id} AND deleted_at IS NULL
+    </select>
+
+    <!-- REQ-BOARD-013-C: 신규 INSERT (id 자동 채번) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey (
+            bbs_id, title, description_html, description_text,
+            start_at, end_at, target_role_codes,
+            is_anonymous, max_responses, status, created_by
+        ) VALUES (
+            #{bbsId},
+            #{title},
+            #{descriptionHtml},
+            #{descriptionText},
+            #{startAt},
+            #{endAt},
+            <choose>
+                <when test="targetRoleCodes != null">#{targetRoleCodes}::jsonb</when>
+                <otherwise>NULL</otherwise>
+            </choose>,
+            #{isAnonymous},
+            #{maxResponses},
+            <choose>
+                <when test="status != null">#{status}</when>
+                <otherwise>'DRAFT'</otherwise>
+            </choose>,
+            #{createdBy}
+        )
+    </insert>
+
+    <!-- REQ-BOARD-013-U: 부분 UPDATE -->
+    <update id="update">
+        UPDATE survey
+        <set>
+            <if test="req.title != null">
+                title = #{req.title},
+            </if>
+            <if test="req.descriptionHtml != null">
+                description_html = #{req.descriptionHtml},
+            </if>
+            <if test="req.descriptionText != null">
+                description_text = #{req.descriptionText},
+            </if>
+            <if test="req.startAt != null">
+                start_at = #{req.startAt},
+            </if>
+            <if test="req.endAt != null">
+                end_at = #{req.endAt},
+            </if>
+            <if test="req.isAnonymous != null">
+                is_anonymous = #{req.isAnonymous},
+            </if>
+            <if test="req.maxResponses != null">
+                max_responses = #{req.maxResponses},
+            </if>
+            <if test="req.status != null">
+                status = #{req.status},
+            </if>
+            updated_at = NOW(),
+        </set>
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- REQ-BOARD-013-D: 소프트 삭제 -->
+    <update id="softDelete">
+        UPDATE survey
+        SET deleted_at = NOW(),
+            status = 'HIDDEN',
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- REQ-BOARD-013-D-3: 응답 수 1 증가 -->
+    <update id="incrementResponseCount">
+        UPDATE survey
+        SET response_count = response_count + 1,
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>

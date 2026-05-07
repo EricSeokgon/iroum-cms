@@ -79,6 +79,17 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/v1/publications/*/download-zip"
                 ).permitAll()
+                // REQ-BOARD-013: 설문조사 공개 조회 허용 (목록·단건·결과)
+                // POST /surveys, PUT/DELETE /surveys/{id}, GET /surveys/{id}/results 는 @PreAuthorize 로 통제
+                // POST /surveys/{id}/responses 는 익명 허용
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/surveys/**"
+                ).permitAll()
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/surveys/*/responses"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입

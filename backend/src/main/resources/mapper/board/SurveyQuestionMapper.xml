@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    설문 질문 매퍼 XML.
+    REQ-BOARD-013: 설문 질문 일괄 INSERT/DELETE + 단건 설문의 질문 목록 조회
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.SurveyQuestionMapper">
+
+    <resultMap id="surveyQuestionResultMap" type="kr.co.ircp.cms.domain.board.entity.SurveyQuestion">
+        <id property="id" column="id"/>
+        <result property="surveyId" column="survey_id"/>
+        <result property="questionText" column="question_text"/>
+        <result property="questionType" column="question_type"/>
+        <result property="required" column="required"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="options" column="options"/>
+    </resultMap>
+
+    <!-- REQ-BOARD-013-R: 설문의 질문 목록 (sort_order 오름차순) -->
+    <select id="findBySurveyId" resultMap="surveyQuestionResultMap">
+        SELECT
+            id,
+            survey_id,
+            question_text,
+            question_type,
+            required,
+            sort_order,
+            options::text AS options
+        FROM survey_question
+        WHERE survey_id = #{surveyId}
+        ORDER BY sort_order, id
+    </select>
+
+    <!--
+        REQ-BOARD-013-C/U: 질문 일괄 INSERT (PostgreSQL multi-row VALUES).
+        questionType 이 SINGLE/MULTI 일 때 options 가 NOT NULL 이어야 함 (CHECK 제약).
+    -->
+    <insert id="insertBatch">
+        INSERT INTO survey_question (
+            survey_id, question_text, question_type, required, sort_order, options
+        ) VALUES
+        <foreach collection="questions" item="q" separator=",">
+            (
+                #{surveyId},
+                #{q.questionText},
+                #{q.questionType},
+                #{q.required},
+                #{q.sortOrder},
+                <choose>
+                    <when test="q.options != null">#{q.options}::jsonb</when>
+                    <otherwise>NULL</otherwise>
+                </choose>
+            )
+        </foreach>
+    </insert>
+
+    <!-- REQ-BOARD-013-U: 설문 수정 시 기존 질문 일괄 삭제 -->
+    <delete id="deleteBySurveyId">
+        DELETE FROM survey_question WHERE survey_id = #{surveyId}
+    </delete>
+
+</mapper>
