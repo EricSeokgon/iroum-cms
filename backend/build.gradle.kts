@@ -148,15 +148,32 @@ tasks.withType<JavaCompile> {
 
 // ─── 테스트 설정 ──────────────────────────────────────────────────────────
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // @Tag("integration") 태그 제외 — Docker 미설치 환경에서 컨테이너 기동 실패 방지
+        // 통합 테스트 실행: ./gradlew integrationTest
+        excludeTags("integration")
+    }
     testLogging {
         events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
         exceptionFormat = TestExceptionFormat.FULL
         showStandardStreams = false
     }
     finalizedBy(tasks.jacocoTestReport)
-    // Docker 미설치 환경에서 System.exit()으로 JaCoCo exec 데이터를 오염시키므로 제외
-    exclude("**/integration/**")
+}
+
+// ─── 통합 테스트 task (Docker 필요) ─────────────────────────────────────
+tasks.register<Test>("integrationTest") {
+    description = "Testcontainers 기반 통합 테스트 실행 (Docker 필요)"
+    group = "verification"
+    useJUnitPlatform {
+        includeTags("integration")
+    }
+    testLogging {
+        events(TestLogEvent.PASSED, TestLogEvent.SKIPPED, TestLogEvent.FAILED)
+        exceptionFormat = TestExceptionFormat.FULL
+        showStandardStreams = false
+    }
+    shouldRunAfter(tasks.test)
 }
 
 // ─── JaCoCo 커버리지 ──────────────────────────────────────────────────────
