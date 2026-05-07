@@ -9,6 +9,7 @@ import kr.co.ircp.cms.domain.board.entity.Qna;
 import kr.co.ircp.cms.domain.board.entity.QnaStatus;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.QnaMapper;
+import kr.co.ircp.cms.domain.board.service.QnaNotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,11 +44,14 @@ class QnaServiceTest {
     @Mock
     private QnaMapper qnaMapper;
 
+    @Mock
+    private QnaNotificationService qnaNotificationService;
+
     private QnaService qnaService;
 
     @BeforeEach
     void setUp() {
-        qnaService = new QnaServiceImpl(qnaMapper);
+        qnaService = new QnaServiceImpl(qnaMapper, qnaNotificationService);
     }
 
     // 공통 스텁 빌더 — 기본 상태의 PENDING/공개 Q&A 생성
