@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.UserService;
+import kr.co.ircp.cms.domain.board.service.QnaNotificationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,9 @@ class MeControllerTest {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private QnaNotificationService qnaNotificationService;
 
     @Autowired
     private ObjectMapper objectMapper;
