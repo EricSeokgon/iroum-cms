@@ -34,6 +34,7 @@ import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.PublicationNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
@@ -564,6 +565,20 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Q&A Not Found");
         detail.setProperty("code", "QNA_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 발간자료 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-012 — id에 해당하는 발간자료가 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(PublicationNotFoundException.class)
+    public ProblemDetail handlePublicationNotFound(PublicationNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Publication Not Found");
+        detail.setProperty("code", "PUBLICATION_NOT_FOUND");
         return detail;
     }
 

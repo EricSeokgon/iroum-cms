@@ -69,6 +69,16 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.GET,
                     "/api/v1/faqs/**"
                 ).permitAll()
+                // REQ-BOARD-012: 발간자료 공개 조회 허용 (목록·카테고리·단건)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/publications/**"
+                ).permitAll()
+                // REQ-BOARD-012-D-4: ZIP 다운로드 요청 (익명 허용)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/publications/*/download-zip"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입

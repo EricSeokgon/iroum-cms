@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    발간자료 ZIP 아카이브 매퍼 XML.
+    REQ-BOARD-012-D-4: ZIP 다운로드 요청 저장 + 7일 만료 배치
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.PublicationZipArchiveMapper">
+
+    <resultMap id="publicationZipArchiveResultMap" type="kr.co.ircp.cms.domain.board.entity.PublicationZipArchive">
+        <id property="id" column="id"/>
+        <result property="downloadId" column="download_id"/>
+        <result property="requestedBy" column="requested_by"/>
+        <result property="postId" column="post_id"/>
+        <result property="assetUuids" column="asset_uuids"
+                typeHandler="kr.co.ircp.cms.domain.board.repository.UuidArrayTypeHandler"/>
+        <result property="zipFilePath" column="zip_file_path"/>
+        <result property="sizeBytes" column="size_bytes"/>
+        <result property="mode" column="mode"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="expiresAt" column="expires_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+        <result property="downloadCount" column="download_count"/>
+        <result property="lastDownloadedAt" column="last_downloaded_at"/>
+    </resultMap>
+
+    <!-- REQ-BOARD-012-D-4: ZIP 아카이브 신규 INSERT -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO publication_zip_archive (
+            download_id, requested_by, post_id, asset_uuids,
+            zip_file_path, size_bytes, mode
+        ) VALUES (
+            #{downloadId},
+            #{requestedBy},
+            #{postId},
+            #{assetUuids,jdbcType=ARRAY,typeHandler=kr.co.ircp.cms.domain.board.repository.UuidArrayTypeHandler},
+            #{zipFilePath},
+            #{sizeBytes},
+            #{mode}
+        )
+    </insert>
+
+    <!-- REQ-BOARD-012-D-4: download_id로 단건 조회 -->
+    <select id="findByDownloadId" resultMap="publicationZipArchiveResultMap">
+        SELECT id, download_id, requested_by, post_id, asset_uuids,
+               zip_file_path, size_bytes, mode, created_at, expires_at,
+               deleted_at, download_count, last_downloaded_at
+        FROM publication_zip_archive
+        WHERE download_id = #{downloadId} AND deleted_at IS NULL
+    </select>
+
+    <!-- REQ-BOARD-012-D-4: 다운로드 카운트 증가 -->
+    <update id="incrementDownloadCount">
+        UPDATE publication_zip_archive
+        SET download_count = download_count + 1,
+            last_downloaded_at = NOW()
+        WHERE download_id = #{downloadId} AND deleted_at IS NULL
+    </update>
+
+    <!-- REQ-BOARD-012-D-4: 만료된 아카이브 조회 -->
+    <select id="findExpired" resultMap="publicationZipArchiveResultMap">
+        SELECT id, download_id, requested_by, post_id, asset_uuids,
+               zip_file_path, size_bytes, mode, created_at, expires_at,
+               deleted_at, download_count, last_downloaded_at
+        FROM publication_zip_archive
+        WHERE deleted_at IS NULL AND expires_at &lt; NOW()
+    </select>
+
+    <!-- REQ-BOARD-012-D-4: 만료된 아카이브 소프트 삭제 -->
+    <update id="softDeleteExpired">
+        UPDATE publication_zip_archive
+        SET deleted_at = NOW()
+        WHERE deleted_at IS NULL AND expires_at &lt; NOW()
+    </update>
+
+</mapper>

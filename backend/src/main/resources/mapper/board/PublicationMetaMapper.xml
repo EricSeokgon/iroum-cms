@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    발간자료 메타 매퍼 XML.
+    REQ-BOARD-012: 발간자료 CRUD + 페이징·검색
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.PublicationMetaMapper">
+
+    <resultMap id="publicationMetaResultMap" type="kr.co.ircp.cms.domain.board.entity.PublicationMeta">
+        <id property="postId" column="post_id"/>
+        <result property="publicationYear" column="publication_year"/>
+        <result property="publicationMonth" column="publication_month"/>
+        <result property="documentType" column="document_type"/>
+        <result property="publicationCategoryId" column="publication_category_id"/>
+        <result property="fileCount" column="file_count"/>
+        <result property="isbn" column="isbn"/>
+        <result property="publisher" column="publisher"/>
+        <result property="metadata" column="metadata"/>
+        <!-- bbs_post 조인 필드 -->
+        <result property="title" column="title"/>
+        <result property="contentHtml" column="content_html"/>
+        <result property="contentText" column="content_text"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="status" column="status"/>
+        <result property="publishedAt" column="published_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <!-- publication_category 조인 -->
+        <result property="categoryName" column="category_name"/>
+    </resultMap>
+
+    <!-- 공통 SELECT 절 -->
+    <sql id="selectColumns">
+        m.post_id,
+        m.publication_year,
+        m.publication_month,
+        m.document_type,
+        m.publication_category_id,
+        m.file_count,
+        m.isbn,
+        m.publisher,
+        m.metadata::text AS metadata,
+        p.title,
+        p.content_html,
+        p.content_text,
+        p.view_count,
+        p.status,
+        p.published_at,
+        p.created_at,
+        p.updated_at,
+        c.name AS category_name
+    </sql>
+
+    <!-- 공통 WHERE 절 (필터) -->
+    <sql id="whereFilters">
+        WHERE p.deleted_at IS NULL
+          AND p.status = 'PUBLISHED'
+        <if test="year != null">
+            AND m.publication_year = #{year}
+        </if>
+        <if test="month != null">
+            AND m.publication_month = #{month}
+        </if>
+        <if test="documentType != null and documentType != ''">
+            AND m.document_type = #{documentType}
+        </if>
+        <if test="categoryId != null">
+            AND m.publication_category_id = #{categoryId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (p.title ILIKE '%' || #{keyword} || '%'
+                 OR m.publisher ILIKE '%' || #{keyword} || '%')
+        </if>
+    </sql>
+
+    <!-- REQ-BOARD-012-R: 필터 기반 페이징 조회 -->
+    <select id="findWithFilters" resultMap="publicationMetaResultMap">
+        SELECT
+        <include refid="selectColumns"/>
+        FROM bbs_post_publication_meta m
+        JOIN bbs_post p ON p.id = m.post_id
+        LEFT JOIN publication_category c ON c.id = m.publication_category_id
+        <include refid="whereFilters"/>
+        ORDER BY m.publication_year DESC, m.publication_month DESC NULLS LAST, p.created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- REQ-BOARD-012-R: 필터 기반 카운트 -->
+    <select id="countWithFilters" resultType="long">
+        SELECT COUNT(*)
+        FROM bbs_post_publication_meta m
+        JOIN bbs_post p ON p.id = m.post_id
+        <include refid="whereFilters"/>
+    </select>
+
+    <!-- REQ-BOARD-012-R: 단건 조회 (조인 포함) -->
+    <select id="findById" resultMap="publicationMetaResultMap">
+        SELECT
+        <include refid="selectColumns"/>
+        FROM bbs_post_publication_meta m
+        JOIN bbs_post p ON p.id = m.post_id
+        LEFT JOIN publication_category c ON c.id = m.publication_category_id
+        WHERE p.id = #{id} AND p.deleted_at IS NULL
+    </select>
+
+    <!-- REQ-BOARD-012-C: bbs_post_publication_meta INSERT -->
+    <insert id="insert">
+        INSERT INTO bbs_post_publication_meta (
+            post_id, publication_year, publication_month, document_type,
+            publication_category_id, isbn, publisher, metadata
+        ) VALUES (
+            #{postId},
+            #{req.publicationYear},
+            #{req.publicationMonth},
+            #{req.documentType},
+            #{req.publicationCategoryId},
+            #{req.isbn},
+            #{req.publisher},
+            <choose>
+                <when test="req.metadata != null">#{req.metadata}::jsonb</when>
+                <otherwise>NULL</otherwise>
+            </choose>
+        )
+    </insert>
+
+    <!-- REQ-BOARD-012-U: bbs_post_publication_meta 부분 UPDATE -->
+    <update id="update">
+        UPDATE bbs_post_publication_meta
+        <set>
+            <if test="req.publicationYear != null">
+                publication_year = #{req.publicationYear},
+            </if>
+            <if test="req.publicationMonth != null">
+                publication_month = #{req.publicationMonth},
+            </if>
+            <if test="req.documentType != null">
+                document_type = #{req.documentType},
+            </if>
+            <if test="req.publicationCategoryId != null">
+                publication_category_id = #{req.publicationCategoryId},
+            </if>
+            <if test="req.isbn != null">
+                isbn = #{req.isbn},
+            </if>
+            <if test="req.publisher != null">
+                publisher = #{req.publisher},
+            </if>
+            <if test="req.metadata != null">
+                metadata = #{req.metadata}::jsonb,
+            </if>
+        </set>
+        WHERE post_id = #{postId}
+    </update>
+
+    <!-- REQ-BOARD-012-R: 조회수 증가 (bbs_post) -->
+    <update id="incrementViewCount">
+        UPDATE bbs_post SET view_count = view_count + 1
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+</mapper>

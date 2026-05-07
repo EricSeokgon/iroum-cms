@@ -74,7 +74,8 @@ mybatis:
     - classpath*:mybatis/mapper/**/*.xml
   type-aliases-package: kr.co.ircp.cms.domain
   # REQ-AUTH-018 — JSONB ↔ List<String> 변환 TypeHandler 등록
-  type-handlers-package: kr.co.ircp.cms.domain.auth.repository.typehandler
+  # REQ-BOARD-012-D-4 — UUID[] 변환 TypeHandler 등록 (publication_zip_archive)
+  type-handlers-package: kr.co.ircp.cms.domain.auth.repository.typehandler,kr.co.ircp.cms.domain.board.repository
 
 # iroum CMS JWT 설정 (SPEC-CMS-002 REQ-AUTH-001/002)
 iroum:

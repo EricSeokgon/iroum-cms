@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    발간자료 카테고리 매퍼 XML.
+    REQ-BOARD-012-D: 발간자료 카테고리 트리 조회
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.PublicationCategoryMapper">
+
+    <resultMap id="publicationCategoryResultMap" type="kr.co.ircp.cms.domain.board.entity.PublicationCategory">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="depth" column="depth"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- REQ-BOARD-012-D: 활성 카테고리 전체 조회 -->
+    <select id="findAllActive" resultMap="publicationCategoryResultMap">
+        SELECT id, code, name, parent_id, depth, sort_order, status, created_at
+        FROM publication_category
+        WHERE status = 'ACTIVE'
+        ORDER BY sort_order, id
+    </select>
+
+    <!-- REQ-BOARD-012-D: 단건 조회 -->
+    <select id="findById" resultMap="publicationCategoryResultMap">
+        SELECT id, code, name, parent_id, depth, sort_order, status, created_at
+        FROM publication_category
+        WHERE id = #{id}
+    </select>
+
+</mapper>
