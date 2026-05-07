@@ -436,6 +436,30 @@ const router = createRouter({
           component: () => import('@/views/governance/GovernanceStatsView.vue'),
           meta: { title: '거버넌스 통계', permissions: ['ADMIN'] },
         },
+        // ── 통합 검색 라우트 (SPEC-CMS-010) ────────────────────────────────
+        {
+          path: 'search',
+          name: 'search',
+          component: () => import('@/views/search/SearchView.vue'),
+          meta: { title: '통합 검색' },
+        },
+        {
+          path: 'search/synonyms',
+          name: 'search-synonyms',
+          component: () => import('@/views/search/SynonymManagementView.vue'),
+          meta: { title: '동의어 사전 관리', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'search/analytics',
+          name: 'search-analytics',
+          component: () => import('@/views/search/SearchAnalyticsView.vue'),
+          meta: { title: '검색 통계', permissions: ['ADMIN'] },
+        },
+        // 하위호환: 구 /synonyms 경로 → 새 경로로 리다이렉트
+        {
+          path: 'synonyms',
+          redirect: '/search/synonyms',
+        },
       ],
     },
 

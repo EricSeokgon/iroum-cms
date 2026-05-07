@@ -50,6 +50,29 @@
           <span>{{ t('nav.health') }}</span>
         </el-menu-item>
 
+        <!-- 통합 검색 그룹 (SPEC-CMS-010) -->
+        <el-sub-menu index="search" :aria-label="t('nav.search')">
+          <template #title>
+            <el-icon><i-ep-search /></el-icon>
+            <span>{{ t('nav.search') }}</span>
+          </template>
+          <el-menu-item index="/search">
+            <span>{{ t('nav.searchUnified') }}</span>
+          </el-menu-item>
+          <el-menu-item
+            v-if="hasPermission(auth, 'ROLE:READ')"
+            index="/search/synonyms"
+          >
+            <span>{{ t('nav.searchSynonyms') }}</span>
+          </el-menu-item>
+          <el-menu-item
+            v-if="hasPermission(auth, 'ROLE:READ')"
+            index="/search/analytics"
+          >
+            <span>{{ t('nav.searchAnalytics') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 역할/권한 관리 — SUPER_ADMIN 또는 DEPT_ADMIN -->
         <el-menu-item
           v-if="hasPermission(auth, 'ROLE:READ')"
@@ -178,6 +201,13 @@
           </el-menu-item>
           <el-menu-item index="/system/audit-logs">
             <span>{{ t('nav.systemAuditLogs') }}</span>
+          </el-menu-item>
+          <!-- 동의어 관리 (SPEC-CMS-010) — ADMIN 전용 -->
+          <el-menu-item
+            v-if="hasPermission(auth, 'ROLE:READ')"
+            index="/synonyms"
+          >
+            <span>{{ t('nav.synonyms') }}</span>
           </el-menu-item>
         </el-sub-menu>
 

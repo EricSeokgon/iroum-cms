@@ -49,7 +49,12 @@
     "governanceBatchLogs": "Batch Logs",
     "governanceQualityRules": "Quality Rules",
     "governanceQualityReports": "Quality Reports",
-    "governanceRecoveryDrills": "Recovery Drills"
+    "governanceRecoveryDrills": "Recovery Drills",
+    "search": "Unified Search",
+    "searchUnified": "Search",
+    "searchSynonyms": "Synonyms",
+    "searchAnalytics": "Search Analytics",
+    "synonyms": "Synonym Management"
   },
   "system": {
     "dashboard": {
@@ -345,7 +350,9 @@
     "delete": "Delete",
     "create": "Create",
     "search": "Search",
+    "refresh": "Refresh",
     "reset": "Reset",
+    "clear": "Clear",
     "all": "All",
     "yes": "Yes",
     "no": "No",
@@ -1420,5 +1427,70 @@
     "qnaAnswerEmail": "Q&A Answer Email Notifications",
     "qnaAnswerEmailDesc": "Receive email notifications when your Q&A questions are answered",
     "saved": "Settings saved"
+  },
+  "search": {
+    "title": "Unified Search",
+    "placeholder": "Enter search keyword",
+    "button": "Search",
+    "domain": {
+      "ALL": "All",
+      "board": "Board",
+      "content": "Content",
+      "policy": "Policy",
+      "safety": "Safety",
+      "media": "Media",
+      "publication": "Publication"
+    },
+    "domainTabs": "Domain tabs",
+    "noResults": "No search results found",
+    "totalResults": "{total} results",
+    "popular": "Popular Searches",
+    "clickResult": "Failed to track click",
+    "expandedQuery": "Expanded query",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "dateRange": "Date range"
+  },
+  "synonyms": {
+    "title": "Synonym Management",
+    "term": "Term",
+    "synonym": "Synonym",
+    "synonymPlaceholder": "Comma-separated values",
+    "locale": "Language",
+    "status": "Status",
+    "statusValue": {
+      "ACTIVE": "Active",
+      "PAUSED": "Paused"
+    },
+    "description": "Description",
+    "add": "Add Synonym",
+    "edit": "Edit Synonym",
+    "deleteConfirm": "Delete this synonym?",
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "empty": "No synonyms registered"
+  },
+  "searchAnalytics": {
+    "title": "Search Analytics",
+    "topLimit": "Top N items",
+    "kpi": {
+      "totalSearches": "Total Searches",
+      "uniqueQueries": "Unique Queries",
+      "avgCtr": "Avg CTR",
+      "zeroResultRate": "Zero Result Rate"
+    },
+    "topQueriesChart": "Top Queries",
+    "topQueriesTable": "Query Statistics",
+    "clickRatioChart": "Click Ratio",
+    "clicked": "Clicked",
+    "notClicked": "Not Clicked",
+    "noData": "No data to display",
+    "dateRequired": "Please select a date range",
+    "col": {
+      "query": "Query",
+      "searchCount": "Searches",
+      "clickCount": "Clicks",
+      "ctr": "CTR"
+    }
   }
 }

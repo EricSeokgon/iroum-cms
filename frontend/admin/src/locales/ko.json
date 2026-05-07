@@ -49,7 +49,12 @@
     "governanceBatchLogs": "배치 실행 이력",
     "governanceQualityRules": "품질 룰",
     "governanceQualityReports": "품질 리포트",
-    "governanceRecoveryDrills": "복구 시험"
+    "governanceRecoveryDrills": "복구 시험",
+    "search": "통합 검색",
+    "searchUnified": "검색",
+    "searchSynonyms": "동의어 사전",
+    "searchAnalytics": "검색 통계",
+    "synonyms": "동의어 관리"
   },
   "system": {
     "dashboard": {
@@ -344,7 +349,9 @@
     "delete": "삭제",
     "create": "생성",
     "search": "검색",
+    "refresh": "새로고침",
     "reset": "초기화",
+    "clear": "지우기",
     "all": "전체",
     "yes": "예",
     "no": "아니오",
@@ -1473,5 +1480,70 @@
     "qnaAnswerEmail": "Q&A 답변 이메일 알림",
     "qnaAnswerEmailDesc": "내 Q&A 질문에 답변이 등록되면 이메일로 알림을 받습니다",
     "saved": "설정이 저장되었습니다"
+  },
+  "search": {
+    "title": "통합 검색",
+    "placeholder": "검색어를 입력하세요",
+    "button": "검색",
+    "domain": {
+      "ALL": "전체",
+      "board": "게시판",
+      "content": "콘텐츠",
+      "policy": "정책사업",
+      "safety": "안전사고",
+      "media": "미디어",
+      "publication": "발간자료"
+    },
+    "domainTabs": "도메인 탭",
+    "noResults": "검색 결과가 없습니다",
+    "totalResults": "{total}건의 검색 결과",
+    "popular": "인기 검색어",
+    "clickResult": "결과 클릭 추적 실패",
+    "expandedQuery": "확장 검색어",
+    "dateFrom": "시작일",
+    "dateTo": "종료일",
+    "dateRange": "검색 기간"
+  },
+  "synonyms": {
+    "title": "동의어 관리",
+    "term": "검색어",
+    "synonym": "동의어",
+    "synonymPlaceholder": "쉼표(,)로 구분하여 입력",
+    "locale": "언어",
+    "status": "상태",
+    "statusValue": {
+      "ACTIVE": "활성",
+      "PAUSED": "중지"
+    },
+    "description": "설명",
+    "add": "동의어 등록",
+    "edit": "동의어 수정",
+    "deleteConfirm": "이 동의어를 삭제하시겠습니까?",
+    "saved": "저장되었습니다",
+    "deleted": "삭제되었습니다",
+    "empty": "등록된 동의어가 없습니다"
+  },
+  "searchAnalytics": {
+    "title": "검색 통계",
+    "topLimit": "상위 표시 건수",
+    "kpi": {
+      "totalSearches": "총 검색 횟수",
+      "uniqueQueries": "고유 검색어 수",
+      "avgCtr": "평균 클릭률",
+      "zeroResultRate": "0건 검색 비율"
+    },
+    "topQueriesChart": "인기 검색어",
+    "topQueriesTable": "검색어 통계 표",
+    "clickRatioChart": "클릭률 분포",
+    "clicked": "클릭됨",
+    "notClicked": "클릭되지 않음",
+    "noData": "표시할 데이터가 없습니다",
+    "dateRequired": "기간을 선택하세요",
+    "col": {
+      "query": "검색어",
+      "searchCount": "검색 수",
+      "clickCount": "클릭 수",
+      "ctr": "CTR"
+    }
   }
 }
