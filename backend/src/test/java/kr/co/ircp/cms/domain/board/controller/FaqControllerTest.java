@@ -1,7 +1,6 @@
 package kr.co.ircp.cms.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.ServletException;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
@@ -23,7 +22,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -34,7 +32,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -218,23 +215,18 @@ class FaqControllerTest {
     // ─── 인증/인가 거부 시나리오 (REQ-BOARD-007 보안 가드) ─────────────────────
 
     @Test
-    @DisplayName("POST /api/v1/faqs — 미인증 시 AuthenticationCredentialsNotFoundException (인증 가드 동작)")
+    @DisplayName("POST /api/v1/faqs — 미인증 시 403 Forbidden (익명 인증 토큰 → AccessDeniedException)")
     void create_rejectsUnauthenticated() throws Exception {
-        // 쓰기 엔드포인트(@PreAuthorize CONTENT:WRITE/ADMIN/SUPER_ADMIN/CONTENT_ADMIN) 적용 시
-        // SecurityContext에 Authentication 이 없으면 Spring Security 6 의
-        // AuthorizationManagerBeforeMethodInterceptor 가 AuthenticationCredentialsNotFoundException 을 던진다.
-        // 슬라이스 테스트에는 AuthenticationEntryPoint 가 등록되지 않으므로 401 매핑이 불가하고,
-        // GlobalExceptionHandler 도 해당 예외를 처리하지 않아 ServletException 으로 전파된다.
-        // 본 테스트는 "인증 없는 쓰기 요청은 컨트롤러 진입 전에 거부된다"는 보안 가드 동작을 검증한다.
+        // AnonymousAuthenticationFilter 가 익명 Authentication 을 부여하므로
+        // @PreAuthorize 거부 시 AccessDeniedException → HTTP 403 으로 응답된다.
         FaqCreateRequest req = new FaqCreateRequest(
                 "GENERAL", "익명 시도", "<p>본문</p>", 1
         );
         String body = objectMapper.writeValueAsString(req);
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/v1/faqs")
+        mockMvc.perform(post("/api/v1/faqs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)))
-                .isInstanceOf(ServletException.class)
-                .hasRootCauseInstanceOf(AuthenticationCredentialsNotFoundException.class);
+                        .content(body))
+                .andExpect(status().isForbidden());
     }
 
     @Test
