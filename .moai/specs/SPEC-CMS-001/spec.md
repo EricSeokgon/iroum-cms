@@ -515,8 +515,8 @@ SPEC-CMS-001 [umbrella v0.4]
 │  ├─ SPEC-CMS-007 정책사업 매칭 + 알림 [v0.4 — SPEC 작성됨, 구현 대기]
 │  └─ SPEC-CMS-008 시각화 대시보드 + KPI [v0.4 — SPEC 작성됨, 구현 대기]
 ├─ RFP 신규 P1
-│  ├─ SPEC-CMS-009 데이터 거버넌스 [SPEC 미작성]
-│  └─ SPEC-CMS-010 통합 검색 [SPEC 미작성]
+│  ├─ SPEC-CMS-009 데이터 거버넌스 [v0.3 — Implemented (2026-05-07, 풀스택 + 554 GREEN)]
+│  └─ SPEC-CMS-010 통합 검색 [v0.1 Draft — 2026-05-07, PostgreSQL FTS 결정, RUN 대기]
 ├─ 홍익인간 CMS gap 신규 P0
 │  └─ SPEC-CMS-MEDIA-001 통합 미디어 라이브러리 [v0.4 — SPEC 작성됨, 구현 대기]
 └─ 옵션 트랙
@@ -733,6 +733,7 @@ SPEC-CMS-001 [umbrella v0.4]
 - **테스트**: 백엔드 554 GREEN (governance 포함), 프론트엔드 vue-tsc 0 에러
 - **참조 SPEC**: SPEC-CMS-002~009, SPEC-CMS-MEDIA-001 (모두 Implemented)
 - **특이사항**:
-  - SPEC-CMS-010 (통합 검색)은 P1 후속으로 보류, 실제 통합 검색은 향후 SPEC 작성 단계
+  - SPEC-CMS-010 (통합 검색) v0.1 Draft 작성 완료 (2026-05-07, PostgreSQL FTS 단일 스택 결정), RUN 단계는 후속 세션에서 진행
   - SPEC-CMS-AI-001 (AI/ML)은 별도 옵션 트랙으로 미착수
   - Testcontainers 통합 테스트 26개는 Docker 소켓 환경에서만 GREEN
+  - SPEC-CMS-003 v0.2 SFR-014 다중 게시판 모듈 (FAQ/QnA/발간자료/설문조사) 추가 풀스택 완료 (2026-05-07)
