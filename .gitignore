@@ -251,3 +251,7 @@ deploy/.env.production
 
 # Docker 로컬 볼륨 마운트 데이터 (개발 시 생성)
 deploy/data/
+
+# 프론트엔드 워크스페이스 런타임 산출물 (로컬 전용)
+frontend/admin/.moai/
+
