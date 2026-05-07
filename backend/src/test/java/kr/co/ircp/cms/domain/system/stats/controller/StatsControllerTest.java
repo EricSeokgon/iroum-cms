@@ -107,4 +107,13 @@ class StatsControllerTest {
 
         verify(statsService).recompute(any(LocalDate.class), any(LocalDate.class), anyLong());
     }
+
+    @Test
+    @DisplayName("POST /stats/recompute — 인증 없이 접근 시 403 Forbidden")
+    void recompute_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/system/stats/recompute")
+                        .param("from", "2026-05-01")
+                        .param("to", "2026-05-07"))
+                .andExpect(status().isForbidden());
+    }
 }

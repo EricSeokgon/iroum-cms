@@ -114,4 +114,15 @@ class SystemSettingControllerTest {
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("PUT /settings/{key} — 인증 없이 접근 시 403 Forbidden")
+    void put_unauthenticated_returns403() throws Exception {
+        SystemSettingRequest req = new SystemSettingRequest("iROUM CMS", "사이트 타이틀");
+
+        mockMvc.perform(put("/api/v1/system/settings/site.title")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }
