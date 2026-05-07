@@ -155,6 +155,8 @@ tasks.test {
         showStandardStreams = false
     }
     finalizedBy(tasks.jacocoTestReport)
+    // Docker 미설치 환경에서 System.exit()으로 JaCoCo exec 데이터를 오염시키므로 제외
+    exclude("**/integration/**")
 }
 
 // ─── JaCoCo 커버리지 ──────────────────────────────────────────────────────
