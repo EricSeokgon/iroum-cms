@@ -30,6 +30,7 @@ import java.util.Objects;
 public class QnaServiceImpl implements QnaService {
 
     private final QnaMapper qnaMapper;
+    private final QnaNotificationService qnaNotificationService;
 
     @Override
     public PageResponse<QnaSummary> listQnas(
@@ -83,6 +84,11 @@ public class QnaServiceImpl implements QnaService {
         }
         String answerText = stripHtml(request.answerHtml());
         qnaMapper.updateAnswer(id, request.answerHtml(), answerText, answererId);
+        // 답변 완료 후 알림 발송 (PENDING → ANSWERED 전환 시에만)
+        // REQ-BOARD-014-D: INAPP/EMAIL 채널 알림 (멱등성·재시도·옵트아웃)
+        if (QnaStatus.PENDING.name().equals(existing.getStatus())) {
+            qnaNotificationService.notifyAnswered(id, existing.getQuestionerId(), answererId);
+        }
         Qna refreshed = qnaMapper.findById(id).orElseThrow(() -> new QnaNotFoundException(id));
         return toDetail(refreshed);
     }

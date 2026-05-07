@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.QnaNotificationOptoutMapper">
+
+  <insert id="upsert">
+    INSERT INTO qna_notification_optout (user_id, channel)
+    VALUES (#{userId}, #{channel})
+    ON CONFLICT (user_id, channel) DO UPDATE SET opted_out_at = CURRENT_TIMESTAMP
+  </insert>
+
+  <select id="existsByUserAndChannel" resultType="boolean">
+    SELECT EXISTS(
+      SELECT 1 FROM qna_notification_optout
+      WHERE user_id = #{userId} AND channel = #{channel}
+    )
+  </select>
+
+  <delete id="delete">
+    DELETE FROM qna_notification_optout WHERE user_id = #{userId} AND channel = #{channel}
+  </delete>
+
+</mapper>

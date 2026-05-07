@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.QnaNotificationLogMapper">
+
+  <resultMap id="QnaNotificationLogMap" type="kr.co.ircp.cms.domain.board.entity.QnaNotificationLog">
+    <id property="id" column="id"/>
+    <result property="qnaId" column="qna_id"/>
+    <result property="answererId" column="answerer_id"/>
+    <result property="recipientId" column="recipient_id"/>
+    <result property="channel" column="channel"/>
+    <result property="status" column="status"/>
+    <result property="retryCount" column="retry_count"/>
+    <result property="lastError" column="last_error"/>
+    <result property="sentAt" column="sent_at"/>
+    <result property="createdAt" column="created_at"/>
+  </resultMap>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO qna_notification_log (qna_id, answerer_id, recipient_id, channel, status)
+    VALUES (#{qnaId}, #{answererId}, #{recipientId}, #{channel}, 'PENDING')
+  </insert>
+
+  <update id="markSent">
+    UPDATE qna_notification_log
+    SET status = 'SENT', sent_at = NOW()
+    WHERE id = #{id}
+  </update>
+
+  <update id="markFailed">
+    UPDATE qna_notification_log
+    SET status = 'FAILED', retry_count = retry_count + 1, last_error = #{error}
+    WHERE id = #{id}
+  </update>
+
+  <update id="markDeadLetter">
+    UPDATE qna_notification_log
+    SET status = 'DEAD_LETTER', retry_count = retry_count + 1, last_error = #{error}
+    WHERE id = #{id}
+  </update>
+
+  <select id="findPendingOrFailed" resultMap="QnaNotificationLogMap">
+    SELECT id, qna_id, answerer_id, recipient_id, channel, status, retry_count, last_error, sent_at, created_at
+    FROM qna_notification_log
+    WHERE status IN ('PENDING', 'FAILED')
+      AND retry_count &lt; 3
+    ORDER BY created_at ASC
+    LIMIT 100
+  </select>
+
+</mapper>
