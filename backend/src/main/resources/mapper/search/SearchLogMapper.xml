@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    검색 로그 매퍼 XML.
+    SPEC-CMS-010 REQ-SEARCH-008: 검색 로그 적재/조회/클릭 추적/보존 정책.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.search.repository.SearchLogMapper">
+
+    <resultMap id="searchLogResultMap" type="kr.co.ircp.cms.domain.search.entity.SearchLog">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="query" column="query"/>
+        <result property="normalizedQuery" column="normalized_query"/>
+        <result property="expandedQuery" column="expanded_query"/>
+        <result property="resultCount" column="result_count"/>
+        <result property="responseMs" column="response_ms"/>
+        <result property="clickedDocType" column="clicked_doc_type"/>
+        <result property="clickedDocId" column="clicked_doc_id"/>
+        <result property="clickedAt" column="clicked_at"/>
+        <result property="clickedRank" column="clicked_rank"/>
+        <result property="locale" column="locale"/>
+        <result property="domainFilter" column="domain_filter"/>
+        <result property="ipHash" column="ip_hash"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- REQ-SEARCH-008: 검색 로그 INSERT -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO search_log (
+            user_id, session_id, query, normalized_query, expanded_query,
+            result_count, response_ms, locale, domain_filter, ip_hash
+        ) VALUES (
+            #{userId}, #{sessionId}, #{query}, #{normalizedQuery}, #{expandedQuery},
+            #{resultCount}, #{responseMs}, #{locale}, #{domainFilter}, #{ipHash}
+        )
+    </insert>
+
+    <select id="findById" resultMap="searchLogResultMap">
+        SELECT * FROM search_log WHERE id = #{id}
+    </select>
+
+    <!-- REQ-SEARCH-008: 클릭 정보 갱신 (clicked_doc_type/id/rank/clicked_at) -->
+    <update id="updateClickInfo">
+        UPDATE search_log
+           SET clicked_doc_type = #{clickedDocType},
+               clicked_doc_id   = #{clickedDocId},
+               clicked_rank     = #{clickedRank},
+               clicked_at       = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!-- REQ-SEARCH-007: 일별 normalized_query 빈도 집계 (locale 옵션) -->
+    <select id="aggregateDaily" resultType="map">
+        SELECT
+            locale            AS "locale",
+            normalized_query  AS "normalizedQuery",
+            COUNT(*)          AS "searchCount"
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+        <if test="locale != null and locale != ''">
+           AND locale = #{locale}
+        </if>
+        GROUP BY locale, normalized_query
+        ORDER BY locale, "searchCount" DESC
+    </select>
+
+    <!-- REQ-SEARCH-008: retention 6개월 경과 행 삭제 -->
+    <delete id="deleteOlderThan">
+        DELETE FROM search_log
+         WHERE created_at &lt; NOW() - (#{months} || ' months')::interval
+    </delete>
+
+    <select id="countByPeriod" resultType="long">
+        SELECT COUNT(*) FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+    </select>
+
+</mapper>

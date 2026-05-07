@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    인기 검색어 캐시 매퍼 XML.
+    SPEC-CMS-010 REQ-SEARCH-006/007: 캐시 UPSERT/조회/cleanup.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.search.repository.SearchPopularCacheMapper">
+
+    <resultMap id="popularCacheResultMap" type="kr.co.ircp.cms.domain.search.entity.SearchPopularCache">
+        <id property="id" column="id"/>
+        <result property="periodType" column="period_type"/>
+        <result property="periodDate" column="period_date"/>
+        <result property="locale" column="locale"/>
+        <result property="query" column="query"/>
+        <result property="searchCount" column="search_count"/>
+        <result property="rank" column="rank"/>
+        <result property="refreshedAt" column="refreshed_at"/>
+    </resultMap>
+
+    <!-- REQ-SEARCH-007: 인기 검색어 캐시 UPSERT -->
+    <insert id="upsert">
+        INSERT INTO search_popular_cache (
+            period_type, period_date, locale, query, search_count, rank, refreshed_at
+        ) VALUES (
+            #{periodType}, #{periodDate}, #{locale}, #{query}, #{searchCount}, #{rank}, NOW()
+        )
+        ON CONFLICT (period_type, period_date, locale, query) DO UPDATE
+           SET search_count = EXCLUDED.search_count,
+               rank         = EXCLUDED.rank,
+               refreshed_at = NOW()
+    </insert>
+
+    <!-- REQ-SEARCH-006: 인기 검색어 TOP-N 조회 (rank 오름차순) -->
+    <select id="findTopN" resultMap="popularCacheResultMap">
+        SELECT * FROM search_popular_cache
+         WHERE period_type = #{periodType}
+           AND period_date = #{periodDate}
+           AND locale      = #{locale}
+         ORDER BY rank ASC
+         LIMIT #{limit}
+    </select>
+
+    <!-- 재집계 cleanup -->
+    <delete id="deleteByPeriod">
+        DELETE FROM search_popular_cache
+         WHERE period_type = #{periodType}
+           AND period_date = #{periodDate}
+           AND locale      = #{locale}
+    </delete>
+
+    <select id="countCached" resultType="long">
+        SELECT COUNT(*) FROM search_popular_cache
+         WHERE period_type = #{periodType}
+           AND period_date = #{periodDate}
+           AND locale      = #{locale}
+    </select>
+
+</mapper>
