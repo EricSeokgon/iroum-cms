@@ -27,10 +27,10 @@ total_commits: 36 (이번 세션)
 
 - Frontend (admin): vue-tsc 0 에러, vite build 성공 (~22초, lazy code splitting)
 - Backend: compileJava + compileTestJava BUILD SUCCESSFUL
-- 단위 테스트 누적: **1107 테스트 / 통과 1107 / 실패 0 / 통과율 100%** (MigrationOrderIT 제외)
-- 커버리지 (JaCoCo Line 기준): **81.1%** (목표 85% 대비 -3.9pp)
-  - PASS (8): content 91.4% · safety 90.5% · board 87.3% · auth 85.4% · system 84.1% · kr(common) 84.2% · search 80.9% · policy 80.7%
-  - WARN (3): dashboard 74.6% · governance 64.2% · audit 61.7%
+- 단위 테스트 누적: **1225 테스트 / 통과 1225 / 실패 0 / 통과율 100%** (MigrationOrderIT 제외)
+- 커버리지 (JaCoCo Line 기준): **84.9%** (목표 85% 대비 -0.1pp, 거의 달성)
+  - PASS (9): governance 91.2% · content 91.4% · safety 90.5% · system 92.5% · board 87.3% · auth 85.4% · kr(common) 84.2% · search 80.9% · policy 80.7%
+  - WARN (2): dashboard 74.6% · audit 61.7%
   - FAIL (1): media 59.8%
 - Docker 빌드: 검증 완료
 - Testcontainers IT 26개: Docker 소켓 환경에서만 GREEN (build.gradle.kts에서 exclude 처리됨)
@@ -139,10 +139,10 @@ total_commits: 36 (이번 세션)
 | ~~2~~ | ~~governance 단위 테스트 보강~~ | ~~40~~ | **완료 — 64.2%** |
 | ~~3~~ | ~~system ServiceImpl 분기 보강~~ | ~~67~~ | **완료 — 84.1%** |
 | ~~4~~ | ~~content ServiceImpl 분기 보강~~ | ~~75~~ | **완료 — 91.4%** |
-| 5 | governance controller 테스트 보강 | 20 | +0.8pp (64.2% → ~70%) |
-| 6 | dashboard 분기 보강 | 20 | +0.5pp (74.6% → ~80%) |
-| 7 | media ServiceImpl 보강 | 20 | +0.5pp (59.8% → ~68%) |
-| **합계** | | **60** | **~83%** (목표 85% -2pp) |
+| ~~5~~ | ~~governance controller/QualityChecker/배치잡 보강~~ | ~~84~~ | **완료 — 91.2%** |
+| 6 | media ServiceImpl 미커버 분기 보강 | 20 | +1pp (59.8% → ~68%) |
+| 7 | dashboard SavedViewService/Layout 분기 보강 | 15 | +0.5pp (74.6% → ~80%) |
+| **현재** | | | **84.9%** (목표 85% -0.1pp) |
 
 ### 우선순위 P3 — 품질·보안 검증
 
