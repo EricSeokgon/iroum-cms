@@ -23,8 +23,9 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V18 마이그레이션 총 17개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    private static final int EXPECTED_MIGRATION_COUNT = 17;
+    // @MX:NOTE: [AUTO] V1~V24 마이그레이션 총 23개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // V24 (SPEC-CMS-SECURITY-PII-001) 추가로 23개 → V18 17개에서 6개(V19~V24) 증가.
+    private static final int EXPECTED_MIGRATION_COUNT = 23;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -35,7 +36,7 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 "WHERE type = 'SQL' " +
                 "ORDER BY installed_rank ASC");
 
-        // then — 16개 모두 성공
+        // then — 23개 모두 성공
         assertThat(rows)
                 .as("Flyway 마이그레이션이 모두 적용되어야 합니다")
                 .hasSize(EXPECTED_MIGRATION_COUNT);
@@ -53,6 +54,7 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 .toList();
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
-                "12", "13", "14", "15", "16", "17", "18");
+                "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
+                "22", "23", "24");
     }
 }

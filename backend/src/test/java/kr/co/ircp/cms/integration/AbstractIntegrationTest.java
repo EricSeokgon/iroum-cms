@@ -68,5 +68,9 @@ public abstract class AbstractIntegrationTest {
             registry.add("spring.datasource.username", POSTGRES::getUsername);
             registry.add("spring.datasource.password", POSTGRES::getPassword);
         }
+        // SPEC-CMS-SECURITY-PII-001 — V24 적용 후 EmailEncryptionService 가 통합 컨텍스트에서
+        // 기본 의존성으로 와이어링되므로, PII 키를 더미 32-byte base64 키로 주입한다.
+        registry.add("pii.keyvault.keys.v1", () -> "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=");
+        registry.add("pii.keyvault.hmac-key", () -> "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE=");
     }
 }
