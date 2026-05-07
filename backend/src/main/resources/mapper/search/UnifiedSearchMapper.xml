@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    통합 검색 매퍼 XML.
+
+    SPEC-CMS-010 REQ-SEARCH-001/004/005:
+      - searchUnified: 6개 도메인 UNION ALL + ts_rank_cd × 도메인 가중치 + ts_headline
+      - countUnified : 동일 UNION ALL 카운트
+      - autocomplete : 콘텐츠 제목(bbs_post.title, page.title, policies.title) pg_trgm prefix 매칭
+
+    설계 메모:
+      - 도메인별로 search_vector(GIN) 또는 pg_trgm GIN 인덱스를 입력으로 사용한다.
+      - policies / media는 search_vector가 항상 보장되지 않아 ILIKE fallback을 사용한다(주석 참고).
+      - locale=ko 는 to_tsvector('simple', ...), locale=en 은 to_tsvector('english', ...).
+      - bbs_post는 NORMAL/NOTICE/FAQ/QNA/PUBLICATION 모두 동일 GIN을 공유하며 docType은 bbs_master.code로 분기.
+      - 비공개 게시글(QnA is_secret=true 등)은 requesterId 매칭 또는 isAdmin=true 일 때만 노출.
+      - 모든 query 파라미터는 #{} 바인딩만 사용 (SQL injection 방지).
+-->
+<mapper namespace="kr.co.ircp.cms.domain.search.repository.UnifiedSearchMapper">
+
+    <!-- ─────────────────────────── 공통 SQL Fragments ─────────────────────────── -->
+
+    <!--
+        도메인별 가중치 lookup. weights 맵에서 안전하게 추출.
+        예: ${weight('board')} → COALESCE(#{weights.board}, 1.0)
+    -->
+
+    <!-- board 도메인 (bbs_post, bbs_id FK) — search_vector GIN 사용 -->
+    <sql id="boardSearchSql">
+        SELECT
+            'board'                                      AS doc_type,
+            bp.id                                        AS doc_id,
+            bp.title                                     AS title,
+            ts_headline('simple', COALESCE(bp.content_text, bp.title), websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            (ts_rank_cd(bp.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.board}) AS rank,
+            bp.created_at                                AS created_at,
+            ('/board/' || bm.code || '/' || bp.id)       AS url,
+            'board'                                      AS domain
+        FROM bbs_post bp
+        JOIN bbs_master bm ON bm.id = bp.bbs_id
+        WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
+          AND bp.deleted_at IS NULL
+          AND COALESCE(bm.board_type, '') &lt;&gt; 'PUBLICATION'
+          AND (#{isAdmin} = true OR bp.is_secret = false OR bp.author_id = #{requesterId})
+    </sql>
+
+    <!-- publication 도메인 (bbs_post WHERE bbs_master.board_type='PUBLICATION') -->
+    <sql id="publicationSearchSql">
+        SELECT
+            'publication'                                AS doc_type,
+            bp.id                                        AS doc_id,
+            bp.title                                     AS title,
+            ts_headline('simple', COALESCE(bp.content_text, bp.title), websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            (ts_rank_cd(bp.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.publication}) AS rank,
+            bp.created_at                                AS created_at,
+            ('/publications/' || bp.id)                  AS url,
+            'publication'                                AS domain
+        FROM bbs_post bp
+        JOIN bbs_master bm ON bm.id = bp.bbs_id
+        WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
+          AND bp.deleted_at IS NULL
+          AND bm.board_type = 'PUBLICATION'
+    </sql>
+
+    <!-- content 도메인 (page) — tsv_ko/tsv_en 미존재, title ILIKE fallback -->
+    <sql id="contentSearchSql">
+        SELECT
+            'content'                                    AS doc_type,
+            p.id                                         AS doc_id,
+            p.title                                      AS title,
+            SUBSTRING(p.title FROM 1 FOR 200)            AS snippet,
+            (CASE WHEN p.title ILIKE '%' || #{query} || '%' THEN 0.9 ELSE 0.5 END
+             * #{weights.content})                       AS rank,
+            p.created_at                                 AS created_at,
+            ('/contents/' || p.id)                       AS url,
+            'content'                                    AS domain
+        FROM page p
+        WHERE p.title ILIKE '%' || #{query} || '%'
+          AND p.deleted_at IS NULL
+          AND p.status = 'PUBLISHED'
+    </sql>
+
+    <!-- policy 도메인 (policy_program) — program_name/description_html ILIKE fallback -->
+    <sql id="policySearchSql">
+        SELECT
+            'policy'                                     AS doc_type,
+            pp.id                                        AS doc_id,
+            pp.program_name                              AS title,
+            CASE
+                WHEN pp.description_html IS NOT NULL AND LENGTH(pp.description_html) &gt; 0
+                    THEN SUBSTRING(pp.description_html FROM 1 FOR 200)
+                ELSE pp.program_name
+            END                                          AS snippet,
+            (
+              CASE
+                WHEN pp.program_name ILIKE '%' || #{query} || '%' THEN 0.8
+                WHEN pp.description_html ILIKE '%' || #{query} || '%' THEN 0.5
+                ELSE 0.3
+              END * #{weights.policy}
+            )                                            AS rank,
+            pp.created_at                                AS created_at,
+            ('/policies/' || pp.id)                      AS url,
+            'policy'                                     AS domain
+        FROM policy_program pp
+        WHERE (pp.program_name ILIKE '%' || #{query} || '%'
+               OR pp.description_html ILIKE '%' || #{query} || '%')
+          AND pp.status = 'ACTIVE'
+    </sql>
+
+    <!-- safety 도메인 (safety_incident) — search_vector GIN, summary 컬럼 사용 -->
+    <sql id="safetySearchSql">
+        SELECT
+            'safety'                                     AS doc_type,
+            si.id                                        AS doc_id,
+            si.summary                                   AS title,
+            ts_headline('simple', si.summary, websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            (ts_rank_cd(si.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.safety}) AS rank,
+            si.created_at                                AS created_at,
+            ('/safety/incidents/' || si.id)              AS url,
+            'safety'                                     AS domain
+        FROM safety_incident si
+        WHERE si.search_vector @@ websearch_to_tsquery('simple', #{query})
+          AND si.status = 'PUBLISHED'
+    </sql>
+
+    <!-- media 도메인 (media_asset) — original_filename / description ILIKE fallback -->
+    <sql id="mediaSearchSql">
+        SELECT
+            'media'                                      AS doc_type,
+            ma.id                                        AS doc_id,
+            ma.original_filename                         AS title,
+            COALESCE(SUBSTRING(ma.description FROM 1 FOR 200), ma.original_filename) AS snippet,
+            (0.5 * #{weights.media})                     AS rank,
+            ma.created_at                                AS created_at,
+            ('/media/' || ma.id)                         AS url,
+            'media'                                      AS domain
+        FROM media_asset ma
+        WHERE (ma.original_filename ILIKE '%' || #{query} || '%'
+               OR ma.description ILIKE '%' || #{query} || '%')
+          AND ma.deleted_at IS NULL
+          AND ma.status = 'READY'
+    </sql>
+
+    <!-- ─────────────────────────── searchUnified ─────────────────────────── -->
+
+    <select id="searchUnified" resultType="map">
+        SELECT * FROM (
+            <trim prefixOverrides="UNION ALL">
+                <if test="domain == 'ALL' or domain == 'board'">
+                    <include refid="boardSearchSql"/>
+                </if>
+                <if test="domain == 'ALL' or domain == 'publication'">
+                    UNION ALL
+                    <include refid="publicationSearchSql"/>
+                </if>
+                <if test="domain == 'ALL' or domain == 'content'">
+                    UNION ALL
+                    <include refid="contentSearchSql"/>
+                </if>
+                <if test="domain == 'ALL' or domain == 'policy'">
+                    UNION ALL
+                    <include refid="policySearchSql"/>
+                </if>
+                <if test="domain == 'ALL' or domain == 'safety'">
+                    UNION ALL
+                    <include refid="safetySearchSql"/>
+                </if>
+                <if test="domain == 'ALL' or domain == 'media'">
+                    UNION ALL
+                    <include refid="mediaSearchSql"/>
+                </if>
+            </trim>
+        ) unified
+        ORDER BY rank DESC, created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- ─────────────────────────── countUnified ─────────────────────────── -->
+
+    <select id="countUnified" resultType="long">
+        SELECT COUNT(*) FROM (
+            <trim prefixOverrides="UNION ALL">
+                <if test="domain == 'ALL' or domain == 'board'">
+                    SELECT 1 FROM bbs_post bp
+                    JOIN bbs_master bm ON bm.id = bp.bbs_id
+                    WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
+                      AND bp.deleted_at IS NULL
+                      AND COALESCE(bm.board_type, '') &lt;&gt; 'PUBLICATION'
+                      AND (#{isAdmin} = true OR bp.is_secret = false OR bp.author_id = #{requesterId})
+                </if>
+                <if test="domain == 'ALL' or domain == 'publication'">
+                    UNION ALL
+                    SELECT 1 FROM bbs_post bp
+                    JOIN bbs_master bm ON bm.id = bp.bbs_id
+                    WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
+                      AND bp.deleted_at IS NULL
+                      AND bm.board_type = 'PUBLICATION'
+                </if>
+                <if test="domain == 'ALL' or domain == 'content'">
+                    UNION ALL
+                    SELECT 1 FROM page p
+                    WHERE p.title ILIKE '%' || #{query} || '%'
+                      AND p.deleted_at IS NULL
+                      AND p.status = 'PUBLISHED'
+                </if>
+                <if test="domain == 'ALL' or domain == 'policy'">
+                    UNION ALL
+                    SELECT 1 FROM policy_program pp
+                    WHERE (pp.program_name ILIKE '%' || #{query} || '%'
+                           OR pp.description_html ILIKE '%' || #{query} || '%')
+                      AND pp.status = 'ACTIVE'
+                </if>
+                <if test="domain == 'ALL' or domain == 'safety'">
+                    UNION ALL
+                    SELECT 1 FROM safety_incident si
+                    WHERE si.search_vector @@ websearch_to_tsquery('simple', #{query})
+                      AND si.status = 'PUBLISHED'
+                </if>
+                <if test="domain == 'ALL' or domain == 'media'">
+                    UNION ALL
+                    SELECT 1 FROM media_asset ma
+                    WHERE (ma.original_filename ILIKE '%' || #{query} || '%'
+                           OR ma.description ILIKE '%' || #{query} || '%')
+                      AND ma.deleted_at IS NULL
+                      AND ma.status = 'READY'
+                </if>
+            </trim>
+        ) c
+    </select>
+
+    <!-- ─────────────────────────── autocomplete (콘텐츠 제목 단독) ─────────────────────────── -->
+
+    <select id="autocomplete" resultType="map">
+        SELECT term, similarity FROM (
+            SELECT bp.title AS term, similarity(bp.title, #{prefix}) AS similarity
+              FROM bbs_post bp
+             WHERE bp.title % #{prefix}
+               AND bp.deleted_at IS NULL
+            UNION ALL
+            SELECT p.title AS term, similarity(p.title, #{prefix}) AS similarity
+              FROM page p
+             WHERE p.title % #{prefix}
+               AND p.deleted_at IS NULL
+               AND p.status = 'PUBLISHED'
+            UNION ALL
+            SELECT pp.program_name AS term, similarity(pp.program_name, #{prefix}) AS similarity
+              FROM policy_program pp
+             WHERE pp.program_name % #{prefix}
+               AND pp.status = 'ACTIVE'
+        ) auto
+        WHERE similarity &gt;= 0.3
+        ORDER BY similarity DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- ─────────────────────────── 운영자 통계 (REQ-SEARCH-008) ───────────────────── -->
+
+    <!-- 기간 내 normalized_query 빈도 상위 N -->
+    <select id="topQueries" resultType="map">
+        SELECT
+            normalized_query AS "query",
+            COUNT(*)         AS "count"
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+        GROUP BY normalized_query
+        ORDER BY "count" DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 0건 검색 비율 (전체 검색 대비) -->
+    <select id="zeroResultRatio" resultType="double">
+        SELECT
+            CASE WHEN COUNT(*) = 0 THEN 0.0
+                 ELSE SUM(CASE WHEN result_count = 0 THEN 1 ELSE 0 END)::float / COUNT(*)::float
+            END
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+    </select>
+
+    <!-- 평균 응답시간(ms) -->
+    <select id="avgResponseMs" resultType="double">
+        SELECT COALESCE(AVG(response_ms), 0.0)
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+    </select>
+
+    <!-- 총 검색 수 -->
+    <select id="totalSearchCount" resultType="long">
+        SELECT COUNT(*)
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
+    </select>
+
+</mapper>

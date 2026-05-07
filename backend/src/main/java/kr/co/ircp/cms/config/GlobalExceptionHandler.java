@@ -56,6 +56,14 @@ import kr.co.ircp.cms.domain.safety.exception.SafetyKeywordNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyProfileNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyReportNotFoundException;
 import kr.co.ircp.cms.domain.safety.exception.SafetyTemplateNotFoundException;
+import kr.co.ircp.cms.domain.search.exception.DuplicateSynonymException;
+import kr.co.ircp.cms.domain.search.exception.SearchClickWindowExpiredException;
+import kr.co.ircp.cms.domain.search.exception.SearchDomainInvalidException;
+import kr.co.ircp.cms.domain.search.exception.SearchLocaleUnsupportedException;
+import kr.co.ircp.cms.domain.search.exception.SearchLogNotFoundException;
+import kr.co.ircp.cms.domain.search.exception.SearchQueryTooLongException;
+import kr.co.ircp.cms.domain.search.exception.SynonymNotFoundException;
+import kr.co.ircp.cms.domain.search.exception.SynonymSelfException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -791,6 +799,85 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, "Access Denied");
         detail.setTitle("Forbidden");
         detail.setProperty("code", "ACCESS_DENIED");
+        return detail;
+    }
+
+    // ─── REQ-SEARCH-001~009 통합 검색 예외 (SPEC-CMS-010) ──────────────────────
+
+    /** 검색 쿼리 길이 초과 → 400. REQ-SEARCH-001 / REQ-SEARCH-005 */
+    @ExceptionHandler(SearchQueryTooLongException.class)
+    public ProblemDetail handleSearchQueryTooLong(SearchQueryTooLongException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Search Query Too Long");
+        detail.setProperty("code", "SEARCH_QUERY_TOO_LONG");
+        detail.setProperty("actual", ex.getActual());
+        detail.setProperty("max", ex.getMax());
+        return detail;
+    }
+
+    /** 지원되지 않는 검색 도메인 → 400. REQ-SEARCH-004 */
+    @ExceptionHandler(SearchDomainInvalidException.class)
+    public ProblemDetail handleSearchDomainInvalid(SearchDomainInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Search Domain Invalid");
+        detail.setProperty("code", "SEARCH_DOMAIN_INVALID");
+        detail.setProperty("domain", ex.getDomain());
+        return detail;
+    }
+
+    /** 지원되지 않는 locale → 400. REQ-SEARCH-010 */
+    @ExceptionHandler(SearchLocaleUnsupportedException.class)
+    public ProblemDetail handleSearchLocaleUnsupported(SearchLocaleUnsupportedException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Search Locale Unsupported");
+        detail.setProperty("code", "SEARCH_LOCALE_UNSUPPORTED");
+        detail.setProperty("locale", ex.getLocale());
+        return detail;
+    }
+
+    /** 검색 클릭 윈도우 만료 → 410 Gone. REQ-SEARCH-008 */
+    @ExceptionHandler(SearchClickWindowExpiredException.class)
+    public ProblemDetail handleSearchClickWindowExpired(SearchClickWindowExpiredException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.GONE, ex.getMessage());
+        detail.setTitle("Search Click Window Expired");
+        detail.setProperty("code", "SEARCH_CLICK_WINDOW_EXPIRED");
+        detail.setProperty("searchLogId", ex.getSearchLogId());
+        return detail;
+    }
+
+    /** 검색 로그 미존재 → 404. REQ-SEARCH-008 */
+    @ExceptionHandler(SearchLogNotFoundException.class)
+    public ProblemDetail handleSearchLogNotFound(SearchLogNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Search Log Not Found");
+        detail.setProperty("code", "SEARCH_LOG_NOT_FOUND");
+        return detail;
+    }
+
+    /** 동의어 중복 → 409. REQ-SEARCH-009 */
+    @ExceptionHandler(DuplicateSynonymException.class)
+    public ProblemDetail handleDuplicateSynonym(DuplicateSynonymException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate Synonym");
+        detail.setProperty("code", "SEARCH_SYNONYM_DUPLICATE");
+        return detail;
+    }
+
+    /** 동의어 자기참조 → 400. REQ-SEARCH-009 */
+    @ExceptionHandler(SynonymSelfException.class)
+    public ProblemDetail handleSynonymSelf(SynonymSelfException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Synonym Self Reference");
+        detail.setProperty("code", "SEARCH_SYNONYM_SELF");
+        return detail;
+    }
+
+    /** 동의어 미존재 → 404. REQ-SEARCH-009 */
+    @ExceptionHandler(SynonymNotFoundException.class)
+    public ProblemDetail handleSynonymNotFound(SynonymNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Synonym Not Found");
+        detail.setProperty("code", "SEARCH_SYNONYM_NOT_FOUND");
         return detail;
     }
 }

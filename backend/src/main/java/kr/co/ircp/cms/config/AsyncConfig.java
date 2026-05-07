@@ -54,4 +54,22 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * 검색 로그 비동기 저장 전용 실행기.
+     * SPEC-CMS-010 REQ-SEARCH-008: SearchLogAsyncService → SearchLogMapper.insert 비동기 적재.
+     * 검색 응답 지연을 막기 위해 분리. 큐 포화 시 DiscardPolicy로 로그 유실 허용.
+     */
+    @Bean(name = "searchLogExecutor")
+    public Executor searchLogExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(4);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("search-log-");
+        // 큐 포화 시 조용히 폐기 (검색 응답 영향 방지)
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

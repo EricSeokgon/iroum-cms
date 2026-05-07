@@ -90,6 +90,18 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/v1/surveys/*/responses"
                 ).permitAll()
+                // SPEC-CMS-010 REQ-SEARCH-001/005/006/008: 통합 검색·자동완성·인기·클릭 PUBLIC
+                // 단, /api/v1/search/synonyms 는 ADMIN 전용(@PreAuthorize 로 별도 통제)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/search",
+                    "/api/v1/search/autocomplete",
+                    "/api/v1/search/popular"
+                ).permitAll()
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/search/click"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입
