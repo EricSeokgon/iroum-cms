@@ -23,6 +23,7 @@
     "faq": "FAQ 관리",
     "qna": "Q&A 관리",
     "publication": "발간자료",
+    "survey": "설문조사",
     "media": "미디어 라이브러리",
     "mediaCollections": "미디어 컬렉션",
     "content": "콘텐츠 관리",
@@ -361,6 +362,10 @@
     "exportError": "내보내기에 실패했습니다",
     "actions": "액션",
     "loading": "불러오는 중...",
+    "close": "닫기",
+    "optional": "선택 사항",
+    "empty": "데이터가 없습니다",
+    "createdAt": "등록일",
     "error": {
       "network": "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
       "unknown": "알 수 없는 오류가 발생했습니다"
