@@ -35,27 +35,58 @@
         <result property="updatedAt"         column="updated_at"/>
         <result property="deletedAt"         column="deleted_at"/>
         <result property="organizationId"    column="organization_id"/>
+        <!-- SPEC-CMS-SECURITY-PII-001 V24 — PII 암호화 컬럼 매핑 -->
+        <result property="emailEncrypted"    column="email_encrypted"/>
+        <result property="emailIv"           column="email_iv"/>
+        <result property="emailTag"          column="email_tag"/>
+        <result property="emailKeyVersion"   column="email_key_version"/>
+        <result property="emailHmac"         column="email_hmac"/>
     </resultMap>
+
+    <!--
+      공통 SELECT 컬럼 sql fragment.
+      V24 적용 후 PII 암호화 컬럼 (email_encrypted/iv/tag/hmac/key_version) 포함.
+      평문 email 컬럼은 V25에서 DROP 예정 (현재는 backward compat).
+    -->
+    <sql id="userSelectColumns">
+        id, uuid, username, email, password_hash, name,
+        status, fail_count, locked_until, last_login_at,
+        password_changed_at, created_at, updated_at, deleted_at,
+        organization_id,
+        email_encrypted, email_iv, email_tag, email_hmac, email_key_version
+    </sql>
 
     <!-- username으로 사용자 조회 (소프트 삭제 제외) -->
     <select id="findByUsername" parameterType="string" resultMap="userResultMap">
-        SELECT id, uuid, username, email, password_hash, name,
-               status, fail_count, locked_until, last_login_at,
-               password_changed_at, created_at, updated_at, deleted_at,
-               organization_id
+        SELECT <include refid="userSelectColumns"/>
         FROM users
         WHERE username = #{username}
           AND deleted_at IS NULL
     </select>
 
-    <!-- email_hash로 사용자 조회 (REQ-AUTH-017-D-3 비밀번호 재설정) -->
+    <!--
+      email_hash로 사용자 조회 (DEPRECATED).
+      SPEC-CMS-SECURITY-PII-001 V24 적용 후 email_hash 컬럼은 존재하지 않을 수 있다
+      (V2 스키마에 미정의, V25에서 명시적 DROP 예정).
+      신규 호출은 findByEmailHmac 으로 마이그레이션해야 한다.
+      본 쿼리는 backward compat 차원에서 유지되나 실제 매칭은 항상 0건이다.
+    -->
     <select id="findByEmailHash" resultMap="userResultMap">
-        SELECT id, uuid, username, email, password_hash, name,
-               status, fail_count, locked_until, last_login_at,
-               password_changed_at, created_at, updated_at, deleted_at,
-               organization_id
+        SELECT <include refid="userSelectColumns"/>
         FROM users
-        WHERE email_hash = #{emailHash}
+        WHERE email_hmac = #{emailHash}
+          AND deleted_at IS NULL
+        LIMIT 1
+    </select>
+
+    <!--
+      email_hmac 으로 사용자 조회 (REQ-PII-EMAIL-006).
+      SPEC-CMS-SECURITY-PII-001 V24 신규 — HMAC-SHA256 매칭 lookup 표준 경로.
+    -->
+    <select id="findByEmailHmac" resultMap="userResultMap">
+        SELECT <include refid="userSelectColumns"/>
+        FROM users
+        WHERE email_hmac = #{emailHmac}
           AND deleted_at IS NULL
         LIMIT 1
     </select>
@@ -99,10 +130,7 @@
 
     <!-- PK로 사용자 단건 조회 (소프트 삭제 제외) -->
     <select id="findById" resultMap="userResultMap">
-        SELECT id, uuid, username, email AS email, password_hash, name,
-               status, fail_count, locked_until, last_login_at,
-               password_changed_at, created_at, updated_at, deleted_at,
-               organization_id
+        SELECT <include refid="userSelectColumns"/>
         FROM users
         WHERE id = #{id}
           AND deleted_at IS NULL
@@ -223,22 +251,41 @@
         </where>
     </select>
 
-    <!-- 사용자 신규 삽입 (useGeneratedKeys로 id 채움) -->
+    <!--
+      사용자 신규 삽입 (useGeneratedKeys로 id 채움).
+      V24 적용 후 email 평문 컬럼은 backward compat 차원에서 NULL 허용으로 INSERT.
+      서비스 레이어에서 emailEncrypted/Iv/Tag/Hmac/KeyVersion 필드 채워서 전달해야 한다.
+    -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO users (username, email, password_hash, name, status,
-                           password_changed_at, created_at, updated_at)
-        VALUES (#{username}, #{email}, #{passwordHash}, #{name},
-                COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
-                NOW(), NOW(), NOW())
+        INSERT INTO users (
+            username, email, password_hash, name, status,
+            email_encrypted, email_iv, email_tag, email_hmac, email_key_version,
+            password_changed_at, created_at, updated_at
+        )
+        VALUES (
+            #{username}, #{email}, #{passwordHash}, #{name},
+            COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
+            #{emailEncrypted}, #{emailIv}, #{emailTag}, #{emailHmac},
+            COALESCE(#{emailKeyVersion}, 1),
+            NOW(), NOW(), NOW()
+        )
     </insert>
 
-    <!-- 사용자 정보 수정 (email, name, status, updated_at) -->
+    <!--
+      사용자 정보 수정 (email, name, status + V24 PII 암호화 컬럼).
+      email* 필드를 동시에 set 하지 않으면 기존 값을 유지한다 (COALESCE).
+    -->
     <update id="update">
         UPDATE users
-        SET email      = COALESCE(#{email}, email),
-            name       = COALESCE(#{name}, name),
-            status     = COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, status),
-            updated_at = NOW()
+        SET email             = COALESCE(#{email}, email),
+            name              = COALESCE(#{name}, name),
+            status            = COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, status),
+            email_encrypted   = COALESCE(#{emailEncrypted}, email_encrypted),
+            email_iv          = COALESCE(#{emailIv},        email_iv),
+            email_tag         = COALESCE(#{emailTag},       email_tag),
+            email_hmac        = COALESCE(#{emailHmac},      email_hmac),
+            email_key_version = COALESCE(#{emailKeyVersion},email_key_version),
+            updated_at        = NOW()
         WHERE id = #{id}
           AND deleted_at IS NULL
     </update>

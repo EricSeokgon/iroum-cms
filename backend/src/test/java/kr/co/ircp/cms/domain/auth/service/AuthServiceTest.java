@@ -65,6 +65,7 @@ class AuthServiceTest {
     @Mock private PermissionService permissionService;
     @Mock private VerificationService verificationService;
     @Mock private EmailService emailService;
+    @Mock private kr.co.ircp.cms.domain.security.pii.EmailEncryptionService emailEncryptionService;
 
     private JwtProperties jwtProperties;
     private AuthService authService;
@@ -80,7 +81,10 @@ class AuthServiceTest {
                 userMapper, refreshTokenMapper, loginHistoryMapper,
                 tokenBlacklistMapper, jwtTokenProvider, passwordPolicyService,
                 passwordHistoryMapper, jwtProperties, permissionService,
-                verificationService, emailService);
+                verificationService, emailService, emailEncryptionService);
+        // SPEC-CMS-SECURITY-PII-001 — password reset flow 가 호출하는 HMAC 격상 stub.
+        org.mockito.Mockito.lenient().when(emailEncryptionService.computeHmac(anyString()))
+                .thenAnswer(inv -> "hmac-of-" + inv.getArgument(0).toString().toLowerCase());
     }
 
     // ============================================================
@@ -459,11 +463,11 @@ class AuthServiceTest {
     @Test
     @DisplayName("REQ-AUTH-017-D-3: requestPasswordReset — 등록된 이메일이면 VerificationService.request 호출")
     void requestPasswordReset_invokesVerification() {
-        // given
+        // given — SPEC-CMS-SECURITY-PII-001 V24 적용 후 HMAC lookup 으로 변경
         String email = "user@example.com";
-        String emailHash = sha256Hex(email);
+        String emailHmac = "hmac-of-" + email.toLowerCase();
         User user = activeUser(100L, "user", 0);
-        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.of(user));
+        when(userMapper.findByEmailHmac(emailHmac)).thenReturn(Optional.of(user));
 
         // when
         authService.requestPasswordReset(email, "127.0.0.1", "JUnit");
@@ -477,8 +481,8 @@ class AuthServiceTest {
     void requestPasswordReset_returnsSameMessage_forNonExistentEmail() {
         // given
         String email = "unknown@example.com";
-        String emailHash = sha256Hex(email);
-        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.empty());
+        String emailHmac = "hmac-of-" + email.toLowerCase();
+        when(userMapper.findByEmailHmac(emailHmac)).thenReturn(Optional.empty());
 
         // when — 예외 없이 정상 반환
         authService.requestPasswordReset(email, "127.0.0.1", "JUnit");
@@ -493,7 +497,7 @@ class AuthServiceTest {
         // given
         String token = "a".repeat(64);
         String email = "user@example.com";
-        String emailHash = sha256Hex(email);
+        String emailHmac = "hmac-of-" + email.toLowerCase();
         VerificationRequest vr = VerificationRequest.builder()
             .status(VerificationStatus.VERIFIED)
             .verifiedAt(Instant.now().minusSeconds(10))
@@ -503,7 +507,7 @@ class AuthServiceTest {
         when(verificationService.validateVerifiedToken(token, VerificationPurpose.PASSWORD_RESET))
             .thenReturn(Optional.of(vr));
         User user = activeUser(101L, "user", 0);
-        when(userMapper.findByEmailHash(emailHash)).thenReturn(Optional.of(user));
+        when(userMapper.findByEmailHmac(emailHmac)).thenReturn(Optional.of(user));
         when(passwordHistoryMapper.findRecentHashes(101L, 5)).thenReturn(List.of());
         when(passwordPolicyService.matches(eq("NewP@ss789!"), any())).thenReturn(false);
         when(passwordPolicyService.hash("NewP@ss789!")).thenReturn("$2a$12$newHash");

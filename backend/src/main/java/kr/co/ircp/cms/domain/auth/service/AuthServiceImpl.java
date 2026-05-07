@@ -26,6 +26,7 @@ import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.auth.service.PermissionService;
 import kr.co.ircp.cms.domain.auth.util.HashUtil;
+import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,11 @@ public class AuthServiceImpl implements AuthService {
     private final PermissionService permissionService;
     private final VerificationService verificationService;
     private final EmailService emailService;
+    /**
+     * SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-006 — email lookup HMAC 격상.
+     * findByEmailHash(SHA-256) 경로를 findByEmailHmac(HMAC-SHA256) 으로 자동 마이그레이션한다.
+     */
+    private final EmailEncryptionService emailEncryptionService;
 
     public AuthServiceImpl(
             UserMapper userMapper,
@@ -70,7 +76,8 @@ public class AuthServiceImpl implements AuthService {
             JwtProperties jwtProperties,
             PermissionService permissionService,
             VerificationService verificationService,
-            EmailService emailService) {
+            EmailService emailService,
+            EmailEncryptionService emailEncryptionService) {
         this.userMapper = userMapper;
         this.refreshTokenMapper = refreshTokenMapper;
         this.loginHistoryMapper = loginHistoryMapper;
@@ -82,6 +89,7 @@ public class AuthServiceImpl implements AuthService {
         this.permissionService = permissionService;
         this.verificationService = verificationService;
         this.emailService = emailService;
+        this.emailEncryptionService = emailEncryptionService;
     }
 
     /**
@@ -339,8 +347,9 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void requestPasswordReset(String email, String ipAddress, String userAgent) {
         // 사용자 조회 — 미존재여도 예외를 던지지 않음 (enumeration 방지)
-        String emailHash = HashUtil.sha256Hex(email);
-        userMapper.findByEmailHash(emailHash).ifPresent(user -> {
+        // SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-006 — HMAC 매칭 lookup 으로 격상.
+        String emailHmac = emailEncryptionService.computeHmac(email);
+        userMapper.findByEmailHmac(emailHmac).ifPresent(user -> {
             // 존재하는 사용자에 한해 OTP 발송
             VerifyRequestRequest verifyReq = new VerifyRequestRequest(
                 "EMAIL", email, "PASSWORD_RESET");
@@ -372,8 +381,9 @@ public class AuthServiceImpl implements AuthService {
             .orElseThrow(InvalidVerifiedTokenException::new);
 
         // 2. 이메일로 사용자 조회
-        String emailHash = HashUtil.sha256Hex(vr.getTarget());
-        User user = userMapper.findByEmailHash(emailHash)
+        // SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-006 — HMAC 매칭 lookup 으로 격상.
+        String emailHmac = emailEncryptionService.computeHmac(vr.getTarget());
+        User user = userMapper.findByEmailHmac(emailHmac)
             .orElseThrow(InvalidVerifiedTokenException::new);
 
         // 3. 새 비밀번호 정책 검증

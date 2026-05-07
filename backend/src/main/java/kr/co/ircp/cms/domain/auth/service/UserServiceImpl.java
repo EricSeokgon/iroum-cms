@@ -18,6 +18,8 @@ import kr.co.ircp.cms.domain.auth.repository.OrganizationMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
+import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
+import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +59,11 @@ public class UserServiceImpl implements UserService {
     private final PasswordPolicyService passwordPolicyService;
     private final OrganizationMapper organizationMapper;
     private final PermissionChangeHistoryService permissionChangeHistoryService;
+    /**
+     * SPEC-CMS-SECURITY-PII-001 V24 — email AES-256-GCM 암호화 + HMAC 격상 서비스.
+     * create/update 경로에서 평문 email 을 암호화하여 emailEncrypted/Iv/Tag/Hmac/KeyVersion 컬럼에 저장한다.
+     */
+    private final EmailEncryptionService emailEncryptionService;
 
     // @MX:ANCHOR: [AUTO] findPage — 사용자 목록 API 진입점, UserController.list 호출
     // @MX:REASON: 페이징·검색·정렬 복합 쿼리; sort 파라미터 화이트리스트 검증 포함 (fan_in >= 3)
@@ -142,12 +149,21 @@ public class UserServiceImpl implements UserService {
                 ? UserStatus.valueOf(req.status())
                 : UserStatus.ACTIVE;
 
+        // SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-001/003 — email AES-256-GCM 암호화 + HMAC 격상
+        EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(req.email());
+        String emailHmac = emailEncryptionService.computeHmac(req.email());
+
         User user = User.builder()
                 .username(req.username())
-                .email(req.email())
+                .email(req.email())                                  // 메모리 평문 (V25 전까지 컬럼도 평문)
                 .passwordHash(hashed)
                 .name(req.name())
                 .status(initialStatus)
+                .emailEncrypted(encryptedEmail.ciphertext())
+                .emailIv(encryptedEmail.iv())
+                .emailTag(encryptedEmail.tag())
+                .emailKeyVersion(encryptedEmail.keyVersion())
+                .emailHmac(emailHmac)
                 .build();
 
         userMapper.insert(user);
@@ -173,12 +189,22 @@ public class UserServiceImpl implements UserService {
 
         UserStatus newStatus = req.status() != null ? UserStatus.valueOf(req.status()) : null;
 
-        User patch = User.builder()
+        // SPEC-CMS-SECURITY-PII-001 — email 변경 시 신규 암호화 + 신규 HMAC 적재
+        User.UserBuilder patchBuilder = User.builder()
                 .id(id)
                 .email(req.email())
                 .name(req.name())
-                .status(newStatus)
-                .build();
+                .status(newStatus);
+        if (req.email() != null) {
+            EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(req.email());
+            patchBuilder
+                    .emailEncrypted(encryptedEmail.ciphertext())
+                    .emailIv(encryptedEmail.iv())
+                    .emailTag(encryptedEmail.tag())
+                    .emailKeyVersion(encryptedEmail.keyVersion())
+                    .emailHmac(emailEncryptionService.computeHmac(req.email()));
+        }
+        User patch = patchBuilder.build();
 
         userMapper.update(patch);
 
@@ -257,12 +283,21 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFoundException(currentUserId));
 
         // 이메일·이름만 수정 가능 (status·role 제외)
-        User patch = User.builder()
+        // SPEC-CMS-SECURITY-PII-001 — email 변경 시 신규 암호화 + HMAC 적재
+        User.UserBuilder patchBuilder = User.builder()
                 .id(currentUserId)
                 .email(req.email())
-                .name(req.name())
-                .build();
-        userMapper.update(patch);
+                .name(req.name());
+        if (req.email() != null) {
+            EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(req.email());
+            patchBuilder
+                    .emailEncrypted(encryptedEmail.ciphertext())
+                    .emailIv(encryptedEmail.iv())
+                    .emailTag(encryptedEmail.tag())
+                    .emailKeyVersion(encryptedEmail.keyVersion())
+                    .emailHmac(emailEncryptionService.computeHmac(req.email()));
+        }
+        userMapper.update(patchBuilder.build());
 
         return getMe(currentUserId);
     }

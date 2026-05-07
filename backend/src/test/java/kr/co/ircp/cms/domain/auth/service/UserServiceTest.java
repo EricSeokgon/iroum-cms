@@ -19,6 +19,8 @@ import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
 import kr.co.ircp.cms.domain.auth.repository.OrganizationMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
+import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
+import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,13 +60,27 @@ class UserServiceTest {
     @Mock private PasswordPolicyService passwordPolicyService;
     @Mock private OrganizationMapper organizationMapper;
     @Mock private PermissionChangeHistoryService permissionChangeHistoryService;
+    @Mock private EmailEncryptionService emailEncryptionService;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
         userService = new UserServiceImpl(userMapper, refreshTokenMapper,
-                passwordPolicyService, organizationMapper, permissionChangeHistoryService);
+                passwordPolicyService, organizationMapper, permissionChangeHistoryService,
+                emailEncryptionService);
+
+        // SPEC-CMS-SECURITY-PII-001 — create/update 경로에서 호출되는 암호화 서비스 기본 stub.
+        // 12-byte IV / 16-byte tag 형상 충족. lenient로 호출 안 한 테스트는 무시.
+        org.mockito.Mockito.lenient().when(emailEncryptionService.encrypt(anyString()))
+                .thenReturn(new EncryptedEmail(
+                        new byte[]{1, 2, 3, 4},
+                        new byte[12],
+                        new byte[16],
+                        1
+                ));
+        org.mockito.Mockito.lenient().when(emailEncryptionService.computeHmac(anyString()))
+                .thenReturn("a".repeat(64));
     }
 
     // ──────────────────────────────────────────────────────────────

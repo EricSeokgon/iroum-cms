@@ -36,8 +36,23 @@ public interface UserMapper {
      * deleted_at IS NULL 조건 포함.
      *
      * @param emailHash SHA-256(이메일) 해시값
+     * @deprecated V24 적용 이후로 {@link #findByEmailHmac(String)} 사용 권장.
+     *             V25 적용 후 본 메서드는 제거된다 (SPEC-CMS-SECURITY-PII-001).
      */
+    @Deprecated
     Optional<User> findByEmailHash(@Param("emailHash") String emailHash);
+
+    /**
+     * email_hmac 으로 사용자 조회 (REQ-PII-EMAIL-006).
+     *
+     * <p>SPEC-CMS-SECURITY-PII-001 — V24 적용 후 lookup 표준 경로.
+     * 입력은 hex 64 chars (HMAC-SHA256). 호출자는 normalizedEmail 에 대해
+     * {@link kr.co.ircp.cms.domain.security.pii.EmailEncryptionService#computeHmac(String)} 결과를 전달해야 한다.
+     * deleted_at IS NULL 조건 포함.
+     *
+     * @param emailHmac HMAC-SHA256 hex 64 chars
+     */
+    Optional<User> findByEmailHmac(@Param("emailHmac") String emailHmac);
 
     /**
      * PK로 사용자 조회.
