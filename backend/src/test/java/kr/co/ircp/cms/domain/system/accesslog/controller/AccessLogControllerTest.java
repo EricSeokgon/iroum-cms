@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,7 +41,7 @@ class AccessLogControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    // AccessLogService는 WebMvcTestInfraConfig에서 @MockBean으로 등록됨 — 동일 빈을 주입받아 stubbing
+    // AccessLogService는 WebMvcTestInfraConfig에서 @MockitoBean으로 등록됨 — 동일 빈을 주입받아 stubbing
     @Autowired
     private AccessLogService accessLogService;
 

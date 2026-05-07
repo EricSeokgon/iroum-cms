@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,10 +60,10 @@ class SecurityConfigIntegrationTest {
 
     // JwtTokenProvider, TokenBlacklistMapper는 Mock으로 대체하여
     // DB 토큰 저장 없이 필터 시나리오를 검증
-    @MockBean
+    @MockitoBean
     JwtTokenProvider jwtTokenProvider;
 
-    @MockBean
+    @MockitoBean
     TokenBlacklistMapper tokenBlacklistMapper;
 
     private static final String VALID_TOKEN = "valid.jwt.token";
