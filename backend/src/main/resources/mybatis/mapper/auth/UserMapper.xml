@@ -35,11 +35,17 @@
         <result property="updatedAt"         column="updated_at"/>
         <result property="deletedAt"         column="deleted_at"/>
         <result property="organizationId"    column="organization_id"/>
-        <!-- SPEC-CMS-SECURITY-PII-001 V24 — PII 암호화 컬럼 매핑 -->
-        <result property="emailEncrypted"    column="email_encrypted"/>
-        <result property="emailIv"           column="email_iv"/>
-        <result property="emailTag"          column="email_tag"/>
-        <result property="emailKeyVersion"   column="email_key_version"/>
+        <!--
+          SPEC-CMS-SECURITY-PII-001 V24 — PII 암호화 컬럼 매핑.
+          BYTEA 컬럼은 jdbcType="BINARY" 명시 — NULL 값 또는 PostgreSQL JDBC driver 환경에 따라
+          jdbcType 부재 시 ResultSet → byte[] reflection 매핑이 실패할 수 있음 (multi-class IT 회귀).
+          email_key_version은 SMALLINT NOT NULL DEFAULT 1 이나, V24 직전 row가 다른 IT에서 INSERT되어
+          NULL 가능성 (Spring @Transactional rollback 사이드 케이스)을 방어하기 위해 SMALLINT 명시.
+        -->
+        <result property="emailEncrypted"    column="email_encrypted"   jdbcType="BINARY"/>
+        <result property="emailIv"           column="email_iv"          jdbcType="BINARY"/>
+        <result property="emailTag"          column="email_tag"         jdbcType="BINARY"/>
+        <result property="emailKeyVersion"   column="email_key_version" jdbcType="SMALLINT"/>
         <result property="emailHmac"         column="email_hmac"/>
     </resultMap>
 

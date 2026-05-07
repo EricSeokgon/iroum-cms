@@ -7,6 +7,7 @@ import kr.co.ircp.cms.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * </ul>
  */
 @DisplayName("PII Email 통합 테스트 (SPEC-CMS-SECURITY-PII-001)")
+@Transactional
 class PiiEmailIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
