@@ -135,4 +135,18 @@ class MaintenanceControllerTest {
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
+
+    @Test
+    @DisplayName("POST /maintenance — 인증 없이 접근 시 403 Forbidden")
+    void create_unauthenticated_returns403() throws Exception {
+        Instant start = Instant.now();
+        Instant end = start.plus(1, ChronoUnit.HOURS);
+        MaintenanceRequest req = new MaintenanceRequest(
+                "긴급 점검", "점검 중", "Maintenance", start, end, true);
+
+        mockMvc.perform(post("/api/v1/system/maintenance")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

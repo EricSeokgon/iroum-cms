@@ -147,4 +147,11 @@ class ContentBlockControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("DELETE /pages/{pageId}/blocks/{blockId} — 인증 없이 접근 시 403 Forbidden")
+    void deleteBlock_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(delete("/api/v1/content/pages/1/blocks/5"))
+                .andExpect(status().isForbidden());
+    }
 }

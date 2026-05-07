@@ -178,4 +178,11 @@ class MenuControllerTest {
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("DELETE /menus/{id} — 인증 없이 접근 시 403 Forbidden")
+    void deleteMenu_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(delete("/api/v1/content/menus/3"))
+                .andExpect(status().isForbidden());
+    }
 }

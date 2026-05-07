@@ -227,4 +227,11 @@ class DashboardWidgetControllerTest {
                 .andExpect(jsonPath("$.widget.id").value(12))
                 .andExpect(jsonPath("$.dataset.series.length()").value(1));
     }
+
+    @Test
+    @DisplayName("DELETE /dashboard/widgets/{id} — 인증 없이 접근 시 403 Forbidden")
+    void delete_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(delete("/api/v1/dashboard/widgets/3"))
+                .andExpect(status().isForbidden());
+    }
 }

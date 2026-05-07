@@ -110,4 +110,15 @@ class SiteControllerTest {
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("PUT /sites/{id} — 인증 없이 접근 시 403 Forbidden")
+    void updateSite_unauthenticated_returns403() throws Exception {
+        SiteUpdateRequest req = new SiteUpdateRequest("새이름", "new.example.com", "ko", null);
+
+        mockMvc.perform(put("/api/v1/content/sites/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

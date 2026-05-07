@@ -111,4 +111,11 @@ class SeoRedirectControllerTest {
         mockMvc.perform(delete("/api/v1/content/seo/redirects/5"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    @DisplayName("DELETE /seo/redirects/{id} — 인증 없이 접근 시 403 Forbidden")
+    void deleteRedirect_unauthenticated_returns403() throws Exception {
+        mockMvc.perform(delete("/api/v1/content/seo/redirects/5"))
+                .andExpect(status().isForbidden());
+    }
 }

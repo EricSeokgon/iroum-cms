@@ -115,4 +115,17 @@ class I18nControllerTest {
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @DisplayName("PUT /i18n — 인증 없이 접근 시 403 Forbidden")
+    void bulkUpsert_unauthenticated_returns403() throws Exception {
+        I18nUpsertRequest req = new I18nUpsertRequest(List.of(
+                new I18nResourceItem("page", 1L, "ko", "title", "한글 제목")
+        ));
+
+        mockMvc.perform(put("/api/v1/content/i18n")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

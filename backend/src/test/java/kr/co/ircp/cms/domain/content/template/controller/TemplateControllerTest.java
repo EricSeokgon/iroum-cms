@@ -145,4 +145,18 @@ class TemplateControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5));
     }
+
+    @Test
+    @DisplayName("POST /templates — 인증 없이 접근 시 403 Forbidden")
+    void createTemplate_unauthenticated_returns403() throws Exception {
+        TemplateRequest req = new TemplateRequest(
+                "T_NEW", "신규 템플릿", "FULL", "<html>{{CONTENT}}</html>",
+                "[]", "[]", "설명"
+        );
+
+        mockMvc.perform(post("/api/v1/content/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

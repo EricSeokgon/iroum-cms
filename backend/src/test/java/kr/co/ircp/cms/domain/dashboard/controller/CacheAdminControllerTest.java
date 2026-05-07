@@ -101,4 +101,17 @@ class CacheAdminControllerTest {
                 .andExpect(jsonPath("$.activeEntries").value(0))
                 .andExpect(jsonPath("$.expiredEntries").value(0));
     }
+
+    @Test
+    @DisplayName("POST /dashboard/cache/invalidate — 인증 없이 접근 시 403 Forbidden")
+    void invalidate_unauthenticated_returns403() throws Exception {
+        CacheInvalidateRequest req = new CacheInvalidateRequest(
+                List.of(1L, 2L), null, false
+        );
+
+        mockMvc.perform(post("/api/v1/dashboard/cache/invalidate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }

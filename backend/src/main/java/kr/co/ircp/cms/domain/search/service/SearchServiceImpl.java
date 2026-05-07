@@ -18,11 +18,14 @@ import kr.co.ircp.cms.domain.search.repository.SearchPopularCacheMapper;
 import kr.co.ircp.cms.domain.search.repository.UnifiedSearchMapper;
 import lombok.RequiredArgsConstructor;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Entities;
 import org.jsoup.safety.Safelist;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -80,7 +83,15 @@ public class SearchServiceImpl implements SearchService {
     /** ts_headline 출력 sanitize — <mark> 태그만 허용 (REQ-SEARCH-002) */
     // @MX:WARN: [AUTO] sanitize 정책 변경 시 OWASP XSS 우회 가능 — 변경은 보안 검토 필수
     // @MX:REASON: ts_headline 결과는 사용자 콘텐츠를 포함 — XSS 페이로드가 mark 태그 외부에 있을 수 있음
+    // @MX:NOTE: 속성/URL/이벤트 핸들러 모두 차단 — Safelist.none() 기반 + addTags("mark") 만 화이트리스트
     private static final Safelist HIGHLIGHT_SAFELIST = Safelist.none().addTags("mark");
+
+    /** ts_headline 결과 mark 태그 abuse 방지 — 한 응답당 최대 허용 개수 */
+    private static final int MAX_MARK_TAGS = 50;
+
+    /** mark 태그 abuse 차단용 정규식 — 모든 속성·자기 닫힘 형태 포함 */
+    private static final java.util.regex.Pattern MARK_TAG_PATTERN =
+            java.util.regex.Pattern.compile("</?mark\\b[^>]*>", java.util.regex.Pattern.CASE_INSENSITIVE);
 
     private final UnifiedSearchMapper unifiedSearchMapper;
     private final SearchPopularCacheMapper popularCacheMapper;
@@ -288,10 +299,42 @@ public class SearchServiceImpl implements SearchService {
         return raw.trim().toLowerCase().replaceAll("\\s+", " ");
     }
 
-    /** ts_headline 결과 sanitize — &lt;mark&gt; 태그만 허용 */
+    /**
+     * ts_headline 결과 sanitize — defense-in-depth XSS 차단.
+     *
+     * <p>방어 계층:
+     * <ol>
+     *   <li>Jsoup.clean: Safelist.none() + mark 태그만 허용 (속성·이벤트 핸들러·URL 모두 제거)</li>
+     *   <li>OutputSettings: prettyPrint=false + xhtml escape mode + UTF-8 — entity escape 정책 명시</li>
+     *   <li>Mark count cap: 비정상 abuse 패턴 (mark 태그 > {@value #MAX_MARK_TAGS}) 시 모든 mark 제거</li>
+     * </ol>
+     *
+     * <p>baseUri는 빈 문자열로 두어 상대 URL 해석을 방지한다.
+     */
+    // @MX:ANCHOR: [AUTO] sanitizeHighlight — XSS 차단 invariant. 변경 시 SearchServiceXssTest 회귀 필수
+    // @MX:REASON: ts_headline 결과는 신뢰할 수 없는 사용자 입력 파생 — 출력 전 strict sanitize가 OWASP A03 방어선
     private String sanitizeHighlight(String html) {
         if (html == null || html.isBlank()) return html;
-        return Jsoup.clean(html, HIGHLIGHT_SAFELIST);
+
+        // 1차 방어: strict safelist + 명시적 OutputSettings로 jsoup 정제
+        Document.OutputSettings outputSettings = new Document.OutputSettings()
+                .prettyPrint(false)
+                .escapeMode(Entities.EscapeMode.xhtml)
+                .charset(StandardCharsets.UTF_8);
+        String cleaned = Jsoup.clean(html, "", HIGHLIGHT_SAFELIST, outputSettings);
+
+        // 2차 방어: mark 태그 abuse 차단 (정규식으로 자기 닫힘 + 속성 변형까지 카운트)
+        java.util.regex.Matcher m = MARK_TAG_PATTERN.matcher(cleaned);
+        int markCount = 0;
+        while (m.find()) {
+            markCount++;
+            if (markCount > MAX_MARK_TAGS) {
+                // 비정상 abuse: 모든 mark 태그 제거 후 텍스트만 보존
+                return MARK_TAG_PATTERN.matcher(cleaned).replaceAll("");
+            }
+        }
+
+        return cleaned;
     }
 
     private void insertSearchLog(String rawQuery, String normalized, String expanded,

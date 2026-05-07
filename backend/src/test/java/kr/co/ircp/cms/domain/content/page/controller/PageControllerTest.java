@@ -194,4 +194,15 @@ class PageControllerTest {
                 .andExpect(jsonPath("$.slug").value("published-slug"))
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
     }
+
+    @Test
+    @DisplayName("POST /pages/{id}/publish — 인증 없이 접근 시 403 Forbidden")
+    void publishPage_unauthenticated_returns403() throws Exception {
+        PagePublishRequest req = new PagePublishRequest("긴급 공지");
+
+        mockMvc.perform(post("/api/v1/content/pages/7/publish")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
 }
