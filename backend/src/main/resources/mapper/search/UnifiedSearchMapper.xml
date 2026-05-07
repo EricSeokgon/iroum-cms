@@ -17,6 +17,15 @@
       - bbs_post는 NORMAL/NOTICE/FAQ/QNA/PUBLICATION 모두 동일 GIN을 공유하며 docType은 bbs_master.code로 분기.
       - 비공개 게시글(QnA is_secret=true 등)은 requesterId 매칭 또는 isAdmin=true 일 때만 노출.
       - 모든 query 파라미터는 #{} 바인딩만 사용 (SQL injection 방지).
+
+    성능 의존성 (코드 리뷰 #2 — V23):
+      - content 도메인 ILIKE 는 idx_page_title_trgm (GIN gin_trgm_ops) 에 의존.
+      - policy 도메인 ILIKE 는 idx_policy_program_name_trgm,
+        idx_policy_program_desc_html_trgm 에 의존.
+      - media 도메인 ILIKE 는 idx_media_asset_filename_trgm,
+        idx_media_asset_description_trgm 에 의존.
+      - 위 인덱스 부재 시 대용량 테이블에서 Full Table Scan 으로 P95 800ms 초과 (NFR 위반).
+      - 마이그레이션 V23__search_performance_indexes.sql 적용 필수.
 -->
 <mapper namespace="kr.co.ircp.cms.domain.search.repository.UnifiedSearchMapper">
 

@@ -4,6 +4,17 @@
 <!--
   UserMapper SQL 정의 (RED 단계 — 구문만 선언, 테스트는 Mock 사용).
   SPEC-CMS-002 REQ-AUTH-001~006
+
+  [PII 보호 정책 — 코드 리뷰 #3]
+    email 컬럼은 현재 평문(VARCHAR)으로 SELECT/INSERT 한다.
+    REQ-CROSS-002 에 따라 운영 배포 전 AES-256-GCM 암호화로 격상해야 한다.
+    상세: .moai/reports/security-todo-pii.md (Path A: SPEC-CMS-SECURITY-PII-001 작성 권장)
+
+    현재 동작:
+      - email     : 평문 저장 (UPDATE/INSERT/SELECT 모두 평문 흐름)
+      - email_hash: SHA-256(email) — lookup 전용 (findByEmailHash, AuthServiceImpl)
+      - 암호화 TypeHandler 미등록 (의도된 RED 단계 상태)
+    운영 적용 전 해소 필수: 키 관리 + V24 마이그레이션 + email_hash HMAC 격상
 -->
 <mapper namespace="kr.co.ircp.cms.domain.auth.repository.UserMapper">
 

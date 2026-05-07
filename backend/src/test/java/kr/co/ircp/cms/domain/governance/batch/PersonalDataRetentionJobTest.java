@@ -87,18 +87,45 @@ class PersonalDataRetentionJobTest {
     }
 
     @Test
-    @DisplayName("run — DELETE 실패는 catch (APPEND-ONLY 트리거 대응) — archive 정상 반환")
-    void run_deleteFails_archivesStillReturned() {
+    @DisplayName("run — DELETE 실패 시 IllegalStateException 으로 트랜잭션 롤백 (코드 리뷰 #1)")
+    void run_deleteFails_throwsToTriggerRollback() {
+        // 코드 리뷰 #1: archive 성공 + delete 실패 시 archive 와 source 양쪽 중복 방지를 위해
+        // 예외를 전파하여 @Transactional 롤백을 트리거한다. archive 는 ON CONFLICT DO NOTHING 으로
+        // 멱등이므로 다음 배치 실행에서 재시도 가능.
         when(policyService.findByTargetTable("personal_data_access_log"))
                 .thenReturn(Optional.of(policy()));
         when(executionMapper.archivePersonalDataAccessLog(6)).thenReturn(10);
         when(executionMapper.deletePersonalDataAccessLog(6))
                 .thenThrow(new RuntimeException("APPEND-ONLY violation"));
 
-        int processed = job.run(false);
+        assertThatThrownBy(() -> job.run(false))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("DELETE 실패")
+                .hasMessageContaining("archive 롤백")
+                .hasCauseInstanceOf(RuntimeException.class);
 
-        assertThat(processed).isEqualTo(10);
         verify(executionMapper).archivePersonalDataAccessLog(6);
+        verify(executionMapper).deletePersonalDataAccessLog(6);
+    }
+
+    @Test
+    @DisplayName("scheduled — DELETE 실패 시 batch_execution_log 에 failure 기록 (코드 리뷰 #1)")
+    void scheduled_deleteFails_recordsFailureInBatchLog() {
+        // 코드 리뷰 #1 검증: scheduled() 진입 시 GovernanceJobSupport.run 이 RuntimeException 을
+        // catch 하고 batchLog.failure 를 호출한다. archive 가 롤백되었음을 운영자가 알 수 있도록
+        // error 메시지에 "DELETE 실패" 키워드가 포함된다.
+        when(batchLog.start("PersonalDataRetentionJob", "RETENTION")).thenReturn(99L);
+        when(policyService.findByTargetTable("personal_data_access_log"))
+                .thenReturn(Optional.of(policy()));
+        when(executionMapper.archivePersonalDataAccessLog(6)).thenReturn(10);
+        when(executionMapper.deletePersonalDataAccessLog(6))
+                .thenThrow(new RuntimeException("APPEND-ONLY violation"));
+
+        job.scheduled();
+
+        verify(batchLog).failure(eq(99L),
+                org.mockito.ArgumentMatchers.contains("DELETE 실패"));
+        verify(batchLog, never()).success(anyLong(), anyInt());
     }
 
     @Test
