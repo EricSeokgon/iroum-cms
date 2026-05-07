@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -40,6 +41,9 @@ public class DataQualityCheckJob {
     public int run() {
         List<DataQualityRule> rules = qualityMapper.findActiveRules();
         int processed = 0;
+        int failed = 0;
+        List<String> failures = new ArrayList<>();
+
         for (DataQualityRule rule : rules) {
             if (statsMapper.countTable(rule.getTargetTable()) == 0) {
                 log.info("품질 룰 SKIP — 테이블 미존재: rule={} table={}", rule.getId(), rule.getTargetTable());
@@ -49,8 +53,17 @@ public class DataQualityCheckJob {
                 qualityService.runRule(rule);
                 processed++;
             } catch (Exception e) {
-                log.warn("품질 룰 실행 실패 rule={}: {}", rule.getId(), e.getMessage());
+                failed++;
+                String msg = "rule=" + rule.getId() + " " + e.getClass().getSimpleName() + ": " + e.getMessage();
+                failures.add(msg);
+                log.error("품질 룰 실행 실패 — 배치 FAILURE 처리 예정: {}", msg);
             }
+        }
+
+        // 룰 실패가 1건이라도 있으면 GovernanceJobSupport가 FAILURE로 기록하도록 throw
+        if (failed > 0) {
+            throw new IllegalStateException(
+                    failed + "개 룰 실행 실패 (processed=" + processed + "): " + failures);
         }
         return processed;
     }

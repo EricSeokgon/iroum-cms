@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -85,8 +86,8 @@ class DataQualityCheckJobTest {
     }
 
     @Test
-    @DisplayName("run — runRule 예외는 catch + 계속 진행")
-    void run_runRuleException_continues() {
+    @DisplayName("run — runRule 예외: 나머지 룰은 계속 실행, 최종적으로 예외 throw")
+    void run_runRuleException_continuesThenThrows() {
         DataQualityRule r1 = rule(1L, "users");
         DataQualityRule r2 = rule(2L, "orders");
         when(qualityMapper.findActiveRules()).thenReturn(List.of(r1, r2));
@@ -94,10 +95,10 @@ class DataQualityCheckJobTest {
         when(statsMapper.countTable("orders")).thenReturn(1);
         when(qualityService.runRule(r1)).thenThrow(new RuntimeException("boom"));
 
-        int processed = job.run();
-
-        // r1 실패 → processed 미증가, r2 정상 → processed=1
-        assertThat(processed).isEqualTo(1);
+        // r1 실패 후에도 r2는 실행되며, 마지막에 집계 예외 throw
+        assertThatThrownBy(() -> job.run())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("1개 룰 실행 실패");
         verify(qualityService).runRule(r2);
     }
 
@@ -126,9 +127,9 @@ class DataQualityCheckJobTest {
     }
 
     @Test
-    @DisplayName("scheduled — run 내부 예외는 GovernanceJobSupport에서 catch (failure 호출 안 됨, action은 catch)")
-    void scheduled_runRuleException_isolatedFromBatchLog() {
-        // 활성 룰 1건, 테이블 존재, runRule 예외 → run() 자체는 정상 (예외 catch)
+    @DisplayName("scheduled — runRule 예외 시 GovernanceJobSupport가 failure 기록 (운영팀 인지 가능)")
+    void scheduled_runRuleException_recordsFailure() {
+        // 룰 실패 → run()이 throw → GovernanceJobSupport가 failure 경로로 처리
         when(batchLog.start("DataQualityCheckJob", "QUALITY")).thenReturn(99L);
         when(qualityMapper.findActiveRules()).thenReturn(List.of(rule(1L, "users")));
         when(statsMapper.countTable("users")).thenReturn(1);
@@ -137,7 +138,8 @@ class DataQualityCheckJobTest {
         job.scheduled();
 
         verify(batchLog).start("DataQualityCheckJob", "QUALITY");
-        // run() 안에서 catch했으므로 success 경로
-        verify(batchLog, times(1)).success(eq(99L), eq(0));
+        // run()이 throw했으므로 failure 경로 — 운영팀이 batch_execution_log에서 장애 인지 가능
+        verify(batchLog, times(1)).failure(eq(99L), any());
+        verify(batchLog, never()).success(anyLong(), any());
     }
 }
