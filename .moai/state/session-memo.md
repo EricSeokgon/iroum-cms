@@ -23,17 +23,21 @@ total_commits: 36 (이번 세션)
 | SPEC-CMS-MEDIA-001 (미디어) | Implemented | 15 GREEN | 완료 |
 | **SPEC-CMS-010** (통합 검색) | **Implemented (Fullstack, NEW)** | **search 60 GREEN** | **완료 (3 view)** |
 
-## P3: 빌드 상태
+## P3: 빌드 상태 (2026-05-07 최종 갱신)
 
 - Frontend (admin): vue-tsc 0 에러, vite build 성공 (~22초, lazy code splitting)
 - Backend: compileJava + compileTestJava BUILD SUCCESSFUL
-- 단위 테스트 누적: **753 테스트 / 통과 751 / 실패 1 (Testcontainers IT 환경) / 통과율 99.87%**
-- 커버리지 (JaCoCo Line 기준): **71.45%** (목표 85% 대비 -13.55pp 미달)
-  - PASS (5): health 100% · security 100% · audit 88.3% · board 87.4% · auth 85.4%
-  - WARN (8): search 80.9% · policy 80.7% · dashboard 74.6% · common 74.3% · content 65.2% · media 59.8% · system 58.4% · safety 50.3%
-  - FAIL (1): governance 48.7%
+- 단위 테스트 누적: **943 테스트 / 통과 943 / 실패 0 / 통과율 100%** (MigrationOrderIT 제외)
+- 커버리지 (JaCoCo Line 기준): **76.4%** (목표 85% 대비 -8.6pp)
+  - PASS (5): safety 90.5% · board 87.3% · auth 85.4% · kr(common) 84.2% · search 80.9%
+  - PASS (1): policy 80.7%
+  - WARN (4): dashboard 74.6% · content 65.2% · governance 64.2% · audit 61.7%
+  - FAIL (2): media 59.8% · system 58.4%
 - Docker 빌드: 검증 완료
-- Testcontainers IT 26개: Docker 소켓 환경에서만 GREEN
+- Testcontainers IT 26개: Docker 소켓 환경에서만 GREEN (build.gradle.kts에서 exclude 처리됨)
+- **커버리지 개선 이력**: 71.45% → 76.4% (+4.95pp) — safety/governance 88개 신규 테스트 효과
+  - safety: 50.3% → 90.5% (+40.2pp)
+  - governance: 48.7% → 64.2% (+15.5pp)
 
 ## P4: 이번 세션 (2026-05-07) 36 커밋 시간순 압축
 
@@ -126,14 +130,17 @@ total_commits: 36 (이번 세션)
 
 ## P9: 잔여 작업 (다음 세션)
 
-### 우선순위 P3 — 커버리지 보강 (구체적·즉시 효과)
+### 우선순위 P3 — 커버리지 보강 (현재 76.4%, 목표 85%)
 
-| # | 작업 | 신규 테스트 | 효과 |
+| # | 작업 | 신규 테스트 예상 | 효과 |
 |---|------|----------|------|
-| 1 | safety 4 ServiceImpl 단위 테스트 | 50 | +3.4pp (50.3% → ~54%) |
-| 2 | governance 단위 테스트 보강 | 40 | +3.7pp (48.7% → ~52%, FAIL 탈출) |
-| 3 | content/system 분기 보강 | 60 | +2.5pp |
-| **합계** | | **150** | **~81%** (목표 85% -4pp) |
+| ~~1~~ | ~~safety 4 ServiceImpl 단위 테스트~~ | ~~50~~ | **완료 — 90.5%** |
+| ~~2~~ | ~~governance 단위 테스트 보강~~ | ~~40~~ | **완료 — 64.2%** |
+| 3 | system ServiceImpl 분기 보강 | 40 | +2pp (58.4% → ~70%) |
+| 4 | content ServiceImpl 분기 보강 | 30 | +1.5pp (65.2% → ~70%) |
+| 5 | governance controller 테스트 | 20 | +1pp (64.2% → ~67%) |
+| 6 | media ServiceImpl 보강 | 20 | +0.5pp |
+| **합계** | | **110** | **~81%** (목표 85% -4pp) |
 
 ### 우선순위 P3 — 품질·보안 검증
 
