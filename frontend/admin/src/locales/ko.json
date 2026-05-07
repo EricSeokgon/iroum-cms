@@ -22,6 +22,7 @@
     "boardMasters": "게시판 관리",
     "faq": "FAQ 관리",
     "qna": "Q&A 관리",
+    "publication": "발간자료",
     "media": "미디어 라이브러리",
     "mediaCollections": "미디어 컬렉션",
     "content": "콘텐츠 관리",
@@ -1369,6 +1370,46 @@
       "all": "전체",
       "public": "공개",
       "private": "비공개"
+    }
+  },
+  "publication": {
+    "title": "발간자료 관리",
+    "add": "발간자료 등록",
+    "edit": "발간자료 수정",
+    "delete": "발간자료 삭제",
+    "detail": "발간자료 상세",
+    "empty": "등록된 발간자료가 없습니다.",
+    "field": {
+      "title": "제목",
+      "year": "발간연도",
+      "month": "발간월",
+      "documentType": "자료유형",
+      "category": "분류",
+      "isbn": "ISBN",
+      "publisher": "발행기관",
+      "fileCount": "파일수",
+      "viewCount": "조회수",
+      "content": "내용",
+      "publishedAt": "발간일",
+      "downloadZip": "ZIP 다운로드"
+    },
+    "documentType": {
+      "REPORT": "보고서",
+      "BROCHURE": "브로슈어",
+      "RESEARCH": "연구자료",
+      "GUIDE": "안내서",
+      "OTHER": "기타"
+    },
+    "confirm": {
+      "delete": "해당 발간자료를 삭제하시겠습니까?",
+      "deleteTitle": "삭제 확인"
+    },
+    "msg": {
+      "created": "발간자료가 등록되었습니다.",
+      "updated": "발간자료가 수정되었습니다.",
+      "deleted": "발간자료가 삭제되었습니다.",
+      "zipSync": "ZIP 파일이 준비되었습니다. (동기 다운로드)",
+      "zipAsync": "ZIP 생성 요청이 접수되었습니다. (비동기 처리 중)"
     }
   }
 }

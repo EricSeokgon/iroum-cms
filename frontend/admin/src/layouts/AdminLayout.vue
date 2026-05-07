@@ -106,6 +106,10 @@
           <el-menu-item index="/board/qnas">
             <span>{{ t('nav.qna') }}</span>
           </el-menu-item>
+          <!-- 발간자료 관리 (SPEC-CMS-003) -->
+          <el-menu-item index="/board/publications">
+            <span>{{ t('nav.publication') }}</span>
+          </el-menu-item>
           <!-- 미디어 라이브러리 (SPEC-CMS-MEDIA-001) -->
           <el-menu-item index="/media">
             <span>{{ t('nav.media') }}</span>

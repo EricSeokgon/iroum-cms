@@ -195,6 +195,20 @@ const router = createRouter({
           props: true,
           meta: { title: 'Q&A 상세', permissions: ['ADMIN'] },
         },
+        // ── 발간자료 라우트 (SPEC-CMS-003) ─────────────────────────────────
+        {
+          path: 'board/publications',
+          name: 'board-publications',
+          component: () => import('@/views/board/PublicationListView.vue'),
+          meta: { requiresAuth: true, title: '발간자료 관리' },
+        },
+        {
+          path: 'board/publications/:id',
+          name: 'board-publication-detail',
+          component: () => import('@/views/board/PublicationDetailView.vue'),
+          props: true,
+          meta: { requiresAuth: true, title: '발간자료 상세' },
+        },
         // ── 콘텐츠 관리 라우트 (SPEC-CMS-004) ──────────────────────────────
         {
           path: 'content/site',
