@@ -23,6 +23,7 @@
     "faq": "FAQ Management",
     "qna": "Q&A Management",
     "publication": "Publications",
+    "survey": "Surveys",
     "media": "Media Library",
     "mediaCollections": "Media Collections",
     "content": "Content Management",
@@ -362,6 +363,10 @@
     "exportError": "Failed to export",
     "actions": "Actions",
     "loading": "Loading...",
+    "close": "Close",
+    "optional": "Optional",
+    "empty": "No data available",
+    "createdAt": "Created",
     "error": {
       "network": "Unable to connect to server. Please try again later.",
       "unknown": "An unknown error occurred"
@@ -1357,6 +1362,56 @@
       "deleted": "Publication deleted successfully.",
       "zipSync": "ZIP file is ready. (synchronous download)",
       "zipAsync": "ZIP generation request received. (processing asynchronously)"
+    }
+  },
+  "survey": {
+    "title": "Survey Management",
+    "add": "Add Survey",
+    "edit": "Edit Survey",
+    "delete": "Delete Survey",
+    "detail": "Survey Detail",
+    "results": "View Results",
+    "empty": "No surveys registered.",
+    "field": {
+      "title": "Title",
+      "status": "Status",
+      "isAnonymous": "Anonymous",
+      "maxResponses": "Max Responses",
+      "responseCount": "Responses",
+      "startAt": "Start",
+      "endAt": "End",
+      "period": "Survey Period",
+      "descriptionHtml": "Description",
+      "questions": "Questions",
+      "questionText": "Question",
+      "questionType": "Question Type",
+      "required": "Required",
+      "options": "Options (JSON)",
+      "distribution": "Distribution",
+      "totalResponses": "Total Responses",
+      "totalAnswers": "Answers"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "HIDDEN": "Hidden"
+    },
+    "questionType": {
+      "SINGLE": "Single Choice",
+      "MULTI": "Multiple Choice",
+      "TEXT": "Text",
+      "RATING": "Rating (1~5)",
+      "DATE": "Date"
+    },
+    "confirm": {
+      "delete": "Are you sure you want to delete this survey?",
+      "deleteTitle": "Confirm Delete"
+    },
+    "msg": {
+      "created": "Survey created successfully.",
+      "updated": "Survey updated successfully.",
+      "deleted": "Survey deleted successfully."
     }
   }
 }

@@ -1416,5 +1416,55 @@
       "zipSync": "ZIP 파일이 준비되었습니다. (동기 다운로드)",
       "zipAsync": "ZIP 생성 요청이 접수되었습니다. (비동기 처리 중)"
     }
+  },
+  "survey": {
+    "title": "설문조사 관리",
+    "add": "설문 등록",
+    "edit": "설문 수정",
+    "delete": "설문 삭제",
+    "detail": "설문조사 상세",
+    "results": "결과 보기",
+    "empty": "등록된 설문조사가 없습니다.",
+    "field": {
+      "title": "제목",
+      "status": "상태",
+      "isAnonymous": "익명 여부",
+      "maxResponses": "최대 응답수",
+      "responseCount": "응답 수",
+      "startAt": "시작일",
+      "endAt": "종료일",
+      "period": "설문 기간",
+      "descriptionHtml": "설문 설명",
+      "questions": "질문 목록",
+      "questionText": "질문",
+      "questionType": "질문 유형",
+      "required": "필수 여부",
+      "options": "선택지 (JSON)",
+      "distribution": "응답 분포",
+      "totalResponses": "전체 응답수",
+      "totalAnswers": "응답 수"
+    },
+    "status": {
+      "DRAFT": "초안",
+      "OPEN": "진행중",
+      "CLOSED": "마감",
+      "HIDDEN": "숨김"
+    },
+    "questionType": {
+      "SINGLE": "단일 선택",
+      "MULTI": "복수 선택",
+      "TEXT": "주관식",
+      "RATING": "평점 (1~5)",
+      "DATE": "날짜"
+    },
+    "confirm": {
+      "delete": "해당 설문조사를 삭제하시겠습니까?",
+      "deleteTitle": "삭제 확인"
+    },
+    "msg": {
+      "created": "설문조사가 등록되었습니다.",
+      "updated": "설문조사가 수정되었습니다.",
+      "deleted": "설문조사가 삭제되었습니다."
+    }
   }
 }
