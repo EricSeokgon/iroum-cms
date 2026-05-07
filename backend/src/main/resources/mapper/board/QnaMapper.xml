@@ -60,4 +60,71 @@
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
 
+    <!-- REQ-BOARD-008: 필터(상태·공개여부·키워드) 기반 페이징 조회 -->
+    <select id="findWithFilters" resultMap="qnaResultMap">
+        SELECT * FROM qna
+        WHERE deleted_at IS NULL
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="isPrivate != null">
+            AND is_private = #{isPrivate}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (title ILIKE '%' || #{keyword} || '%'
+                 OR question_text ILIKE '%' || #{keyword} || '%')
+        </if>
+        <!-- 비공개 항목은 본인 또는 관리자만 조회 가능 -->
+        <if test="!isAdmin">
+            AND (is_private = false
+                <if test="requesterId != null">
+                    OR questioner_id = #{requesterId}
+                </if>
+            )
+        </if>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- REQ-BOARD-008: 필터 기반 카운트 -->
+    <select id="countWithFilters" resultType="long">
+        SELECT COUNT(*) FROM qna
+        WHERE deleted_at IS NULL
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="isPrivate != null">
+            AND is_private = #{isPrivate}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (title ILIKE '%' || #{keyword} || '%'
+                 OR question_text ILIKE '%' || #{keyword} || '%')
+        </if>
+        <if test="!isAdmin">
+            AND (is_private = false
+                <if test="requesterId != null">
+                    OR questioner_id = #{requesterId}
+                </if>
+            )
+        </if>
+    </select>
+
+    <!-- REQ-BOARD-008: 답변 등록 -->
+    <update id="updateAnswer">
+        UPDATE qna SET
+            answer_html = #{answerHtml},
+            answer_text = #{answerText},
+            answerer_id = #{answererId},
+            answered_at = NOW(),
+            status = 'ANSWERED',
+            updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <!-- REQ-BOARD-008: 상태 변경 (CLOSED 등) -->
+    <update id="updateStatus">
+        UPDATE qna SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
 </mapper>

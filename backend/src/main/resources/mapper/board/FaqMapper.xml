@@ -62,4 +62,55 @@
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
 
+    <!-- REQ-BOARD-007: 필터(카테고리·키워드) 기반 페이징 조회 -->
+    <select id="findWithFilters" resultMap="faqResultMap">
+        SELECT * FROM faq
+        WHERE deleted_at IS NULL
+        <if test="category != null and category != ''">
+            AND category_code = #{category}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (question ILIKE '%' || #{keyword} || '%'
+                 OR answer_text ILIKE '%' || #{keyword} || '%')
+        </if>
+        ORDER BY sort_order, id
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- REQ-BOARD-007: 필터 기반 카운트 -->
+    <select id="countWithFilters" resultType="long">
+        SELECT COUNT(*) FROM faq
+        WHERE deleted_at IS NULL
+        <if test="category != null and category != ''">
+            AND category_code = #{category}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (question ILIKE '%' || #{keyword} || '%'
+                 OR answer_text ILIKE '%' || #{keyword} || '%')
+        </if>
+    </select>
+
+    <!-- REQ-BOARD-007: 카테고리별 개수 -->
+    <select id="countByCategory" resultType="map">
+        SELECT category_code AS "categoryCode", COUNT(*) AS "count"
+        FROM faq
+        WHERE deleted_at IS NULL
+        GROUP BY category_code
+        ORDER BY category_code
+    </select>
+
+    <!-- REQ-BOARD-007: 정렬 순서 일괄 변경 -->
+    <update id="batchUpdateSortOrder">
+        <foreach collection="items" item="item" separator=";">
+            UPDATE faq SET sort_order = #{item.sortOrder}, updated_at = NOW()
+            WHERE id = #{item.id} AND deleted_at IS NULL
+        </foreach>
+    </update>
+
+    <!-- REQ-BOARD-007: 조회수 증가 -->
+    <update id="incrementViewCount">
+        UPDATE faq SET view_count = view_count + 1
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
 </mapper>

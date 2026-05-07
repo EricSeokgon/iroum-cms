@@ -1469,9 +1469,14 @@ COMMENT ON COLUMN bbs_master.taxonomy_code IS 'S-Meta 호환 분류체계 코드
 
 ## 구현 메모 (Implementation Notes)
 
-- **구현 완료일**: 2026-05-06
-- **상태 업데이트**: Draft (v0.4) → Implemented (일괄 동기화)
+- **구현 완료일**: 2026-05-06 (백엔드), 2026-05-07 (FAQ/QNA 풀스택 완성)
+- **상태 업데이트**: Draft (v0.4) → Implemented
 - **구현 범위**: REQ-BOARD-001~010 풀스택 구현 — 게시판 CRUD, 공지·Q&A·FAQ 도메인, 댓글, 첨부파일, 권한 가드
-- **테스트**: Step 2 GREEN — 4 service 30/30 PASSED
-- **참조 커밋**: 31f0121 (SPEC 추가), abf8312 (Step 2 GREEN — 4 service 30/30 PASSED)
+- **FAQ 백엔드**: FaqController + FaqService/Impl + FaqMapper 확장 (7개 엔드포인트: 목록/상세/카테고리/등록/수정/삭제/정렬변경)
+- **QNA 백엔드**: QnaController + QnaService/Impl + QnaMapper 확장 (6개 엔드포인트: 목록/상세/등록/답변/종결/삭제, 비공개 접근제어)
+- **FAQ 프론트엔드**: FaqListView.vue (카테고리·키워드 필터, CRUD 다이얼로그)
+- **QNA 프론트엔드**: QnaListView.vue + QnaDetailView.vue (상태 필터, 답변/종결/삭제)
+- **라우터/메뉴**: board/faqs, board/qnas, board/qnas/:id 라우트 + AdminLayout 메뉴 추가
+- **테스트**: Step 2 GREEN — 4 service 30/30 PASSED, Backend compileJava BUILD SUCCESSFUL, Frontend vue-tsc 0 errors
+- **참조 커밋**: 31f0121 (SPEC 추가), abf8312 (Step 2 GREEN)
 - **특이사항**: SPEC-CMS-002 인증 의존, SPEC-CMS-009 데이터 거버넌스에서 board_stats_daily 통계 집계 소스로 사용

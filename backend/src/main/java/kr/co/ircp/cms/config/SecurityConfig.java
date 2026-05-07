@@ -64,6 +64,11 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.GET,
                     "/api/v1/boards/**"
                 ).permitAll()
+                // REQ-BOARD-007: FAQ 공개 조회 허용 (목록·카테고리·단건)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/faqs/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입

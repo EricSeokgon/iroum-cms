@@ -31,8 +31,10 @@ import kr.co.ircp.cms.domain.board.exception.BoardAttachmentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.BoardCommentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
+import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.ExportAccessDeniedException;
@@ -534,6 +536,34 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Board Attachment Disabled");
         detail.setProperty("code", "BOARD_ATTACHMENT_DISABLED");
+        return detail;
+    }
+
+    /**
+     * FAQ 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-007 — id에 해당하는 FAQ가 없거나 소프트 삭제된 경우.
+     */
+    @ExceptionHandler(FaqNotFoundException.class)
+    public ProblemDetail handleFaqNotFound(FaqNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("FAQ Not Found");
+        detail.setProperty("code", "FAQ_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * Q&A 미존재 → HTTP 404 Not Found.
+     *
+     * <p>REQ-BOARD-008 — id에 해당하는 Q&A가 없거나, 비공개 항목에 권한 없는 사용자가 접근한 경우.
+     */
+    @ExceptionHandler(QnaNotFoundException.class)
+    public ProblemDetail handleQnaNotFound(QnaNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Q&A Not Found");
+        detail.setProperty("code", "QNA_NOT_FOUND");
         return detail;
     }
 

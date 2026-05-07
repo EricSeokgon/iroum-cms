@@ -98,6 +98,14 @@
           >
             <span>{{ t('nav.boardMasters') }}</span>
           </el-menu-item>
+          <!-- FAQ 관리 (SPEC-CMS-003) -->
+          <el-menu-item index="/board/faqs">
+            <span>{{ t('nav.faq') }}</span>
+          </el-menu-item>
+          <!-- Q&A 관리 (SPEC-CMS-003) -->
+          <el-menu-item index="/board/qnas">
+            <span>{{ t('nav.qna') }}</span>
+          </el-menu-item>
           <!-- 미디어 라이브러리 (SPEC-CMS-MEDIA-001) -->
           <el-menu-item index="/media">
             <span>{{ t('nav.media') }}</span>

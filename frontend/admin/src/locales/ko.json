@@ -20,6 +20,8 @@
     "mainMenu": "주요 메뉴",
     "board": "콘텐츠",
     "boardMasters": "게시판 관리",
+    "faq": "FAQ 관리",
+    "qna": "Q&A 관리",
     "media": "미디어 라이브러리",
     "mediaCollections": "미디어 컬렉션",
     "content": "콘텐츠 관리",
@@ -1323,6 +1325,50 @@
         "httpStatusRequired": "HTTP 상태 코드를 선택해주세요",
         "loadFailed": "리다이렉트 목록을 불러오는데 실패했습니다"
       }
+    }
+  },
+  "faq": {
+    "title": "FAQ 관리",
+    "add": "FAQ 등록",
+    "empty": "등록된 FAQ가 없습니다.",
+    "field": {
+      "category": "카테고리",
+      "question": "질문",
+      "answer": "답변",
+      "sortOrder": "정렬순서",
+      "viewCount": "조회수",
+      "status": "상태"
+    },
+    "status": {
+      "PUBLISHED": "게시",
+      "HIDDEN": "숨김"
+    }
+  },
+  "qna": {
+    "title": "Q&A 관리",
+    "empty": "등록된 Q&A가 없습니다.",
+    "answer": "답변하기",
+    "close": "종결",
+    "field": {
+      "title": "제목",
+      "question": "질문내용",
+      "answer": "답변내용",
+      "status": "상태",
+      "isPrivate": "공개여부",
+      "questioner": "질문자",
+      "answerer": "답변자",
+      "answeredAt": "답변일시"
+    },
+    "status": {
+      "PENDING": "답변대기",
+      "ANSWERED": "답변완료",
+      "CLOSED": "종결",
+      "HIDDEN": "숨김"
+    },
+    "privacy": {
+      "all": "전체",
+      "public": "공개",
+      "private": "비공개"
     }
   }
 }

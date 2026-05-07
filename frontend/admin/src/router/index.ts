@@ -175,6 +175,26 @@ const router = createRouter({
           props: true,
           meta: { title: '게시글 수정' },
         },
+        // ── FAQ / Q&A 라우트 (SPEC-CMS-003) ────────────────────────────────
+        {
+          path: 'board/faqs',
+          name: 'board-faqs',
+          component: () => import('@/views/board/FaqListView.vue'),
+          meta: { title: 'FAQ 관리', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'board/qnas',
+          name: 'board-qnas',
+          component: () => import('@/views/board/QnaListView.vue'),
+          meta: { title: 'Q&A 관리', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'board/qnas/:id',
+          name: 'board-qna-detail',
+          component: () => import('@/views/board/QnaDetailView.vue'),
+          props: true,
+          meta: { title: 'Q&A 상세', permissions: ['ADMIN'] },
+        },
         // ── 콘텐츠 관리 라우트 (SPEC-CMS-004) ──────────────────────────────
         {
           path: 'content/site',

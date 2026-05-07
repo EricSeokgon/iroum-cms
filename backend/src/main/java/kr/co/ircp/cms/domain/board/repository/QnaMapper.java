@@ -31,4 +31,41 @@ public interface QnaMapper {
 
     /** Q&A 삭제 (소프트 삭제) */
     int deleteById(@Param("id") Long id);
+
+    /**
+     * 필터 기반 페이징 조회.
+     * 비공개(isPrivate=true) 항목은 questioner 본인 또는 관리자만 조회 가능.
+     */
+    List<Qna> findWithFilters(
+            @Param("status") String status,
+            @Param("isPrivate") Boolean isPrivate,
+            @Param("requesterId") Long requesterId,
+            @Param("isAdmin") boolean isAdmin,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    /** 필터 기반 카운트 */
+    long countWithFilters(
+            @Param("status") String status,
+            @Param("isPrivate") Boolean isPrivate,
+            @Param("requesterId") Long requesterId,
+            @Param("isAdmin") boolean isAdmin,
+            @Param("keyword") String keyword
+    );
+
+    /** 답변 등록 (status를 ANSWERED로 변경, answered_at을 NOW()로 설정) */
+    int updateAnswer(
+            @Param("id") Long id,
+            @Param("answerHtml") String answerHtml,
+            @Param("answerText") String answerText,
+            @Param("answererId") Long answererId
+    );
+
+    /** 상태만 변경 (CLOSED 등) */
+    int updateStatus(
+            @Param("id") Long id,
+            @Param("status") String status
+    );
 }

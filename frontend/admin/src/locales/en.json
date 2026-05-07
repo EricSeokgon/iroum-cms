@@ -20,6 +20,8 @@
     "mainMenu": "Main Menu",
     "board": "Content",
     "boardMasters": "Board Management",
+    "faq": "FAQ Management",
+    "qna": "Q&A Management",
     "media": "Media Library",
     "mediaCollections": "Media Collections",
     "content": "Content Management",
@@ -1270,6 +1272,50 @@
         "httpStatusRequired": "HTTP status is required",
         "loadFailed": "Failed to load redirects"
       }
+    }
+  },
+  "faq": {
+    "title": "FAQ Management",
+    "add": "Add FAQ",
+    "empty": "No FAQs registered.",
+    "field": {
+      "category": "Category",
+      "question": "Question",
+      "answer": "Answer",
+      "sortOrder": "Sort Order",
+      "viewCount": "Views",
+      "status": "Status"
+    },
+    "status": {
+      "PUBLISHED": "Published",
+      "HIDDEN": "Hidden"
+    }
+  },
+  "qna": {
+    "title": "Q&A Management",
+    "empty": "No Q&As registered.",
+    "answer": "Answer",
+    "close": "Close",
+    "field": {
+      "title": "Title",
+      "question": "Question",
+      "answer": "Answer",
+      "status": "Status",
+      "isPrivate": "Privacy",
+      "questioner": "Questioner",
+      "answerer": "Answerer",
+      "answeredAt": "Answered At"
+    },
+    "status": {
+      "PENDING": "Pending",
+      "ANSWERED": "Answered",
+      "CLOSED": "Closed",
+      "HIDDEN": "Hidden"
+    },
+    "privacy": {
+      "all": "All",
+      "public": "Public",
+      "private": "Private"
     }
   }
 }
