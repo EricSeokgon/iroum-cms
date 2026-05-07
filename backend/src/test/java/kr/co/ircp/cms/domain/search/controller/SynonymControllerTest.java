@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.search.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
@@ -19,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
@@ -28,6 +30,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -182,6 +185,33 @@ class SynonymControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isNoContent());
+    }
+
+    // ─── 인증/인가 거부 시나리오 (REQ-SEARCH-009 보안 가드) ─────────────────────
+
+    @Test
+    @DisplayName("GET /api/v1/search/synonyms — 미인증 시 AuthenticationCredentialsNotFoundException (인증 가드 동작)")
+    void listSynonyms_rejectsUnauthenticated() {
+        // 클래스 레벨 @PreAuthorize("hasRole('ADMIN')") 적용 시 SecurityContext에 Authentication 이 없으면
+        // Spring Security 6의 AuthorizationManagerBeforeMethodInterceptor가
+        // AuthenticationCredentialsNotFoundException 을 던진다.
+        // 슬라이스 테스트에는 AuthenticationEntryPoint 가 등록되지 않으므로 401 매핑이 불가하고,
+        // GlobalExceptionHandler 도 해당 예외를 처리하지 않아 ServletException 으로 전파된다.
+        // 본 테스트는 "인증 없는 요청은 컨트롤러 핸들러 진입 전에 거부된다"는 보안 가드 동작을 검증한다.
+        assertThatThrownBy(() -> mockMvc.perform(get("/api/v1/search/synonyms")))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(AuthenticationCredentialsNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/search/synonyms — EDITOR 역할 시 403")
+    void listSynonyms_returns403_whenEditorRole() throws Exception {
+        JwtPrincipal editor = new JwtPrincipal(99L, "editor", Set.of("EDITOR"));
+        mockMvc.perform(get("/api/v1/search/synonyms")
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(editor))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
 
     /**

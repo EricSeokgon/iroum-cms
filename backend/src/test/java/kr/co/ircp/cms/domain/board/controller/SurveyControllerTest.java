@@ -1,8 +1,10 @@
 package kr.co.ircp.cms.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.SurveyAnswerRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
@@ -22,12 +24,18 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -57,6 +65,21 @@ class SurveyControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private static final JwtPrincipal EDITOR_PRINCIPAL =
+            new JwtPrincipal(99L, "editor", Set.of("EDITOR"));
+
+    /**
+     * JwtPrincipal 기반 인증 토큰 헬퍼.
+     * JwtPrincipal.getAuthorities() 가 ROLE_ prefix 자동 부여 → 그대로 사용.
+     */
+    private UsernamePasswordAuthenticationToken jwtAuth(JwtPrincipal principal) {
+        return new UsernamePasswordAuthenticationToken(
+                principal, null,
+                principal.getAuthorities().stream()
+                        .map(a -> (GrantedAuthority) a)
+                        .toList());
+    }
 
     private SurveyDetail sampleDetail(Long id) {
         return new SurveyDetail(
@@ -180,5 +203,47 @@ class SurveyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.surveyId").value(1))
                 .andExpect(jsonPath("$.totalResponses").value(100));
+    }
+
+    // ─── 인증/인가 거부 시나리오 (REQ-BOARD-013 보안 가드) ─────────────────────
+
+    @Test
+    @DisplayName("POST /api/v1/surveys — 미인증 시 AuthenticationCredentialsNotFoundException (인증 가드 동작)")
+    void create_rejectsUnauthenticated() throws Exception {
+        // 쓰기 엔드포인트(@PreAuthorize CONTENT:WRITE/ADMIN/SUPER_ADMIN/CONTENT_ADMIN) 적용 시
+        // SecurityContext에 Authentication 이 없으면 Spring Security 6 의
+        // AuthorizationManagerBeforeMethodInterceptor 가 AuthenticationCredentialsNotFoundException 을 던진다.
+        // 슬라이스 테스트에는 AuthenticationEntryPoint 가 등록되지 않으므로 401 매핑이 불가하고,
+        // GlobalExceptionHandler 도 해당 예외를 처리하지 않아 ServletException 으로 전파된다.
+        SurveyCreateRequest req = new SurveyCreateRequest(
+                "익명 시도", "<p>설명</p>", "설명",
+                Instant.now(), Instant.now().plusSeconds(86400),
+                false, 1000,
+                List.of(new SurveyQuestionRequest("Q1", "TEXT", true, 1, null))
+        );
+        String body = objectMapper.writeValueAsString(req);
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/v1/surveys")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(AuthenticationCredentialsNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/surveys — EDITOR 역할 시 403 (CONTENT:WRITE/ADMIN 권한 없음)")
+    void create_returns403_whenEditorRole() throws Exception {
+        SurveyCreateRequest req = new SurveyCreateRequest(
+                "권한 없는 시도", "<p>설명</p>", "설명",
+                Instant.now(), Instant.now().plusSeconds(86400),
+                false, 1000,
+                List.of(new SurveyQuestionRequest("Q1", "TEXT", true, 1, null))
+        );
+        mockMvc.perform(post("/api/v1/surveys")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(EDITOR_PRINCIPAL))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
 }

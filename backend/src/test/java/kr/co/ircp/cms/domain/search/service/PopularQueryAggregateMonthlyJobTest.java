@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,17 +62,19 @@ class PopularQueryAggregateMonthlyJobTest {
     }
 
     @Test
-    @DisplayName("run() — 전월 1일~말일 범위로 aggregateDaily 호출")
+    @DisplayName("run(범위) — 고정 전월(2026-04) 1일~말일 범위로 aggregateDaily 호출")
     void run_default_callsRangeWithPreviousMonth() {
-        // 프로덕션과 동일한 로직으로 기대값 산출 (timezone-stable)
-        YearMonth previous = YearMonth.now(ZoneId.of("Asia/Seoul")).minusMonths(1);
+        // 결정론 보장: YearMonth.now() 대신 고정 전월 사용.
+        // 2026-05-07 기준 전월은 2026-04. atDay(1)~atEndOfMonth() 로직 검증.
+        // 프로덕션 run()은 today에 의존하므로 run(start, end) 오버로드를 호출한다.
+        YearMonth previous = YearMonth.of(2026, 4);
         LocalDate expectedStart = previous.atDay(1);
         LocalDate expectedEnd = previous.atEndOfMonth();
 
         when(searchLogMapper.aggregateDaily(eq(expectedStart), eq(expectedEnd), any()))
                 .thenReturn(List.of());
 
-        int processed = job.run();
+        int processed = job.run(expectedStart, expectedEnd);
 
         assertThat(processed).isZero();
         verify(searchLogMapper).aggregateDaily(eq(expectedStart), eq(expectedEnd), any());

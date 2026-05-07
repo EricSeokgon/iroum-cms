@@ -1,8 +1,10 @@
 package kr.co.ircp.cms.domain.board.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.PublicationCategoryDto;
 import kr.co.ircp.cms.domain.board.dto.PublicationCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PublicationDetail;
@@ -21,13 +23,19 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -59,6 +67,21 @@ class PublicationControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    private static final JwtPrincipal EDITOR_PRINCIPAL =
+            new JwtPrincipal(99L, "editor", Set.of("EDITOR"));
+
+    /**
+     * JwtPrincipal 기반 인증 토큰 헬퍼.
+     * JwtPrincipal.getAuthorities() 가 ROLE_ prefix 자동 부여 → 그대로 사용.
+     */
+    private UsernamePasswordAuthenticationToken jwtAuth(JwtPrincipal principal) {
+        return new UsernamePasswordAuthenticationToken(
+                principal, null,
+                principal.getAuthorities().stream()
+                        .map(a -> (GrantedAuthority) a)
+                        .toList());
+    }
 
     private PublicationDetail sampleDetail(Long id) {
         return new PublicationDetail(
@@ -211,5 +234,45 @@ class PublicationControllerTest {
                 .andExpect(jsonPath("$.mode").value("SYNC"))
                 .andExpect(jsonPath("$.downloadId").value(downloadId.toString()))
                 .andExpect(jsonPath("$.sizeBytes").value(12_345_678L));
+    }
+
+    // ─── 인증/인가 거부 시나리오 (REQ-BOARD-012 보안 가드) ─────────────────────
+
+    @Test
+    @DisplayName("POST /api/v1/publications — 미인증 시 AuthenticationCredentialsNotFoundException (인증 가드 동작)")
+    void create_rejectsUnauthenticated() throws Exception {
+        // 쓰기 엔드포인트(@PreAuthorize CONTENT:WRITE/ADMIN/SUPER_ADMIN/CONTENT_ADMIN) 적용 시
+        // SecurityContext에 Authentication 이 없으면 Spring Security 6 의
+        // AuthorizationManagerBeforeMethodInterceptor 가 AuthenticationCredentialsNotFoundException 을 던진다.
+        // 슬라이스 테스트에는 AuthenticationEntryPoint 가 등록되지 않으므로 401 매핑이 불가하고,
+        // GlobalExceptionHandler 도 해당 예외를 처리하지 않아 ServletException 으로 전파된다.
+        PublicationCreateRequest req = new PublicationCreateRequest(
+                "익명 시도", "<p>본문</p>", "본문",
+                2026, 4, "REPORT", 10L,
+                "979-11-1234567-89-0", "이로움정책연구원", "{}"
+        );
+        String body = objectMapper.writeValueAsString(req);
+        assertThatThrownBy(() -> mockMvc.perform(post("/api/v1/publications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)))
+                .isInstanceOf(ServletException.class)
+                .hasRootCauseInstanceOf(AuthenticationCredentialsNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/publications — EDITOR 역할 시 403 (CONTENT:WRITE/ADMIN 권한 없음)")
+    void create_returns403_whenEditorRole() throws Exception {
+        PublicationCreateRequest req = new PublicationCreateRequest(
+                "권한 없는 시도", "<p>본문</p>", "본문",
+                2026, 4, "REPORT", 10L,
+                "979-11-1234567-89-0", "이로움정책연구원", "{}"
+        );
+        mockMvc.perform(post("/api/v1/publications")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(EDITOR_PRINCIPAL))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
     }
 }

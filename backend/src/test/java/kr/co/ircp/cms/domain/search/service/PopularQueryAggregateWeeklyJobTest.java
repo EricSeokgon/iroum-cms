@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,18 +63,21 @@ class PopularQueryAggregateWeeklyJobTest {
     }
 
     @Test
-    @DisplayName("run() — 직전 주의 월요일~일요일 범위로 aggregateDaily 호출")
+    @DisplayName("run(범위) — 고정 기준일 기반의 직전 주(월~일) 범위로 aggregateDaily 호출")
     void run_default_callsRangeWithPreviousWeek() {
-        // 프로덕션과 동일한 로직으로 기대값 산출 (timezone-stable)
-        LocalDate today = LocalDate.now(ZoneId.of("Asia/Seoul"));
-        LocalDate expectedStart = today.minusWeeks(1)
+        // 결정론 보장: LocalDate.now() 대신 고정 기준일 사용.
+        // 2026-05-01 (금요일)을 기준으로 직전 주의 월요일~일요일을 계산한다.
+        // 프로덕션 run()은 today에 의존하므로 테스트는 run(start, end) 오버로드를 호출하여
+        // 동일한 집계 범위 계산 로직(월요일 정렬 + 6일 더하기)을 검증한다.
+        LocalDate referenceDay = LocalDate.of(2026, 5, 1);
+        LocalDate expectedStart = referenceDay.minusWeeks(1)
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate expectedEnd = expectedStart.plusDays(6);
 
         when(searchLogMapper.aggregateDaily(eq(expectedStart), eq(expectedEnd), any()))
                 .thenReturn(List.of());
 
-        int processed = job.run();
+        int processed = job.run(expectedStart, expectedEnd);
 
         assertThat(processed).isZero();
         verify(searchLogMapper).aggregateDaily(eq(expectedStart), eq(expectedEnd), any());

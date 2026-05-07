@@ -176,6 +176,17 @@ class SearchControllerTest {
     }
 
     @Test
+    @DisplayName("GET /api/v1/search/stats/queries — EDITOR 역할 시 403")
+    void getQueryStats_returns403_whenEditorRole() throws Exception {
+        JwtPrincipal editor = new JwtPrincipal(99L, "editor", Set.of("EDITOR"));
+        mockMvc.perform(get("/api/v1/search/stats/queries")
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(editor))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+    }
+
+    @Test
     @DisplayName("GET /api/v1/search/stats/queries — ADMIN 인증 시 200 OK + 통계 반환")
     void stats_returns200WithStats_whenAdmin() throws Exception {
         // given
