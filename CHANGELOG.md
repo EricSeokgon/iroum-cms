@@ -97,6 +97,26 @@
   - 다중 IT 클래스 회귀 BUILD SUCCESSFUL (회귀 0건)
   (SPEC-CMS-SECURITY-PII-002 Step 4, commit 0b3d05e)
 
+- **IntegrationAsyncConfig — IT 전용 비동기 실행기 override (REQ-PII-FU-001)**
+  - `@TestConfiguration` + `@Profile("integration")` + `@Primary` 조합
+  - `@Bean(name="auditExecutor")` SyncTaskExecutor 반환 — `@Async("auditExecutor")` 호출이 호출 스레드에서 동기 완료
+  - 운영 `AsyncConfig.auditExecutor()` ThreadPoolTaskExecutor를 IT profile 한정 override (default profile 무영향)
+  - `@MX:NOTE` + `@MX:SPEC` 적용
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 1, commit `5fe440b`)
+
+- **@MockitoSpyBean 마이그레이션 — Spring Framework 6.2 표준 적용 (REQ-PII-FU-002)**
+  - `org.springframework.boot.test.mock.mockito.SpyBean` (deprecated) → `org.springframework.test.context.bean.override.mockito.MockitoSpyBean`
+  - `PiiAuditEnhanceIT` `@SpyBean` → `@MockitoSpyBean` (사용처 단 1곳, Scope Discipline)
+  - `recordBulk(long, String, List, Set, PersonalDataAccessPurpose)` 5-arg matcher 시그니처 매칭 한계 해소
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 2, commit `5fe440b`)
+
+- **PiiAuditEnhanceIT @Disabled 3건 활성화 (REQ-PII-FU-003)**
+  - `findPage_bulkAuditLog_nRows` (AC-FU-003-1, ← PII-002 AC-009-1)
+  - `auditInsertFailure_returns200AndDoesNotPropagateError` (AC-FU-003-2, ← PII-002 AC-009-5)
+  - `findPage_bulkAudit_distinctTargetUserIds` (AC-FU-003-3, ← PII-002 AC-009-6)
+  - PII-002 RUN 1차에서 forward reference로 격리되어 있던 IT 3건 forward reference 완전 회수
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 3, commit `5fe440b`)
+
 ### Changed
 
 - **User 엔티티 5 PII 필드 추가**
@@ -127,6 +147,16 @@
 - **UserServiceImpl findPage 시그니처 변경**
   - `findPage(actor)` 본인 row 제외 + `recordBulk` 호출
   (SPEC-CMS-SECURITY-PII-002 Step 3, commit 04b9fe3)
+
+- **PiiAuditEnhanceIT 클래스 헤더 — 명시적 @Import**
+  - `@Import(IntegrationAsyncConfig.class)` 추가 (프로젝트 컨벤션 일관 — `WebMvcTestInfraConfig` 선례)
+  - `@TestConfiguration` 자동 컴포넌트 스캔 미보장 환경에서 IntegrationAsyncConfig 명시적 로드
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 1, commit `5fe440b`)
+
+- **PiiAuditEnhanceIT — Awaitility polling 정리 (D5-1)**
+  - SyncTaskExecutor override로 동기 실행 보장됨 → `await().atMost(2, SECONDS).untilAsserted(...)` 호출 제거
+  - import 정리: `@Disabled`, `Awaitility.await`, `TimeUnit.SECONDS` 제거 (가독성 향상)
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 3, commit `5fe440b`)
 
 - **PersonalDataAccessLogService.recordBulk 신규 메서드**
   - 기존 `record()` 패턴 따라 `@Async("auditExecutor")` + MDC 캡처 + 일괄 INSERT
@@ -173,7 +203,7 @@
 |--------------|------|
 | **Step 5 (이행 대기)** | `PiiEmailMigrationJob` 운영 배치 + V25 평문 컬럼 DROP — 운영 KMS 결정 후 별도 PR |
 | **SPEC-CMS-SECURITY-PII-002** | REQ-PII-EMAIL-007(관리자 검색 제약) + REQ-PII-EMAIL-008(응답 마스킹) + REQ-PII-EMAIL-009(PII 접근 감사) — Implemented (1차) |
-| **SPEC-CMS-SECURITY-PII-FOLLOWUP-001** | @Disabled IT 3건(AC-009-1/5/6) 활성화 — 비동기 검증 인프라 정비 + @SpyBean→@MockitoSpyBean 마이그레이션 |
+| **SPEC-CMS-SECURITY-PII-FOLLOWUP-001** | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) — **Implemented (1차) 2026-05-08** |
 | **SPEC-CMS-SECURITY-PII-KMS-001** | AWS KMS / HashiCorp Vault 어댑터 구현 (1차 `LocalEnvPiiKeyVault` 대체) |
 | **SPEC-CMS-SECURITY-PII-ROTATION-001** | 키 자동 회전 배치(`PiiEmailRekeyJob`) + cron 스케줄 |
 | **SPEC-CMS-SECURITY-PII-MASKING-001** | 로그/백업 PII 마스킹 표준 (Logback 필터 + pg_dump 파이프) |

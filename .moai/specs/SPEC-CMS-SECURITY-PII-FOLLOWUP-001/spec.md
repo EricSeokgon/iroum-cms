@@ -1,4 +1,4 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-001: PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) v0.1
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-001: PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) v0.2
 
 ## 1. 개요
 
@@ -8,7 +8,7 @@
 | 제목 | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented (1차 — Step 1~3 완료, 2026-05-08) |
 | 우선순위 | **P2 (Operational quality / non-blocker)** |
 | 분류 | Test Infrastructure SPEC (코드/Production 변경 없음 — 순수 테스트 인프라 + IT 활성화) |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-002 §5.5 REQ-PII-EMAIL-009 (RUN 1차 완료, commit 6aadc45까지) |
@@ -305,3 +305,4 @@ Step 1은 AC-FU-003-1 / AC-FU-003-3의 동기 분기 검증의 전제 조건. St
 | 버전 | 일자 | 변경 내용 | 작성자 |
 |------|------|----------|--------|
 | v0.1 | 2026-05-08 | 초안 작성. SPEC-CMS-SECURITY-PII-002 RUN 1차의 `@Disabled` 3건 forward reference 회수를 위한 P2 테스트 인프라 SPEC. REQ-PII-FU-001 (SyncTaskExecutor IT override), REQ-PII-FU-002 (`@SpyBean` → `@MockitoSpyBean` 마이그레이션), REQ-PII-FU-003 (@Disabled 3건 활성화) 정의. 결정 포인트 D1~D5(권장 조합: D1-1 + D2-1 + D3-1 + D4-1 + D5-1). RUN Step 1~3 분해. 운영 코드 변경 0건. | manager-spec |
+| v0.2 | 2026-05-08 | RUN 1차 완료 — Step 1~3 적용 (commit `5fe440b`). IntegrationAsyncConfig 신규 (59줄, SyncTaskExecutor + @Profile("integration") + @Primary) + `@SpyBean` → `@MockitoSpyBean` 마이그레이션 + `@Import(IntegrationAsyncConfig.class)` 명시 보강 + @Disabled 3건 제거 + Awaitility polling 정리. 사용자 결정 D1-1/D2-1/D3-1/D4-1/D5-1 전 채택. 운영 코드 변경 0건. | manager-docs |

@@ -204,6 +204,7 @@ PII_EMAIL_HMAC_KEY=<base64-encoded-32-byte-key>
 |------|------|
 | Step 5 (이행 대기) | `PiiEmailMigrationJob` 운영 배치 + V25 평문 컬럼 DROP |
 | SPEC-CMS-SECURITY-PII-002 | 관리자 검색 제약 + API 응답 마스킹 + PII 접근 감사 |
+| SPEC-CMS-SECURITY-PII-FOLLOWUP-001 | PII 비동기 감사 IT 검증 인프라 (@Disabled 3건 활성화) — Implemented 1차 |
 | SPEC-CMS-SECURITY-PII-KMS-001 | AWS KMS / HashiCorp Vault 어댑터 |
 | SPEC-CMS-SECURITY-PII-ROTATION-001 | 키 자동 회전 배치 |
 | SPEC-CMS-SECURITY-PII-MASKING-001 | 로그/백업 마스킹 표준 |
@@ -258,6 +259,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 �
 | SPEC-CMS-MEDIA-001 | 미디어·첨부파일 관리 | 예정 |
 | SPEC-CMS-SECURITY-PII-001 | 개인정보 암호화 (Email AES-256-GCM + HMAC + 키 관리) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-002 | PII 노출 통제 (Admin 검색 partial 차단 + 응답 마스킹 + PII 접근 감사 보강) | Implemented (1차) |
+| SPEC-CMS-SECURITY-PII-FOLLOWUP-001 | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 
