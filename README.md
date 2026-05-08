@@ -165,6 +165,53 @@ pnpm -F @iroum-cms/public test  # 공개 Vitest
 
 ---
 
+## 보안 — 개인정보 암호화 (PII)
+
+**SPEC-CMS-SECURITY-PII-001 1차 적용 (2026-05-08)**
+
+### 적용 범위
+
+| 항목 | 내용 |
+|------|------|
+| 암호화 대상 | `users.email` 컬럼 (AES-256-GCM, 12-byte IV + 16-byte auth tag 분리 저장) |
+| Lookup 방식 | HMAC-SHA256(`email_hmac`) — rainbow table 방지, B-tree UNIQUE 인덱스 |
+| 마이그레이션 | V24: 5개 신규 PII 컬럼 + `email_hmac` UNIQUE 인덱스 + `data_dictionary` 시드 |
+| 키 관리 | `PiiKeyVault` 인터페이스 (Local Dev: `LocalEnvPiiKeyVault`, 운영: KMS 후속 예정) |
+
+### 환경변수 (개발 환경)
+
+```bash
+# base64-encoded 32 bytes (AES-256 암호화 키, 버전 1)
+PII_EMAIL_KEY_V1=<base64-encoded-32-byte-key>
+
+# base64-encoded 32 bytes (HMAC-SHA256 lookup 키, 암호화 키와 분리)
+PII_EMAIL_HMAC_KEY=<base64-encoded-32-byte-key>
+```
+
+> 운영 환경에서는 `LocalEnvPiiKeyVault` 사용이 차단됩니다 (Spring profile `prod` + 환경변수 키 조합 부팅 거부). 운영 KMS 어댑터(SPEC-CMS-SECURITY-PII-KMS-001)가 필요합니다.
+
+### 컴플라이언스
+
+**개인정보보호법(PIPA) 제29조 안전성 확보 조치 의무** 충족.
+
+- 제29조 — 개인정보의 안전한 보관: AES-256-GCM 암호화 (REQ-PII-EMAIL-001)
+- 제29조 — 위·변조 방지: GCM auth tag 무결성 검증 + 실패 시 `audit_log` CRITICAL (REQ-PII-EMAIL-002)
+- 제29조 — 접근 통제: HMAC lookup 전용 경로, 평문 email 직접 SELECT 금지 (REQ-PII-EMAIL-006)
+
+### 후속 SPEC
+
+| SPEC | 내용 |
+|------|------|
+| Step 5 (이행 대기) | `PiiEmailMigrationJob` 운영 배치 + V25 평문 컬럼 DROP |
+| SPEC-CMS-SECURITY-PII-002 | 관리자 검색 제약 + API 응답 마스킹 + PII 접근 감사 |
+| SPEC-CMS-SECURITY-PII-KMS-001 | AWS KMS / HashiCorp Vault 어댑터 |
+| SPEC-CMS-SECURITY-PII-ROTATION-001 | 키 자동 회전 배치 |
+| SPEC-CMS-SECURITY-PII-MASKING-001 | 로그/백업 마스킹 표준 |
+
+자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-PII-001/spec.md`
+
+---
+
 ## SPEC 문서
 
 | SPEC ID | 제목 | 상태 |
@@ -175,6 +222,7 @@ pnpm -F @iroum-cms/public test  # 공개 Vitest
 | SPEC-CMS-004 | 콘텐츠·메뉴·사이트 관리 | 예정 |
 | SPEC-CMS-005 | 통계·로그·시스템 관리 | 예정 |
 | SPEC-CMS-MEDIA-001 | 미디어·첨부파일 관리 | 예정 |
+| SPEC-CMS-SECURITY-PII-001 | 개인정보 암호화 (Email AES-256-GCM + HMAC + 키 관리) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 
