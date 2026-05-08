@@ -110,6 +110,12 @@ dependencies {
     // @ServiceConnection 자동 DataSource 주입 (Spring Boot 3.1+, SPEC-CMS-002 IT)
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
 
+    // ArchUnit — 아키텍처 규칙 단위 테스트 (REQ-PII-EMAIL-008 @JsonSerialize 강제 검증)
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
+
+    // Awaitility — 비동기 검증 대기 헬퍼 (SPEC-CMS-SECURITY-PII-002 RUN follow-up — @Async audit 적재 검증용)
+    testImplementation("org.awaitility:awaitility:4.2.2")
+
     // Lombok (테스트 코드에서도 사용)
     testCompileOnly("org.projectlombok:lombok")
     testAnnotationProcessor("org.projectlombok:lombok")
