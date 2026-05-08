@@ -8,10 +8,12 @@ import kr.co.ircp.cms.domain.auth.dto.UserSummary;
 import kr.co.ircp.cms.domain.auth.dto.UserUpdateRequest;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.UserService;
+import kr.co.ircp.cms.domain.auth.validation.NoEmailWildcard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,10 +30,13 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>SPEC-CMS-002 REQ-AUTH-006 §6.3 — GET/POST/PUT/DELETE /api/v1/users.
  * 권한 검증: SUPER_ADMIN(전체) / DEPT_ADMIN(조회·잠금해제).
+ *
+ * <p>REQ-PII-EMAIL-007 — @Validated 활성으로 @NoEmailWildcard Bean Validation 적용.
  */
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -40,6 +45,10 @@ public class UserController {
      * 사용자 목록 조회 (페이징·검색·정렬).
      *
      * <p>권한: SUPER_ADMIN(전체), DEPT_ADMIN(소속 부서·자손 부서 사용자만 조회 — Q-24).
+     *
+     * <p>REQ-PII-EMAIL-007 — email 파라미터는 완전일치 HMAC 검색만 허용.
+     * @NoEmailWildcard 로 partial 패턴(*, %, _, @ 미포함) 입력 시 400 반환.
+     * search 파라미터는 username/name partial 검색에 사용 (email 제외).
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')")
@@ -49,6 +58,7 @@ public class UserController {
             @RequestParam(defaultValue = "createdAt,desc") String sort,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) @NoEmailWildcard String email,
             @AuthenticationPrincipal JwtPrincipal principal) {
         return userService.findPage(page, size, sort, search, status, principal);
     }

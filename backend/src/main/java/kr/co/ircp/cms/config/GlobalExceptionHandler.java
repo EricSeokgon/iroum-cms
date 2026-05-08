@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.config;
 
+import jakarta.validation.ConstraintViolationException;
 import kr.co.ircp.cms.domain.auth.exception.AccessOutOfScopeException;
+import kr.co.ircp.cms.domain.auth.exception.AdminEmailPartialSearchException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.VerificationAttemptExceededException;
 import kr.co.ircp.cms.domain.auth.exception.VerificationCodeMismatchException;
@@ -80,6 +82,38 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    /**
+     * email partial 검색 차단 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-PII-EMAIL-007 — email 컬럼 완전일치 검색만 허용, partial 패턴 입력 거부.
+     */
+    @ExceptionHandler(AdminEmailPartialSearchException.class)
+    public ProblemDetail handleAdminEmailPartialSearch(AdminEmailPartialSearchException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Email Partial Search Forbidden");
+        detail.setProperty("code", AdminEmailPartialSearchException.CODE);
+        return detail;
+    }
+
+    /**
+     * Bean Validation @NoEmailWildcard 위반 → HTTP 400 Bad Request.
+     *
+     * <p>REQ-PII-EMAIL-007 — @Validated 컨트롤러에서 ConstraintViolationException 발생 시 처리.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .map(cv -> cv.getMessage())
+                .findFirst()
+                .orElse("입력값 검증 실패");
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, message);
+        detail.setTitle("Input Validation Failed");
+        detail.setProperty("code", AdminEmailPartialSearchException.CODE);
+        return detail;
+    }
 
     /**
      * 잘못된 자격증명 → HTTP 401 Unauthorized.
