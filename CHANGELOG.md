@@ -57,6 +57,46 @@
   - SpringBootTest 컨텍스트 로드 시 `LocalEnvPiiKeyVault` 누락 키 예외 방지
   (SPEC-CMS-SECURITY-PII-001 Step 4, commit 29878b9)
 
+- **NoEmailWildcardValidator + AdminEmailPartialSearchException — admin email partial 검색 차단 (REQ-PII-EMAIL-007)**
+  - `NoEmailWildcardValidator`: RFC 5321 valid email + 와일드카드(`*`, `?`, `%`, `_`) 부정 문자 클래스 거부
+  - `AdminEmailPartialSearchException`: 400 ADMIN_EMAIL_PARTIAL_FORBIDDEN 전용 예외
+  - `@NoEmailWildcard` Bean Validation annotation
+  - `UserController` `@Validated` + 파라미터 적용
+  - `GlobalExceptionHandler` 400 핸들러 + ConstraintViolationException 핸들러
+  - 통합 테스트 11/11 GREEN (PiiEmailAdminSearchIT — 와일드카드 4종 + 정상 + 정규화 + 권한)
+  - 사용자 결정: email 빈 문자열은 무시(전체 검색 허용)
+  (SPEC-CMS-SECURITY-PII-002 Step 1, commit 3a8be0f)
+
+- **EmailMaskSerializer — API 응답 email 마스킹 (REQ-PII-EMAIL-008)**
+  - Jackson `JsonSerializer<String>` + SecurityContext 분기 (ADMIN/본인 평문, 그 외 마스킹)
+  - 1자=`*`, 2자=`**`, 3자+=첫CP+`***`+마지막CP, 코드 포인트 단위 (IDN 안전)
+  - 사용자 결정: 2자 local-part 마스킹은 `**@e***.com` (SPEC §5.4 원문 유지)
+  - `UserSummary`, `UserDetail` `@JsonSerialize(using = EmailMaskSerializer.class)` 적용
+  - Java record 호환 검증
+  - 통합 테스트 8/8 GREEN (PiiEmailMaskIT — 1/2/3+자, IDN, 이모지, ADMIN/본인 분기)
+  (SPEC-CMS-SECURITY-PII-002 Step 2, commit fbedd8c)
+
+- **PII 접근 감사 보강 — recordBulk @Async + Micrometer (REQ-PII-EMAIL-009)**
+  - `PersonalDataAccessLogServiceImpl.recordBulk(viewerId, viewerRole, targetUserIds, fields, purpose)` `@Async("auditExecutor")` 비동기 일괄 INSERT
+  - `MeterRegistry` 주입 + `pii.audit.log.failure.count` Micrometer counter
+  - `UserServiceImpl.findPage(actor)` 본인 제외 + `recordBulk` 호출
+  - `PersonalDataAccessPurpose.ADMIN_EMAIL_LOOKUP` enum 추가
+  - 사용자 결정: AOP fallback 허용 + ERROR 로그 + Micrometer counter
+  - 통합 테스트 3/6 GREEN + 3 @Disabled (AC-009-1, 5, 6 — 비동기 검증 인프라 follow-up SPEC-CMS-SECURITY-PII-FOLLOWUP-001로 추적)
+  (SPEC-CMS-SECURITY-PII-002 Step 3, commit 04b9fe3)
+
+- **PiiEmailMaskArchTest — ArchUnit 강제 (UserSummary/UserDetail email @JsonSerialize)**
+  - `archunit-junit5:1.3.0` 의존성 추가
+  - 5 ArchUnit 케이스: UserSummary/UserDetail email 필드 `@JsonSerialize(using = EmailMaskSerializer.class)` 누락 방지 + Architecture safety net
+  - 신규 DTO 추가 시 마스킹 누락 자동 차단
+  (SPEC-CMS-SECURITY-PII-002 Step 4, commit 0b3d05e)
+
+- **JwtTestAuth utility + Awaitility 의존성 (테스트 인프라)**
+  - `JwtTestAuth`: `JwtPrincipal` record를 SecurityContext에 주입하는 IT 인증 헬퍼 (50줄)
+  - `awaitility:4.2.2` 의존성 추가 (비동기 검증용 폴링)
+  - 다중 IT 클래스 회귀 BUILD SUCCESSFUL (회귀 0건)
+  (SPEC-CMS-SECURITY-PII-002 Step 4, commit 0b3d05e)
+
 ### Changed
 
 - **User 엔티티 5 PII 필드 추가**
@@ -73,6 +113,26 @@
   - `MigrationOrderIT`: V17→V23 범위에서 V17→V24 범위로 확장
   - V24 마이그레이션 순서 및 체크섬 검증 포함
   (SPEC-CMS-SECURITY-PII-001 Step 3, commit e432d53)
+
+- **UserController email 파라미터 검증 가드 적용**
+  - `@Validated` 컨트롤러 + `@NoEmailWildcard email` 파라미터
+  (SPEC-CMS-SECURITY-PII-002 Step 1, commit 3a8be0f)
+
+- **GlobalExceptionHandler PII 예외 핸들러 추가**
+  - `AdminEmailPartialSearchException` 400 핸들러 (RFC 9457 ProblemDetail)
+  - `ConstraintViolationException` 400 핸들러 (Bean Validation 위반 표준화, 동일 ADMIN_EMAIL_PARTIAL_FORBIDDEN 코드)
+  - `@MX:NOTE` + `@MX:SPEC` 추가 (SPEC §5.3 / REQ-PII-EMAIL-007 응답 코드 고정 근거)
+  (SPEC-CMS-SECURITY-PII-002 Step 1, commits 3a8be0f + sync 단계)
+
+- **UserServiceImpl findPage 시그니처 변경**
+  - `findPage(actor)` 본인 row 제외 + `recordBulk` 호출
+  (SPEC-CMS-SECURITY-PII-002 Step 3, commit 04b9fe3)
+
+- **PersonalDataAccessLogService.recordBulk 신규 메서드**
+  - 기존 `record()` 패턴 따라 `@Async("auditExecutor")` + MDC 캡처 + 일괄 INSERT
+  - try-catch fallback + Micrometer counter
+  - `@MX:SPEC` sub-line 추가 (SPEC §5.5 / REQ-PII-EMAIL-009 — 적재 실패 시 user-facing 에러 미전파 정책)
+  (SPEC-CMS-SECURITY-PII-002 Step 3, commits 04b9fe3 + sync 단계)
 
 ### Fixed
 
@@ -93,6 +153,15 @@
   - 운영 배포 차단(P0 blocker) 상태 해소
   (SPEC-CMS-SECURITY-PII-001 Step 1~4, commits 1d4ae61, 0a6b14e, e432d53, 29878b9, f91628a, 44cc3b8)
 
+- **PIPA 제29조 안전성 확보 조치 의무 추가 완화**
+  - admin email partial 검색 차단 (전사 사용자 노출 방지)
+  - API 응답 email 마스킹 (DTO 레벨, ADMIN/본인 외 사용자 PII 노출 차단)
+  - PII 접근 감사 보강 (`personal_data_access_log` 일괄 적재로 비ADMIN/비본인 admin lookup 추적성 확보)
+  - ArchUnit으로 마스킹 강제 (신규 DTO 회귀 방지)
+  - OWASP A03(Injection) / A04(Insecure Design) / A05(Misconfiguration) / A09(Logging) 점검 PASS
+  - SPEC-CMS-SECURITY-PII-001과 결합하여 운영 배포 차단 상태 완전 해소
+  (SPEC-CMS-SECURITY-PII-002 Step 1~4, commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0)
+
 ---
 
 ### 후속 SPEC 예정
@@ -103,7 +172,8 @@
 | 후속 SPEC 후보 | 내용 |
 |--------------|------|
 | **Step 5 (이행 대기)** | `PiiEmailMigrationJob` 운영 배치 + V25 평문 컬럼 DROP — 운영 KMS 결정 후 별도 PR |
-| **SPEC-CMS-SECURITY-PII-002** | REQ-PII-EMAIL-007(관리자 검색 제약) + REQ-PII-EMAIL-008(응답 마스킹) + REQ-PII-EMAIL-009(PII 접근 감사) |
+| **SPEC-CMS-SECURITY-PII-002** | REQ-PII-EMAIL-007(관리자 검색 제약) + REQ-PII-EMAIL-008(응답 마스킹) + REQ-PII-EMAIL-009(PII 접근 감사) — Implemented (1차) |
+| **SPEC-CMS-SECURITY-PII-FOLLOWUP-001** | @Disabled IT 3건(AC-009-1/5/6) 활성화 — 비동기 검증 인프라 정비 + @SpyBean→@MockitoSpyBean 마이그레이션 |
 | **SPEC-CMS-SECURITY-PII-KMS-001** | AWS KMS / HashiCorp Vault 어댑터 구현 (1차 `LocalEnvPiiKeyVault` 대체) |
 | **SPEC-CMS-SECURITY-PII-ROTATION-001** | 키 자동 회전 배치(`PiiEmailRekeyJob`) + cron 스케줄 |
 | **SPEC-CMS-SECURITY-PII-MASKING-001** | 로그/백업 PII 마스킹 표준 (Logback 필터 + pg_dump 파이프) |

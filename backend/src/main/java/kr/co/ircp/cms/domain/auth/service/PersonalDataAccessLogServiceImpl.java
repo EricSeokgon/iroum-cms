@@ -82,6 +82,7 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
      */
     // @MX:WARN: [AUTO] recordBulk — @Async 비동기; SecurityContext 미전파, 파라미터로 모든 값 전달 필수
     // @MX:REASON: @Async(auditExecutor) 별도 스레드 풀; SecurityContext 공유 불가 (기존 record()와 동일 패턴)
+    // @MX:SPEC: SPEC-CMS-SECURITY-PII-002 §5.5 / REQ-PII-EMAIL-009 — 적재 실패 시 user-facing 에러 미전파(try-catch + Micrometer counter), AOP fallback 정책
     @Override
     @Async("auditExecutor")
     public void recordBulk(long viewerId, String viewerRole, List<Long> targetUserIds,

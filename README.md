@@ -212,6 +212,40 @@ PII_EMAIL_HMAC_KEY=<base64-encoded-32-byte-key>
 
 ---
 
+**SPEC-CMS-SECURITY-PII-002 추가 적용 (2026-05-08)**
+
+### 적용 범위
+
+| 항목 | 내용 |
+|------|------|
+| Admin 검색 제약 | `email` 파라미터 와일드카드/부분 일치 거부 (400 ADMIN_EMAIL_PARTIAL_FORBIDDEN) — RFC 5321 valid email 패턴만 허용 |
+| API 응답 마스킹 | `UserSummary`, `UserDetail` email 필드 `@JsonSerialize(EmailMaskSerializer)` — ADMIN/본인 평문, 그 외 길이별 마스킹 |
+| 마스킹 규칙 | 1자=`*`, 2자=`**`, 3자+=첫CP+`***`+마지막CP, 코드 포인트 단위 (IDN/이모지 안전) |
+| PII 접근 감사 | `findPage(actor)` 결과 본인 제외 후 `personal_data_access_log` 일괄 적재 (`recordBulk` @Async) |
+| Architecture 강제 | ArchUnit으로 신규 DTO email 필드 마스킹 누락 자동 차단 |
+
+### 응답 마스킹 예시
+
+```
+원본: john.doe@example.com
+ADMIN 또는 본인 조회: john.doe@example.com (평문)
+일반 사용자 조회: j***e@e***.com (3자+ 패턴)
+local-part 1자(a@example.com): *@e***.com
+local-part 2자(jo@example.com): **@e***.com
+```
+
+### 컴플라이언스
+
+PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 결합하여 운영 배포 차단 상태 완전 해소.
+
+- 제29조 — 접근 통제: admin partial 검색 차단으로 전사 PII 노출 방지 (REQ-PII-EMAIL-007)
+- 제29조 — 안전한 보관: 응답 마스킹으로 비인가 사용자 평문 노출 차단 (REQ-PII-EMAIL-008)
+- 제29조 — 접근 기록: `personal_data_access_log` 일괄 적재로 admin lookup 추적성 확보 (REQ-PII-EMAIL-009)
+
+자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-PII-002/spec.md`
+
+---
+
 ## SPEC 문서
 
 | SPEC ID | 제목 | 상태 |
@@ -223,6 +257,7 @@ PII_EMAIL_HMAC_KEY=<base64-encoded-32-byte-key>
 | SPEC-CMS-005 | 통계·로그·시스템 관리 | 예정 |
 | SPEC-CMS-MEDIA-001 | 미디어·첨부파일 관리 | 예정 |
 | SPEC-CMS-SECURITY-PII-001 | 개인정보 암호화 (Email AES-256-GCM + HMAC + 키 관리) | Implemented (1차) |
+| SPEC-CMS-SECURITY-PII-002 | PII 노출 통제 (Admin 검색 partial 차단 + 응답 마스킹 + PII 접근 감사 보강) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 

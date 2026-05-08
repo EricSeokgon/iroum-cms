@@ -88,6 +88,8 @@ public class GlobalExceptionHandler {
      *
      * <p>REQ-PII-EMAIL-007 — email 컬럼 완전일치 검색만 허용, partial 패턴 입력 거부.
      */
+    // @MX:NOTE: [AUTO] AdminEmailPartialSearchException 핸들러 — 와일드카드/부분 일치 입력을 RFC 9457 ProblemDetail 400으로 표준화
+    // @MX:SPEC: SPEC-CMS-SECURITY-PII-002 §5.3 / REQ-PII-EMAIL-007 — 응답 코드는 ADMIN_EMAIL_PARTIAL_FORBIDDEN 고정, ConstraintViolationException 핸들러와 동일 코드 사용
     @ExceptionHandler(AdminEmailPartialSearchException.class)
     public ProblemDetail handleAdminEmailPartialSearch(AdminEmailPartialSearchException ex) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(
