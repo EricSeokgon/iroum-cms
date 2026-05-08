@@ -1,5 +1,7 @@
 package kr.co.ircp.cms.domain.auth.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry;
 import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessLog;
@@ -38,11 +40,13 @@ class PersonalDataAccessLogServiceTest {
     @Mock
     private PersonalDataAccessLogMapper mapper;
 
+    private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
     private PersonalDataAccessLogService service;
 
     @BeforeEach
     void setUp() {
-        service = new PersonalDataAccessLogServiceImpl(mapper);
+        service = new PersonalDataAccessLogServiceImpl(mapper, meterRegistry);
     }
 
     // ──────────────────────────────────────────────────────────────

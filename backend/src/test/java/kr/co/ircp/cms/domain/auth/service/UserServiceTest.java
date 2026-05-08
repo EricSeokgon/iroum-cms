@@ -61,6 +61,7 @@ class UserServiceTest {
     @Mock private OrganizationMapper organizationMapper;
     @Mock private PermissionChangeHistoryService permissionChangeHistoryService;
     @Mock private EmailEncryptionService emailEncryptionService;
+    @Mock private PersonalDataAccessLogService personalDataAccessLogService;
 
     private UserService userService;
 
@@ -68,7 +69,7 @@ class UserServiceTest {
     void setUp() {
         userService = new UserServiceImpl(userMapper, refreshTokenMapper,
                 passwordPolicyService, organizationMapper, permissionChangeHistoryService,
-                emailEncryptionService);
+                emailEncryptionService, personalDataAccessLogService);
 
         // SPEC-CMS-SECURITY-PII-001 — create/update 경로에서 호출되는 암호화 서비스 기본 stub.
         // 12-byte IV / 16-byte tag 형상 충족. lenient로 호출 안 한 테스트는 무시.

@@ -5,6 +5,8 @@ package kr.co.ircp.cms.domain.auth.entity;
  *
  * <p>REQ-AUTH-018-D-1 — personal_data_access_log.purpose 컬럼 CHECK 제약과 값이 일치해야 한다.
  * 개인정보보호법 §18 목적 외 이용 추적을 위해 접근 목적을 명시적으로 분류한다.
+ *
+ * <p>REQ-PII-EMAIL-009 — ADMIN_USER_LIST, ADMIN_EMAIL_LOOKUP 신규 값 추가.
  */
 public enum PersonalDataAccessPurpose {
 
@@ -20,11 +22,14 @@ public enum PersonalDataAccessPurpose {
     /** 본인 정보 자기 조회 (REQ-AUTH-018-D-4 본인 접근 이력 노출) */
     SELF_VIEW,
 
-    /** 관리자 사용자 목록 조회 */
+    /** 관리자 사용자 목록 조회 — findPage(actor) 결과 N건 일괄 적재 (REQ-PII-EMAIL-009) */
     ADMIN_USER_LIST,
 
     /** 관리자 사용자 정보 수정 */
     ADMIN_USER_EDIT,
+
+    /** 관리자 email 완전일치 HMAC lookup 결과 적재 (REQ-PII-EMAIL-007) */
+    ADMIN_EMAIL_LOOKUP,
 
     /** 개인정보 내보내기 (Export) */
     EXPORT

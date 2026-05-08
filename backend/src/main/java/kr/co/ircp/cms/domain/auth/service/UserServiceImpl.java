@@ -10,6 +10,7 @@ import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserSummary;
 import kr.co.ircp.cms.domain.auth.dto.UserUpdateRequest;
 import kr.co.ircp.cms.domain.auth.entity.Organization;
+import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessPurpose;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
@@ -18,6 +19,7 @@ import kr.co.ircp.cms.domain.auth.repository.OrganizationMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
+import kr.co.ircp.cms.domain.auth.service.PersonalDataAccessLogService;
 import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
 import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +66,8 @@ public class UserServiceImpl implements UserService {
      * create/update 경로에서 평문 email 을 암호화하여 emailEncrypted/Iv/Tag/Hmac/KeyVersion 컬럼에 저장한다.
      */
     private final EmailEncryptionService emailEncryptionService;
+    // @MX:NOTE: [AUTO] personalDataAccessLogService — REQ-PII-EMAIL-009 사용자 목록 조회 PII 감사 로그 적재
+    private final PersonalDataAccessLogService personalDataAccessLogService;
 
     // @MX:ANCHOR: [AUTO] findPage — 사용자 목록 API 진입점, UserController.list 호출
     // @MX:REASON: 페이징·검색·정렬 복합 쿼리; sort 파라미터 화이트리스트 검증 포함 (fan_in >= 3)
@@ -110,6 +114,15 @@ public class UserServiceImpl implements UserService {
 
         List<UserSummary> content = userMapper.findPageWithScope(offset, size, search, status, safeSort, orgPathPrefix);
         long total = userMapper.countAllWithScope(search, status, orgPathPrefix);
+
+        // REQ-PII-EMAIL-009 — 목록 결과 N건 PII 감사 로그 비동기 적재 (self 제외)
+        List<Long> auditTargetIds = content.stream()
+                .map(UserSummary::id)
+                .filter(id -> id != actor.userId())
+                .toList();
+        String viewerRole = actor.roles().stream().findFirst().orElse("UNKNOWN");
+        personalDataAccessLogService.recordBulk(actor.userId(), viewerRole, auditTargetIds,
+                Set.of("email"), PersonalDataAccessPurpose.ADMIN_USER_LIST);
 
         return PageResponse.of(content, page, size, total);
     }

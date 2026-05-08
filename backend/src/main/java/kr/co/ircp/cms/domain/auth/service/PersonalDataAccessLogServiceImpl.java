@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.auth.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry;
 import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessLog;
@@ -37,6 +38,7 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
     );
 
     private final PersonalDataAccessLogMapper mapper;
+    private final MeterRegistry meterRegistry;
 
     /**
      * 개인정보 접근 로그 비동기 적재.
@@ -69,6 +71,45 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
             mapper.insert(logEntry);
         } catch (Exception e) {
             log.error("개인정보 접근 로그 적재 실패 (non-blocking, REQ-AUTH-018)", e);
+        }
+    }
+
+    /**
+     * N건 대상 일괄 개인정보 접근 로그 비동기 적재.
+     *
+     * <p>REQ-PII-EMAIL-009 — findPage(actor) 결과 N건 일괄 INSERT.
+     * 적재 실패 시 user-facing 에러 미전파: ERROR 로그 + Micrometer counter 증가.
+     */
+    // @MX:WARN: [AUTO] recordBulk — @Async 비동기; SecurityContext 미전파, 파라미터로 모든 값 전달 필수
+    // @MX:REASON: @Async(auditExecutor) 별도 스레드 풀; SecurityContext 공유 불가 (기존 record()와 동일 패턴)
+    @Override
+    @Async("auditExecutor")
+    public void recordBulk(long viewerId, String viewerRole, List<Long> targetUserIds,
+                           Set<String> accessedFields, PersonalDataAccessPurpose purpose) {
+        if (targetUserIds == null || targetUserIds.isEmpty()) {
+            return;
+        }
+        try {
+            String ipAddress = MDC.get("ipAddress");
+            String userAgent = MDC.get("userAgent");
+            String traceId   = MDC.get("traceId");
+
+            for (Long targetUserId : targetUserIds) {
+                PersonalDataAccessLog logEntry = PersonalDataAccessLog.builder()
+                        .viewerId(viewerId)
+                        .viewerRole(viewerRole)
+                        .targetUserId(targetUserId)
+                        .accessedFields(new ArrayList<>(accessedFields))
+                        .purpose(purpose.name())
+                        .ipAddress(ipAddress)
+                        .userAgent(userAgent)
+                        .traceId(traceId)
+                        .build();
+                mapper.insert(logEntry);
+            }
+        } catch (Exception e) {
+            log.error("PII audit log INSERT failed (bulk, non-blocking, REQ-PII-EMAIL-009)", e);
+            meterRegistry.counter("pii.audit.log.failure.count").increment();
         }
     }
 

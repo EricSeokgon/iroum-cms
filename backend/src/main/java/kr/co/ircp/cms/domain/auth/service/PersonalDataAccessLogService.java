@@ -5,6 +5,7 @@ import kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry;
 import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessPurpose;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -30,6 +31,21 @@ public interface PersonalDataAccessLogService {
      */
     void record(long viewerId, String viewerRole, long targetUserId,
                 Set<String> accessedFields, PersonalDataAccessPurpose purpose);
+
+    /**
+     * N건 대상 일괄 개인정보 접근 로그 적재 (비동기).
+     *
+     * <p>REQ-PII-EMAIL-009 — findPage(actor) 결과 N건 일괄 적재.
+     * 적재 실패 시 비즈니스 로직에 예외 미전파 (ERROR 로그 + Micrometer counter).
+     *
+     * @param viewerId      열람자 사용자 ID
+     * @param viewerRole    열람자 역할 코드
+     * @param targetUserIds 피열람자 사용자 ID 목록
+     * @param accessedFields 열람된 개인정보 필드 집합
+     * @param purpose       접근 목적
+     */
+    void recordBulk(long viewerId, String viewerRole, List<Long> targetUserIds,
+                    Set<String> accessedFields, PersonalDataAccessPurpose purpose);
 
     /**
      * 관리자용 페이징 조회.
