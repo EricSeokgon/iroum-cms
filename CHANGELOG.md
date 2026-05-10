@@ -117,6 +117,30 @@
   - PII-002 RUN 1차에서 forward reference로 격리되어 있던 IT 3건 forward reference 완전 회수
   (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 3, commit `5fe440b`)
 
+- **AuthorizationMatrixIT — HTTP 권한 매트릭스 IT 인프라 신설 (REQ-AUTHZ-MATRIX-001)**
+  - `@SpringBootTest(webEnvironment = MOCK)` + `@AutoConfigureMockMvc` + `@Testcontainers` (PostgreSQL 16)
+  - `@MockitoBean JwtTokenProvider`, `@MockitoBean TokenBlacklistMapper` (DB 토큰 저장 없이 시나리오 검증)
+  - PII 더미 키 주입 (SPEC-PII-001 인프라 일관 — `pii.keyvault.keys.v1` + `pii.keyvault.hmac-key`)
+  - `givenValidToken(roles, permissions)` JWT stub helper로 임의 권한 시뮬레이션
+  - 운영 `SecurityFilterChain` + `JwtAuthenticationFilter` + Method Security 그대로 적재
+  - `@MX:NOTE` + `@MX:SPEC` 클래스 헤더 적용
+  (SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 Step 1, commit `f0ae970`)
+
+- **WRITE 권한 endpoint 매트릭스 검증 — 12 IT 케이스 (REQ-AUTHZ-MATRIX-002)**
+  - 6 endpoint × {권한 부족 → 403, 정합 권한 → 2xx} 시나리오 매트릭스
+  - 권한 어휘 4종 모두 커버: `hasAuthority('CONTENT:WRITE')`, `hasAuthority('PAGE:WRITE')`, `hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')`, `hasRole('SUPER_ADMIN')`, 클래스 레벨 `hasRole('ADMIN')`
+  - 검증 endpoint: Banner POST/PUT, Page POST, CacheAdmin invalidate, User POST, Governance class-level
+  - 권한 어휘 분리 회귀 검출 (`CONTENT:WRITE` 보유하더라도 `PAGE:WRITE` 부재 시 403)
+  - 역할 위계 회귀 검출 (`ADMIN` 보유하더라도 `SUPER_ADMIN` 부재 시 403)
+  (SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 Step 2, commit `f0ae970`)
+
+- **응답 body 회귀 검증 + 운영 컴포넌트 적재 검증 — 4 IT 케이스 (REQ-AUTHZ-MATRIX-003)**
+  - 401 응답: Content-Type + `code=AUTH_REQUIRED` + `message` 필드
+  - 403 응답: Content-Type + `code=AUTH_FORBIDDEN` + `message` 필드
+  - `JwtAuthenticationFilter` 체인 적재 간접 검증 (401 경로 EntryPoint 호출)
+  - Method Security 인터셉터 적재 간접 검증 (403 경로 `@PreAuthorize` 호출)
+  (SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 Step 3, commit `f0ae970`)
+
 ### Changed
 
 - **User 엔티티 5 PII 필드 추가**
@@ -192,6 +216,13 @@
   - SPEC-CMS-SECURITY-PII-001과 결합하여 운영 배포 차단 상태 완전 해소
   (SPEC-CMS-SECURITY-PII-002 Step 1~4, commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0)
 
+- **OWASP A01 (Broken Access Control) 회귀 검출 인프라 확보**
+  - 5/7 코드 리뷰 C1 진정한 갭(HTTP 권한 매트릭스 회귀 검출 인프라 부재) 해소
+  - 운영 `SecurityFilterChain.requestMatchers()` URL 인증 매트릭스 + 메소드 레벨 `@PreAuthorize` 정책 변경 시 자동 회귀 검출
+  - 6 핵심 endpoint × 3 시나리오(401/403/200) 매트릭스로 권한 어휘 4종 + 역할 위계 + 권한 어휘 분리 모두 커버
+  - 운영 코드 변경 0건 — IT 인프라 추가만으로 회귀 검출 능력 회복
+  (SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 Step 1~3, commits `af5ad41`, `f0ae970`)
+
 ---
 
 ### 후속 SPEC 예정
@@ -208,3 +239,13 @@
 | **SPEC-CMS-SECURITY-PII-ROTATION-001** | 키 자동 회전 배치(`PiiEmailRekeyJob`) + cron 스케줄 |
 | **SPEC-CMS-SECURITY-PII-MASKING-001** | 로그/백업 PII 마스킹 표준 (Logback 필터 + pg_dump 파이프) |
 | **SPEC-CMS-SECURITY-PII-NEXT-001 시리즈** | `users.name`, `users.phone_e164`, `login_history.ip` 등 나머지 PII 컬럼 암호화 |
+
+**보안 회귀 검출 트랙 (OWASP A01)**
+
+| 후속 SPEC 후보 | 내용 |
+|--------------|------|
+| **SPEC-CMS-SECURITY-AUTHZ-MATRIX-001** | HTTP 권한 매트릭스 IT 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) — **Implemented (1차) 2026-05-11** |
+| **SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001** | 27 컨트롤러 isForbidden 메소드 레벨 보강 |
+| **SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001** | 매트릭스 IT 5~7 → 22+ 컨트롤러 확장 |
+| **SPEC-CMS-TEST-INFRA-RECONFIG-001** | 5/7 코드 리뷰 C2 — integration exclude 제거 + JaCoCo 신뢰도 회복 |
+| **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
