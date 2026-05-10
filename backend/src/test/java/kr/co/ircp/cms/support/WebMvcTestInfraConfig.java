@@ -7,12 +7,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -102,9 +104,13 @@ public class WebMvcTestInfraConfig {
         // 익명 인증 부여 — @PreAuthorize가 anonymous 주체를 인식할 수 있도록
         AnonymousAuthenticationFilter anonymousFilter = new AnonymousAuthenticationFilter("test-key");
 
-        // AccessDeniedException → 403, AuthenticationException → 401 변환
+        // 운영 JWT 인증 시맨틱 정렬:
+        //  - 익명(anonymous) AccessDenied → ExceptionTranslationFilter가 EntryPoint 호출 → 401 (인증 필요)
+        //  - 인증된(authenticated) AccessDenied → 기본 AccessDeniedHandler → 403 (권한 부족)
+        // 운영은 JwtAuthenticationFilter가 익명 시 AuthenticationException을 던져 401을 반환하므로,
+        // 슬라이스 인프라도 동일한 401 시맨틱을 갖도록 HttpStatusEntryPoint(UNAUTHORIZED)를 사용한다.
         ExceptionTranslationFilter exceptionFilter = new ExceptionTranslationFilter(
-                new org.springframework.security.web.authentication.Http403ForbiddenEntryPoint()
+                new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
         );
 
         return new DefaultSecurityFilterChain(AnyRequestMatcher.INSTANCE,

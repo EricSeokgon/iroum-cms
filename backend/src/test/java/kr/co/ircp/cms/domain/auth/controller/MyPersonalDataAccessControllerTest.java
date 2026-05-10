@@ -130,6 +130,21 @@ class MyPersonalDataAccessControllerTest {
         verify(service).findByTarget(otherUserId, 0, 20);
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오 (적용 불가)
+    //
+    // MyPersonalDataAccessController는 메소드 레벨 @PreAuthorize 어노테이션이 없으며,
+    // 운영 환경에서는 SecurityConfig의 HTTP 레벨 정책(/api/v1/me/** authenticated())로 차단된다.
+    // 본인 격리는 controller에서 principal.userId()를 직접 사용하여 달성한다(REQ-AUTH-018-D-4).
+    //
+    // 본 슬라이스 테스트는 SecurityAutoConfiguration을 제외하므로 HTTP 레벨 정책이 미적용되며,
+    // 익명 요청 시 @AuthenticationPrincipal JwtPrincipal이 null로 주입되어
+    // controller 본체에서 NullPointerException(500)이 발생한다 — 401/403 응답 검증 불가.
+    //
+    // 401(미인증) / 403(권한 부족) 회귀는 SPEC-CMS-SECURITY-AUTHZ-MATRIX-001
+    // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
+    // ──────────────────────────────────────────────────────────────
+
     // ─── 헬퍼 ───────────────────────────────────────────────────
 
     private org.springframework.security.authentication.UsernamePasswordAuthenticationToken jwtAuth(

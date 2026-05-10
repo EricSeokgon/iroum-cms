@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -159,6 +160,31 @@ class RoleControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isNoContent());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오
+    // 클래스 레벨 @PreAuthorize("hasRole('SUPER_ADMIN')") 정책 검증
+    // (AUTHZ-MATRIX-001 IT 레이어와 분리: 슬라이스 vs SpringBootTest)
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("AC-COV-001-1 — GET /api/v1/roles 인증 없이 접근 시 401 Unauthorized")
+    void list_returns401_withoutAuthentication() throws Exception {
+        // given: SecurityContext 비어있음 (인증 어노테이션 미부착)
+        // when & then: AnonymousAuthenticationFilter → @PreAuthorize 거부 → ExceptionTranslationFilter → 401
+        mockMvc.perform(get("/api/v1/roles"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"WRONG_AUTHORITY"})
+    @DisplayName("AC-COV-001-2 — GET /api/v1/roles 권한 부족 시 403 Forbidden")
+    void list_returns403_withInsufficientAuthority() throws Exception {
+        // given: WRONG_AUTHORITY는 ROLE_SUPER_ADMIN 정책 미충족
+        // when & then: @PreAuthorize 거부 → AccessDeniedHandler → 403
+        mockMvc.perform(get("/api/v1/roles"))
+                .andExpect(status().isForbidden());
     }
 
     // ─── 헬퍼 ───────────────────────────────────────────────────

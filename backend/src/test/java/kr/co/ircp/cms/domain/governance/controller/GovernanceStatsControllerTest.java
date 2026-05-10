@@ -154,4 +154,28 @@ class GovernanceStatsControllerTest {
                         .content(invalid))
                 .andExpect(status().isBadRequest());
     }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오
+    // 클래스 레벨 @PreAuthorize("hasRole('ADMIN')") 정책 검증
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("AC-COV-001-1 — GET /stats/policies 인증 없이 접근 시 401 Unauthorized")
+    void policies_returns401_withoutAuthentication() throws Exception {
+        // given: SecurityContext 비어있음 (인증 어노테이션 미부착)
+        // when & then: AnonymousAuthenticationFilter → @PreAuthorize 거부 → ExceptionTranslationFilter → 401
+        mockMvc.perform(get("/api/v1/governance/stats/policies"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"WRONG_AUTHORITY"})
+    @DisplayName("AC-COV-001-2 — GET /stats/policies 권한 부족 시 403 Forbidden")
+    void policies_returns403_withInsufficientAuthority() throws Exception {
+        // given: WRONG_AUTHORITY는 ROLE_ADMIN 정책 미충족
+        // when & then: @PreAuthorize 거부 → AccessDeniedHandler → 403
+        mockMvc.perform(get("/api/v1/governance/stats/policies"))
+                .andExpect(status().isForbidden());
+    }
 }
