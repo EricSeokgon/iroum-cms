@@ -5,6 +5,7 @@ import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.integration.AbstractIntegrationTest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,8 +43,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *       시그니처 매칭 한계를 해소한다.</li>
  * </ul>
  */
+// SPEC-CMS-SECURITY-PII-FOLLOWUP-003 옵션 G (2026-05-11):
+// 클래스 레벨 @Transactional 제거 — readOnly tx + HikariCP connection sticky 우회.
+// 각 테스트에서 실제 commit으로 audit row가 별도 connection에서 가시화.
+// 격리는 @AfterEach TRUNCATE personal_data_access_log + DELETE audit_it_% users로 보장.
+// 운영 BEFORE DELETE 트리거(pda_no_delete)는 FOR EACH ROW이므로 TRUNCATE는 차단 안 됨 (PostgreSQL 표준).
 @DisplayName("PII 접근 감사 보강 통합 테스트 (SPEC-CMS-SECURITY-PII-002 Step 3)")
-@Transactional
 @AutoConfigureMockMvc
 @Import(IntegrationAsyncConfig.class)
 class PiiAuditEnhanceIT extends AbstractIntegrationTest {
@@ -74,6 +78,11 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void insertTestUsers() {
+        // SPEC-CMS-SECURITY-PII-FOLLOWUP-003 옵션 G: 매 테스트 시작 시 깨끗한 상태 보장
+        // (@AfterEach + @BeforeEach 둘 다 TRUNCATE — JUnit 5 test 순서 불확정 + cleanup 누락 방지)
+        jdbcTemplate.update("TRUNCATE personal_data_access_log");
+        jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
+
         // 5명 사용자 적재
         targetUserIds = List.of(
                 insertUser("user10@example.com"),
@@ -82,6 +91,20 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
                 insertUser("user40@example.com"),
                 insertUser("user50@example.com")
         );
+    }
+
+    /**
+     * 테스트 격리 보장 (SPEC-CMS-SECURITY-PII-FOLLOWUP-003 옵션 G).
+     *
+     * <p>TRUNCATE personal_data_access_log: BEFORE DELETE 트리거(pda_no_delete)는 FOR EACH ROW이므로
+     * TRUNCATE에 의해 호출 안 됨 (PostgreSQL 표준). PIPA APPEND-ONLY 의도 준수 (런타임 DELETE 차단 유지).
+     *
+     * <p>DELETE users WHERE 'audit_it_%': insertUser가 생성한 테스트 사용자만 정리.
+     */
+    @AfterEach
+    void cleanupAuditData() {
+        jdbcTemplate.update("TRUNCATE personal_data_access_log");
+        jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
     }
 
     // ──────────────────────────────────────────────────────────────────────────
