@@ -95,16 +95,37 @@
 
 본 세션 시도 결과: 옵션 B(@Transactional 제거)는 PIPA 트리거가 cleanup `DELETE FROM personal_data_access_log`를 차단하여 5 AC 모두 RED 회귀 → 즉시 revert. 권장 후속 SPEC `PII-FOLLOWUP-003`로 옵션 A 또는 C 분리.
 
-### 3.4 PII-FOLLOWUP-003 옵션 A 추가 시도 결과 (세션 후속 검증)
+### 3.4 PII-FOLLOWUP-003 옵션 A + C 시도 결과 (세션 후속 검증)
 
-본 세션 종결 직전 사용자 요청으로 옵션 A 추가 시도:
-- 변경: `PersonalDataAccessLogServiceImpl.record() + recordBulk()`에 `@Transactional(propagation = REQUIRES_NEW)` 추가
+본 세션 종결 직전 사용자 요청으로 옵션 A → 옵션 C 순차 시도 (모두 효과 없음, revert):
+
+#### 옵션 A: REQUIRES_NEW 단독
+- 변경: `PersonalDataAccessLogServiceImpl.record()` + `recordBulk()`에 `@Transactional(propagation = REQUIRES_NEW)` 추가
 - 결과: 동일 RED 패턴 (audit row 0건) — 효과 없음
-- 추정 원인: `@Async("auditExecutor") SyncTaskExecutor` 환경에서 `@Async` AOP advice가 `@Transactional` advice보다 outer order로 wrap → REQUIRES_NEW가 의도대로 새 connection/tx를 시작 못 함. caller thread의 readOnly tx context 그대로 join
-- 운영 코드 revert 완료 (commit a5f873b 상태 복원)
-- **다음 세션 권장**: 옵션 C (@Async 분리 wrapping bean) — `PersonalDataAccessLogServiceImpl`에서 `@Async` 제거 + 별도 `AsyncAuditDispatcher` bean이 sync method 호출을 비동기 dispatch. AOP advice 순서 명확화로 transaction propagation 정상 동작 기대.
+- 추정: `@Async` + `@Transactional` AOP advice 순서 충돌
 
-이 추가 시도로 옵션 A는 효과 없음이 실증됨 → 후속 SPEC `PII-FOLLOWUP-003`에서 옵션 C 우선 채택 권장.
+#### 옵션 C: @Async 분리 wrapping bean + REQUIRES_NEW
+- 변경:
+  - `AsyncAuditDispatcher.java` 신규 (@Async wrapper, 2 메소드)
+  - `PersonalDataAccessLogServiceImpl`에서 `@Async` 제거 + `@Transactional(REQUIRES_NEW)` 추가
+  - `UserServiceImpl` 호출 변경 (personalDataAccessLogService.recordBulk → asyncAuditDispatcher.recordBulkAsync)
+  - `PersonalDataAccessAspect` 호출 변경 (logService.record → asyncAuditDispatcher.recordAsync)
+  - `PersonalDataAccessAspectTest` + `UserServiceTest` mock 의존성 변경
+- 결과: 동일 RED 패턴 — 효과 없음 (AOP advice 순서 명확화로도 회복 안 됨)
+- **근본 추정 root cause**: HikariCP `connection.setReadOnly(true)` sticky
+  - `UserServiceImpl.findPage(readOnly=true)` 진입 시 Spring DataSourceTransactionManager가 connection을 thread bound로 획득 + `setReadOnly(true)` 호출
+  - REQUIRES_NEW로 새 transaction 시작해도 thread bound connection 재사용 (또는 같은 pool에서 readOnly sticky)
+  - audit log INSERT가 readOnly connection에 의해 차단 또는 silently fail
+- 모든 운영/테스트 코드 revert 완료 (commit a5f873b 상태 복원)
+- AsyncAuditDispatcher.java 신규 파일도 제거
+
+#### 결론
+단순 어노테이션 변경(옵션 A) + AOP 분리(옵션 C)로는 해결 불가 — readOnly connection 본질적 sticky 제약. 다음 옵션 후보:
+- **옵션 D**: HikariCP 별도 DataSource pool (audit 전용) — 운영 인프라 변경
+- **옵션 E**: TransactionTemplate으로 명시적 새 tx + setReadOnly(false) 강제 호출
+- **옵션 F**: `@Transactional(REQUIRES_NEW, readOnly = false)` 명시 시도 (검증 필요)
+
+본 SPEC 트랙은 인프라 본질적 제약으로 단순 코드 변경 한계 도달 — 후속 SPEC `PII-FOLLOWUP-003`로 옵션 D~F 분리 권장.
 
 ---
 
