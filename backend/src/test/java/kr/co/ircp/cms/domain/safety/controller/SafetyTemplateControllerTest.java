@@ -229,6 +229,21 @@ class SafetyTemplateControllerTest {
                 .andExpect(jsonPath("$.itemText").value("안전화 착용"));
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오 (적용 불가)
+    //
+    // SafetyTemplateController는 클래스/메소드 레벨 @PreAuthorize 어노테이션이 없으며,
+    // 운영 환경에서는 SecurityConfig의 HTTP 레벨 정책(.anyRequest().authenticated())로
+    // /api/v1/safety/admin/templates/** 경로 인증만 강제된다. 권한(role/authority)별 차등 통제는 없다.
+    //
+    // 또한 일부 endpoint는 @AuthenticationPrincipal Long createdBy 인자를 사용하므로
+    // 익명 요청 시 SecurityContext가 비어 createdBy가 null로 주입되어
+    // controller/service 본체에서 NullPointerException(500)이 발생한다 — 401/403 결정 검증 불가.
+    //
+    // 401(미인증) / 403(권한 부족) 회귀는 SPEC-CMS-SECURITY-AUTHZ-MATRIX-001
+    // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
+    // ──────────────────────────────────────────────────────────────
+
     // ─── 헬퍼: principal로 Long(adminUserId) 직접 사용 ───────────────────────
 
     private org.springframework.security.authentication.UsernamePasswordAuthenticationToken adminAuth(
