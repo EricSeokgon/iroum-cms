@@ -28,6 +28,13 @@
   - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
   - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
 
+- **AUTHZ-IT-EXPAND-002 SPEC v0.1 Planned — 19 미커버 권한 어휘 IT 매트릭스 분리**
+  - ArchUnit baseline 31 어휘 - AUTHZ-IT-EXPAND-001 12 커버 = 19 미커버 어휘 식별
+  - 미커버 어휘: CONTENT_ADMIN, CONTENT:READ, PAGE:READ/ROLLBACK/HISTORY:READ, SITE:WRITE, MENU:PERMISSION:WRITE, TEMPLATE:READ, USER:READ, SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN, AUDIT:READ
+  - REQ-AM-EXP2-001~004 정의 + Step 1~4 분해
+  - 본 SPEC 완성 시 OWASP A01 회귀 검출 5중 검증 240+ AC 달성
+  - 사용자 결정 D1~D4 다음 세션 RUN 진입 전 확정 필요
+
 - **PII-FOLLOWUP-002 v0.2 Implemented (1차) — Spy + @Async 충돌 100% 해소**
   - `PersonalDataAccessLogServiceImplFallbackTest.java` 신규 142줄 (Unit test, Spring context 불필요)
     - 3 AC GREEN: DataAccessException 주입 + 빈 targetUserIds + 정상 5건 (BUILD SUCCESSFUL)
