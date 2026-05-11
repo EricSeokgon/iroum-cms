@@ -1,4 +1,10 @@
 spring:
+  # SPEC-CMS-SECURITY-PII-FOLLOWUP-001 회귀 처리 (2026-05-11):
+  # IntegrationAsyncConfig.auditExecutor가 운영 AsyncConfig.auditExecutor를 의도적으로 override
+  # (PII 감사 IT 결정성을 위해 Async → Sync 변경). Spring Boot 3.5.9 기본 정책은 override 비허용
+  # → integration profile에서만 명시적 허용. 운영 코드 변경 0줄.
+  main:
+    allow-bean-definition-overriding: true
   flyway:
     enabled: true
     baseline-on-migrate: false
