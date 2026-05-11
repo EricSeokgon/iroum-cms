@@ -1,6 +1,32 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-005: PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 v0.1
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-005: PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 v0.2
 
-**Status**: Planned (2026-05-12) — 다음 세션 RUN 진입 권장
+**Status**: Partially Diagnosed (2026-05-12) — 옵션 A 진단 결과: 단독 PASSED, 통합 race condition 확정
+
+## v0.2 변경 이력 (2026-05-12) — 옵션 A 진단 결과
+
+### 결정적 발견: AC-009-2 자체 로직은 정상
+- 단독 실행 (`--tests "...findPage_selfRowExcludedFromAudit"`) → **PASSED**
+- 통합 실행 (다른 test와 함께) → RED 발생
+- **순수한 race condition 확정** — 시나리오 자체 버그 아님
+
+### Root cause 확정
+- @AfterEach/@BeforeEach TRUNCATE + SyncTaskExecutor + @Transactional(REQUIRES_NEW) 조합의 본질적 한계
+- 이전 시도 (@Order(1) AC-009-2 첫 실행)에서 AC-009-2 GREEN + AC-FU-003-1 RED 결과와 일관
+- test 간 audit row commit timing이 비동기적 (SyncTaskExecutor라도 transaction commit은 별개)
+
+### 해결 옵션 재정리
+
+| 옵션 | 설명 | 비용 |
+|------|------|------|
+| **B** (권장) | `@DirtiesContext`로 각 test 후 Spring context 재생성 | 큼 (각 test ~30초 부팅) |
+| A (완료) | jdbcTemplate 디버그 출력 — root cause 확정 | 0 (진단만) |
+| C | default 알파벳 순 — 안정성 불확정 | 작음 |
+| D | 운영 코드 변경 — 본질적 변경 부담 | 큼 |
+
+### 권장 운영 패턴 (다음 세션)
+1. PiiAuditEnhanceIT를 **단독 실행 only** 모드로 명시 (javadoc)
+2. CI에서 `./gradlew test --tests "PiiAuditEnhanceIT.*"`로 단독 실행
+3. 통합 실행 (전체 IT) 시 race condition으로 인한 RED 인정 + known limitation 명시
 **Trigger**: PII-FOLLOWUP-004 v0.3 Mostly Implemented (4/5 GREEN) 후 잔여 AC-009-2 분리
 **Severity**: P3 (PII 트랙 100% IT 완성, 운영 영향 없음)
 

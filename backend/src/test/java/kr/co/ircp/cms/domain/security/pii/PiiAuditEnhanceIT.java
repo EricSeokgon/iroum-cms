@@ -134,19 +134,10 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — 본 시도(@Disabled 3건 추가) 후 RED 회귀. " +
-              "JUnit 5 test 순서 변경 또는 BeforeEach cleanup race condition 의심. " +
-              "다음 진단 필요: " +
-              "(1) @TestMethodOrder(MethodOrderer.OrderAnnotation.class) + @Order 적용으로 deterministic 순서 강제, " +
-              "(2) UserService.findPage filter(id != actor.userId()) selfId 비교 로직 정밀 디버깅 " +
-              "(int vs long autoboxing or primitive comparison), " +
-              "(3) jdbcTemplate.queryForList로 selfId target audit row 실측.")
     @DisplayName("AC-009-2 — ADMIN 본인 row(id=selfId)가 결과에 포함되어도 audit 미적재 (본인 제외)")
     void findPage_selfRowExcludedFromAudit() throws Exception {
-        // ADMIN 본인 사용자 삽입 — 실제 DB row의 id를 jwtAuth principal.userId()로 전달하여
-        // service의 본인 제외 로직(actor.userId() == target.id())이 정확히 매칭되도록 함
+        // SPEC-CMS-SECURITY-PII-FOLLOWUP-005 옵션 A (2026-05-12): 진단 모드 — 실측 audit row 출력.
         long selfId = insertUser("admin.self@example.com");
-
         long auditBefore = countAuditRowsForTarget(selfId);
 
         mockMvc.perform(get(ADMIN_USERS_URL)
@@ -155,10 +146,16 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
                         .with(jwtAuth(selfId, "admin_self", "SUPER_ADMIN")))
                 .andExpect(status().isOk());
 
-        // 본인 row는 targetUserIds에서 사전 제외 → audit 미적재
-        // 주의: @WithMockUser principal의 userId가 실제 DB row와 일치해야 본인 제외 로직 동작
         long auditAfter = countAuditRowsForTarget(selfId);
-        // selfId에 대한 audit row는 증가하지 않아야 함 (본인 제외)
+
+        // 진단 — 실제 적재된 row 출력 (root cause 확정)
+        java.util.List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(
+                "SELECT viewer_id, viewer_role, target_user_id, purpose " +
+                "FROM personal_data_access_log WHERE target_user_id = ?", selfId);
+        System.out.println("=== AC-009-2 진단 (selfId=" + selfId + ") ===");
+        System.out.println("auditBefore=" + auditBefore + ", auditAfter=" + auditAfter);
+        System.out.println("selfId target rows: " + rows);
+
         assertThat(auditAfter).isEqualTo(auditBefore);
     }
 
