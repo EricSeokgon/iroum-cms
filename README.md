@@ -304,6 +304,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
+| SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (분리) | Planned |
 
 SPEC 문서 위치: `.moai/specs/`
 
