@@ -129,4 +129,29 @@ class AccessLogControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(0))
                 .andExpect(jsonPath("$.total").value(0));
     }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오
+    // 메소드 레벨 @PreAuthorize("hasAuthority('SYSTEM:LOG:READ')") 정책 검증
+    // (AUTHZ-MATRIX-001 IT 레이어와 분리: 슬라이스 vs SpringBootTest)
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("AC-COV-001-1 — GET /api/v1/system/access-logs 인증 없이 접근 시 401 Unauthorized")
+    void list_returns401_withoutAuthentication() throws Exception {
+        // given: SecurityContext 비어있음 (인증 어노테이션 미부착)
+        // when & then: AnonymousAuthenticationFilter → @PreAuthorize 거부 → ExceptionTranslationFilter → 401
+        mockMvc.perform(get("/api/v1/system/access-logs"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = {"WRONG_AUTHORITY"})
+    @DisplayName("AC-COV-001-2 — GET /api/v1/system/access-logs 권한 부족 시 403 Forbidden")
+    void list_returns403_withInsufficientAuthority() throws Exception {
+        // given: WRONG_AUTHORITY는 SYSTEM:LOG:READ 권한 미충족
+        // when & then: @PreAuthorize 거부 → AccessDeniedHandler → 403
+        mockMvc.perform(get("/api/v1/system/access-logs"))
+                .andExpect(status().isForbidden());
+    }
 }

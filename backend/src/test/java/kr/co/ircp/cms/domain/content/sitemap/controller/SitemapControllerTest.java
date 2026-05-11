@@ -80,4 +80,19 @@ class SitemapControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_XML));
     }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — AC-COV-001-1/2 적용 불가
+    // ──────────────────────────────────────────────────────────────
+    // SitemapController는 메소드/클래스 레벨 @PreAuthorize 정책을 보유하지 않으며,
+    // REQ-CONTENT-007-D 사양상 PUBLIC 엔드포인트(GET /sitemap.xml)로 운영된다.
+    // 운영 SecurityConfig는 /api/v1/** 경로에 대해서만 .anyRequest().authenticated()
+    // HTTP-level 정책을 강제하며, /sitemap.xml은 PUBLIC 사양에 따라 익명 접근이
+    // 허용되어야 한다. @WebMvcTest 슬라이스에서는 401/403 변별 검증 트리거
+    // (@PreAuthorize 권한 거부)가 발생하지 않으므로 본 SPEC AC-COV-001
+    // 시나리오는 적용 불가.
+    //
+    // 검증 책임: SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 IT 레이어
+    //   (@SpringBootTest + 운영 SecurityFilterChain + JwtAuthenticationFilter)
+    //   가 PUBLIC 경로 익명 200 OK 응답을 회귀 검출한다.
 }
