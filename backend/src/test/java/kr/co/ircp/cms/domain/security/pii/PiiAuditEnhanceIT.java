@@ -167,19 +167,11 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 — 진단 모드 실측 결과 (2026-05-12): " +
-              "mockMvc.perform 자체가 UnexpectedRollbackException 발생. " +
-              "원인: AuthServiceImpl.requestPasswordReset → verificationService.request 호출 chain에서 " +
-              "transaction이 'rollback-only' 마킹 → 호출자 commit 시도 → UnexpectedRollbackException. " +
-              "이전 RED는 audit 적재가 아닌 운영 transaction rollback 문제. " +
-              "다음 RUN 진단: " +
-              "(1) verificationService.request 내부 transaction propagation 검토, " +
-              "(2) rollback-only 마킹 원인 추적 (예외 catch 후 setRollbackOnly 호출), " +
-              "(3) 운영 정책: rollback이 의도라면 IT는 4xx/5xx expected로 정정.")
     @DisplayName("AC-009-3 — 비밀번호 재설정 HMAC lookup-only → personal_data_access_log 미적재")
     void passwordReset_hmacLookupOnly_noAuditLog() throws Exception {
-        // 진단 결과: mockMvc.perform 자체가 UnexpectedRollbackException 발생
-        // 본래 SPEC 의도 "미적재" 검증 전 운영 transaction 문제 해소 필요
+        // SPEC-CMS-SECURITY-PII-FOLLOWUP-004 fix (2026-05-12):
+        // VerificationServiceImpl.request @Transactional(REQUIRES_NEW) 적용 후 UnexpectedRollbackException 해소.
+        // 비밀번호 재설정 HMAC lookup-only → audit 적재 없음 확인.
         long auditBefore = countAuditRows();
 
         mockMvc.perform(post(AUTH_PASSWORD_RESET_URL)

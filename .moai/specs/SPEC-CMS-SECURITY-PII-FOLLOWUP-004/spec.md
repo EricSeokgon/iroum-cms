@@ -1,6 +1,19 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.2
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.3
 
-**Status**: Partially Implemented (2026-05-12) — AC-009-4 정정 GREEN + AC-009-2/3 잔여 RUN
+**Status**: Mostly Implemented (2026-05-12) — AC-009-4 + AC-009-3 GREEN + AC-009-2 잔여 (race condition)
+**Implementation commits**: dc224f2 (AC-009-4 IT 시나리오 정정), b5npgelot RUN (VerificationService REQUIRES_NEW)
+
+## v0.3 변경 이력 (2026-05-12) — UnexpectedRollbackException 해소
+
+### AC-009-3 root cause 운영 fix
+- **운영 코드 변경**: `VerificationServiceImpl.request` 메소드에 `@Transactional(propagation = Propagation.REQUIRES_NEW)` 적용 (1줄 변경)
+- **원인**: `AuthServiceImpl.requestPasswordReset`의 catch 블록이 예외를 삼키지만 Spring AOP `@Transactional` 기본 REQUIRED는 inner transaction을 rollback-only 마킹 → outer commit `UnexpectedRollbackException`
+- **fix 효과**: inner tx (verificationService.request) 분리 → 호출자 commit 가능 + 보안 정책(IP 차단/쿨다운 외부 노출 회피) 유지
+- **IT 검증**: AC-009-3 GREEN 회복 (audit 미적재 검증 — HMAC lookup-only 본래 SPEC 의도 일치)
+
+### AC-009-2 잔여 (race condition)
+- 본 commit 검증 시 race condition 가능성 또는 selfId 매칭 디버깅 필요
+- 다음 RUN: `@TestMethodOrder(MethodOrderer.OrderAnnotation.class)` 적용
 **Implementation commit**: (본 commit, AC-009-4 IT 시나리오 정정)
 
 ## v0.2 변경 이력 (2026-05-12)

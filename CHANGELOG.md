@@ -28,6 +28,15 @@
   - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
   - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
 
+- **PII-FOLLOWUP-004 v0.3 Mostly Implemented — VerificationService REQUIRES_NEW 운영 fix + AC-009-3 GREEN 회복**
+  - 운영 코드 1줄 변경: `VerificationServiceImpl.request`에 `@Transactional(propagation = REQUIRES_NEW)` 적용
+  - root cause: AuthServiceImpl.requestPasswordReset catch 블록이 예외 삼키지만 Spring AOP가 inner tx를 rollback-only 마킹 → outer commit UnexpectedRollbackException
+  - 효과: inner tx 분리로 호출자 commit 가능 + 보안 정책 유지
+  - AC-009-3 GREEN 회복 (HMAC lookup-only audit 미적재 검증)
+  - AC-009-4 + AC-FU-003-1/3 GREEN 유지
+  - AC-009-2 잔여 (race condition, @TestMethodOrder 적용 검토)
+  - PII 트랙 6 SPEC 사이클 사실상 완성 (audit IT 5 AC 중 4 GREEN + 1 race condition 잔여)
+
 - **PII-FOLLOWUP-003 v0.2 Implemented (1차) — 옵션 G TRUNCATE cleanup + @Transactional 제거**
   - 본 SPEC 핵심 목표 100% 달성: HikariCP readOnly connection sticky로 인한 audit row 0건 해소
   - AC-FU-003-1 GREEN 회복 (이전 핵심 RED): ADMIN findPage → audit row N건 적재 검증

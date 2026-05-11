@@ -20,6 +20,7 @@ import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
@@ -70,8 +71,13 @@ public class VerificationServiceImpl implements VerificationService {
      * 6. DB 적재 + 이메일 비동기 발송
      * 7. 이력 기록
      */
+    // SPEC-CMS-SECURITY-PII-FOLLOWUP-004 (2026-05-12): REQUIRES_NEW 적용
+    // 호출자(AuthServiceImpl.requestPasswordReset)가 catch 블록으로 예외를 삼키지만
+    // Spring AOP @Transactional 기본 REQUIRED는 호출자 transaction을 rollback-only로 마킹
+    // → outer commit UnexpectedRollbackException. REQUIRES_NEW로 inner tx 분리하여
+    // 호출자 commit 가능 + 보안 정책(IP 차단/쿨다운 외부 노출 회피) 유지.
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public VerifyRequestResponse request(VerifyRequestRequest req, String ipAddress, String userAgent) {
         Instant now = Instant.now();
 
