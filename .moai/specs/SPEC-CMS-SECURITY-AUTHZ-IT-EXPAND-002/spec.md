@@ -151,6 +151,25 @@ OWASP A01 회귀 검출 능력 완전 확보 — IT 매트릭스가 ArchUnit bas
 
 ## 8. 변경 이력
 
+### Step 2 Phase A 시도 결과 (2026-05-11, 세션 후속)
+
+본 SPEC RUN Step 2 Phase A 시도 (10 어휘 × 평균 3 시나리오 ≈ 30+ AC):
+
+- **결과**: 34 tests / 13 FAILED — endpoint 매핑 가정 부정확
+- **실패 패턴**:
+  - "권한 부재 → 403" 기대 시나리오 다수가 401 또는 다른 응답 (operating policy 또는 endpoint path 차이)
+  - "권한 보유 → 401/403 외" 기대 시나리오도 일부 실패 (404 또는 다른 endpoint mismatch)
+  - 특히 PAGE:ROLLBACK + MENU:PERMISSION:WRITE 등 일부 어휘는 운영 컨트롤러 prerequisite (예: 데이터 존재 여부) 영향 가능성
+- **revert 완료**: commit fc4a569 (Step 1 인프라 + smoke test) 상태로 복원
+
+**다음 세션 RUN 진입 전 필수 작업**:
+1. 각 운영 endpoint 정밀 검증 (실제 HTTP method + path + 권한 정책 정확 확인)
+2. 운영 권한 정책에 OR 조건 추가 여부 확인 (SUPER_ADMIN 등 bypass)
+3. 본 SPEC에 endpoint 매핑 표 정확화 (현재 표는 컨트롤러 파일명만 명시)
+4. Step 2 시나리오 작성 전 endpoint 1개씩 단위 검증 → 확정 후 일괄 추가
+
+### 변경 이력
+
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. AUTHZ-AUTODETECT-001 Step 2 GREEN 확정으로 ArchUnit 운영 실측 31 권한 어휘 노출 + AUTHZ-IT-EXPAND-001 12 어휘 커버 갭 19종 식별. REQ-AM-EXP2-001/002/003/004 정의. RUN Step 1~4 분해. 19 어휘 운영 endpoint 매핑 (CONTENT_ADMIN/CONTENT:READ/PAGE:READ/ROLLBACK/HISTORY:READ/SITE:WRITE/MENU:PERMISSION:WRITE/TEMPLATE:READ/USER:READ/SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN/AUDIT:READ). 운영 코드 변경 0건 (IT 신설 전용). 본 SPEC 완성 시 OWASP A01 회귀 검출 능력 ArchUnit baseline 100% IT 커버 + 5중 검증 (HTTP 1차 19 + HTTP 확장 88 + HTTP 확장 2차 ~100 + 메소드 31 + ArchUnit 4) ≈ 240+ AC 달성. 사용자 결정 D1~D4 다음 세션 RUN 진입 전 확정 필요. |
