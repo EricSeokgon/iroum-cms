@@ -28,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -192,9 +194,11 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
         // Mockito Spy로 recordBulk가 DataAccessException을 throw하도록 설정.
         // 실제 recordBulk 시그니처: (long viewerId, String viewerRole, List<Long> targetUserIds,
         //                            Set<String> accessedFields, PersonalDataAccessPurpose purpose)
+        // Mockito 5+ 호환: any() (Object generic) 대신 타입 명시 matcher 사용 (InvalidUseOfMatchersException 회피)
+        // recordBulk 시그니처: (long, String, List<Long>, Set<String>, PersonalDataAccessPurpose)
         Mockito.doThrow(new DataAccessException("시뮬레이션: audit INSERT 실패") {})
                 .when(personalDataAccessLogService)
-                .recordBulk(anyLong(), any(), anyList(), any(), any(PersonalDataAccessPurpose.class));
+                .recordBulk(anyLong(), anyString(), anyList(), anySet(), any(PersonalDataAccessPurpose.class));
 
         // user-facing 에러 미전파 — 정상 200 응답
         mockMvc.perform(get(ADMIN_USERS_URL)
