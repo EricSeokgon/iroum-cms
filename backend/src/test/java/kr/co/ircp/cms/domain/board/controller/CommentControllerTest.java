@@ -93,4 +93,19 @@ class CommentControllerTest {
         mockMvc.perform(delete("/api/v1/boards/1/posts/1/comments/1"))
                 .andExpect(status().isNoContent());
     }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오 (적용 불가)
+    //
+    // CommentController는 클래스/메소드 레벨 @PreAuthorize 어노테이션이 없으며,
+    // 운영 환경에서는 SecurityConfig의 HTTP 레벨 정책(.anyRequest().authenticated())로
+    // /api/v1/boards/** 경로 인증만 강제된다. 권한(role/authority)별 차등 통제는 없다.
+    //
+    // 본 슬라이스 테스트는 SecurityAutoConfiguration을 제외하므로 HTTP 레벨 정책이 미적용되며,
+    // 메소드 레벨 정책 거부 트리거가 없어 ExceptionTranslationFilter가 EntryPoint를 호출하지 않는다.
+    // 따라서 슬라이스에서 401(미인증) / 403(권한 부족) 응답을 결정적으로 검증할 수 없다.
+    //
+    // 401(미인증) / 403(권한 부족) 회귀는 SPEC-CMS-SECURITY-AUTHZ-MATRIX-001
+    // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
+    // ──────────────────────────────────────────────────────────────
 }
