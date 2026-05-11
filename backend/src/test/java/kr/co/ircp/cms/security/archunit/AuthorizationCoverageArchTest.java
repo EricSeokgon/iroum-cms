@@ -172,6 +172,48 @@ class AuthorizationCoverageArchTest {
     }
 
     // =================================================================================
+    // §C REQ-AAD-003 — 권한 어휘 변경 검출 (Step 2 추가)
+    // =================================================================================
+
+    /**
+     * AC-AAD-003-1: 운영 @PreAuthorize SpEL value에서 권한 어휘 set 추출 baseline 회귀.
+     *
+     * <p>운영 어노테이션의 SpEL 표현(예: hasAuthority('CONTENT:WRITE'), hasRole('SUPER_ADMIN'),
+     * hasAnyRole('SUPER_ADMIN','DEPT_ADMIN'), isAuthenticated()) 에서 정규식으로 권한 어휘
+     * (PERMISSION:ACTION 또는 ROLE_NAME 또는 isAuthenticated)를 추출하여 unique set 생성.
+     *
+     * <p>baseline: AUTHZ-IT-EXPAND-001 spec.md §2.3 권한 어휘 12종 + 후속 추가 어휘.
+     * 신규 어휘 등장 또는 기존 어휘 제거 시 RED — 권한 어휘 변경 회귀 검출.
+     */
+    @Test
+    @DisplayName("AC-AAD-003-1: 운영 @PreAuthorize 권한 어휘 set baseline 회귀 검증")
+    void operational_preAuthorize_authorityVocabulary_baseline() {
+        Set<String> actualVocabularies = extractOperationalAuthorityVocabularies();
+        Set<String> baseline = baselineAuthorityVocabularies();
+
+        // baseline에 있는데 운영에 없는 어휘 (제거됨)
+        Set<String> removedFromOps = baseline.stream()
+                .filter(v -> !actualVocabularies.contains(v))
+                .collect(Collectors.toSet());
+
+        // 운영에 있는데 baseline에 없는 신규 어휘
+        Set<String> addedInOps = actualVocabularies.stream()
+                .filter(v -> !baseline.contains(v))
+                .collect(Collectors.toSet());
+
+        assertThat(removedFromOps)
+                .as("baseline 권한 어휘 중 운영 @PreAuthorize에서 제거된 어휘: %s. " +
+                        "정책 변경 시 README + IT 매트릭스 + 본 baseline을 함께 갱신하세요.", removedFromOps)
+                .isEmpty();
+
+        assertThat(addedInOps)
+                .as("운영 @PreAuthorize에 신규 등장한 권한 어휘: %s. " +
+                        "신규 어휘 추가 시 AuthorizationMatrixExpandIT에 해당 어휘 시나리오를 추가하고 " +
+                        "본 ArchUnit baselineAuthorityVocabularies()를 갱신하세요.", addedInOps)
+                .isEmpty();
+    }
+
+    // =================================================================================
     // 헬퍼 메소드
     // =================================================================================
 
@@ -228,6 +270,124 @@ class AuthorizationCoverageArchTest {
         // 정규화 2단계: {pageId}, {blockId} 등 모든 path variable → {id} (변수명 차이 흡수)
         normalizedPath = normalizedPath.replaceAll("\\{[a-zA-Z][a-zA-Z0-9_]*\\}", "{id}");
         return httpMethod + " " + normalizedPath;
+    }
+
+    /**
+     * 운영 @PreAuthorize SpEL value에서 권한 어휘를 정규식으로 추출 (REQ-AAD-003 헬퍼).
+     *
+     * <p>지원 패턴:
+     * <ul>
+     *   <li>{@code hasAuthority('PERMISSION:ACTION')} → "PERMISSION:ACTION"</li>
+     *   <li>{@code hasRole('ROLE_NAME')} → "ROLE:ROLE_NAME"</li>
+     *   <li>{@code hasAnyRole('R1','R2')} → "ROLE:R1", "ROLE:R2"</li>
+     *   <li>{@code isAuthenticated()} → "isAuthenticated"</li>
+     * </ul>
+     */
+    private Set<String> extractOperationalAuthorityVocabularies() {
+        return operationalControllers.stream()
+                .flatMap(c -> c.getMethods().stream())
+                .flatMap(m -> m.getAnnotations().stream())
+                .filter(a -> PRE_AUTHORIZE_FQN.equals(a.getRawType().getName()))
+                .flatMap(a -> a.tryGetExplicitlyDeclaredProperty("value").stream())
+                .map(Object::toString)
+                .flatMap(spel -> parseSpelVocabularies(spel).stream())
+                .collect(Collectors.toSet());
+    }
+
+    private static final Pattern HAS_AUTHORITY_PATTERN =
+            Pattern.compile("hasAuthority\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)");
+    private static final Pattern HAS_ROLE_PATTERN =
+            Pattern.compile("hasRole\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)");
+    private static final Pattern HAS_ANY_ROLE_PATTERN =
+            Pattern.compile("hasAnyRole\\s*\\(([^)]+)\\)");
+    private static final Pattern ROLE_LITERAL_PATTERN =
+            Pattern.compile("['\"]([A-Z_][A-Z0-9_]*)['\"]");
+    private static final Pattern IS_AUTHENTICATED_PATTERN =
+            Pattern.compile("isAuthenticated\\s*\\(\\s*\\)");
+
+    /** SpEL 표현에서 권한 어휘 set 추출 (단일 SpEL이 여러 어휘 포함 가능 — OR 조건 등). */
+    private Set<String> parseSpelVocabularies(String spel) {
+        Set<String> result = new java.util.HashSet<>();
+
+        // hasAuthority('X:Y') → X:Y
+        Matcher mAuth = HAS_AUTHORITY_PATTERN.matcher(spel);
+        while (mAuth.find()) {
+            result.add(mAuth.group(1));
+        }
+
+        // hasRole('NAME') → ROLE:NAME (ROLE 접두사로 hasAuthority와 분리)
+        Matcher mRole = HAS_ROLE_PATTERN.matcher(spel);
+        while (mRole.find()) {
+            result.add("ROLE:" + mRole.group(1));
+        }
+
+        // hasAnyRole('A','B') → ROLE:A, ROLE:B
+        Matcher mAny = HAS_ANY_ROLE_PATTERN.matcher(spel);
+        while (mAny.find()) {
+            String inner = mAny.group(1);
+            Matcher mLit = ROLE_LITERAL_PATTERN.matcher(inner);
+            while (mLit.find()) {
+                result.add("ROLE:" + mLit.group(1));
+            }
+        }
+
+        // isAuthenticated()
+        if (IS_AUTHENTICATED_PATTERN.matcher(spel).find()) {
+            result.add("isAuthenticated");
+        }
+
+        return result;
+    }
+
+    /**
+     * baseline 운영 권한 어휘 set.
+     *
+     * <p>본 RUN 시점 운영 @PreAuthorize에서 발견된 모든 권한 어휘.
+     * 신규 어휘 추가 시 IT 매트릭스 시나리오 추가 + 본 baseline 갱신 동시 진행.
+     */
+    private Set<String> baselineAuthorityVocabularies() {
+        // 본 baseline은 운영 @PreAuthorize 어휘 전체 회귀 검출용 (~31 unique).
+        // IT 매트릭스(AUTHZ-IT-EXPAND-001)는 그 중 12 어휘만 커버 (29 endpoint)
+        // 나머지 ~19 어휘 IT 시나리오는 후속 SPEC AUTHZ-IT-EXPAND-002/003 대상.
+        // 신규 어휘 추가 시 본 baseline + IT 시나리오 + EXPAND-002 SPEC 동시 갱신.
+        return Set.of(
+                // ─── Role 기반 (4종) — 운영 실측 ───────────────────────────────
+                "ROLE:SUPER_ADMIN",
+                "ROLE:DEPT_ADMIN",
+                "ROLE:ADMIN",
+                "ROLE:CONTENT_ADMIN",
+                // ─── Content 영역 Authority (8종) ─────────────────────────────
+                "CONTENT:WRITE",
+                "CONTENT:READ",
+                "PAGE:WRITE",
+                "PAGE:READ",
+                "PAGE:PUBLISH",
+                "PAGE:ROLLBACK",
+                "PAGE:HISTORY:READ",
+                "SITE:WRITE",
+                // ─── Block/Menu/Template Authority (5종) ──────────────────────
+                "BLOCK:WRITE",
+                "TEMPLATE:WRITE",
+                "TEMPLATE:READ",
+                "MENU:WRITE",
+                "MENU:PERMISSION:WRITE",
+                // ─── User/System Authority (12종) ─────────────────────────────
+                "USER:READ",
+                "SYSTEM:READ",
+                "SYSTEM:CODE:READ",
+                "SYSTEM:CODE:WRITE",
+                "SYSTEM:STATS",
+                "SYSTEM:DASHBOARD",
+                "SYSTEM:SETTING:READ",
+                "SYSTEM:SETTING:WRITE",
+                "SYSTEM:MAINT:READ",
+                "SYSTEM:MAINT:WRITE",
+                "SYSTEM:LOG:READ",
+                "SYSTEM:ADMIN",
+                "AUDIT:READ",
+                // ─── 인증만 요구 (1종) ─────────────────────────────────────────
+                "isAuthenticated"
+        );
     }
 
     /**
