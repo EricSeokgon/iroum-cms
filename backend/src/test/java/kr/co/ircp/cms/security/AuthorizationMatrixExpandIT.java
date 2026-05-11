@@ -2,7 +2,6 @@ package kr.co.ircp.cms.security;
 
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.service.JwtTokenProvider;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,9 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -244,10 +245,10 @@ class AuthorizationMatrixExpandIT {
     }
 
     // =================================================================================
-    // §A REQ-AM-EXP-001 — 30 endpoint × 3 시나리오 매트릭스 (~90 AC, Step 2~3 활성화)
+    // §A REQ-AM-EXP-001 — 29 endpoint × 3 시나리오 매트릭스 (Step 2~3 모두 활성화 완료)
     //
-    // 본 RUN Step 1에서는 도메인별 @Nested 그룹의 뼈대만 신설하고 모든 시나리오는
-    // @Disabled placeholder로 둔다. Step 2 (Phase A) / Step 3 (Phase B)에서 점진 활성화.
+    // 도메인별 @Nested 그룹 7개에 권한 어휘 12종 모두 활성화 완료 (Step 2 + Step 3).
+    // 합계 약 88 AC + smoke test 1건 = 89 AC.
     // =================================================================================
 
     /**
@@ -477,20 +478,89 @@ class AuthorizationMatrixExpandIT {
         // §A.1 Step 2 Phase A 합계: 5 endpoint × 3 시나리오 = 15 AC
         // (PAGE:WRITE/PAGE:PUBLISH 어휘 분리 회귀는 AC-AME-001-A1-8에 통합)
 
-        /**
-         * TODO Step 3 (Phase B): TEMPLATE:WRITE 어휘 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>POST /api/v1/content/templates — TEMPLATE:WRITE (TemplateController#create)</li>
-         *   <li>PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE (TemplateController#update)</li>
-         * </ul>
-         */
+        // ─── 6. POST /api/v1/content/templates — TEMPLATE:WRITE (Step 3) ────────
+
+        /** AC-AME-001-A1-16: Template 생성 — 토큰 부재 → 401. */
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — TEMPLATE:WRITE 어휘 2 endpoint × 3 시나리오 = 6 AC")
-        @DisplayName("§A.1 placeholder Step 3: TEMPLATE:WRITE 활성화 대기")
-        void templateAuthority_placeholder_step3() {
-            // TEMPLATE:WRITE 어휘 시나리오는 Step 3에서 활성화.
+        @DisplayName("AC-AME-001-A1-16: POST /api/v1/content/templates — Authorization 헤더 부재 + 401")
+        void templateCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/templates")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
         }
+
+        /** AC-AME-001-A1-17: Template 생성 — PAGE:WRITE만 → 403 (어휘 분리 회귀). */
+        @Test
+        @DisplayName("AC-AME-001-A1-17: POST /api/v1/content/templates — TEMPLATE:WRITE 부재(PAGE:WRITE만) + 403")
+        void templateCreate_forbidden_whenTemplateWriteMissing() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/templates")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-18: Template 생성 — TEMPLATE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-18: POST /api/v1/content/templates — TEMPLATE:WRITE 보유 + 401/403 아님")
+        void templateCreate_passesAuthorization_whenTemplateWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("TEMPLATE:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/templates")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 7. PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE (Step 3) ────
+
+        /** AC-AME-001-A1-19: Template 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A1-19: PUT /api/v1/content/templates/{id} — Authorization 헤더 부재 + 401")
+        void templateUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/content/templates/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A1-20: Template 수정 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A1-20: PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE 부재 + 403")
+        void templateUpdate_forbidden_whenTemplateWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(put("/api/v1/content/templates/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-21: Template 수정 — TEMPLATE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-21: PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE 보유 + 401/403 아님")
+        void templateUpdate_passesAuthorization_whenTemplateWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("TEMPLATE:WRITE"));
+
+            mockMvc.perform(put("/api/v1/content/templates/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.1 합계: 7 endpoint × 3 시나리오 = 21 AC (Phase A 15 + Phase B Template 6)
     }
 
     /**
@@ -501,25 +571,95 @@ class AuthorizationMatrixExpandIT {
      * <p>Step 3 (Phase B)에서 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.2 BlockDomainTests (2 endpoint × 3 시나리오)")
+    @DisplayName("§A.2 BlockDomainTests (2 endpoint × 3 시나리오 = 6 AC)")
     class BlockDomainTests {
 
+        // ─── 1. POST /api/v1/content/pages/{pageId}/blocks — BLOCK:WRITE ───────
+
+        /** AC-AME-001-A2-1: Block 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A2-1: POST /api/v1/content/pages/{pageId}/blocks — Authorization 헤더 부재 + 401")
+        void blockCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/pages/1/blocks")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 3 (Phase B): 2 endpoint × 3 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>POST /api/v1/content/pages/{pageId}/blocks — BLOCK:WRITE (ContentBlockController#create)</li>
-         *   <li>PUT /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE (ContentBlockController#update)</li>
-         * </ul>
-         *
-         * <p>BLOCK:WRITE와 PAGE:WRITE가 별개 권한 어휘임을 검증 (PAGE:WRITE 보유 → BLOCK:WRITE 부재 → 403).
+         * AC-AME-001-A2-2: Block 생성 — PAGE:WRITE만 보유(BLOCK:WRITE 부재) → 403.
+         * 어휘 분리 회귀 검증: BLOCK:WRITE는 PAGE:WRITE와 별개 어휘.
          */
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — BLOCK:WRITE 어휘 회귀 검출 (PAGE:WRITE와 분리 검증)")
-        @DisplayName("§A.2 placeholder: Step 3 활성화 대기")
-        void blockDomain_placeholder_step3() {
-            // BLOCK:WRITE 어휘 분리 회귀 — Step 3에서 활성화.
+        @DisplayName("AC-AME-001-A2-2: POST /api/v1/content/pages/{pageId}/blocks — BLOCK:WRITE 부재(PAGE:WRITE만) + 403 (어휘 분리)")
+        void blockCreate_forbidden_whenBlockWriteMissing_separationFromPageWrite() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE")); // BLOCK:WRITE 미보유
+
+            mockMvc.perform(post("/api/v1/content/pages/1/blocks")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
         }
+
+        /** AC-AME-001-A2-3: Block 생성 — BLOCK:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A2-3: POST /api/v1/content/pages/{pageId}/blocks — BLOCK:WRITE 보유 + 401/403 아님")
+        void blockCreate_passesAuthorization_whenBlockWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("BLOCK:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/pages/1/blocks")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. PUT /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE ──
+
+        /** AC-AME-001-A2-4: Block 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A2-4: PUT /api/v1/content/pages/{pageId}/blocks/{blockId} — Authorization 헤더 부재 + 401")
+        void blockUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/content/pages/1/blocks/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A2-5: Block 수정 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A2-5: PUT /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE 부재 + 403")
+        void blockUpdate_forbidden_whenBlockWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(put("/api/v1/content/pages/1/blocks/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A2-6: Block 수정 — BLOCK:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A2-6: PUT /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE 보유 + 401/403 아님")
+        void blockUpdate_passesAuthorization_whenBlockWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("BLOCK:WRITE"));
+
+            mockMvc.perform(put("/api/v1/content/pages/1/blocks/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.2 합계: 2 endpoint × 3 시나리오 = 6 AC (BLOCK:WRITE vs PAGE:WRITE 어휘 분리 회귀 통합)
     }
 
     /**
@@ -640,19 +780,42 @@ class AuthorizationMatrixExpandIT {
 
         // §A.3 Step 2 합계: 2 endpoint × 3~4 시나리오 = 7 AC (Widget POST 3 + Widget PUT 4 multi-role)
 
-        /**
-         * TODO Step 3 (Phase B): SYSTEM:STATS 어휘 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>GET /api/v1/system/stats/trend — SYSTEM:STATS (StatsController#trend)</li>
-         * </ul>
-         */
+        // ─── 3. GET /api/v1/system/stats/trend — SYSTEM:STATS (Step 3) ──────────
+
+        /** AC-AME-001-A3-8: Stats trend — 토큰 부재 → 401. */
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — SYSTEM:STATS 어휘 1 endpoint × 3 시나리오 = 3 AC")
-        @DisplayName("§A.3 placeholder Step 3: SYSTEM:STATS 활성화 대기")
-        void systemStatsAuthority_placeholder_step3() {
-            // SYSTEM:STATS 어휘 시나리오는 Step 3에서 활성화.
+        @DisplayName("AC-AME-001-A3-8: GET /api/v1/system/stats/trend — Authorization 헤더 부재 + 401")
+        void statsTrend_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(get("/api/v1/system/stats/trend"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
         }
+
+        /** AC-AME-001-A3-9: Stats trend — SYSTEM:STATS 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A3-9: GET /api/v1/system/stats/trend — SYSTEM:STATS 부재 + 403")
+        void statsTrend_forbidden_whenSystemStatsMissing() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+
+            mockMvc.perform(get("/api/v1/system/stats/trend")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A3-10: Stats trend — SYSTEM:STATS 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A3-10: GET /api/v1/system/stats/trend — SYSTEM:STATS 보유 + 401/403 아님")
+        void statsTrend_passesAuthorization_whenSystemStatsPresent() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:STATS"));
+
+            mockMvc.perform(get("/api/v1/system/stats/trend")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.3 합계: 3 endpoint × 3~4 시나리오 = 10 AC (Phase A 7 + Phase B Stats 3)
     }
 
     /**
@@ -755,23 +918,60 @@ class AuthorizationMatrixExpandIT {
 
         // §A.4 Step 2 합계: 2 endpoint × 3 시나리오 = 6 AC
 
+        // ─── 3. GET /api/v1/qnas — isAuthenticated() (Step 3, 401/200만 — 403 N/A) ──
+
+        /** AC-AME-001-A4-7: Qna 목록 조회 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A4-7: GET /api/v1/qnas — Authorization 헤더 부재 + 401")
+        void qnaList_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(get("/api/v1/qnas"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 3 (Phase B): isAuthenticated() 어휘 시나리오 활성화 예정 (401/200만, 403 N/A).
-         *
-         * <ul>
-         *   <li>GET /api/v1/qnas — isAuthenticated() (QnaController#list)</li>
-         *   <li>POST /api/v1/qnas — isAuthenticated() (QnaController#create)</li>
-         * </ul>
-         *
-         * <p>특이 케이스: isAuthenticated()는 권한 무관이므로 403 시나리오 N/A.
-         * 401 (Authorization 헤더 부재) + 200 (유효 JWT) 두 시나리오만 검증.
+         * AC-AME-001-A4-8: Qna 목록 조회 — 유효 토큰(권한 무관) → 401/403 외.
+         * isAuthenticated() 어휘 특성: 권한 무관, 인증만 요구.
          */
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — isAuthenticated 어휘 2 endpoint × 2 시나리오 = 4 AC (403 N/A)")
-        @DisplayName("§A.4 placeholder Step 3: isAuthenticated 활성화 대기")
-        void isAuthenticatedAuthority_placeholder_step3() {
-            // isAuthenticated 어휘 시나리오는 Step 3에서 활성화.
+        @DisplayName("AC-AME-001-A4-8: GET /api/v1/qnas — 유효 토큰(권한 무관) + 401/403 아님")
+        void qnaList_passesAuthorization_whenAuthenticated() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // 권한 무관, 인증만 충분
+
+            mockMvc.perform(get("/api/v1/qnas")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
+
+        // ─── 4. POST /api/v1/qnas — isAuthenticated() (Step 3, 401/200만 — 403 N/A) ──
+
+        /** AC-AME-001-A4-9: Qna 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A4-9: POST /api/v1/qnas — Authorization 헤더 부재 + 401")
+        void qnaCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/qnas")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A4-10: Qna 생성 — 유효 토큰(권한 무관) → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A4-10: POST /api/v1/qnas — 유효 토큰(권한 무관) + 401/403 아님")
+        void qnaCreate_passesAuthorization_whenAuthenticated() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(post("/api/v1/qnas")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.4 합계: 4 endpoint × 시나리오 = 10 AC (Phase A SUPER_ADMIN 6 + Phase B isAuthenticated 4 — 403 N/A)
     }
 
     /**
@@ -783,29 +983,207 @@ class AuthorizationMatrixExpandIT {
      * <br>Step 3 (Phase B)에서 SYSTEM:CODE:WRITE 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.5 SystemDomainTests (5 endpoint × 3 시나리오)")
+    @DisplayName("§A.5 SystemDomainTests (5 endpoint × 3 시나리오 = 15 AC, READ vs WRITE 분리 회귀 통합)")
     class SystemDomainTests {
 
+        // ─── 1. GET /api/v1/system/codes — SYSTEM:CODE:READ ─────────────────────
+
+        /** AC-AME-001-A5-1: Code 목록 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A5-1: GET /api/v1/system/codes — Authorization 헤더 부재 + 401")
+        void codesList_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(get("/api/v1/system/codes"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A5-2: Code 목록 — SYSTEM:CODE:READ 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A5-2: GET /api/v1/system/codes — SYSTEM:CODE:READ 부재 + 403")
+        void codesList_forbidden_whenCodeReadMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(get("/api/v1/system/codes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A5-3: Code 목록 — SYSTEM:CODE:READ 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A5-3: GET /api/v1/system/codes — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codesList_passesAuthorization_whenCodeReadPresent() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
+
+            mockMvc.perform(get("/api/v1/system/codes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. GET /api/v1/system/code-groups — SYSTEM:CODE:READ ───────────────
+
+        /** AC-AME-001-A5-4: CodeGroup 목록 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A5-4: GET /api/v1/system/code-groups — Authorization 헤더 부재 + 401")
+        void codeGroupsList_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(get("/api/v1/system/code-groups"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A5-5: CodeGroup 목록 — SYSTEM:CODE:READ 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A5-5: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 부재 + 403")
+        void codeGroupsList_forbidden_whenCodeReadMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("CONTENT:WRITE"));
+
+            mockMvc.perform(get("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A5-6: CodeGroup 목록 — SYSTEM:CODE:READ 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A5-6: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codeGroupsList_passesAuthorization_whenCodeReadPresent() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
+
+            mockMvc.perform(get("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 3. POST /api/v1/system/codes — SYSTEM:CODE:WRITE ───────────────────
+
+        /** AC-AME-001-A5-7: Code 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A5-7: POST /api/v1/system/codes — Authorization 헤더 부재 + 401")
+        void codeCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/system/codes")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 2~3: 5 endpoint × 3 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>GET /api/v1/system/codes — SYSTEM:CODE:READ (CodeController#list) — Step 2</li>
-         *   <li>GET /api/v1/system/code-groups — SYSTEM:CODE:READ (CodeGroupController#list) — Step 2</li>
-         *   <li>POST /api/v1/system/codes — SYSTEM:CODE:WRITE (CodeController#create) — Step 3</li>
-         *   <li>PUT /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE (CodeController#update) — Step 3</li>
-         *   <li>POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE (CodeGroupController#create) — Step 3</li>
-         * </ul>
-         *
-         * <p>SYSTEM:CODE:READ와 SYSTEM:CODE:WRITE 분리 회귀: READ 권한만 보유한 토큰이
-         * POST/PUT (WRITE 정책 endpoint)에 대해 403 반환되어야 함 (권한 어휘 분리 회귀 검출).
+         * AC-AME-001-A5-8: Code 생성 — SYSTEM:CODE:READ만 보유(WRITE 부재) → 403.
+         * 어휘 분리 회귀: SYSTEM:CODE:READ와 SYSTEM:CODE:WRITE는 별개 어휘.
          */
         @Test
-        @Disabled("Step 2~3에서 활성화 예정 — System CODE:READ vs CODE:WRITE 어휘 분리 회귀 매트릭스")
-        @DisplayName("§A.5 placeholder: Step 2~3 활성화 대기")
-        void systemDomain_placeholder_step2to3() {
-            // SYSTEM:CODE:READ vs SYSTEM:CODE:WRITE 어휘 분리 회귀 — Step 2~3 활성화.
+        @DisplayName("AC-AME-001-A5-8: POST /api/v1/system/codes — SYSTEM:CODE:WRITE 부재(READ만) + 403 (어휘 분리)")
+        void codeCreate_forbidden_whenCodeWriteMissing_separationFromCodeRead() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ")); // WRITE 미보유
+
+            mockMvc.perform(post("/api/v1/system/codes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
         }
+
+        /** AC-AME-001-A5-9: Code 생성 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A5-9: POST /api/v1/system/codes — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeCreate_passesAuthorization_whenCodeWritePresent() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+
+            mockMvc.perform(post("/api/v1/system/codes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 4. PUT /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE ───────────────
+
+        /** AC-AME-001-A5-10: Code 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A5-10: PUT /api/v1/system/codes/{id} — Authorization 헤더 부재 + 401")
+        void codeUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/system/codes/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A5-11: Code 수정 — SYSTEM:CODE:WRITE 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A5-11: PUT /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE 부재 + 403")
+        void codeUpdate_forbidden_whenCodeWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
+
+            mockMvc.perform(put("/api/v1/system/codes/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A5-12: Code 수정 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A5-12: PUT /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeUpdate_passesAuthorization_whenCodeWritePresent() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+
+            mockMvc.perform(put("/api/v1/system/codes/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 5. POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE ─────────────
+
+        /** AC-AME-001-A5-13: CodeGroup 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A5-13: POST /api/v1/system/code-groups — Authorization 헤더 부재 + 401")
+        void codeGroupCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/system/code-groups")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A5-14: CodeGroup 생성 — SYSTEM:CODE:WRITE 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A5-14: POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE 부재 + 403")
+        void codeGroupCreate_forbidden_whenCodeWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
+
+            mockMvc.perform(post("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A5-15: CodeGroup 생성 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A5-15: POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeGroupCreate_passesAuthorization_whenCodeWritePresent() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+
+            mockMvc.perform(post("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.5 합계: 5 endpoint × 3 시나리오 = 15 AC
+        // SYSTEM:CODE:READ vs SYSTEM:CODE:WRITE 어휘 분리 회귀 검증 통합 (AC-AME-001-A5-8)
     }
 
     /**
@@ -1036,22 +1414,127 @@ class AuthorizationMatrixExpandIT {
 
         // §A.7 Step 2 합계: Board 2 endpoint × 3 시나리오 = 6 AC
 
+        // ─── 3. POST /api/v1/content/menus — MENU:WRITE (Step 3) ────────────────
+
+        /** AC-AME-001-A7-7: Menu 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A7-7: POST /api/v1/content/menus — Authorization 헤더 부재 + 401")
+        void menuCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/menus")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 3 (Phase B): MENU:WRITE 어휘 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>POST /api/v1/content/menus — MENU:WRITE (MenuController#create)</li>
-         *   <li>PATCH /api/v1/content/menus/{id}/order — MENU:WRITE (MenuController#reorder)</li>
-         *   <li>DELETE /api/v1/content/menus/{id} — MENU:WRITE (MenuController#delete)</li>
-         * </ul>
-         *
-         * <p>MENU:WRITE 어휘 분리 회귀 검증: CONTENT:WRITE 또는 PAGE:WRITE 보유 토큰이 MENU 정책 endpoint에서 403.
+         * AC-AME-001-A7-8: Menu 생성 — CONTENT:WRITE만 보유(MENU:WRITE 부재) → 403.
+         * 어휘 분리 회귀: MENU:WRITE는 CONTENT:WRITE/PAGE:WRITE와 별개 어휘.
          */
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — MENU:WRITE 어휘 3 endpoint × 3 시나리오 = 9 AC")
-        @DisplayName("§A.7 placeholder Step 3: MENU:WRITE 활성화 대기")
-        void menuAuthority_placeholder_step3() {
-            // MENU:WRITE 어휘 시나리오는 Step 3에서 활성화.
+        @DisplayName("AC-AME-001-A7-8: POST /api/v1/content/menus — MENU:WRITE 부재(CONTENT:WRITE만) + 403 (어휘 분리)")
+        void menuCreate_forbidden_whenMenuWriteMissing_separationFromContentWrite() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/menus")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
         }
+
+        /** AC-AME-001-A7-9: Menu 생성 — MENU:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A7-9: POST /api/v1/content/menus — MENU:WRITE 보유 + 401/403 아님")
+        void menuCreate_passesAuthorization_whenMenuWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/menus")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 4. PATCH /api/v1/content/menus/{id}/order — MENU:WRITE ─────────────
+
+        /** AC-AME-001-A7-10: Menu 순서 변경 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A7-10: PATCH /api/v1/content/menus/{id}/order — Authorization 헤더 부재 + 401")
+        void menuReorder_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(patch("/api/v1/content/menus/1/order")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A7-11: Menu 순서 변경 — MENU:WRITE 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A7-11: PATCH /api/v1/content/menus/{id}/order — MENU:WRITE 부재 + 403")
+        void menuReorder_forbidden_whenMenuWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(patch("/api/v1/content/menus/1/order")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A7-12: Menu 순서 변경 — MENU:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A7-12: PATCH /api/v1/content/menus/{id}/order — MENU:WRITE 보유 + 401/403 아님")
+        void menuReorder_passesAuthorization_whenMenuWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
+
+            mockMvc.perform(patch("/api/v1/content/menus/1/order")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 5. DELETE /api/v1/content/menus/{id} — MENU:WRITE ──────────────────
+
+        /** AC-AME-001-A7-13: Menu 삭제 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A7-13: DELETE /api/v1/content/menus/{id} — Authorization 헤더 부재 + 401")
+        void menuDelete_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(delete("/api/v1/content/menus/1"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A7-14: Menu 삭제 — MENU:WRITE 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A7-14: DELETE /api/v1/content/menus/{id} — MENU:WRITE 부재 + 403")
+        void menuDelete_forbidden_whenMenuWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(delete("/api/v1/content/menus/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A7-15: Menu 삭제 — MENU:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A7-15: DELETE /api/v1/content/menus/{id} — MENU:WRITE 보유 + 401/403 아님")
+        void menuDelete_passesAuthorization_whenMenuWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
+
+            mockMvc.perform(delete("/api/v1/content/menus/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.7 합계: 5 endpoint × 3 시나리오 = 15 AC (Phase A Board 6 + Phase B Menu 9)
+        // MENU:WRITE vs CONTENT:WRITE/PAGE:WRITE 어휘 분리 회귀 검증 통합 (AC-AME-001-A7-8)
     }
 }
