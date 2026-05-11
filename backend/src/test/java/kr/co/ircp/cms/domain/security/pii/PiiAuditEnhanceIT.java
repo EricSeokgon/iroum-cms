@@ -1,22 +1,17 @@
 package kr.co.ircp.cms.domain.security.pii;
 
 import kr.co.ircp.cms.config.IntegrationAsyncConfig;
-import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessPurpose;
 import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.repository.UserMapper;
-import kr.co.ircp.cms.domain.auth.service.PersonalDataAccessLogService;
 import kr.co.ircp.cms.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,11 +20,6 @@ import java.util.UUID;
 
 import static kr.co.ircp.cms.integration.JwtTestAuth.jwtAuth;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -74,12 +64,10 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    /**
-     * PersonalDataAccessLogService Spy — AC-009-5에서 recordBulk 실패 시뮬레이션.
-     * backend-dev가 recordBulk 메서드를 추가한 후 활성화됨.
-     */
-    @MockitoSpyBean
-    private PersonalDataAccessLogService personalDataAccessLogService;
+    // SPEC-CMS-SECURITY-PII-FOLLOWUP-002 옵션 B 적용 (2026-05-11):
+    // @MockitoSpyBean PersonalDataAccessLogService 제거 — @Async + AOP CGLIB proxy 충돌 회피.
+    // AC-FU-003-2 (recordBulk 실패 시뮬레이션)는 PersonalDataAccessLogServiceImplFallbackTest에 분리.
+    // 본 IT는 5 AC (AC-009-2/3/4, AC-FU-003-1/3) 모두 real method 호출 검증.
 
     /** 테스트 데이터 — ADMIN 본인 제외 5명의 타 사용자 */
     private List<Long> targetUserIds;
@@ -185,32 +173,11 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // AC-009-5: AOP fallback — INSERT 실패 시 user-facing 200 유지 + ERROR 로그 + 카운터
+    // AC-009-5 (구 AC-FU-003-2): recordBulk DataAccessException 시뮬레이션
+    // → SPEC-CMS-SECURITY-PII-FOLLOWUP-002 옵션 B 적용 후
+    //   PersonalDataAccessLogServiceImplFallbackTest로 분리됨.
+    //   본 IT 클래스에서는 Spring AOP @Async proxy + Mockito Spy 충돌로 검증 불가.
     // ──────────────────────────────────────────────────────────────────────────
-
-    @Test
-    @DisplayName("AC-FU-003-2 (← AC-009-5) — recordBulk DataAccessException 주입 → HTTP 200 유지 (AOP fallback)")
-    void auditInsertFailure_returns200AndDoesNotPropagateError() throws Exception {
-        // Mockito Spy로 recordBulk가 DataAccessException을 throw하도록 설정.
-        // 실제 recordBulk 시그니처: (long viewerId, String viewerRole, List<Long> targetUserIds,
-        //                            Set<String> accessedFields, PersonalDataAccessPurpose purpose)
-        // Mockito 5+ 호환: any() (Object generic) 대신 타입 명시 matcher 사용 (InvalidUseOfMatchersException 회피)
-        // recordBulk 시그니처: (long, String, List<Long>, Set<String>, PersonalDataAccessPurpose)
-        Mockito.doThrow(new DataAccessException("시뮬레이션: audit INSERT 실패") {})
-                .when(personalDataAccessLogService)
-                .recordBulk(anyLong(), anyString(), anyList(), anySet(), any(PersonalDataAccessPurpose.class));
-
-        // user-facing 에러 미전파 — 정상 200 응답
-        mockMvc.perform(get(ADMIN_USERS_URL)
-                        .param("page", "0")
-                        .param("size", "20")
-                        .with(jwtAuth(1L, "admin1", "SUPER_ADMIN")))
-                .andExpect(status().isOk());
-
-        // Micrometer 카운터 pii.audit.log.failure.count 증가 검증은
-        // MeterRegistry 주입 후 counter.count() 확인으로 수행 (별도 MeterRegistry @Autowired 필요)
-        // 여기서는 HTTP 200 유지만 검증 (core fallback 정책)
-    }
 
     // ──────────────────────────────────────────────────────────────────────────
     // AC-009-6: ADMIN_USER_LIST 일괄 적재 — 각 target_user_id 다름
