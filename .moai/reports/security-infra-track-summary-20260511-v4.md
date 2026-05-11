@@ -95,6 +95,17 @@
 
 본 세션 시도 결과: 옵션 B(@Transactional 제거)는 PIPA 트리거가 cleanup `DELETE FROM personal_data_access_log`를 차단하여 5 AC 모두 RED 회귀 → 즉시 revert. 권장 후속 SPEC `PII-FOLLOWUP-003`로 옵션 A 또는 C 분리.
 
+### 3.4 PII-FOLLOWUP-003 옵션 A 추가 시도 결과 (세션 후속 검증)
+
+본 세션 종결 직전 사용자 요청으로 옵션 A 추가 시도:
+- 변경: `PersonalDataAccessLogServiceImpl.record() + recordBulk()`에 `@Transactional(propagation = REQUIRES_NEW)` 추가
+- 결과: 동일 RED 패턴 (audit row 0건) — 효과 없음
+- 추정 원인: `@Async("auditExecutor") SyncTaskExecutor` 환경에서 `@Async` AOP advice가 `@Transactional` advice보다 outer order로 wrap → REQUIRES_NEW가 의도대로 새 connection/tx를 시작 못 함. caller thread의 readOnly tx context 그대로 join
+- 운영 코드 revert 완료 (commit a5f873b 상태 복원)
+- **다음 세션 권장**: 옵션 C (@Async 분리 wrapping bean) — `PersonalDataAccessLogServiceImpl`에서 `@Async` 제거 + 별도 `AsyncAuditDispatcher` bean이 sync method 호출을 비동기 dispatch. AOP advice 순서 명확화로 transaction propagation 정상 동작 기대.
+
+이 추가 시도로 옵션 A는 효과 없음이 실증됨 → 후속 SPEC `PII-FOLLOWUP-003`에서 옵션 C 우선 채택 권장.
+
 ---
 
 ## §4 실제 부팅 검증 결과 (v4 신규)

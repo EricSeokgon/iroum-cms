@@ -33,6 +33,13 @@
   - C. `@Async` 분리 wrapping bean으로 운영 코드 리팩토링
 - 본 SPEC 영역 외로 정리. 본 SPEC v0.2는 Spy+@Async 충돌 해소만 다룸.
 
+### PII-FOLLOWUP-003 옵션 A 시도 결과 (2026-05-11, 세션 후속 검증)
+- `PersonalDataAccessLogServiceImpl.record()` + `recordBulk()`에 `@Transactional(propagation = REQUIRES_NEW)` 추가
+- 재실행 결과: 동일 RED 패턴 (audit row 0건 expected ≥5) — 효과 없음
+- 추정 root cause: `@Async("auditExecutor") SyncTaskExecutor` 환경에서 `@Async` AOP advice가 `@Transactional` advice보다 outer order로 wrap → REQUIRES_NEW가 의도대로 새 connection/tx를 시작하지 못함. caller thread의 readOnly tx context 그대로 join.
+- 운영 코드 revert 완료 (commit a5f873b 상태 복원)
+- **다음 세션 권장**: 옵션 C (@Async 분리 wrapping bean) 채택 — `PersonalDataAccessLogServiceImpl`에서 `@Async` 어노테이션 제거 + 별도 `AsyncAuditDispatcher` bean이 sync method 호출을 비동기 dispatch. AOP advice 순서 명확화로 transaction propagation 정상 동작 기대.
+
 ### REQ-PII-FU2-003: SPEC 검증 절차 강화 (별도 메타 SPEC 후속)
 spec-workflow.md에 "사용자 환경 IT GREEN 의무" 항목 추가 권장 — 본 SPEC 사이클에서 명시.
 
