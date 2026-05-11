@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -531,27 +532,126 @@ class AuthorizationMatrixExpandIT {
      * <br>Step 3 (Phase B)에서 SYSTEM:STATS 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.3 DashboardDomainTests (3 endpoint × 3 시나리오)")
+    @DisplayName("§A.3 DashboardDomainTests (Step 2 부분: 2 endpoint × 3~4 시나리오 = 7 AC, SYSTEM:STATS는 Step 3)")
     class DashboardDomainTests {
 
+        // ─── 1. POST /api/v1/dashboard/widgets — hasRole('SUPER_ADMIN') ─────────
+
+        /** AC-AME-001-A3-1: Widget 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A3-1: POST /api/v1/dashboard/widgets — Authorization 헤더 부재 + 401")
+        void widgetCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/dashboard/widgets")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 2~3: 3 endpoint × 3 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>POST /api/v1/dashboard/widgets — hasRole('SUPER_ADMIN') (DashboardWidgetController#create) — Step 2</li>
-         *   <li>PUT /api/v1/dashboard/widgets/{id} — hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')
-         *       (DashboardWidgetController#update) — Step 2 multi-role 부분 매칭 회귀</li>
-         *   <li>GET /api/v1/system/stats/trend — SYSTEM:STATS (StatsController#trend) — Step 3</li>
-         * </ul>
-         *
-         * <p>multi-role 회귀 검증: AC-AME-001-D3에서 DEPT_ADMIN 단독 보유 → 200 통과 검증
-         * (SUPER_ADMIN 없이도 정책 통과).
+         * AC-AME-001-A3-2: Widget 생성 — DEPT_ADMIN 단독 → 403.
+         * hasRole('SUPER_ADMIN') vs hasAnyRole('SUPER_ADMIN','DEPT_ADMIN') 어휘 분리 회귀:
+         * Widget POST는 SUPER_ADMIN만 허용 (DEPT_ADMIN 거부).
          */
         @Test
-        @Disabled("Step 2~3에서 활성화 예정 — Dashboard SUPER_ADMIN/hasAnyRole/SYSTEM:STATS 매트릭스")
-        @DisplayName("§A.3 placeholder: Step 2~3 활성화 대기")
-        void dashboardDomain_placeholder_step2to3() {
-            // SUPER_ADMIN + hasAnyRole multi-role + SYSTEM:STATS 어휘 회귀 — Step 2~3 활성화.
+        @DisplayName("AC-AME-001-A3-2: POST /api/v1/dashboard/widgets — DEPT_ADMIN 단독 + 403 (hasRole vs hasAnyRole 분리)")
+        void widgetCreate_forbidden_whenOnlyDeptAdmin() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of()); // SUPER_ADMIN 부재
+
+            mockMvc.perform(post("/api/v1/dashboard/widgets")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A3-3: Widget 생성 — SUPER_ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A3-3: POST /api/v1/dashboard/widgets — SUPER_ADMIN 보유 + 401/403 아님")
+        void widgetCreate_passesAuthorization_whenSuperAdmin() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/dashboard/widgets")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. PUT /api/v1/dashboard/widgets/{id} — hasAnyRole('SUPER_ADMIN','DEPT_ADMIN') ──
+
+        /** AC-AME-001-A3-4: Widget 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A3-4: PUT /api/v1/dashboard/widgets/{id} — Authorization 헤더 부재 + 401")
+        void widgetUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/dashboard/widgets/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A3-5: Widget 수정 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A3-5: PUT /api/v1/dashboard/widgets/{id} — USER 역할 + 403")
+        void widgetUpdate_forbidden_whenNotAdminRole() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(put("/api/v1/dashboard/widgets/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A3-6: Widget 수정 — SUPER_ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A3-6: PUT /api/v1/dashboard/widgets/{id} — SUPER_ADMIN 보유 + 401/403 아님")
+        void widgetUpdate_passesAuthorization_whenSuperAdmin() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+
+            mockMvc.perform(put("/api/v1/dashboard/widgets/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        /**
+         * AC-AME-001-A3-7 (multi-role 핵심 회귀): Widget 수정 — DEPT_ADMIN 단독 → 401/403 외.
+         * hasAnyRole 어휘 분기 회귀 검증: SUPER_ADMIN 없이 DEPT_ADMIN만으로도 통과해야 함.
+         */
+        @Test
+        @DisplayName("AC-AME-001-A3-7: PUT /api/v1/dashboard/widgets/{id} — DEPT_ADMIN 단독 + 401/403 아님 (hasAnyRole 분기)")
+        void widgetUpdate_passesAuthorization_whenOnlyDeptAdmin_multiRoleBranch() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of()); // SUPER_ADMIN 없이도 통과
+
+            mockMvc.perform(put("/api/v1/dashboard/widgets/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.3 Step 2 합계: 2 endpoint × 3~4 시나리오 = 7 AC (Widget POST 3 + Widget PUT 4 multi-role)
+
+        /**
+         * TODO Step 3 (Phase B): SYSTEM:STATS 어휘 시나리오 활성화 예정.
+         *
+         * <ul>
+         *   <li>GET /api/v1/system/stats/trend — SYSTEM:STATS (StatsController#trend)</li>
+         * </ul>
+         */
+        @Test
+        @Disabled("Step 3 (Phase B)에서 활성화 예정 — SYSTEM:STATS 어휘 1 endpoint × 3 시나리오 = 3 AC")
+        @DisplayName("§A.3 placeholder Step 3: SYSTEM:STATS 활성화 대기")
+        void systemStatsAuthority_placeholder_step3() {
+            // SYSTEM:STATS 어휘 시나리오는 Step 3에서 활성화.
         }
     }
 
@@ -565,29 +665,112 @@ class AuthorizationMatrixExpandIT {
      * <br>Step 3 (Phase B)에서 isAuthenticated 401/200 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.4 AuthDomainTests (4 endpoint, isAuthenticated 403 N/A)")
+    @DisplayName("§A.4 AuthDomainTests (Step 2 부분: SUPER_ADMIN 2 endpoint × 3 시나리오 = 6 AC, isAuthenticated는 Step 3)")
     class AuthDomainTests {
 
+        // ─── 1. POST /api/v1/users/{id}/force-logout — hasRole('SUPER_ADMIN') ──
+
+        /** AC-AME-001-A4-1: User 강제 로그아웃 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A4-1: POST /api/v1/users/{id}/force-logout — Authorization 헤더 부재 + 401")
+        void userForceLogout_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/users/1/force-logout")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 2~3: 4 endpoint × 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>POST /api/v1/users/{id}/force-logout — hasRole('SUPER_ADMIN')
-         *       (UserController#forceLogout) — Step 2 (AUTHZ-MATRIX-001 User register와 다른 endpoint)</li>
-         *   <li>POST /api/v1/organizations — hasRole('SUPER_ADMIN')
-         *       (OrganizationController#create) — Step 2 (다른 컨트롤러 보강)</li>
-         *   <li>GET /api/v1/qnas — isAuthenticated() (QnaController#list) — Step 3 (401 + 200만)</li>
-         *   <li>POST /api/v1/qnas — isAuthenticated() (QnaController#create) — Step 3 (401 + 200만)</li>
-         * </ul>
-         *
-         * <p>isAuthenticated() 어휘 특이 케이스: 정책상 권한 무관이므로 403 시나리오는 N/A.
-         * <br>401 시나리오 (Authorization 헤더 부재) + 200 시나리오 (유효 JWT, 권한 무관) 두 시나리오만 검증.
+         * AC-AME-001-A4-2: User 강제 로그아웃 — ADMIN 역할 → 403.
+         * SUPER_ADMIN/ADMIN 역할 위계 회귀: ADMIN은 SUPER_ADMIN 정책 미충족.
          */
         @Test
-        @Disabled("Step 2~3에서 활성화 예정 — Auth SUPER_ADMIN + isAuthenticated 매트릭스 (isAuthenticated 403 N/A)")
-        @DisplayName("§A.4 placeholder: Step 2~3 활성화 대기")
-        void authDomain_placeholder_step2to3() {
-            // SUPER_ADMIN + isAuthenticated 어휘 회귀 — Step 2~3 활성화.
+        @DisplayName("AC-AME-001-A4-2: POST /api/v1/users/{id}/force-logout — ADMIN 역할(SUPER_ADMIN 부재) + 403")
+        void userForceLogout_forbidden_whenNotSuperAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/users/1/force-logout")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A4-3: User 강제 로그아웃 — SUPER_ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A4-3: POST /api/v1/users/{id}/force-logout — SUPER_ADMIN + 401/403 아님")
+        void userForceLogout_passesAuthorization_whenSuperAdmin() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/users/1/force-logout")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. POST /api/v1/organizations — hasRole('SUPER_ADMIN') ─────────────
+
+        /** AC-AME-001-A4-4: Organization 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A4-4: POST /api/v1/organizations — Authorization 헤더 부재 + 401")
+        void organizationCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/organizations")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A4-5: Organization 생성 — DEPT_ADMIN 단독 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A4-5: POST /api/v1/organizations — DEPT_ADMIN 단독 + 403")
+        void organizationCreate_forbidden_whenNotSuperAdmin() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/organizations")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A4-6: Organization 생성 — SUPER_ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A4-6: POST /api/v1/organizations — SUPER_ADMIN + 401/403 아님")
+        void organizationCreate_passesAuthorization_whenSuperAdmin() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/organizations")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.4 Step 2 합계: 2 endpoint × 3 시나리오 = 6 AC
+
+        /**
+         * TODO Step 3 (Phase B): isAuthenticated() 어휘 시나리오 활성화 예정 (401/200만, 403 N/A).
+         *
+         * <ul>
+         *   <li>GET /api/v1/qnas — isAuthenticated() (QnaController#list)</li>
+         *   <li>POST /api/v1/qnas — isAuthenticated() (QnaController#create)</li>
+         * </ul>
+         *
+         * <p>특이 케이스: isAuthenticated()는 권한 무관이므로 403 시나리오 N/A.
+         * 401 (Authorization 헤더 부재) + 200 (유효 JWT) 두 시나리오만 검증.
+         */
+        @Test
+        @Disabled("Step 3 (Phase B)에서 활성화 예정 — isAuthenticated 어휘 2 endpoint × 2 시나리오 = 4 AC (403 N/A)")
+        @DisplayName("§A.4 placeholder Step 3: isAuthenticated 활성화 대기")
+        void isAuthenticatedAuthority_placeholder_step3() {
+            // isAuthenticated 어휘 시나리오는 Step 3에서 활성화.
         }
     }
 
@@ -633,29 +816,128 @@ class AuthorizationMatrixExpandIT {
      * <p>Step 2 (Phase A)에서 ADMIN 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.6 GovernanceDomainTests (3 endpoint × 3 시나리오)")
+    @DisplayName("§A.6 GovernanceDomainTests (3 endpoint × 3 시나리오 = 9 AC, ADMIN 클래스 레벨)")
     class GovernanceDomainTests {
 
-        /**
-         * TODO Step 2 (Phase A): 3 endpoint × 3 시나리오 활성화 예정.
-         *
-         * <ul>
-         *   <li>GET /api/v1/governance/quality-rules — hasRole('ADMIN') 클래스 레벨
-         *       (DataQualityController) — AUTHZ-MATRIX-001 RetentionPolicy와 다른 컨트롤러 보강</li>
-         *   <li>POST /api/v1/governance/quality-rules — hasRole('ADMIN') 클래스 레벨</li>
-         *   <li>POST /api/v1/governance/recovery-drills — hasRole('ADMIN') 클래스 레벨
-         *       (RecoveryDrillController) — 다른 컨트롤러 보강</li>
-         * </ul>
-         *
-         * <p>클래스 레벨 @PreAuthorize 운영 적재 회귀 검증: 운영 SecurityFilterChain이
-         * 클래스 레벨 어노테이션도 인터셉트하는지 회귀 (메소드 레벨만 회귀해도 RED 신호 발생해야 함).
-         */
+        // ─── 1. GET /api/v1/governance/quality-rules — ADMIN 클래스 레벨 ─────────
+
+        /** AC-AME-001-A6-1: 품질 규칙 조회 — 토큰 부재 → 401. */
         @Test
-        @Disabled("Step 2 (Phase A)에서 활성화 예정 — Governance hasRole('ADMIN') 클래스 레벨 매트릭스")
-        @DisplayName("§A.6 placeholder: Step 2 활성화 대기")
-        void governanceDomain_placeholder_step2() {
-            // hasRole('ADMIN') 클래스 레벨 어휘 회귀 — Step 2 활성화.
+        @DisplayName("AC-AME-001-A6-1: GET /api/v1/governance/quality-rules — Authorization 헤더 부재 + 401")
+        void qualityRules_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(get("/api/v1/governance/quality-rules"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
         }
+
+        /** AC-AME-001-A6-2: 품질 규칙 조회 — USER 역할 → 403 (클래스 레벨 ADMIN 미충족). */
+        @Test
+        @DisplayName("AC-AME-001-A6-2: GET /api/v1/governance/quality-rules — USER 역할 + 403")
+        void qualityRules_forbidden_whenNotAdmin() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(get("/api/v1/governance/quality-rules")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A6-3: 품질 규칙 조회 — ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A6-3: GET /api/v1/governance/quality-rules — ADMIN + 401/403 아님")
+        void qualityRules_passesAuthorization_whenAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(get("/api/v1/governance/quality-rules")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. POST /api/v1/governance/quality-rules — ADMIN 클래스 레벨 ────────
+
+        /** AC-AME-001-A6-4: 품질 규칙 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A6-4: POST /api/v1/governance/quality-rules — Authorization 헤더 부재 + 401")
+        void qualityRulesCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/governance/quality-rules")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A6-5: 품질 규칙 생성 — EDITOR 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A6-5: POST /api/v1/governance/quality-rules — EDITOR 역할 + 403")
+        void qualityRulesCreate_forbidden_whenNotAdmin() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of());
+
+            mockMvc.perform(post("/api/v1/governance/quality-rules")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A6-6: 품질 규칙 생성 — ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A6-6: POST /api/v1/governance/quality-rules — ADMIN + 401/403 아님")
+        void qualityRulesCreate_passesAuthorization_whenAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/governance/quality-rules")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 3. POST /api/v1/governance/recovery-drills — ADMIN 클래스 레벨 ──────
+
+        /** AC-AME-001-A6-7: 복구 훈련 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A6-7: POST /api/v1/governance/recovery-drills — Authorization 헤더 부재 + 401")
+        void recoveryDrillsCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/governance/recovery-drills")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A6-8: 복구 훈련 생성 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A6-8: POST /api/v1/governance/recovery-drills — USER 역할 + 403")
+        void recoveryDrillsCreate_forbidden_whenNotAdmin() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(post("/api/v1/governance/recovery-drills")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A6-9: 복구 훈련 생성 — ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A6-9: POST /api/v1/governance/recovery-drills — ADMIN + 401/403 아님")
+        void recoveryDrillsCreate_passesAuthorization_whenAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/governance/recovery-drills")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.6 합계: 3 endpoint × 3 시나리오 = 9 AC (ADMIN 클래스 레벨 어휘 회귀)
+        // 클래스 레벨 @PreAuthorize 운영 적재 회귀 검증: SecurityFilterChain이 클래스 레벨도 인터셉트.
     }
 
     /**
@@ -667,28 +949,109 @@ class AuthorizationMatrixExpandIT {
      * <br>Step 3 (Phase B)에서 MENU:WRITE 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.7 BoardMenuDomainTests (5 endpoint × 3 시나리오)")
+    @DisplayName("§A.7 BoardMenuDomainTests (Step 2 부분: Board 2 endpoint × 3 시나리오 = 6 AC, MENU:WRITE는 Step 3)")
     class BoardMenuDomainTests {
 
+        // ─── 1. POST /api/v1/boards — hasRole('ADMIN') ──────────────────────────
+
+        /** AC-AME-001-A7-1: Board 생성 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A7-1: POST /api/v1/boards — Authorization 헤더 부재 + 401")
+        void boardCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/boards")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A7-2: Board 생성 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A7-2: POST /api/v1/boards — USER 역할 + 403")
+        void boardCreate_forbidden_whenNotAdmin() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(post("/api/v1/boards")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A7-3: Board 생성 — ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A7-3: POST /api/v1/boards — ADMIN + 401/403 아님")
+        void boardCreate_passesAuthorization_whenAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(post("/api/v1/boards")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. PUT /api/v1/boards/{id} — hasRole('ADMIN') ──────────────────────
+
+        /** AC-AME-001-A7-4: Board 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A7-4: PUT /api/v1/boards/{id} — Authorization 헤더 부재 + 401")
+        void boardUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/boards/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A7-5: Board 수정 — USER 역할 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A7-5: PUT /api/v1/boards/{id} — USER 역할 + 403")
+        void boardUpdate_forbidden_whenNotAdmin() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(put("/api/v1/boards/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A7-6: Board 수정 — ADMIN 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A7-6: PUT /api/v1/boards/{id} — ADMIN + 401/403 아님")
+        void boardUpdate_passesAuthorization_whenAdmin() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+
+            mockMvc.perform(put("/api/v1/boards/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.7 Step 2 합계: Board 2 endpoint × 3 시나리오 = 6 AC
+
         /**
-         * TODO Step 2~3: 5 endpoint × 3 시나리오 활성화 예정.
+         * TODO Step 3 (Phase B): MENU:WRITE 어휘 시나리오 활성화 예정.
          *
          * <ul>
-         *   <li>POST /api/v1/content/menus — MENU:WRITE (MenuController#create) — Step 3</li>
-         *   <li>PATCH /api/v1/content/menus/{id}/order — MENU:WRITE (MenuController#reorder) — Step 3</li>
-         *   <li>DELETE /api/v1/content/menus/{id} — MENU:WRITE (MenuController#delete) — Step 3</li>
-         *   <li>POST /api/v1/boards — hasRole('ADMIN') (BbsMasterController#create) — Step 2 (ADMIN 다른 컨트롤러 보강)</li>
-         *   <li>PUT /api/v1/boards/{id} — hasRole('ADMIN') (BbsMasterController#update) — Step 2</li>
+         *   <li>POST /api/v1/content/menus — MENU:WRITE (MenuController#create)</li>
+         *   <li>PATCH /api/v1/content/menus/{id}/order — MENU:WRITE (MenuController#reorder)</li>
+         *   <li>DELETE /api/v1/content/menus/{id} — MENU:WRITE (MenuController#delete)</li>
          * </ul>
          *
-         * <p>MENU:WRITE 어휘 회귀 검증: CONTENT:WRITE 또는 PAGE:WRITE 보유 토큰이 MENU 정책 endpoint에서
-         * 403 반환되어야 함 (어휘 분리 회귀).
+         * <p>MENU:WRITE 어휘 분리 회귀 검증: CONTENT:WRITE 또는 PAGE:WRITE 보유 토큰이 MENU 정책 endpoint에서 403.
          */
         @Test
-        @Disabled("Step 2~3에서 활성화 예정 — BoardMenu MENU:WRITE + hasRole('ADMIN') 매트릭스")
-        @DisplayName("§A.7 placeholder: Step 2~3 활성화 대기")
-        void boardMenuDomain_placeholder_step2to3() {
-            // MENU:WRITE + hasRole('ADMIN') 어휘 회귀 — Step 2~3 활성화.
+        @Disabled("Step 3 (Phase B)에서 활성화 예정 — MENU:WRITE 어휘 3 endpoint × 3 시나리오 = 9 AC")
+        @DisplayName("§A.7 placeholder Step 3: MENU:WRITE 활성화 대기")
+        void menuAuthority_placeholder_step3() {
+            // MENU:WRITE 어휘 시나리오는 Step 3에서 활성화.
         }
     }
 }
