@@ -251,12 +251,17 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 �
 
 | SPEC ID | 제목 | 상태 |
 |---------|------|------|
-| SPEC-CMS-001 | 공공기관 CMS 1차 출시 기반 (Umbrella) | Draft |
-| SPEC-CMS-002 | 회원·인증·권한 관리 | 예정 |
-| SPEC-CMS-003 | 게시판·공지·Q&A·FAQ | 예정 |
-| SPEC-CMS-004 | 콘텐츠·메뉴·사이트 관리 | 예정 |
-| SPEC-CMS-005 | 통계·로그·시스템 관리 | 예정 |
-| SPEC-CMS-MEDIA-001 | 미디어·첨부파일 관리 | 예정 |
+| SPEC-CMS-001 | 공공기관 CMS — 1차 출시 기반 (Umbrella) | Implemented (1차 출시 완료) |
+| SPEC-CMS-002 | 회원·권한·로그인 상세 (Bundle A — Auth, Account, Authorization) | Implemented |
+| SPEC-CMS-003 | 게시판·공지·Q&A·FAQ 상세 (Bundle B) | Implemented |
+| SPEC-CMS-004 | 콘텐츠·메뉴·사이트관리 상세 (Bundle C) | Implemented |
+| SPEC-CMS-005 | 통계·로그·시스템관리 상세 (Bundle D) | Implemented |
+| SPEC-CMS-006 | 안전경영 가이드라인 + 사고사례 매칭 (Safety Management + Incident Matching) | Implemented |
+| SPEC-CMS-007 | 정책사업 지능형 매칭 + 적기 타겟팅 알림 (Policy Matching + Timing Notification) | Implemented |
+| SPEC-CMS-008 | 시각화 대시보드 + KPI 통합 | Implemented |
+| SPEC-CMS-009 | 데이터 거버넌스 (Data Governance) | Implemented |
+| SPEC-CMS-010 | 통합 검색 (Unified Search) | Implemented |
+| SPEC-CMS-MEDIA-001 | 통합 미디어 라이브러리 | Implemented |
 | SPEC-CMS-SECURITY-PII-001 | 개인정보 암호화 (Email AES-256-GCM + HMAC + 키 관리) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-002 | PII 노출 통제 (Admin 검색 partial 차단 + 응답 마스킹 + PII 접근 감사 보강) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-001 | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) | Implemented (1차) |
