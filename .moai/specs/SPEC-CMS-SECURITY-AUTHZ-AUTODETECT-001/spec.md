@@ -1,6 +1,25 @@
-# SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001: ArchUnit 기반 운영 @PreAuthorize 자동 검출 — IT 매트릭스 누락 PR 차단 v0.1
+# SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001: ArchUnit 기반 운영 @PreAuthorize 자동 검출 — IT 매트릭스 누락 PR 차단 v0.2
 
-**Status**: Planned (2026-05-11)
+**Status**: Implemented (2026-05-11) — 실제 Java 17 + Gradle 구동 검증 완료
+**Implementation commits**: 2be18d0 (Step 1 신설), 9cb4933 (Step 1 GREEN), 6b831d8 (Step 2 GREEN)
+**Test result**: 4 AC, 0 failed, BUILD SUCCESSFUL in 11s
+
+## v0.2 변경 이력 (2026-05-11)
+
+본 SPEC v0.1 → v0.2: Step 1+2 RUN 완성. AuthorizationCoverageArchTest 신설 (448줄, 4 @Test).
+- AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 (103) GREEN
+- AC-AAD-001-2: IT @DisplayName endpoint set (35 unique) GREEN
+- AC-AAD-002-1: 35 endpoint baseline 정확 매칭 GREEN
+- AC-AAD-003-1: 운영 권한 어휘 set (31 unique) GREEN
+
+정밀 진단 정정 (실측 기반):
+- 운영 @PreAuthorize 카운트: grep 120 → ArchUnit 103 (메소드 레벨, 클래스 레벨 5개 컨트롤러 제외)
+- 운영 권한 어휘: 사전 추정 14 → 실측 31 (사전 미식별 17 어휘 ArchUnit 자동 발견)
+- Path variable 정규화 강화: `\d+` 단계 → `{[a-zA-Z]+}` 단계 추가 (변수명 차이 흡수)
+
+운영 코드 변경 0줄 + 회귀 0건. README D3 절차 갱신 + CHANGELOG 추가.
+
+
 
 ## 1. 개요
 

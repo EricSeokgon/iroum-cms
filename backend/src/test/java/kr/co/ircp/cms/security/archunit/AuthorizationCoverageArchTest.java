@@ -45,7 +45,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link #baselineEndpoints()} + 카운트(120/35)를 동시 갱신한다. baseline 자체가 회귀 시그널이므로
  * 자동 변경 없음 — 의도적 갱신만 허용.
  *
- * <p>관련 SPEC: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 (REQ-AAD-001/002/004)
+ * <p>RED 시뮬레이션 검증 절차 (REQ-AAD-005 — 회귀 검출 능력 보장):
+ * <ol>
+ *   <li><b>운영 신규 @PreAuthorize 추가</b>: 운영 컨트롤러 신규 메소드에 어노테이션 1건 추가
+ *       → AC-AAD-001-1 RED (카운트 103 → 104) + AssertionError 메시지에 신규 endpoint 명시</li>
+ *   <li><b>IT 시나리오 1건 제거</b>: AuthorizationMatrixIT/ExpandIT의 @Test 메소드 1건 삭제
+ *       → AC-AAD-001-2 RED (35 → 34) + AC-AAD-002-1 missingFromIt에 누락 endpoint 노출</li>
+ *   <li><b>운영 권한 어휘 변경</b>: 기존 hasAuthority('CONTENT:WRITE') → hasAuthority('NEW:VOCAB')
+ *       → AC-AAD-003-1 RED (removedFromOps에 CONTENT:WRITE + addedInOps에 NEW:VOCAB 노출)</li>
+ *   <li><b>baseline 갱신 누락</b>: 신규 endpoint 추가 후 baselineEndpoints() 갱신 안 함
+ *       → AC-AAD-002-1 RED (extraInIt에 신규 endpoint 노출 + ArchUnit baseline 갱신 절차 안내)</li>
+ * </ol>
+ *
+ * <p>관련 SPEC: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 (REQ-AAD-001/002/003/004/005)
  */
 // @MX:NOTE: [AUTO] AuthorizationCoverageArchTest — 운영 @PreAuthorize ↔ IT 매트릭스 정합성 자동 검증
 // @MX:SPEC: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001

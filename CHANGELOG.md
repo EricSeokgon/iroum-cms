@@ -11,6 +11,34 @@
 
 ### Added
 
+- **AuthorizationCoverageArchTest — ArchUnit 기반 운영 @PreAuthorize 자동 검출 (4 @Test, 실제 구동 GREEN)**
+  - `backend/src/test/java/kr/co/ircp/cms/security/archunit/AuthorizationCoverageArchTest.java` 신규 448줄
+  - ArchUnit 1.3.0 기반 (기존 의존성 재사용, 신규 의존성 0건)
+  - PiiEmailMaskArchTest 271줄 패턴 재사용
+  - 4 AC: 운영 @PreAuthorize 카운트 baseline (103) / IT endpoint set (35 unique) / 35 baseline 정확 매칭 / 31 권한 어휘 baseline
+  - 운영 31 권한 어휘 정밀 발견 (사전 추정 14 → 실측 31, +17 신규 발견)
+  - 신규 @PreAuthorize 추가 또는 권한 어휘 변경 시 RED → Gradle check 통합 → CI PR 차단
+  - 4종 RED 시뮬레이션 절차 클래스 javadoc에 명시 (REQ-AAD-005)
+  - 실제 Java 17 + Gradle 8.8 구동 검증: BUILD SUCCESSFUL in 11s, 4 tests 0 failed
+  - PII-FOLLOWUP-001 잔여 회귀 발견 (별도 SPEC PII-FOLLOWUP-002 분리)
+  (SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 v0.2 Implemented 1차, commits 2be18d0 + 9cb4933 + 6b831d8)
+
+- **README — ArchUnit RED 신호 + 수동 갱신 절차 갱신**
+  - 기존 D3 수동 갱신 절차 → ArchUnit 자동 검출 + 수동 갱신 통합 절차
+  - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
+  - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
+
+- **PII-FOLLOWUP-002 SPEC 분리 (Planned)**
+  - PII-FOLLOWUP-001 잔여 RED 3건 (@MockitoSpyBean + @Async CGLIB proxy 충돌) 분리 SPEC
+  - Root cause 명문화 + 해결 옵션 3종 (운영 리팩토링 / IT 재설계 / @Async 우회) 권장 옵션 B
+  - REQ-PII-FU2-003: SPEC 'Implemented' 상태 전 사용자 환경 IT GREEN 의무화 절차 강화
+  - PII-FOLLOWUP-001 v0.2 Implemented가 정적 검증만 수행한 절차 결함 명문화
+
+- **PII-FOLLOWUP-001 회귀 1차 부분 수정 (Bean override 허용)**
+  - `application-integration.yml`에 `spring.main.allow-bean-definition-overriding: true` 추가
+  - PiiAuditEnhanceIT ApplicationContext 부팅 GREEN 회복 (6 → 3 GREEN)
+  - 잔여 3 RED는 PII-FOLLOWUP-002 분리
+
 - **AuthorizationMatrixExpandIT — HTTP 권한 매트릭스 IT 확장 (89 @Test)**
   - `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpandIT.java` 신규 1,540줄
   - 29 endpoint × 평균 3 시나리오 = 88 AC + smoke test 1건
