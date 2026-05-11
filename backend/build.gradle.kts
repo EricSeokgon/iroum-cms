@@ -168,6 +168,10 @@ tasks.test {
 }
 
 // ─── 통합 테스트 task (Docker 필요) ─────────────────────────────────────
+// SPEC-CMS-TEST-INFRA-RECONFIG-001 REQ-TIR-001/002:
+//   - finalizedBy(jacocoTestReport)로 IT 실행 후 통합 커버리지 보고서 자동 생성
+//   - check task에서 dependsOn("integrationTest")로 ./gradlew check/build 시 자동 실행
+//   - Docker 미가용 환경: AbstractIntegrationTest의 Assumptions.assumeTrue가 SKIP 보장
 tasks.register<Test>("integrationTest") {
     description = "Testcontainers 기반 통합 테스트 실행 (Docker 필요)"
     group = "verification"
@@ -180,6 +184,14 @@ tasks.register<Test>("integrationTest") {
         showStandardStreams = false
     }
     shouldRunAfter(tasks.test)
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+// SPEC-CMS-TEST-INFRA-RECONFIG-001 REQ-TIR-002 — check task에 integrationTest 통합
+// ./gradlew check 또는 ./gradlew build 시 IT 자동 실행 (Docker 가용 시)
+// CI workflow ./gradlew build jacocoTestReport도 본 dependsOn으로 자동 IT 실행 보장 (REQ-TIR-003)
+tasks.named("check") {
+    dependsOn("integrationTest")
 }
 
 // ─── JaCoCo 커버리지 ──────────────────────────────────────────────────────
@@ -188,7 +200,17 @@ jacoco {
 }
 
 tasks.jacocoTestReport {
-    dependsOn(tasks.test)
+    // SPEC-CMS-TEST-INFRA-RECONFIG-001 REQ-TIR-001 — integrationTest exec 통합
+    // test.exec + integrationTest.exec 모두 포함하여 단위 + 통합 경로 커버리지 정확화
+    // Docker 미가용 환경: integrationTest SKIP되어 integrationTest.exec 미생성 → fileTree
+    // include 패턴이 누락 허용하므로 test.exec만으로 정상 보고서 생성
+    dependsOn(tasks.test, "integrationTest")
+    executionData(
+        fileTree(layout.buildDirectory).include(
+            "jacoco/test.exec",
+            "jacoco/integrationTest.exec"
+        )
+    )
     reports {
         xml.required.set(true)
         html.required.set(true)
