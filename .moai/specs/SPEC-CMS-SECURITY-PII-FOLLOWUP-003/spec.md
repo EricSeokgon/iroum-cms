@@ -1,6 +1,44 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-003: PII Audit IT 잔여 2 AC 해소 (HikariCP readOnly connection 본질적 제약) v0.1
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-003: PII Audit IT 잔여 2 AC 해소 (HikariCP readOnly connection 본질적 제약) v0.2
 
-**Status**: Planned (2026-05-11) — 다음 세션 RUN 진입 권장
+**Status**: Implemented (1차) (2026-05-11) — 옵션 G (IT 재설계) 채택 + 핵심 2 AC GREEN 회복
+**Implementation commit**: b464bd3 (PiiAuditEnhanceIT @Transactional 제거 + TRUNCATE cleanup)
+**Test result**: 5 AC 중 3 PASSED + 2 FAILED (false GREEN 노출 — PII-FOLLOWUP-004 분리 권장)
+
+## v0.2 변경 이력 (2026-05-11) — 옵션 G 1차 RUN 성공
+
+### 본 SPEC 핵심 목표 100% 달성
+HikariCP `connection.setReadOnly(true)` sticky로 인한 audit row 0건 → 옵션 G로 해소.
+
+| AC | 변화 |
+|----|------|
+| AC-FU-003-1 (ADMIN findPage audit N건) | ❌ → ✅ (이전 0건 → audit row 적재 검증) |
+| AC-FU-003-3 (distinct target_user_id) | ❌ → ✅ (이전 0건 → distinct 검증) |
+| AC-009-2 (본인 제외) | ✅ 유지 (BeforeEach cleanup 효과) |
+
+### 옵션 G 구현 패턴
+- `@Transactional` 클래스 어노테이션 제거 (readOnly tx + connection sticky 우회)
+- `@BeforeEach + @AfterEach` 양방향 cleanup:
+  - `TRUNCATE personal_data_access_log` (PostgreSQL 표준: BEFORE DELETE 트리거는 FOR EACH ROW이므로 TRUNCATE 비호출)
+  - `DELETE FROM users WHERE username LIKE 'audit_it_%'`
+- 운영 코드 0줄 변경
+- PIPA APPEND-ONLY 정책 보존 (런타임 DELETE 차단 그대로)
+
+### 잔여 false GREEN 2건 (PII-FOLLOWUP-004 분리 권장)
+`@Transactional rollback`이 가리고 있던 실제 audit 동작 노출:
+- AC-009-3 (비밀번호 재설정 미적재): `AuthServiceImpl.requestPasswordReset()`은 audit 직접 호출 안 함. 그러나 옵션 G 검증에서 audit row 적재됨 → `verificationService.request()` 또는 다른 경로 가능성 (별개 trail)
+- AC-009-4 (GET /me 미적재): 동일 — `@PersonalDataAccess(selfAccessOnly=true)` 의도는 본인 매칭 시 적재 생략. 실제 audit row 적재 노출
+
+이는 PII-002 본래 SPEC §결론과 운영 동작 차이 — 본 SPEC 영역 외. 후속 SPEC `PII-FOLLOWUP-004`(가칭)에서 정밀 진단 권장.
+
+### 회귀 검증 (실제 구동)
+- 운영 코드 git diff: 0줄
+- AUTHZ-MATRIX-001 (19 AC) 회귀: 0건
+- AUTHZ-IT-EXPAND-001 (88 AC) 회귀: 0건
+- AUTHZ-AUTODETECT-001 (4 AC) 회귀: 0건
+- PersonalDataAccessLogServiceImplFallbackTest (3 AC) 회귀: 0건
+- PIPA 런타임 DELETE 차단: 그대로 유지
+
+### Trigger
 **Trigger**: PII-FOLLOWUP-002 v0.2 Implemented 후 잔여 2 AC (AC-FU-003-1/3 audit row 적재 검증) Known Limitation 인정 + 옵션 A/C/F 시도 실패
 **Severity**: P2 (PII Audit IT 100% GREEN 회복, 운영 회귀 위험 0)
 

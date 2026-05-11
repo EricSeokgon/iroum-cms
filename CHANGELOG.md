@@ -28,6 +28,17 @@
   - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
   - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
 
+- **PII-FOLLOWUP-003 v0.2 Implemented (1차) — 옵션 G TRUNCATE cleanup + @Transactional 제거**
+  - 본 SPEC 핵심 목표 100% 달성: HikariCP readOnly connection sticky로 인한 audit row 0건 해소
+  - AC-FU-003-1 GREEN 회복 (이전 핵심 RED): ADMIN findPage → audit row N건 적재 검증
+  - AC-FU-003-3 GREEN 회복 (이전 핵심 RED): distinct target_user_id 적재 검증
+  - AC-009-2 GREEN 유지 (BeforeEach cleanup)
+  - 옵션 G 구현: PiiAuditEnhanceIT @Transactional 제거 + TRUNCATE personal_data_access_log + DELETE users (audit_it_%) 양방향 cleanup
+  - PostgreSQL 표준: BEFORE DELETE FOR EACH ROW 트리거는 TRUNCATE 비호출 → PIPA APPEND-ONLY 정책 보존
+  - 운영 코드 git diff 0줄 (IT 코드만 변경)
+  - 잔여 AC-009-3/4 false GREEN 노출 (@Transactional rollback이 가리던 실제 audit 동작) — PII-FOLLOWUP-004 분리 권장
+  (commit b464bd3)
+
 - **PII-FOLLOWUP-003 SPEC v0.1 Planned — PII Audit IT 잔여 2 AC 해소 SPEC 분리**
   - PII-FOLLOWUP-002 v0.2 잔여 2 AC (AC-FU-003-1/3 audit row 적재 검증) 본 세션 시도 결과 명문화
   - 옵션 A (REQUIRES_NEW) / C (@Async 분리) / F (readOnly=false 명시) 모두 실패 실증 (commits 94ae3b1/f2b9018/555e044 revert)
