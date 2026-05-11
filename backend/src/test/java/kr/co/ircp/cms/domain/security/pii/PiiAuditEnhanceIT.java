@@ -134,9 +134,13 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — 본 시도(@Disabled 추가)에서 RED 회귀. " +
+    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — 본 시도(@Disabled 3건 추가) 후 RED 회귀. " +
               "JUnit 5 test 순서 변경 또는 BeforeEach cleanup race condition 의심. " +
-              "정밀 진단 + selfId 매칭 검증 필요.")
+              "다음 진단 필요: " +
+              "(1) @TestMethodOrder(MethodOrderer.OrderAnnotation.class) + @Order 적용으로 deterministic 순서 강제, " +
+              "(2) UserService.findPage filter(id != actor.userId()) selfId 비교 로직 정밀 디버깅 " +
+              "(int vs long autoboxing or primitive comparison), " +
+              "(3) jdbcTemplate.queryForList로 selfId target audit row 실측.")
     @DisplayName("AC-009-2 — ADMIN 본인 row(id=selfId)가 결과에 포함되어도 audit 미적재 (본인 제외)")
     void findPage_selfRowExcludedFromAudit() throws Exception {
         // ADMIN 본인 사용자 삽입 — 실제 DB row의 id를 jwtAuth principal.userId()로 전달하여
@@ -165,8 +169,12 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     @Test
     @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — false GREEN 노출 (옵션 G 후): " +
               "@Transactional rollback이 가리던 실제 audit 적재 동작. " +
-              "requestPasswordReset 자체는 audit 호출 없음(grep 검증)이나 mockMvc 부수효과로 적재 발생. " +
-              "PII-002 본래 SPEC §결론 vs 운영 동작 차이 정밀 진단 필요.")
+              "AuthController.passwordResetRequest → AuthServiceImpl.requestPasswordReset 호출 chain에 " +
+              "@PersonalDataAccess 어노테이션 미적용 (운영 3건만: findById/update/getMe). " +
+              "그러나 mockMvc 호출 시 audit row 적재됨 — 다음 진단 필요: " +
+              "(1) jdbcTemplate.queryForList(\"SELECT * FROM personal_data_access_log\") 실측 row 출력, " +
+              "(2) viewerId + targetUserId + purpose 패턴으로 적재 경로 역추적, " +
+              "(3) verificationService.request 내부 또는 다른 Spring Filter chain audit 트리거 검토.")
     @DisplayName("AC-009-3 — 비밀번호 재설정 HMAC lookup-only → personal_data_access_log 미적재")
     void passwordReset_hmacLookupOnly_noAuditLog() throws Exception {
         // 비밀번호 재설정 요청: AuthService.requestPasswordReset → findByEmailHmac
