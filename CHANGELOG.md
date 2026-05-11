@@ -28,6 +28,22 @@
   - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
   - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
 
+- **PII-FOLLOWUP-003 SPEC v0.1 Planned — PII Audit IT 잔여 2 AC 해소 SPEC 분리**
+  - PII-FOLLOWUP-002 v0.2 잔여 2 AC (AC-FU-003-1/3 audit row 적재 검증) 본 세션 시도 결과 명문화
+  - 옵션 A (REQUIRES_NEW) / C (@Async 분리) / F (readOnly=false 명시) 모두 실패 실증 (commits 94ae3b1/f2b9018/555e044 revert)
+  - 다음 세션 옵션 D (별도 DataSource pool) / E (TransactionTemplate) / G (IT 재설계) 우선순위 권장
+  - REQ-PII-FU3-001/002/003 정의 + 6 AC 골격
+
+- **PII-KMS-001 SPEC v0.1 Planned — README 표 누락 SPEC 디렉토리 보완**
+  - 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault / Azure Key Vault)
+  - PII-001 v0.2 운영 prod 차단 가드 해제 의존 SPEC
+  - 결정 포인트 D1~D4 (KMS 공급자/키 가져오기/캐싱/Failover) + REQ-PII-KMS-001/002/003 골격
+
+- **PII-ROTATION-001 SPEC v0.1 Planned — 키 자동 회전 배치**
+  - PII-KMS-001 Implemented 의존 (장기 P3)
+  - PIPA 안전성 확보 조치 의무 (암호화 키 주기적 교체)
+  - 결정 포인트 D1~D4 (회전 주기/재암호화/구 키 보존/트리거) + REQ-PII-ROT-001/002/003 골격
+
 - **AUTHZ-IT-EXPAND-002 SPEC v0.1 Planned — 19 미커버 권한 어휘 IT 매트릭스 분리**
   - ArchUnit baseline 31 어휘 - AUTHZ-IT-EXPAND-001 12 커버 = 19 미커버 어휘 식별
   - 미커버 어휘: CONTENT_ADMIN, CONTENT:READ, PAGE:READ/ROLLBACK/HISTORY:READ, SITE:WRITE, MENU:PERMISSION:WRITE, TEMPLATE:READ, USER:READ, SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN, AUDIT:READ
