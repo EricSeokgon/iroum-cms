@@ -262,6 +262,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-001 | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 | HTTP 권한 매트릭스 IT 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) | Implemented (1차) |
 | SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) | Implemented (1차) |
+| SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 

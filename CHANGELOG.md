@@ -198,6 +198,12 @@
   - `@MX:NOTE` + `@MX:SPEC` 추가 (SPEC §5.3 / REQ-PII-EMAIL-007 응답 코드 고정 근거)
   (SPEC-CMS-SECURITY-PII-002 Step 1, commits 3a8be0f + sync 단계)
 
+- **CI workflow integrationTest 자동 실행 보장 (REQ-TIR-003)**
+  - `.github/workflows/ci.yml` 변경 0줄 — REQ-TIR-002 check.dependsOn으로 자동 처리 (D4 옵션 1)
+  - 현 ci.yml `./gradlew build jacocoTestReport`가 build → check → integrationTest 순으로 자동 실행
+  - GitHub Actions PR 게이트에서 IT 자동 실행 + 통합 커버리지 보고서 artifact 업로드 보장
+  (SPEC-CMS-TEST-INFRA-RECONFIG-001, commit `f5955a3`)
+
 - **UserServiceImpl findPage 시그니처 변경**
   - `findPage(actor)` 본인 row 제외 + `recordBulk` 호출
   (SPEC-CMS-SECURITY-PII-002 Step 3, commit 04b9fe3)
@@ -246,6 +252,12 @@
   - SPEC-CMS-SECURITY-PII-001과 결합하여 운영 배포 차단 상태 완전 해소
   (SPEC-CMS-SECURITY-PII-002 Step 1~4, commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0)
 
+- **OWASP A09 가시화 — 보안 IT 커버리지 측정 신뢰도 강화 (TEST-INFRA-RECONFIG-001 RUN 1차)**
+  - `PiiAuditEnhanceIT`, `AuthorizationMatrixIT`, `PiiEmailIntegrationTest` 코드 경로가 jacocoTestReport에 반영되어 보안 IT 커버리지 정량 확인 가능
+  - IT 회귀 검출 능력 회복 → 보안 IT (AUTHZ-MATRIX-001 19 AC, PII-FOLLOWUP-001 6 AC) PR 게이트 자동 실행 보장
+  - TRUST 5 Tested 원칙 강화 — 단위 테스트만의 84.9%에서 통합 경로 포함 커버리지로 측정 근거 완성
+  (SPEC-CMS-TEST-INFRA-RECONFIG-001, commit `f5955a3`)
+
 - **OWASP A01 메소드 레벨 회귀 검출 부분 보완 (CTRL-AUTHZ-COVERAGE-001 RUN 1차)**
   - AUTHZ-MATRIX-001(HTTP 매트릭스 IT)의 상호 보완 SPEC — 검증 레이어 분리
   - 12 ControllerTest 메소드 레벨 401/403 검증 보강 (24 신규 시나리오)
@@ -260,6 +272,24 @@
   - 6 핵심 endpoint × 3 시나리오(401/403/200) 매트릭스로 권한 어휘 4종 + 역할 위계 + 권한 어휘 분리 모두 커버
   - 운영 코드 변경 0건 — IT 인프라 추가만으로 회귀 검출 능력 회복
   (SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 Step 1~3, commits `af5ad41`, `f0ae970`)
+
+- **JaCoCo executionData에 integrationTest 통합 (REQ-TIR-001)**
+  - `tasks.jacocoTestReport.dependsOn(tasks.test, "integrationTest")` 추가
+  - `executionData(fileTree(layout.buildDirectory.dir("jacoco")) { include("*.exec") })` 추가 — `test.exec` + `integrationTest.exec` 양쪽 적재
+  - 단위 + 통합 경로 커버리지 정확화 — 84.9%가 단위 테스트만의 수치였던 5/7 핵심 우려 해소
+  - Docker 미가용 환경 fallback (fileTree include 패턴으로 `integrationTest.exec` 부재 허용)
+  (SPEC-CMS-TEST-INFRA-RECONFIG-001, commit `f5955a3`)
+
+- **check task에 integrationTest 통합 (REQ-TIR-002)**
+  - `tasks.named("check") { dependsOn("integrationTest") }` 추가
+  - `./gradlew check` 또는 `./gradlew build` 시 IT 자동 실행 (Docker 가용 시)
+  - 기존 `shouldRunAfter(tasks.test)` 유지 (실행 순서 보장)
+  (SPEC-CMS-TEST-INFRA-RECONFIG-001, commit `f5955a3`)
+
+- **integrationTest 후 jacocoTestReport 자동 실행 (보강)**
+  - `tasks.register<Test>("integrationTest").finalizedBy(tasks.jacocoTestReport)` 추가
+  - IT 실행 후 통합 커버리지 보고서 자동 생성 (수동 실행 불필요)
+  (SPEC-CMS-TEST-INFRA-RECONFIG-001, commit `f5955a3`)
 
 ---
 
@@ -285,5 +315,5 @@
 | **SPEC-CMS-SECURITY-AUTHZ-MATRIX-001** | HTTP 권한 매트릭스 IT 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001** | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001** | 매트릭스 IT 5~7 → 22+ 컨트롤러 확장 |
-| **SPEC-CMS-TEST-INFRA-RECONFIG-001** | 5/7 코드 리뷰 C2 — integration exclude 제거 + JaCoCo 신뢰도 회복 |
+| **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |

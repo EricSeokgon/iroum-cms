@@ -1,4 +1,4 @@
-# SPEC-CMS-TEST-INFRA-RECONFIG-001: 테스트 인프라 잔여 갭 해소 (JaCoCo 통합 + check 통합 + CI workflow 통합) v0.1
+# SPEC-CMS-TEST-INFRA-RECONFIG-001: 테스트 인프라 잔여 갭 해소 (JaCoCo 통합 + check 통합 + CI workflow 통합) v0.2
 
 ## 1. 개요
 
@@ -8,7 +8,7 @@
 | 제목 | 테스트 인프라 잔여 갭 해소 (JaCoCo report integrationTest 통합 + check task 통합 + CI workflow integrationTest 실행 보장) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Planned |
+| 상태 | Implemented (1차 — Step 1~3 완료, 2026-05-11) |
 | 우선순위 | **P1 (테스트 인프라 신뢰도)** |
 | 분류 | Cross-cutting Test Infrastructure SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-002 v0.2 (Implemented, integrationTest task 활용 최초 적용), SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 v0.2 (Implemented, AuthorizationMatrixIT) |
@@ -415,6 +415,7 @@ sequenceDiagram
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-11 | manager-docs (MoAI) | RUN 1차 완료 — `backend/build.gradle.kts` +23 라인 (commit `f5955a3`). REQ-TIR-001 jacocoTestReport executionData 통합 + `dependsOn(tasks.test, "integrationTest")` + REQ-TIR-002 `tasks.named("check") { dependsOn("integrationTest") }` + REQ-TIR-003 ci.yml 변경 0줄(D4 옵션 1 자동 처리) + 보강 `integrationTest.finalizedBy(jacocoTestReport)`. 운영 코드(`backend/src/main/java`) 변경 0건. 5/7 C2 잔여 갭 3건 모두 해소. |
 | v0.1 | 2026-05-11 | manager-spec (MoAI) | 초안 작성. 5/7 코드 리뷰(`.moai/plans/twinkling-spinning-toucan-agent-a7f98f3b374ef2270.md`) C2 항목 잔여 갭 해소 SPEC. MoAI 정밀 재진단 결과 5/7 권고 4건 중 3건(`excludeTags("integration")`, `System.exit()` 제거, `integrationTest` task 정의, Docker assume)은 commit `0b3d05e` (SPEC-CMS-SECURITY-PII-002 Step 4) 시점 이전 적용 완료. 진정한 잔여 갭 3건 식별: (1) JaCoCo report에 integrationTest exec 미통합 → 통합 경로 커버리지 누락, (2) integrationTest가 check task 미포함 → `./gradlew check`/`build` 시 IT 자동 실행 안 됨, (3) GitHub Actions CI workflow에서 integrationTest 미호출 → PR 게이트 IT 회귀 검출 부재. 사용자 사전 결정 4건 채택: D1 잔여 갭 3건 모두 해소, D2 단일 jacocoTestReport에 양쪽 exec 통합, D3 표준 `tasks.named("check") { dependsOn("integrationTest") }`, D4 CI workflow 옵션 1(REQ-TIR-002 자동 처리). REQ-TIR-001/002/003 정의. RUN Step 1~3 분해. 운영 코드(`backend/src/main/java`) 변경 0건 강제 + 신규 IT 작성 0건. RISK-TIR-01 ~ 08 + ASSUM-TIR-01 ~ 04. 본 SPEC RUN 완료 시 5/7 코드 리뷰 C2 잔여 갭 100% 해소 + 통합 커버리지 가시화 + PR 게이트 IT 회귀 검출 완성. |
 
 ---
