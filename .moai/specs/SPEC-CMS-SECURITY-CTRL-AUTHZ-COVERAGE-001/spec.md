@@ -1,4 +1,4 @@
-# SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001: ControllerTest 메소드 레벨 권한 거부 시나리오 보강 (`@WebMvcTest` 슬라이스 401/403 회귀 커버리지) v0.1
+# SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001: ControllerTest 메소드 레벨 권한 거부 시나리오 보강 (`@WebMvcTest` 슬라이스 401/403 회귀 커버리지) v0.2
 
 ## 1. 개요
 
@@ -8,7 +8,7 @@
 | 제목 | ControllerTest 메소드 레벨 권한 거부 시나리오 보강 (`@WebMvcTest` 슬라이스 401/403 회귀 커버리지) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Planned |
+| 상태 | Implemented (1차 — Step 1~4 완료, 2026-05-11) |
 | 우선순위 | **P2 (보안 회귀 검출 보완)** |
 | 분류 | Cross-cutting Security Test Coverage SPEC |
 | 의존 SPEC | SPEC-CMS-002 §16.x SecurityConfig + `@PreAuthorize` 정책, SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 (HTTP 매트릭스 IT 인프라 — 검증 레이어 분리) |
@@ -113,6 +113,43 @@ AUTHZ-MATRIX-001 적용 후에도 메소드 레벨 회귀 검출은 31/58 컨트
 | **정합 권한 정상 응답(200) 시나리오 추가** | 기존 31 ControllerTest 메소드들이 이미 정합 권한으로 호출되어 200/2xx 응답을 검증 중 — 본 SPEC은 401/403 거부 시나리오만 추가 |
 | **클래스 레벨 `@PreAuthorize` vs 메소드 레벨 분리 검증** | 본 SPEC은 컨트롤러별 보호 endpoint 단위로 검증 — 클래스/메소드 레벨 구분 없이 동일 패턴 적용 |
 | **`AuthorizationMatrixIT` 매트릭스 보강(중복)** | 본 SPEC은 슬라이스 보강에 집중 — AUTHZ-MATRIX-001 영역 침범 금지 |
+
+### 3.3 RUN 1차 결과 — SPEC §3 가정 정정 (2026-05-11)
+
+본 SPEC §3 1차 가정은 "31 ControllerTest 실질 보강"이었으나, RUN 1차 진행 결과 실제 적용 가능 통계는 다음과 같다.
+
+| 구분 | 수 | 비율 | 설명 |
+|------|-----|------|------|
+| 적용 가능 (401+403 보강) | 12 | 38.7% | 메소드/클래스 레벨 @PreAuthorize 보유 |
+| 적용 불가 (주석만) | 19 | 61.3% | HTTP-level `.anyRequest().authenticated()` 또는 PUBLIC만 |
+| **총** | **31** | **100%** | — |
+
+**적용 가능 12건** (Step 1 governance 6 + auth 3 = 9, Step 3 board 1, Step 4 system 2):
+
+| Step | 도메인 | 컨트롤러 | 권한 어휘 |
+|------|--------|----------|---------|
+| Step 1 | governance | BatchExecutionLog, DataQuality, Dictionary, GovernanceStats, RecoveryDrill, RetentionPolicy | 클래스 레벨 `hasRole('ADMIN')` |
+| Step 1 | auth | PermissionChange | 클래스 레벨 `hasAuthority('AUDIT:READ')` |
+| Step 1 | auth | Role | 클래스 레벨 `hasRole('SUPER_ADMIN')` |
+| Step 1 | auth | User | 메소드 레벨 `hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')` |
+| Step 3 | board | BbsMaster | 메소드 레벨 `hasRole('ADMIN')` (DELETE endpoint) |
+| Step 4 | system | AccessLog | 메소드 레벨 `hasAuthority('SYSTEM:LOG:READ')` |
+| Step 4 | system | stats/Dashboard | 메소드 레벨 `hasAuthority('SYSTEM:DASHBOARD')` |
+
+**적용 불가 19건** (검증 책임 AUTHZ-MATRIX-001 IT 레이어):
+
+| 도메인 | 컨트롤러 | 사유 |
+|--------|----------|------|
+| auth | Me, MyPersonalDataAccess | 메소드 레벨 @PreAuthorize 0건 |
+| policy (5) | Dispatch, Matching, Program, NotificationSubscription, Tracking | 메소드 레벨 @PreAuthorize 0건 |
+| safety (5) | SafetyIncident, Keyword, Profile, Report, Template | 메소드 레벨 @PreAuthorize 0건 |
+| board | Attachment, Comment, Post | 메소드 레벨 @PreAuthorize 0건 |
+| dashboard (3) | DashboardLayout, Export, SavedView | 메소드 레벨 @PreAuthorize 0건 |
+| content | Sitemap | PUBLIC (REQ-CONTENT-007-D) |
+
+**가정 정정 사유**: SPEC §3 1차 가정은 5/7 코드 리뷰 기본 분석을 그대로 채용하여 31 ControllerTest 모두 실질 보강 가능으로 전제했으나, 실제 운영 컨트롤러별 `@PreAuthorize` 정밀 분석 결과 약 61%는 메소드 레벨 권한 거부 트리거가 없어 `@WebMvcTest` 슬라이스에서 401/403 변별 검증 불가. 검증 책임은 AUTHZ-MATRIX-001 IT 레이어(`@SpringBootTest` + 운영 SecurityFilterChain)로 정상 위임.
+
+24 신규 IT 시나리오(12건 × 평균 2 시나리오)는 `@PreAuthorize` 보유 컨트롤러에 집중 적용되어 실효적 메소드 레벨 회귀 검출 기여도는 유지된다.
 
 ---
 
@@ -439,6 +476,7 @@ sequenceDiagram
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-11 | manager-docs (MoAI) | RUN 1차 완료 — Step 1~4 적용 (commits `c1a564c`, `4655421`, `fe461b3`, `8c66a07`). 31 ControllerTest 검토, 12 적용(24 신규 시나리오) + 19 IT 위임. WebMvcTestInfraConfig EntryPoint 운영 시맨틱 정렬(Step 1, `Http403ForbiddenEntryPoint` → `HttpStatusEntryPoint(UNAUTHORIZED)`). §3.3 신설 — SPEC §3 가정 정정: "31 모두 보강 가능" → 실제 12/31 (38.7%) 적용 가능, 19/31 (61.3%) 메소드 레벨 @PreAuthorize 0건으로 AUTHZ-MATRIX-001 IT 위임. 상태 `Planned` → `Implemented (1차)`. 운영 코드 변경 0건. |
 | v0.1 | 2026-05-11 | manager-spec (MoAI) | 초안 작성. 5/7 코드 리뷰(`.moai/plans/twinkling-spinning-toucan-agent-a7f98f3b374ef2270.md`) C1 항목 메소드 레벨 잔여 갭 해소 SPEC. AUTHZ-MATRIX-001 v0.1의 27 잔여 추정을 정밀 재진단 결과 32개 누락 ControllerTest 정확 식별 + `HealthControllerTest` 비범위 1개 명시 → 31 실질 보강 확정. 도메인별 4 Step batch 분해(governance+auth → policy+safety → board+dashboard → system+content). AUTHZ-MATRIX-001과 검증 레이어 분리 명시 — `@WebMvcTest` 슬라이스(본 SPEC) vs `@SpringBootTest` 통합 컨텍스트(AUTHZ-MATRIX-001) — 중복 없음. 사용자 결정 3건 채택: (1) A2 — 단일 SPEC + 도메인별 4 Step batch, (2) B1 — 기존 `*ControllerTest`에 메소드 추가(신규 파일 0건), (3) C1 — 401 + 403 두 시나리오. REQ-CTRL-AUTHZ-COVERAGE-001/002/003 정의. RUN Step 1~4 분해. 운영 코드 변경 0건 강제. RISK-COV-01 ~ 08 + ASSUM-COV-01 ~ 04. 본 SPEC RUN 완료 시 5/7 코드 리뷰 C1 메소드 레벨 갭 100% 커버 (31/58 → 58/58, HealthController 비범위 1 제외). |
 
 ---

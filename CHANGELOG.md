@@ -117,6 +117,36 @@
   - PII-002 RUN 1차에서 forward reference로 격리되어 있던 IT 3건 forward reference 완전 회수
   (SPEC-CMS-SECURITY-PII-FOLLOWUP-001 Step 3, commit `5fe440b`)
 
+- **WebMvcTestInfraConfig EntryPoint 운영 시맨틱 정렬 (CTRL-AUTHZ-COVERAGE-001 Step 1, REQ-CTRL-AUTHZ-COVERAGE-001 인프라 보강)**
+  - `Http403ForbiddenEntryPoint` → `HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)` 교체
+  - 운영 SecurityConfig + JwtAuthenticationFilter 익명 시 401 AUTH_REQUIRED 반환 시맨틱과 정렬
+  - 영향: 인증된 사용자 + 권한 부족 → 403 (변경 없음). 익명 + AccessDenied → 신규 401 (운영 부합)
+  - Step 1 11 ControllerTest 회귀 0건 검토 완료
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 1, commit `c1a564c`)
+
+- **Step 1: governance+auth 9 ControllerTest 401/403 보강 (REQ-CTRL-AUTHZ-COVERAGE-001)**
+  - governance 6 + auth 3 = 9 컨트롤러 × 2 시나리오 = 18 신규 IT
+  - 권한 어휘: `hasRole('ADMIN')` (governance 6), `hasAuthority('AUDIT:READ')` (PermissionChange), `hasRole('SUPER_ADMIN')` (Role), `hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')` (User)
+  - auth/Me, auth/MyPersonalDataAccess: 메소드 레벨 권한 0건 → 주석만 추가 (AUTHZ-MATRIX-001 IT 위임)
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 1, commit `c1a564c`)
+
+- **Step 3: board+dashboard 1 컨트롤러 적용 (BbsMaster)**
+  - BbsMaster: DELETE /api/v1/boards/{id} hasRole('ADMIN') 메소드 레벨 — 2 신규 시나리오
+  - DELETE는 body 불필요 → @PreAuthorize 평가 보장
+  - board/Attachment/Comment/Post + dashboard 3개: HTTP-level only → 주석만 (AUTHZ-MATRIX-001 IT 위임)
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 3, commit `fe461b3`)
+
+- **Step 4: system 2 컨트롤러 적용 (AccessLog, Dashboard)**
+  - AccessLog: hasAuthority('SYSTEM:LOG:READ') 메소드 레벨 — 2 신규 시나리오
+  - system/stats/Dashboard: hasAuthority('SYSTEM:DASHBOARD') 메소드 레벨 — 2 신규 시나리오
+  - content/Sitemap: PUBLIC (REQ-CONTENT-007-D) → 주석만
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 4, commit `8c66a07`)
+
+- **Step 2: policy+safety 10 컨트롤러 모두 주석만 (적용 불가 사유 명시)**
+  - 10 컨트롤러 모두 메소드 레벨 권한 정책 0건 (HTTP-level only)
+  - SPEC marker 주석으로 적용 불가 사유 + AUTHZ-MATRIX-001 IT 위임 명시
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 2, commit `4655421`)
+
 - **AuthorizationMatrixIT — HTTP 권한 매트릭스 IT 인프라 신설 (REQ-AUTHZ-MATRIX-001)**
   - `@SpringBootTest(webEnvironment = MOCK)` + `@AutoConfigureMockMvc` + `@Testcontainers` (PostgreSQL 16)
   - `@MockitoBean JwtTokenProvider`, `@MockitoBean TokenBlacklistMapper` (DB 토큰 저장 없이 시나리오 검증)
@@ -216,6 +246,14 @@
   - SPEC-CMS-SECURITY-PII-001과 결합하여 운영 배포 차단 상태 완전 해소
   (SPEC-CMS-SECURITY-PII-002 Step 1~4, commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0)
 
+- **OWASP A01 메소드 레벨 회귀 검출 부분 보완 (CTRL-AUTHZ-COVERAGE-001 RUN 1차)**
+  - AUTHZ-MATRIX-001(HTTP 매트릭스 IT)의 상호 보완 SPEC — 검증 레이어 분리
+  - 12 ControllerTest 메소드 레벨 401/403 검증 보강 (24 신규 시나리오)
+  - 19 ControllerTest는 메소드 레벨 권한 정책 0건 → AUTHZ-MATRIX-001 IT 레이어가 검증 책임
+  - WebMvcTestInfraConfig EntryPoint 운영 시맨틱 정렬 (익명 접근 시 401 일관성 확보)
+  - 운영 코드 변경 0건 — 테스트 인프라 보강만으로 회귀 검출 능력 부분 강화
+  (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 1~4, commits `c1a564c`, `4655421`, `fe461b3`, `8c66a07`)
+
 - **OWASP A01 (Broken Access Control) 회귀 검출 인프라 확보**
   - 5/7 코드 리뷰 C1 진정한 갭(HTTP 권한 매트릭스 회귀 검출 인프라 부재) 해소
   - 운영 `SecurityFilterChain.requestMatchers()` URL 인증 매트릭스 + 메소드 레벨 `@PreAuthorize` 정책 변경 시 자동 회귀 검출
@@ -245,7 +283,7 @@
 | 후속 SPEC 후보 | 내용 |
 |--------------|------|
 | **SPEC-CMS-SECURITY-AUTHZ-MATRIX-001** | HTTP 권한 매트릭스 IT 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) — **Implemented (1차) 2026-05-11** |
-| **SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001** | 27 컨트롤러 isForbidden 메소드 레벨 보강 |
+| **SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001** | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001** | 매트릭스 IT 5~7 → 22+ 컨트롤러 확장 |
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | 5/7 코드 리뷰 C2 — integration exclude 제거 + JaCoCo 신뢰도 회복 |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
