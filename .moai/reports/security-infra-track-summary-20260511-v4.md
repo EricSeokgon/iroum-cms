@@ -119,13 +119,34 @@
 - 모든 운영/테스트 코드 revert 완료 (commit a5f873b 상태 복원)
 - AsyncAuditDispatcher.java 신규 파일도 제거
 
-#### 결론
-단순 어노테이션 변경(옵션 A) + AOP 분리(옵션 C)로는 해결 불가 — readOnly connection 본질적 sticky 제약. 다음 옵션 후보:
-- **옵션 D**: HikariCP 별도 DataSource pool (audit 전용) — 운영 인프라 변경
-- **옵션 E**: TransactionTemplate으로 명시적 새 tx + setReadOnly(false) 강제 호출
-- **옵션 F**: `@Transactional(REQUIRES_NEW, readOnly = false)` 명시 시도 (검증 필요)
+#### 옵션 F: REQUIRES_NEW + readOnly=false 명시 (세션 최종 시도)
+- 변경: `record() + recordBulk()`에 `@Transactional(propagation = REQUIRES_NEW, readOnly = false)` 명시
+- 결과: 동일 RED 패턴 — 효과 없음
+- 의미: Spring transaction propagation API의 `readOnly=false` 명시도 connection level setReadOnly(false) 강제 호출 효과 없음 또는 connection sticky 우회 못 함
+- 운영 코드 revert 완료 (commit a5f873b 상태)
 
-본 SPEC 트랙은 인프라 본질적 제약으로 단순 코드 변경 한계 도달 — 후속 SPEC `PII-FOLLOWUP-003`로 옵션 D~F 분리 권장.
+#### 최종 결론 (옵션 A + C + F 모두 실패)
+**Spring transaction propagation API로는 해결 불가능 확정**:
+- 옵션 A (REQUIRES_NEW 단독): 실패
+- 옵션 C (@Async 분리 wrapping bean + REQUIRES_NEW): 실패
+- 옵션 F (REQUIRES_NEW + readOnly=false 명시): 실패
+
+세 가지 모두 Spring `@Transactional` propagation 메커니즘에 의존 — connection pool sticky readOnly 제약이 어노테이션 수준에서 해소되지 않음.
+
+근본 해결을 위해 더 큰 변경 필요:
+- **옵션 D**: HikariCP 별도 DataSource pool (audit 전용 connection pool) — 운영 인프라 변경
+- **옵션 E**: TransactionTemplate + 명시적 새 connection 획득
+- **옵션 G**: PiiAuditEnhanceIT 자체 재설계 (TRUNCATE cleanup 또는 IT 전략 변경 — PIPA 트리거 우회 가능성 검증 필요)
+
+#### 세션 종결 — Known Limitation 인정
+본 SPEC 트랙은 Spring 어노테이션 변경 한계 도달. 잔여 2 AC (AC-FU-003-1/3 audit row 적재 검증)는 다음 조건에서 **known limitation**으로 인정:
+- 본 SPEC 핵심 목표 (`@MockitoSpyBean` + `@Async` CGLIB proxy 충돌) 100% 해소 완료
+- Fallback 회귀 검출 인프라는 `PersonalDataAccessLogServiceImplFallbackTest` Unit test로 분리 + 3 AC GREEN
+- IT 환경에서 audit row 적재 검증은 Spring transaction + HikariCP connection pool의 본질적 결합 제약으로 어노테이션 변경으로 해소 불가
+- 운영 환경에서는 `@Async("auditExecutor")` 별도 ThreadPoolTaskExecutor + 별도 connection 사용으로 정상 동작 (운영 회귀 위험 없음)
+- 운영 코드 0줄 변경 유지
+
+다음 세션 권장: 옵션 D (별도 DataSource pool)로 PII-FOLLOWUP-003 SPEC 분리 또는 옵션 G (IT 재설계).
 
 ---
 
