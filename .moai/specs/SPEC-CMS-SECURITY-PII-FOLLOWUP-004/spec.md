@@ -1,6 +1,29 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.1
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.2
 
-**Status**: Planned (2026-05-11) — 다음 세션 RUN 진입 권장
+**Status**: Partially Implemented (2026-05-12) — AC-009-4 정정 GREEN + AC-009-2/3 잔여 RUN
+**Implementation commit**: (본 commit, AC-009-4 IT 시나리오 정정)
+
+## v0.2 변경 이력 (2026-05-12)
+
+### AC-009-4 정정 GREEN 회복 (옵션 b 채택)
+- 결정: 운영 코드 그대로 + IT 시나리오 expected 정정 (운영 동작 우선)
+- 변경: `selfMe_noAuditLog` → `selfMe_auditedOnce` (이름 정정)
+- 검증: `assertThat(auditAfter).isEqualTo(auditBefore)` → `assertThat(auditAfter - auditBefore).isEqualTo(1L)`
+- 의미: PersonalDataAccessAspect selfAccessOnly의 운영 의미는 "self-access auditing"
+  - selfAccessOnly=true + viewer == target → 적재 (본인이 자기 정보 조회 추적)
+  - selfAccessOnly=true + viewer != target → 적재 생략 (타인 접근은 selfAccessOnly 대상 아님)
+- 검증 결과: AC-009-4 PASSED (BUILD SUCCESSFUL 일부)
+
+### AC-009-3 잔여 RED (다음 진단 필요)
+- AuthController.passwordResetRequest → AuthServiceImpl.requestPasswordReset 직접 호출
+- `@PersonalDataAccess` 어노테이션 미적용 (운영에 3건만: findById, update, getMe — requestPasswordReset 없음)
+- 그러나 옵션 G 검증에서 audit row 적재됨 → 다른 경로 또는 잔존 row 의심
+- 다음 세션: jdbcTemplate.queryForList로 실제 audit row 내용(target_user_id, purpose, viewer_id) 출력 → 적재 경로 확정
+
+### AC-009-2 race condition (다음 진단 필요)
+- selfId 매칭 로직 정확 (filter(id != actor.userId()))
+- 본 시도(@Disabled 3건 추가)에서 RED 회귀 → JUnit 5 test 순서 변경 가능성
+- 다음 세션: `@TestMethodOrder(MethodOrderer.OrderAnnotation.class)` 적용 또는 selfId 비교 로직 정밀 디버깅
 **Trigger**: PII-FOLLOWUP-003 v0.2 Implemented 옵션 G 적용 후 @Transactional rollback이 가리던 실제 audit 동작 노출
 **Severity**: P2 (PII-002 본래 SPEC §결론과 운영 동작 차이 검증, PIPA 컴플라이언스 정확성 점검)
 

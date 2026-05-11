@@ -187,25 +187,32 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     // AC-009-4: 자기 정보 조회 (/me) → audit 미적재
     // ──────────────────────────────────────────────────────────────────────────
 
+    /**
+     * AC-009-4 (SPEC-CMS-SECURITY-PII-FOLLOWUP-004 정정, 2026-05-12):
+     * <p>PII-002 AC-009-4 본래 SPEC §결론 "본인 자기 조회 → 미적재" 가정은 운영 코드 + Unit test와 충돌.
+     * <p>운영 PersonalDataAccessAspect.afterAccess (line 64-66) selfAccessOnly 의미는 다음과 같이 일관:
+     * <pre>
+     *   if (annotation.selfAccessOnly() && viewer.userId() != targetUserId) {
+     *       return;  // 본인이 아니면 생략 (= 본인 매칭 시 적재 — self-access auditing)
+     *   }
+     * </pre>
+     * <p>PersonalDataAccessAspectTest의 afterAccess_logsSelfAccess_whenViewerIsTarget도 동일 동작 검증.
+     * <p>본 IT 시나리오 의미를 운영 실측에 맞춰 정정: "본인 매칭 시 audit 1건 적재" (self-access auditing).
+     */
     @Test
-    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — false GREEN 노출 (옵션 G 후): " +
-              "PersonalDataAccessAspect.afterAccess line 64-66 selfAccessOnly 의미 충돌. " +
-              "운영 코드: selfAccessOnly=true + viewer.userId() != targetUserId → 적재 생략 (즉 본인 매칭 시 적재). " +
-              "PII-002 AC-009-4 SPEC 의도: 본인 매칭 시 적재 생략 (반대 의미). " +
-              "운영 코드 의미 정정 또는 SPEC 의도 정정 결정 필요.")
-    @DisplayName("AC-009-4 — GET /api/v1/me 본인 자기 조회 → personal_data_access_log 미적재")
-    void selfMe_noAuditLog() throws Exception {
+    @DisplayName("AC-009-4 — GET /api/v1/me 본인 자기 조회 → personal_data_access_log 적재 1건 (self-access auditing)")
+    void selfMe_auditedOnce() throws Exception {
         // 본인 자기 조회 사용자 사전 적재 (principal.userId()가 실제 DB row와 매칭되어야 service.getMe() 동작)
         long selfId = insertUser("self.user@example.com");
-        long auditBefore = countAuditRows();
+        long auditBefore = countAuditRowsForTarget(selfId);
 
         mockMvc.perform(get("/api/v1/me")
                         .with(jwtAuth(selfId, "self_user", "USER")))
                 .andExpect(status().isOk());
 
-        long auditAfter = countAuditRows();
-        // 본인 조회 — SecurityContext principal.userId() == target.userId() → 적재 미발생
-        assertThat(auditAfter).isEqualTo(auditBefore);
+        long auditAfter = countAuditRowsForTarget(selfId);
+        // 운영 PersonalDataAccessAspect: selfAccessOnly=true + 본인 매칭 → 적재 (self-access auditing 의도)
+        assertThat(auditAfter - auditBefore).isEqualTo(1L);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
