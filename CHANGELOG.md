@@ -11,6 +11,24 @@
 
 ### Added
 
+- **AuthorizationMatrixExpandIT — HTTP 권한 매트릭스 IT 확장 (89 @Test)**
+  - `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpandIT.java` 신규 1,540줄
+  - 29 endpoint × 평균 3 시나리오 = 88 AC + smoke test 1건
+  - 도메인별 `@Nested` 그룹 7개: Content(7) / Block(2) / Dashboard(3) / Auth(4) / System(5) / Governance(3) / BoardMenu(5)
+  - 권한 어휘 12종 100% 커버: SUPER_ADMIN(5) / ADMIN(5) / hasAnyRole(1) / CONTENT:WRITE(1) / PAGE:WRITE(1) / PAGE:PUBLISH(3) / SYSTEM:CODE:READ(2) / SYSTEM:CODE:WRITE(3) / SYSTEM:STATS(1) / MENU:WRITE(3) / BLOCK:WRITE(2) / TEMPLATE:WRITE(2) / isAuthenticated(2 — 403 N/A)
+  - 어휘 분리 회귀 검증 5건: PAGE:WRITE/PAGE:PUBLISH, BLOCK:WRITE/PAGE:WRITE, SYSTEM:CODE:READ/WRITE, MENU:WRITE/CONTENT:WRITE, TEMPLATE:WRITE/PAGE:WRITE
+  - multi-role 분기 검증: hasAnyRole(SUPER_ADMIN/DEPT_ADMIN) 어느 한쪽 단독 통과 검증
+  - AUTHZ-MATRIX-001 패턴 100% 재사용 (@SpringBootTest + Testcontainers PG 16 + @MockitoBean JwtTokenProvider/TokenBlacklistMapper + PII 더미 키 + JwtTestAuth helper)
+  - AUTHZ-MATRIX-001 6 endpoint와 중복 0건 (다른 컨트롤러 또는 다른 endpoint 보강)
+  - 사용자 입력 정정: "22+ endpoint" → 운영 @PreAuthorize 120개 정밀 진단 + 권한 어휘 12종 분포
+  - 보안 트랙 OWASP A01 회귀 검출 능력: HTTP 매트릭스 1차 19 AC + 확장 88 AC + 메소드 슬라이스 31 AC = 3중 검증 138+ AC
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 v0.2 Implemented 1차, commits 151a864/df11edd/dcaac84/dd4bf82)
+
+- **README — HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차 안내 (D3 수동 갱신)**
+  - 운영 신규 @PreAuthorize 추가 시 IT 매트릭스 갱신 5단계 절차 명시
+  - 권한 어휘 분류 가이드 (역할 기반/권한 기반/isAuthenticated 분기)
+  - 자동 검출은 후속 SPEC AUTHZ-AUTODETECT-001(가칭) 위임
+
 - **PiiKeyVault 인터페이스 + LocalEnvPiiKeyVault 구현**
   - `PiiKeyVault` 인터페이스: `getActiveKey()`, `getKeyByVersion(int)`, `getHmacKey()` 메서드 + `ActiveKey` record 정의
   - `LocalEnvPiiKeyVault`: 환경변수(`PII_EMAIL_KEY_V1`, `PII_EMAIL_HMAC_KEY`) base64 디코딩 + 32-byte 키 길이 검증

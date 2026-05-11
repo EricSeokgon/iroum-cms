@@ -298,8 +298,28 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) | Implemented (1차) |
 | SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
+
+---
+
+## HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차 (D3 수동 갱신)
+
+`AuthorizationMatrixExpandIT` (29 endpoint × 12 권한 어휘)에 신규 `@PreAuthorize` 검증을 추가할 때:
+
+1. 운영 컨트롤러에 신규 `@PreAuthorize` 어노테이션이 추가되었는지 확인
+2. 해당 권한 어휘가 12종 매트릭스 중 어느 도메인 그룹에 속하는지 식별
+   - `hasRole/hasAnyRole` (역할 기반): SUPER_ADMIN/ADMIN/DEPT_ADMIN — Auth/Dashboard/Governance/Board 도메인
+   - `hasAuthority` (권한 기반): CONTENT/PAGE/PAGE:PUBLISH/SYSTEM:CODE/SYSTEM:STATS/MENU/BLOCK/TEMPLATE — 해당 도메인
+   - `isAuthenticated()` (권한 무관): Auth 도메인 (403 N/A — 401/200만 검증)
+3. 해당 도메인 `@Nested` 그룹에 401/403/200 3 시나리오 추가 (`isAuthenticated`은 401/200만)
+4. 헤더 javadoc 매트릭스 표 + 권한 어휘 커버 검증 목록 갱신
+5. `./gradlew :backend:integrationTest --tests "kr.co.ircp.cms.security.AuthorizationMatrixExpandIT"` GREEN 확인
+
+자동 검출(ArchUnit, Spring AOT introspection)은 후속 SPEC `SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001`(가칭)에서 다룰 예정.
+
+자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001/spec.md`
 
 ---
 
