@@ -1,0 +1,284 @@
+package kr.co.ircp.cms.security.archunit;
+
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 RUN Step 1 — ArchUnit baseline 자동 검출.
+ *
+ * <p>운영 {@code @PreAuthorize} 어노테이션과 HTTP 권한 매트릭스 IT 시나리오의 정합성을
+ * ArchUnit 1.3.0 기반으로 자동 검증한다. 매칭 누락 시 RED → Gradle check 실패 → CI PR 차단.
+ *
+ * <p>본 RUN Step 1에서는 baseline 검증 3건만 활성화한다 (REQ-AAD-001/002/004):
+ * <ul>
+ *   <li>AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline (120) 회귀 검증</li>
+ *   <li>AC-AAD-001-2: IT @DisplayName 추출 endpoint set baseline (35) 회귀 검증</li>
+ *   <li>AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 시 RED</li>
+ * </ul>
+ *
+ * <p>Step 2에서 권한 어휘 변경 검출(REQ-AAD-003) 추가, Step 3에서 RED 시뮬레이션 검증.
+ *
+ * <p>패턴 참조: {@code PiiEmailMaskArchTest} (271줄, SPEC-CMS-SECURITY-PII-002 Step 4).
+ *
+ * <p>D1~D4 사용자 결정 채택:
+ * <ul>
+ *   <li>D1: ArchUnit 1.3.0 (이미 의존성 포함, 신규 의존성 0건)</li>
+ *   <li>D2: Test RED (Gradle check 통합, CI PR 차단)</li>
+ *   <li>D3: AuthorizationMatrixIT + AuthorizationMatrixExpandIT 둘 다 검증 (35 endpoint)</li>
+ *   <li>D4: 신규 추가 + 권한 어휘 변경 둘 다 (Step 2~3 점진 활성화)</li>
+ * </ul>
+ *
+ * <p>baseline 갱신 절차:
+ * 운영 신규 @PreAuthorize 추가 시 IT 시나리오를 추가하고 본 클래스의
+ * {@link #baselineEndpoints()} + 카운트(120/35)를 동시 갱신한다. baseline 자체가 회귀 시그널이므로
+ * 자동 변경 없음 — 의도적 갱신만 허용.
+ *
+ * <p>관련 SPEC: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 (REQ-AAD-001/002/004)
+ */
+// @MX:NOTE: [AUTO] AuthorizationCoverageArchTest — 운영 @PreAuthorize ↔ IT 매트릭스 정합성 자동 검증
+// @MX:SPEC: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001
+@DisplayName("HTTP 권한 매트릭스 IT 누락 자동 검출 (SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001)")
+class AuthorizationCoverageArchTest {
+
+    private static JavaClasses operationalControllers;
+    private static JavaClasses itClasses;
+
+    /**
+     * IT @DisplayName에서 endpoint(HTTP method + path)를 추출하기 위한 정규식.
+     *
+     * <p>예: "AC-AME-001-A1-1: POST /api/v1/content/popups — Authorization 헤더 부재 + 401"
+     *  → ("POST", "/api/v1/content/popups")
+     */
+    private static final Pattern ENDPOINT_PATTERN =
+            Pattern.compile("\\b(GET|POST|PUT|DELETE|PATCH)\\s+(/api/v\\d+/[A-Za-z0-9_\\-/{}]+)");
+
+    private static final String PRE_AUTHORIZE_FQN =
+            "org.springframework.security.access.prepost.PreAuthorize";
+    private static final String DISPLAY_NAME_FQN =
+            "org.junit.jupiter.api.DisplayName";
+
+    @BeforeAll
+    static void importClasses() {
+        // 운영 컨트롤러 (테스트 클래스 제외) — kr.co.ircp.cms 전체 도메인
+        operationalControllers = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .importPackages("kr.co.ircp.cms");
+
+        // IT 클래스 (security 패키지 — AuthorizationMatrixIT, AuthorizationMatrixExpandIT)
+        // ONLY_INCLUDE_TESTS는 src/test 컴파일 산출물만 적재
+        itClasses = new ClassFileImporter()
+                .withImportOption(ImportOption.Predefined.ONLY_INCLUDE_TESTS)
+                .importPackages("kr.co.ircp.cms.security");
+    }
+
+    // =================================================================================
+    // §A REQ-AAD-001 / REQ-AAD-002 — 운영 @PreAuthorize baseline 검증
+    // =================================================================================
+
+    /**
+     * AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증.
+     *
+     * <p>운영 @PreAuthorize 어노테이션이 추가/제거되면 카운트 변경 → RED.
+     * 의도적 변경 시 본 baseline + IT 시나리오를 함께 갱신해야 함.
+     */
+    @Test
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 120)")
+    void operational_preAuthorize_baselineCount() {
+        long count = operationalControllers.stream()
+                .flatMap(c -> c.getMethods().stream())
+                .filter(this::hasPreAuthorize)
+                .count();
+
+        // baseline: 본 RUN 시점 운영 @PreAuthorize 120건
+        // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
+        // AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신할 것.
+        assertThat(count)
+                .as("운영 @PreAuthorize 메소드 카운트가 변경되었습니다 (현재 baseline 120). " +
+                        "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
+                        "AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신하세요.")
+                .isEqualTo(120L);
+    }
+
+    // =================================================================================
+    // §B REQ-AAD-001 — IT @DisplayName endpoint 추출 검증
+    // =================================================================================
+
+    /**
+     * AC-AAD-001-2: IT 두 클래스의 @DisplayName에서 endpoint(METHOD + path) 추출 + baseline.
+     *
+     * <p>AuthorizationMatrixIT(19 AC) + AuthorizationMatrixExpandIT(88 AC + smoke 1)에서
+     * @DisplayName 정규식으로 unique endpoint set 추출.
+     * baseline: 35 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29).
+     */
+    @Test
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (35 unique endpoint)")
+    void it_displayName_endpointBaselineCount() {
+        Set<String> itEndpoints = extractItEndpoints();
+
+        assertThat(itEndpoints)
+                .as("IT @DisplayName에서 추출된 unique endpoint(METHOD+path) 개수가 변경되었습니다. " +
+                        "AuthorizationMatrixIT 또는 AuthorizationMatrixExpandIT에서 시나리오 추가/제거가 발생했습니다. " +
+                        "본 baseline(35)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "추출된 endpoint set: %s", itEndpoints)
+                .hasSize(35);
+    }
+
+    /**
+     * AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
+     *
+     * <p>baseline 35 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
+     * 누락(missingFromIt) 또는 추가(extraInIt) 발생 시 RED + 어떤 endpoint가 변동되었는지 메시지 출력.
+     */
+    @Test
+    @DisplayName("AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    void it_endpointSet_matchesBaseline35() {
+        Set<String> itEndpoints = extractItEndpoints();
+        Set<String> baseline = baselineEndpoints();
+
+        // baseline에 있는데 IT에 없는 endpoint (누락)
+        Set<String> missingFromIt = baseline.stream()
+                .filter(e -> !itEndpoints.contains(e))
+                .collect(Collectors.toSet());
+
+        // IT에 있는데 baseline에 없는 endpoint (의도적 신규 또는 baseline 갱신 필요)
+        Set<String> extraInIt = itEndpoints.stream()
+                .filter(e -> !baseline.contains(e))
+                .collect(Collectors.toSet());
+
+        assertThat(missingFromIt)
+                .as("baseline 35 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                        "AuthorizationMatrixIT 또는 AuthorizationMatrixExpandIT에 해당 시나리오가 제거되었습니다. " +
+                        "회귀 검토 필요.", missingFromIt)
+                .isEmpty();
+
+        assertThat(extraInIt)
+                .as("IT에는 있으나 baseline 35에 없는 신규 endpoint: %s. " +
+                        "신규 시나리오 추가 시 본 ArchUnit baselineEndpoints() 메소드를 갱신하세요.", extraInIt)
+                .isEmpty();
+    }
+
+    // =================================================================================
+    // 헬퍼 메소드
+    // =================================================================================
+
+    /** JavaMethod에 @PreAuthorize 어노테이션 보유 여부. */
+    private boolean hasPreAuthorize(JavaMethod method) {
+        return method.getAnnotations().stream()
+                .anyMatch(a -> PRE_AUTHORIZE_FQN.equals(a.getRawType().getName()));
+    }
+
+    /**
+     * IT 두 클래스(AuthorizationMatrixIT, AuthorizationMatrixExpandIT)의 모든 @Test 메소드
+     * @DisplayName에서 endpoint(METHOD + 정규화된 path)를 추출하여 unique set으로 반환.
+     *
+     * <p>@Nested inner 클래스도 포함 (FQN에 AuthorizationMatrix 포함 + IT/Tests 패턴).
+     */
+    private Set<String> extractItEndpoints() {
+        return itClasses.stream()
+                .filter(c -> c.getName().contains("AuthorizationMatrix"))
+                .flatMap(c -> c.getMethods().stream())
+                .map(this::extractDisplayNameValue)
+                .filter(s -> s != null && !s.isEmpty())
+                .map(this::extractEndpointFromDisplayName)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    /** JavaMethod의 @DisplayName value 추출 (없으면 null). */
+    private String extractDisplayNameValue(JavaMethod method) {
+        return method.getAnnotations().stream()
+                .filter(a -> DISPLAY_NAME_FQN.equals(a.getRawType().getName()))
+                .findFirst()
+                .flatMap(a -> a.tryGetExplicitlyDeclaredProperty("value"))
+                .map(Object::toString)
+                .orElse(null);
+    }
+
+    /**
+     * @DisplayName 텍스트에서 endpoint(METHOD + 정규화된 path)를 추출 (매칭 없으면 빈 문자열).
+     *
+     * <p>경로 정규화: 숫자 ID(1, 2 ...)는 {id}로 통일하여 path variable 표기 차이를 흡수.
+     *
+     * <p>예: "AC-AME-001-A1-4: PUT /api/v1/content/pages/1 — ..."
+     *  → "PUT /api/v1/content/pages/{id}"
+     */
+    private String extractEndpointFromDisplayName(String displayName) {
+        Matcher m = ENDPOINT_PATTERN.matcher(displayName);
+        if (!m.find()) {
+            return "";
+        }
+        String httpMethod = m.group(1);
+        String path = m.group(2);
+        // 정규화: /1, /2 등 숫자 ID → /{id}
+        String normalizedPath = path.replaceAll("/\\d+", "/{id}").trim();
+        return httpMethod + " " + normalizedPath;
+    }
+
+    /**
+     * baseline 35 endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29).
+     *
+     * <p>운영 신규 @PreAuthorize 추가 시 IT 시나리오를 추가하고 본 baseline을 함께 갱신.
+     * 자동 변경 없음 — 의도적 갱신만 허용 (회귀 시그널 보존).
+     */
+    private Set<String> baselineEndpoints() {
+        return Set.of(
+                // ─── AUTHZ-MATRIX-001 6 endpoint ─────────────────────────────────
+                "POST /api/v1/content/banners",
+                "PUT /api/v1/content/banners/{id}",
+                "POST /api/v1/content/pages",
+                "POST /api/v1/dashboard/cache/invalidate",
+                "POST /api/v1/users",
+                "GET /api/v1/governance/retention-policies",
+
+                // ─── AUTHZ-IT-EXPAND-001 29 endpoint ──────────────────────────
+                // §A.1 Content (7)
+                "POST /api/v1/content/popups",
+                "PUT /api/v1/content/pages/{id}",
+                "POST /api/v1/content/pages/{id}/publish",
+                "POST /api/v1/content/pages/{id}/schedule",
+                "POST /api/v1/content/pages/{id}/retract",
+                "POST /api/v1/content/templates",
+                "PUT /api/v1/content/templates/{id}",
+                // §A.2 Block (2) — pageId/blockId 모두 {id}로 정규화됨
+                "POST /api/v1/content/pages/{id}/blocks",
+                "PUT /api/v1/content/pages/{id}/blocks/{id}",
+                // §A.3 Dashboard (3)
+                "POST /api/v1/dashboard/widgets",
+                "PUT /api/v1/dashboard/widgets/{id}",
+                "GET /api/v1/system/stats/trend",
+                // §A.4 Auth (4)
+                "POST /api/v1/users/{id}/force-logout",
+                "POST /api/v1/organizations",
+                "GET /api/v1/qnas",
+                "POST /api/v1/qnas",
+                // §A.5 System (5)
+                "GET /api/v1/system/codes",
+                "GET /api/v1/system/code-groups",
+                "POST /api/v1/system/codes",
+                "PUT /api/v1/system/codes/{id}",
+                "POST /api/v1/system/code-groups",
+                // §A.6 Governance (3)
+                "GET /api/v1/governance/quality-rules",
+                "POST /api/v1/governance/quality-rules",
+                "POST /api/v1/governance/recovery-drills",
+                // §A.7 BoardMenu (5)
+                "POST /api/v1/content/menus",
+                "PATCH /api/v1/content/menus/{id}/order",
+                "DELETE /api/v1/content/menus/{id}",
+                "POST /api/v1/boards",
+                "PUT /api/v1/boards/{id}"
+        );
+    }
+}
