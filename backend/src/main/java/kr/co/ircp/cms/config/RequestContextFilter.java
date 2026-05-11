@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -37,7 +38,9 @@ public class RequestContextFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
         try {
-            MDC.put(MDC_IP, extractClientIp(request));
+            // SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-002 — ipAddress SHA-256 prefix 8 chars
+            // AuditLogAspect가 MDC.ipAddress를 평문 IP 컬럼이 아닌 마스킹된 식별자로 기록하게 한다.
+            MDC.put(MDC_IP, hashIp(extractClientIp(request)));
             MDC.put(MDC_UA, nullToEmpty(request.getHeader("User-Agent")));
             MDC.put(MDC_TRACE, generateTraceId());
             chain.doFilter(request, response);
@@ -65,6 +68,21 @@ public class RequestContextFilter extends OncePerRequestFilter {
     /** 16자 traceId (UUID 변형). */
     private String generateTraceId() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+    }
+
+    /**
+     * 클라이언트 IP를 SHA-256 hex prefix(8 chars)로 마스킹한다.
+     *
+     * <p>SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-002 — 평문 IP 노출 차단.
+     * 빈 문자열은 그대로 빈 문자열을 반환한다(추적성 손실 허용).
+     */
+    // @MX:NOTE: [AUTO] hashIp — ipAddress SHA-256 prefix 마스킹
+    // @MX:SPEC: SPEC-CMS-SECURITY-PII-MASKING-001 / REQ-PII-MASK-002
+    private String hashIp(String clientIp) {
+        if (clientIp == null || clientIp.isEmpty()) {
+            return "";
+        }
+        return HashUtil.sha256Hex(clientIp).substring(0, 8);
     }
 
     private String nullToEmpty(String s) {

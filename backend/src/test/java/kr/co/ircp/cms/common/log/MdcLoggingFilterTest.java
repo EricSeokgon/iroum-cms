@@ -3,6 +3,7 @@ package kr.co.ircp.cms.common.log;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,9 +70,11 @@ class MdcLoggingFilterTest {
                 .as("requestId는 UUID 형식이어야 한다")
                 .isNotNull()
                 .matches("[0-9a-f\\-]{36}");
+        // SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-002:
+        //   clientIp는 SHA-256 hex prefix(8 chars)로 마스킹된다 (PII 보호 + 추적성 양립)
         assertThat(capturedClientIp.get())
-                .as("clientIp는 remoteAddr이어야 한다")
-                .isEqualTo("10.0.0.1");
+                .as("clientIp는 remoteAddr의 SHA-256 hex prefix(8 chars)이어야 한다")
+                .isEqualTo(HashUtil.sha256Hex("10.0.0.1").substring(0, 8));
 
         // 필터 완료 후 MDC가 clear 되었는지 확인
         assertThat(MDC.get("traceId")).isNull();

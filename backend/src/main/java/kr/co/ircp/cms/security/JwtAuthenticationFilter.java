@@ -113,7 +113,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 new UsernamePasswordAuthenticationToken(principal, null, authorities);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        log.debug("JWT 인증 완료: userId={}, username={}", claims.userId(), claims.username());
+        // SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-003 — username PII 제거 (userId만 출력)
+        // username(이메일/로그인ID)은 PII이므로 디버그 로그에서 제외하고 비식별 식별자(userId)만 남긴다.
+        log.debug("JWT 인증 완료: userId={}", claims.userId());
 
         filterChain.doFilter(request, response);
     }

@@ -7,6 +7,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
+import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -60,7 +61,9 @@ public class MdcLoggingFilter implements Filter {
             MDC.put(MDC_TRACE_ID,   traceId);
             MDC.put(MDC_SPAN_ID,    UUID.randomUUID().toString());
             MDC.put(MDC_REQUEST_ID, UUID.randomUUID().toString());
-            MDC.put(MDC_CLIENT_IP,  resolveClientIp(httpReq));
+            // SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-002 — clientIp SHA-256 prefix 8 chars
+            // 평문 IP 대신 단방향 해시 prefix만 MDC에 저장하여 동일 사용자 추적성은 유지하되 PII 노출을 차단한다.
+            MDC.put(MDC_CLIENT_IP,  hashClientIp(resolveClientIp(httpReq)));
 
             // userId: SecurityContext에서 추출 (인증 이전 필터 실행 시 null)
             String userId = resolveUserId();
@@ -88,6 +91,24 @@ public class MdcLoggingFilter implements Filter {
             return idx >= 0 ? xff.substring(0, idx).trim() : xff.trim();
         }
         return req.getRemoteAddr();
+    }
+
+    /**
+     * 클라이언트 IP를 SHA-256 hex prefix(8 chars)로 마스킹한다.
+     *
+     * <p>SPEC-CMS-SECURITY-PII-MASKING-001 REQ-PII-MASK-002 — 평문 IP 노출 차단.
+     * 동일 IP는 동일 prefix로 매핑되어 세션 단위 추적성은 유지된다.
+     *
+     * @param clientIp 평문 IP(null/빈 문자열 허용)
+     * @return SHA-256 hex prefix 8자 또는 빈 문자열
+     */
+    // @MX:NOTE: [AUTO] hashClientIp — clientIp SHA-256 prefix 마스킹
+    // @MX:SPEC: SPEC-CMS-SECURITY-PII-MASKING-001 / REQ-PII-MASK-002
+    private String hashClientIp(String clientIp) {
+        if (clientIp == null || clientIp.isEmpty()) {
+            return "";
+        }
+        return HashUtil.sha256Hex(clientIp).substring(0, 8);
     }
 
     /**
