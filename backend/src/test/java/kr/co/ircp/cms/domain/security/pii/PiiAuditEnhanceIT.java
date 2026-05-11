@@ -167,27 +167,27 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     // ──────────────────────────────────────────────────────────────────────────
 
     @Test
-    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 위임 — false GREEN 노출 (옵션 G 후): " +
-              "@Transactional rollback이 가리던 실제 audit 적재 동작. " +
-              "AuthController.passwordResetRequest → AuthServiceImpl.requestPasswordReset 호출 chain에 " +
-              "@PersonalDataAccess 어노테이션 미적용 (운영 3건만: findById/update/getMe). " +
-              "그러나 mockMvc 호출 시 audit row 적재됨 — 다음 진단 필요: " +
-              "(1) jdbcTemplate.queryForList(\"SELECT * FROM personal_data_access_log\") 실측 row 출력, " +
-              "(2) viewerId + targetUserId + purpose 패턴으로 적재 경로 역추적, " +
-              "(3) verificationService.request 내부 또는 다른 Spring Filter chain audit 트리거 검토.")
+    @Disabled("SPEC-CMS-SECURITY-PII-FOLLOWUP-004 — 진단 모드 실측 결과 (2026-05-12): " +
+              "mockMvc.perform 자체가 UnexpectedRollbackException 발생. " +
+              "원인: AuthServiceImpl.requestPasswordReset → verificationService.request 호출 chain에서 " +
+              "transaction이 'rollback-only' 마킹 → 호출자 commit 시도 → UnexpectedRollbackException. " +
+              "이전 RED는 audit 적재가 아닌 운영 transaction rollback 문제. " +
+              "다음 RUN 진단: " +
+              "(1) verificationService.request 내부 transaction propagation 검토, " +
+              "(2) rollback-only 마킹 원인 추적 (예외 catch 후 setRollbackOnly 호출), " +
+              "(3) 운영 정책: rollback이 의도라면 IT는 4xx/5xx expected로 정정.")
     @DisplayName("AC-009-3 — 비밀번호 재설정 HMAC lookup-only → personal_data_access_log 미적재")
     void passwordReset_hmacLookupOnly_noAuditLog() throws Exception {
-        // 비밀번호 재설정 요청: AuthService.requestPasswordReset → findByEmailHmac
-        // 평문 복호화 없음 → PII 노출 없음 → 적재 제외 (REQ-009 명시)
+        // 진단 결과: mockMvc.perform 자체가 UnexpectedRollbackException 발생
+        // 본래 SPEC 의도 "미적재" 검증 전 운영 transaction 문제 해소 필요
         long auditBefore = countAuditRows();
 
         mockMvc.perform(post(AUTH_PASSWORD_RESET_URL)
                         .contentType("application/json")
                         .content("{\"email\":\"user10@example.com\"}"))
-                .andExpect(status().is2xxSuccessful());  // 200 또는 202
+                .andExpect(status().is2xxSuccessful());
 
         long auditAfter = countAuditRows();
-        // HMAC lookup-only — personal_data_access_log에 신규 row 없음
         assertThat(auditAfter).isEqualTo(auditBefore);
     }
 

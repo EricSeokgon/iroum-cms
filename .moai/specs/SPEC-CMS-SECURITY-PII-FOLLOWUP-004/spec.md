@@ -14,11 +14,28 @@
   - selfAccessOnly=true + viewer != target → 적재 생략 (타인 접근은 selfAccessOnly 대상 아님)
 - 검증 결과: AC-009-4 PASSED (BUILD SUCCESSFUL 일부)
 
-### AC-009-3 잔여 RED (다음 진단 필요)
-- AuthController.passwordResetRequest → AuthServiceImpl.requestPasswordReset 직접 호출
-- `@PersonalDataAccess` 어노테이션 미적용 (운영에 3건만: findById, update, getMe — requestPasswordReset 없음)
-- 그러나 옵션 G 검증에서 audit row 적재됨 → 다른 경로 또는 잔존 row 의심
-- 다음 세션: jdbcTemplate.queryForList로 실제 audit row 내용(target_user_id, purpose, viewer_id) 출력 → 적재 경로 확정
+### AC-009-3 잔여 RED — 진단 모드 실측 결과 (2026-05-12 업데이트)
+
+**결정적 발견**: mockMvc.perform 자체가 `UnexpectedRollbackException` 발생.
+
+```
+org.springframework.transaction.UnexpectedRollbackException:
+Transaction rolled back because it has been marked as rollback-only
+```
+
+이전 분석은 잘못된 가정 — audit 적재 문제가 아니라 **운영 transaction rollback 문제**:
+1. AuthController.passwordResetRequest → AuthServiceImpl.requestPasswordReset
+2. requestPasswordReset 내부 `verificationService.request` 호출 chain에서 transaction이 'rollback-only' 마킹
+3. 호출자 commit 시도 → UnexpectedRollbackException → 5xx 응답 → mockMvc 200 expected 실패
+
+**다음 RUN 진단 절차 (정정)**:
+1. `verificationService.request` 내부 transaction propagation 검토 (REQUIRES_NEW? NESTED?)
+2. rollback-only 마킹 원인 추적 (예외 catch 후 `setRollbackOnly()` 호출 위치)
+3. 운영 정책 결정:
+   - (a) rollback이 의도된 동작 → IT 시나리오 expected를 4xx/5xx로 정정
+   - (b) rollback이 버그 → 운영 코드 수정 (예외 처리 변경)
+
+본 시도 commit `f860634`의 잘못된 가정 (audit 적재 경로) 정정.
 
 ### AC-009-2 race condition (다음 진단 필요)
 - selfId 매칭 로직 정확 (filter(id != actor.userId()))
