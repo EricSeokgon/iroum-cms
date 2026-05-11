@@ -147,6 +147,38 @@
   - SPEC marker 주석으로 적용 불가 사유 + AUTHZ-MATRIX-001 IT 위임 명시
   (SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 Step 2, commit `4655421`)
 
+- **PiiMaskingConverter — Logback PII 마스킹 인프라 신규 (REQ-PII-MASK-001)**
+  - `ch.qos.logback.classic.pattern.ClassicConverter` 구현 (87줄)
+  - 정규식 4종: email (`[\w.+-]+@[\w-]+\.[\w.-]+`), phone (`01[016789]-?\d{3,4}-?\d{4}`), SSN (`\d{6}-?[1-4]\d{6}`), IPv4 (`\b(\d{1,3}\.){3}\d{1,3}\b`)
+  - 정적 `mask()` 함수 제공 (테스트 및 다른 호출처 재사용 가능)
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 1, commit `bfd7488`)
+
+- **logback-spring.xml — Logback PII 마스킹 통합 (REQ-PII-MASK-001)**
+  - prod 프로파일: `logstash-logback-encoder 7.4` `MaskingJsonGeneratorDecorator` + `RegexValueMasker` (JSON 모든 String 필드 적용)
+  - dev/local 프로파일: 자체 `PiiMaskingConverter` + `PatternLayout %maskedMsg`
+  - 모든 프로파일 적용 (D4-(d) 채택) — 개발 환경 PII 보호 + 운영-개발 일관성
+  - 운영 ELK/Loki 시스템에 PII 평문 전송 차단
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 1, commit `bfd7488`)
+
+- **MDC SHA-256 prefix — PII 추적성과 보호 양립 (REQ-PII-MASK-002)**
+  - `MdcLoggingFilter` `clientIp` 필드 → `HashUtil.sha256Hex(ip).substring(0, 8)` (SHA-256 hex prefix 8자)
+  - `RequestContextFilter` `ip` 필드 → 동일 패턴 적용
+  - `HashUtil.sha256Hex` PII-001 인프라 재사용 (신규 코드 최소화)
+  - `userId`/`traceId`/`spanId`/`requestId`/`userAgent`는 평문 보존 (PII 아님)
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 2, commit `bfd7488`)
+
+- **JWT 인증 로그 PII 제거 (REQ-PII-MASK-003)**
+  - `JwtAuthenticationFilter:116` `log.debug("JWT 인증 완료: userId={}, username={}", ...)` → `log.debug("JWT 인증 완료: userId={}", ...)`
+  - DEBUG 레벨 일시 활성화 시에도 username PII 미노출
+  - 운영 조사: `userId` + `audit_log` 테이블 기반 추적 (SPEC-CMS-005 AuditLogAspect 인프라 재사용)
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 3, commit `bfd7488`)
+
+- **신규 테스트 3 파일 (403줄) — PII 마스킹 검증 (REQ-PII-MASK-001/002/003)**
+  - `LogbackPiiMaskingTest` (140줄, 12 메서드, 4 nested class): 마스킹 패턴 4종 매칭 + false positive 미발생
+  - `MdcSha256MaskingTest` (132줄, 4 메서드): SHA-256 prefix 정확성 + 추적성 + null/empty 가드
+  - `JwtAuthLogTest` (131줄): Logback `ListAppender` 캡처 + username 미포함 단언
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 4, commit `bfd7488`)
+
 - **AuthorizationMatrixIT — HTTP 권한 매트릭스 IT 인프라 신설 (REQ-AUTHZ-MATRIX-001)**
   - `@SpringBootTest(webEnvironment = MOCK)` + `@AutoConfigureMockMvc` + `@Testcontainers` (PostgreSQL 16)
   - `@MockitoBean JwtTokenProvider`, `@MockitoBean TokenBlacklistMapper` (DB 토큰 저장 없이 시나리오 검증)
@@ -208,6 +240,12 @@
   - `findPage(actor)` 본인 row 제외 + `recordBulk` 호출
   (SPEC-CMS-SECURITY-PII-002 Step 3, commit 04b9fe3)
 
+- **MdcLoggingFilterTest 회귀 정정 (REQ-PII-MASK-002 follow-up)**
+  - line 73 `assertThat(...).isEqualTo("10.0.0.1")` (평문 IP) → `isEqualTo(HashUtil.sha256Hex("10.0.0.1").substring(0, 8))` (SHA-256 prefix)
+  - `HashUtil` import 추가
+  - REQ-PII-MASK-002 clientIp SHA-256 prefix 변경에 따른 기존 테스트 정합 (PII-FOLLOWUP-001 @Import 보강 패턴 일관)
+  (SPEC-CMS-SECURITY-PII-MASKING-001 회귀 정정, commit `bfd7488`)
+
 - **PiiAuditEnhanceIT 클래스 헤더 — 명시적 @Import**
   - `@Import(IntegrationAsyncConfig.class)` 추가 (프로젝트 컨벤션 일관 — `WebMvcTestInfraConfig` 선례)
   - `@TestConfiguration` 자동 컴포넌트 스캔 미보장 환경에서 IntegrationAsyncConfig 명시적 로드
@@ -251,6 +289,14 @@
   - OWASP A03(Injection) / A04(Insecure Design) / A05(Misconfiguration) / A09(Logging) 점검 PASS
   - SPEC-CMS-SECURITY-PII-001과 결합하여 운영 배포 차단 상태 완전 해소
   (SPEC-CMS-SECURITY-PII-002 Step 1~4, commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0)
+
+- **PIPA 제29조 안전성 확보 조치 의무 추가 완화 — 운영 부수 채널(로그) PII 노출 통제**
+  - 운영 로그 PII 평문 저장 차단 (Logback 마스킹 모든 프로파일 — REQ-PII-MASK-001)
+  - MDC `clientIp`/`ip` SHA-256 prefix (디버깅 추적성 + PII 보호 양립 — REQ-PII-MASK-002)
+  - JWT 인증 로그 username PII 제거 (DEBUG 활성화 시에도 안전 — REQ-PII-MASK-003)
+  - ELK/Loki 등 외부 로그 수집 시스템에 PII 평문 미전송
+  - PII-001 (저장 영역) + PII-002 (응답 영역) 보완하여 운영 부수 채널 보호 완성
+  (SPEC-CMS-SECURITY-PII-MASKING-001 Step 1~4, commit `bfd7488`)
 
 - **OWASP A09 가시화 — 보안 IT 커버리지 측정 신뢰도 강화 (TEST-INFRA-RECONFIG-001 RUN 1차)**
   - `PiiAuditEnhanceIT`, `AuthorizationMatrixIT`, `PiiEmailIntegrationTest` 코드 경로가 jacocoTestReport에 반영되어 보안 IT 커버리지 정량 확인 가능
@@ -305,7 +351,7 @@
 | **SPEC-CMS-SECURITY-PII-FOLLOWUP-001** | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) — **Implemented (1차) 2026-05-08** |
 | **SPEC-CMS-SECURITY-PII-KMS-001** | AWS KMS / HashiCorp Vault 어댑터 구현 (1차 `LocalEnvPiiKeyVault` 대체) |
 | **SPEC-CMS-SECURITY-PII-ROTATION-001** | 키 자동 회전 배치(`PiiEmailRekeyJob`) + cron 스케줄 |
-| **SPEC-CMS-SECURITY-PII-MASKING-001** | 로그/백업 PII 마스킹 표준 (Logback 필터 + pg_dump 파이프) |
+| **SPEC-CMS-SECURITY-PII-MASKING-001** | 로그/백업 마스킹 표준 — Logback 마스킹 + MDC SHA-256 + JWT log 정정 (백업은 후속) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-SECURITY-PII-NEXT-001 시리즈** | `users.name`, `users.phone_e164`, `login_history.ip` 등 나머지 PII 컬럼 암호화 |
 
 **보안 회귀 검출 트랙 (OWASP A01)**

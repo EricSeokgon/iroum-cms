@@ -1,4 +1,4 @@
-# SPEC-CMS-SECURITY-PII-MASKING-001: PII 운영 노출 통제 (Logback 마스킹 + MDC 정책 + JWT log 마스킹) v0.1
+# SPEC-CMS-SECURITY-PII-MASKING-001: PII 운영 노출 통제 (Logback 마스킹 + MDC 정책 + JWT log 마스킹) v0.2
 
 ## 1. 개요
 
@@ -8,7 +8,7 @@
 | 제목 | PII 운영 노출 통제 (Logback 정규식 마스킹 + MDC PII 필드 정책 + JWT 로그 마스킹) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | Implemented (1차 — Step 1~4 완료, 2026-05-11) |
 | 우선순위 | **P1 (운영 노출 위험 통제)** |
 | 분류 | Cross-cutting Security Operational Procedure SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-001 §3.2 비범위 일부 이행, SPEC-CMS-005 (Logback/MDC 인프라) |
@@ -319,3 +319,4 @@ PII-001 §3.2 "로그 마스킹" 영역에 대해 현 코드베이스를 정밀 
 ## 11. 변경 이력
 
 - **v0.1 (2026-05-11)**: 초안 작성. SPEC-CMS-SECURITY-PII-001 §3.2 비범위 항목 중 "로그 마스킹" 영역 후속 SPEC. MoAI 정밀 진단으로 4건 갭 식별(이미 적용 4건 + 잔여 갭 3건 + 비범위 1건). 사용자 결정 D1~D3 확정 + manager-spec 권장안 D4-(a)~(d) 채택. REQ-PII-MASK-001/002/003 정의. RUN Step 1~4 분해. 운영 코드 변경 4 파일(logback-spring.xml + MdcLoggingFilter + RequestContextFilter + JwtAuthenticationFilter), 신규 DDL 없음. 백업 절차 비범위 명시.
+- **v0.2 (2026-05-11)**: RUN 1차 완료 — 9 파일 +575/-10 (commit `bfd7488`). REQ-PII-MASK-001 (Logback 마스킹 모든 프로파일, `logstash-logback-encoder 7.4` `MaskingJsonGeneratorDecorator` + 자체 `PiiMaskingConverter`) + REQ-PII-MASK-002 (MDC `clientIp`/`ip` SHA-256 prefix 8자) + REQ-PII-MASK-003 (JWT log username 제거). 신규 테스트 3 파일 (`LogbackPiiMaskingTest` 140줄 12 메서드 + `MdcSha256MaskingTest` 132줄 4 메서드 + `JwtAuthLogTest` 131줄) + `MdcLoggingFilterTest` 회귀 정정. 사용자 결정 D1+D4-(a)~(d) 모두 채택. PIPA 제29조 추가 완화. | manager-docs

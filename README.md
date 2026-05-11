@@ -207,7 +207,7 @@ PII_EMAIL_HMAC_KEY=<base64-encoded-32-byte-key>
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-001 | PII 비동기 감사 IT 검증 인프라 (@Disabled 3건 활성화) — Implemented 1차 |
 | SPEC-CMS-SECURITY-PII-KMS-001 | AWS KMS / HashiCorp Vault 어댑터 |
 | SPEC-CMS-SECURITY-PII-ROTATION-001 | 키 자동 회전 배치 |
-| SPEC-CMS-SECURITY-PII-MASKING-001 | 로그/백업 마스킹 표준 |
+| SPEC-CMS-SECURITY-PII-MASKING-001 | 로그/백업 마스킹 표준 — Logback 마스킹 + MDC SHA-256 + JWT log 정정 (백업은 후속) — **Implemented (1차) 2026-05-11** |
 
 자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-PII-001/spec.md`
 
@@ -247,6 +247,35 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 �
 
 ---
 
+**SPEC-CMS-SECURITY-PII-MASKING-001 추가 적용 (2026-05-11)**
+
+### 적용 범위 — 운영 노출 통제
+
+| 항목 | 내용 |
+|------|------|
+| Logback 마스킹 | 모든 프로파일 적용. prod: `logstash-logback-encoder 7.4` `MaskingJsonGeneratorDecorator` + `RegexValueMasker`. dev/local: 자체 `PiiMaskingConverter` + `PatternLayout %maskedMsg` |
+| 마스킹 패턴 4종 | email (`j***@***.***`), phone (`01*-****-XXXX`), SSN (`XXXXXX-*******`), IPv4 (`XXX.XXX.***.***`) |
+| MDC PII 필드 | `clientIp`/`ip` → SHA-256 hex prefix 8자 (디버깅 추적성 + PII 보호 양립). `userId`/`traceId`/`spanId`/`requestId`/`userAgent`는 평문 보존 |
+| JWT 인증 로그 | `JwtAuthenticationFilter:116` username 제거, `userId`만 출력 (DEBUG 활성화 시에도 안전) |
+
+### 기대 효과
+
+- 운영 ELK/Loki 등 외부 로그 수집 시스템에 PII 평문 미전송
+- DEBUG 레벨 일시 활성화 시에도 PII 노출 위험 차단
+- MDC SHA-256 prefix로 동일 사용자 추적 가능 (디버깅 식별성 유지)
+
+### 컴플라이언스
+
+PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 영역) + PII-002(응답 영역) + PII-MASKING-001(운영 부수 채널) 결합으로 운영 환경 PII 노출 위험 완전 통제.
+
+- 제29조 — 안전한 보관: 운영 로그 PII 평문 저장 차단 (REQ-PII-MASK-001)
+- 제29조 — 접근 통제: MDC SHA-256 prefix로 디버깅 시 평문 노출 차단 (REQ-PII-MASK-002)
+- 제29조 — 안전한 처리: JWT 인증 로그 PII 최소화 (REQ-PII-MASK-003)
+
+자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-PII-MASKING-001/spec.md`
+
+---
+
 ## SPEC 문서
 
 | SPEC ID | 제목 | 상태 |
@@ -268,6 +297,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — SPEC-PII-001과 �
 | SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 | HTTP 권한 매트릭스 IT 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) | Implemented (1차) |
 | SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) | Implemented (1차) |
 | SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
+| SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 
