@@ -28,6 +28,18 @@
   - 운영 31 권한 어휘 분류 명시 (Role 4 + Authority 26 + isAuthenticated 1)
   - SPEC AUTHZ-AUTODETECT-001 + AUTHZ-IT-EXPAND-001 양 SPEC 참조
 
+- **PII-FOLLOWUP-002 v0.2 Implemented (1차) — Spy + @Async 충돌 100% 해소**
+  - `PersonalDataAccessLogServiceImplFallbackTest.java` 신규 142줄 (Unit test, Spring context 불필요)
+    - 3 AC GREEN: DataAccessException 주입 + 빈 targetUserIds + 정상 5건 (BUILD SUCCESSFUL)
+    - SimpleMeterRegistry 직접 사용 + PersonalDataAccessLogServiceImpl 직접 생성 → AOP @Async proxy 우회
+  - `PiiAuditEnhanceIT.java` 재설계 (-29줄)
+    - `@MockitoSpyBean PersonalDataAccessLogService` 제거 (CGLIB proxy 충돌 근본 원인)
+    - AC-FU-003-2 메소드 별도 unit test로 분리
+    - InvalidUseOfMatchersException 완전 해소
+  - 핵심 목표(Spy + @Async 충돌) 100% 달성
+  - 잔여 2 AC (audit row 0건)은 별개 PIPA 트리거 + tx 제약 — 후속 SPEC `PII-FOLLOWUP-003` 분리 권장
+  (commit a5f873b)
+
 - **PII-FOLLOWUP-002 SPEC 분리 (Planned)**
   - PII-FOLLOWUP-001 잔여 RED 3건 (@MockitoSpyBean + @Async CGLIB proxy 충돌) 분리 SPEC
   - Root cause 명문화 + 해결 옵션 3종 (운영 리팩토링 / IT 재설계 / @Async 우회) 권장 옵션 B

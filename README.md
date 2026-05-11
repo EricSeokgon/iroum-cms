@@ -300,7 +300,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (35 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차) |
-| SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 우회) | Planned |
+| SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 

@@ -1,8 +1,40 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-002: PII-FOLLOWUP-001 잔여 RED 해소 (@MockitoSpyBean + @Async 근본 충돌) v0.1
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-002: PII-FOLLOWUP-001 잔여 RED 해소 (@MockitoSpyBean + @Async 근본 충돌) v0.2
 
-**Status**: Planned (2026-05-11) — 다음 세션 RUN 진입 권장
+**Status**: Implemented (1차) (2026-05-11) — 본 SPEC 핵심 목표(Spy + @Async 충돌) 100% 해소
+**Implementation commit**: a5f873b (PiiAuditEnhanceIT 재설계 + PersonalDataAccessLogServiceImplFallbackTest 신규)
+**Test result**: Unit test 3 AC GREEN + IT 3 AC GREEN, 2 AC 잔여 (PIPA 트리거 + tx 제약, 분리 SPEC 권장)
 **Trigger**: AUTHZ-AUTODETECT-001 Step 1 실제 구동 검증 중 발견된 PII-FOLLOWUP-001 잔여 회귀
-**Severity**: P1 (PII 감사 로그 IT GREEN 미달성 — PIPA 컴플라이언스 회귀 검출 능력 부재)
+**Severity**: P1 → P2 (핵심 목표 해소 후 잔여는 인프라 별개 제약)
+
+## v0.2 변경 이력 (2026-05-11)
+
+### 1차 RUN 결과 (옵션 B 채택)
+- `PersonalDataAccessLogServiceImplFallbackTest.java` 신규 (142줄, Unit test, Spring context 불필요)
+  - AC-FU-003-2: DataAccessException 주입 → 예외 미전파 + counter 1 증가 GREEN
+  - AC-FU2-001-3: 빈 targetUserIds → mapper.insert 미호출 GREEN
+  - AC-FU2-001-4: 정상 5건 → insert 5회 + counter 미증가 GREEN
+  - BUILD SUCCESSFUL (Spring context 없이 ~수백 ms)
+- `PiiAuditEnhanceIT.java` 재설계 (Spy 제거, 5 AC real method)
+  - AC-009-2/3/4 GREEN (3 AC)
+  - AC-FU-003-1/3 RED (2 AC) — 별개 인프라 제약 (아래 §결론 참조)
+
+### 본 SPEC 핵심 목표 100% 달성
+✅ `@MockitoSpyBean` + `@Async("auditExecutor")` CGLIB proxy 충돌 완전 해소
+✅ `InvalidUseOfMatchersException` 0건
+✅ Fallback 회귀 검출 인프라 unit test로 분리 + GREEN
+✅ Spring AOP proxy 충돌 우회 패턴 확립
+
+### 잔여 2 AC 추가 발견 (별개 제약)
+- **AC-FU-003-1/3 root cause**: `@Transactional(readOnly=true)` UserService.findPage + `@Async("auditExecutor")` SyncTaskExecutor + PIPA APPEND-ONLY 트리거 보호 조합
+- `@Transactional` 제거 시도 → `DELETE FROM personal_data_access_log` 트리거 차단 (PIPA 컴플라이언스 의도적 강제)
+- 해결 옵션 (후속 SPEC `PII-FOLLOWUP-003` 가칭):
+  - A. `recordBulk`에 `@Transactional(propagation = REQUIRES_NEW)` 운영 코드 추가
+  - B. `session_replication_role='replica'` IT 전용 trigger 우회
+  - C. `@Async` 분리 wrapping bean으로 운영 코드 리팩토링
+- 본 SPEC 영역 외로 정리. 본 SPEC v0.2는 Spy+@Async 충돌 해소만 다룸.
+
+### REQ-PII-FU2-003: SPEC 검증 절차 강화 (별도 메타 SPEC 후속)
+spec-workflow.md에 "사용자 환경 IT GREEN 의무" 항목 추가 권장 — 본 SPEC 사이클에서 명시.
 
 ---
 
