@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,9 +22,15 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 RUN — HTTP 권한 매트릭스 IT 확장.
@@ -181,7 +188,6 @@ class AuthorizationMatrixExpandIT {
     @MockitoBean
     TokenBlacklistMapper tokenBlacklistMapper;
 
-    @SuppressWarnings("unused") // Step 2~4에서 활성화될 시나리오에서 사용 예정
     private static final String VALID_TOKEN = "valid.jwt.token";
 
     // ─── JWT Mock helper (AUTHZ-MATRIX-001 패턴 100% 재사용) ────────────────────────
@@ -198,7 +204,6 @@ class AuthorizationMatrixExpandIT {
      * @param roles       JwtPrincipal#roles — 운영에서 ROLE_&lt;role&gt; authority로 변환됨
      * @param permissions JwtPrincipal#permissions — 운영에서 그대로 authority로 사용됨
      */
-    @SuppressWarnings("unused") // Step 2~4에서 활성화될 시나리오에서 사용 예정
     private void givenValidToken(Set<String> roles, Set<String> permissions) {
         JwtTokenProvider.JwtClaims claims = new JwtTokenProvider.JwtClaims(
                 1L, "testuser", roles, permissions, Instant.now().plusSeconds(900));
@@ -254,28 +259,236 @@ class AuthorizationMatrixExpandIT {
      * <br>Step 3 (Phase B)에서 TEMPLATE:WRITE 시나리오 활성화.
      */
     @Nested
-    @DisplayName("§A.1 ContentDomainTests (7 endpoint × 3 시나리오)")
+    @DisplayName("§A.1 ContentDomainTests (Step 2 Phase A: 5 endpoint × 3 시나리오 = 15 AC, TEMPLATE 2건은 Step 3)")
     class ContentDomainTests {
 
+        // ─── 1. POST /api/v1/content/popups — CONTENT:WRITE (다른 컨트롤러 보강) ──
+
+        /** AC-AME-001-A1-1: Popup 생성 — 토큰 부재 → 401 AUTH_REQUIRED. */
+        @Test
+        @DisplayName("AC-AME-001-A1-1: POST /api/v1/content/popups — Authorization 헤더 부재 + 401")
+        void popupCreate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/popups")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A1-2: Popup 생성 — CONTENT:WRITE 부재 → 403 AUTH_FORBIDDEN. */
+        @Test
+        @DisplayName("AC-AME-001-A1-2: POST /api/v1/content/popups — CONTENT:WRITE 부재 + 403")
+        void popupCreate_forbidden_whenContentWriteMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // CONTENT:WRITE 미보유
+
+            mockMvc.perform(post("/api/v1/content/popups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-3: Popup 생성 — CONTENT:WRITE 보유 → 401/403 외(권한 통과). */
+        @Test
+        @DisplayName("AC-AME-001-A1-3: POST /api/v1/content/popups — CONTENT:WRITE 보유 + 401/403 아님")
+        void popupCreate_passesAuthorization_whenContentWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+
+            mockMvc.perform(post("/api/v1/content/popups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 2. PUT /api/v1/content/pages/{id} — PAGE:WRITE ──────────────────────
+
+        /** AC-AME-001-A1-4: Page 수정 — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A1-4: PUT /api/v1/content/pages/{id} — Authorization 헤더 부재 + 401")
+        void pageUpdate_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(put("/api/v1/content/pages/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
         /**
-         * TODO Step 2 (Phase A): 7 endpoint × 3 시나리오 활성화 예정.
+         * AC-AME-001-A1-5: Page 수정 — PAGE:WRITE 부재(CONTENT:WRITE만 보유) → 403.
+         * 권한 어휘 분리 회귀 검증: CONTENT:WRITE와 PAGE:WRITE는 별개 어휘.
+         */
+        @Test
+        @DisplayName("AC-AME-001-A1-5: PUT /api/v1/content/pages/{id} — PAGE:WRITE 부재(CONTENT:WRITE만) + 403")
+        void pageUpdate_forbidden_whenPageWriteMissing() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE")); // PAGE:WRITE 미보유
+
+            mockMvc.perform(put("/api/v1/content/pages/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-6: Page 수정 — PAGE:WRITE 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-6: PUT /api/v1/content/pages/{id} — PAGE:WRITE 보유 + 401/403 아님")
+        void pageUpdate_passesAuthorization_whenPageWritePresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE"));
+
+            mockMvc.perform(put("/api/v1/content/pages/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 3. POST /api/v1/content/pages/{id}/publish — PAGE:PUBLISH ───────────
+
+        /** AC-AME-001-A1-7: Page publish — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A1-7: POST /api/v1/content/pages/{id}/publish — Authorization 헤더 부재 + 401")
+        void pagePublish_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/pages/1/publish")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /**
+         * AC-AME-001-A1-8: Page publish — PAGE:PUBLISH 부재(PAGE:WRITE만 보유) → 403.
+         * 권한 어휘 분리 회귀 검증 (핵심): PAGE:WRITE와 PAGE:PUBLISH는 별개 어휘 — 발행 권한 분리.
+         */
+        @Test
+        @DisplayName("AC-AME-001-A1-8: POST /api/v1/content/pages/{id}/publish — PAGE:PUBLISH 부재(PAGE:WRITE만) + 403 (어휘 분리 회귀)")
+        void pagePublish_forbidden_whenPagePublishMissing_separationFromPageWrite() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE")); // PAGE:PUBLISH 미보유
+
+            mockMvc.perform(post("/api/v1/content/pages/1/publish")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-9: Page publish — PAGE:PUBLISH 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-9: POST /api/v1/content/pages/{id}/publish — PAGE:PUBLISH 보유 + 401/403 아님")
+        void pagePublish_passesAuthorization_whenPagePublishPresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:PUBLISH"));
+
+            mockMvc.perform(post("/api/v1/content/pages/1/publish")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 4. POST /api/v1/content/pages/{id}/schedule — PAGE:PUBLISH ──────────
+
+        /** AC-AME-001-A1-10: Page schedule — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A1-10: POST /api/v1/content/pages/{id}/schedule — Authorization 헤더 부재 + 401")
+        void pageSchedule_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/pages/1/schedule")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A1-11: Page schedule — PAGE:PUBLISH 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A1-11: POST /api/v1/content/pages/{id}/schedule — PAGE:PUBLISH 부재 + 403")
+        void pageSchedule_forbidden_whenPagePublishMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(post("/api/v1/content/pages/1/schedule")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-12: Page schedule — PAGE:PUBLISH 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-12: POST /api/v1/content/pages/{id}/schedule — PAGE:PUBLISH 보유 + 401/403 아님")
+        void pageSchedule_passesAuthorization_whenPagePublishPresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:PUBLISH"));
+
+            mockMvc.perform(post("/api/v1/content/pages/1/schedule")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ─── 5. POST /api/v1/content/pages/{id}/retract — PAGE:PUBLISH ───────────
+
+        /** AC-AME-001-A1-13: Page retract — 토큰 부재 → 401. */
+        @Test
+        @DisplayName("AC-AME-001-A1-13: POST /api/v1/content/pages/{id}/retract — Authorization 헤더 부재 + 401")
+        void pageRetract_unauthorized_whenNoToken() throws Exception {
+            mockMvc.perform(post("/api/v1/content/pages/1/retract")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+        }
+
+        /** AC-AME-001-A1-14: Page retract — PAGE:PUBLISH 부재 → 403. */
+        @Test
+        @DisplayName("AC-AME-001-A1-14: POST /api/v1/content/pages/{id}/retract — PAGE:PUBLISH 부재 + 403")
+        void pageRetract_forbidden_whenPagePublishMissing() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+
+            mockMvc.perform(post("/api/v1/content/pages/1/retract")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+        }
+
+        /** AC-AME-001-A1-15: Page retract — PAGE:PUBLISH 보유 → 401/403 외. */
+        @Test
+        @DisplayName("AC-AME-001-A1-15: POST /api/v1/content/pages/{id}/retract — PAGE:PUBLISH 보유 + 401/403 아님")
+        void pageRetract_passesAuthorization_whenPagePublishPresent() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:PUBLISH"));
+
+            mockMvc.perform(post("/api/v1/content/pages/1/retract")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // §A.1 Step 2 Phase A 합계: 5 endpoint × 3 시나리오 = 15 AC
+        // (PAGE:WRITE/PAGE:PUBLISH 어휘 분리 회귀는 AC-AME-001-A1-8에 통합)
+
+        /**
+         * TODO Step 3 (Phase B): TEMPLATE:WRITE 어휘 시나리오 활성화 예정.
          *
          * <ul>
-         *   <li>POST /api/v1/content/popups — CONTENT:WRITE (PopupController#create)</li>
-         *   <li>PUT /api/v1/content/pages/{id} — PAGE:WRITE (PageController#update)</li>
-         *   <li>POST /api/v1/content/pages/{id}/publish — PAGE:PUBLISH (PageController#publish)</li>
-         *   <li>POST /api/v1/content/pages/{id}/schedule — PAGE:PUBLISH (PageController#schedule)</li>
-         *   <li>POST /api/v1/content/pages/{id}/retract — PAGE:PUBLISH (PageController#retract)</li>
-         *   <li>POST /api/v1/content/templates — TEMPLATE:WRITE (TemplateController#create) — Step 3</li>
-         *   <li>PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE (TemplateController#update) — Step 3</li>
+         *   <li>POST /api/v1/content/templates — TEMPLATE:WRITE (TemplateController#create)</li>
+         *   <li>PUT /api/v1/content/templates/{id} — TEMPLATE:WRITE (TemplateController#update)</li>
          * </ul>
          */
         @Test
-        @Disabled("Step 2 (Phase A) / Step 3 (Phase B)에서 활성화 예정 — 7 endpoint × 3 시나리오 매트릭스")
-        @DisplayName("§A.1 placeholder: Step 2~3 활성화 대기")
-        void contentDomain_placeholder_step2to3() {
-            // 본 placeholder는 도메인 그룹 뼈대 검증 목적으로 존재.
-            // 실제 7 endpoint × 3 시나리오는 Step 2 (Phase A: PAGE/CONTENT) + Step 3 (Phase B: TEMPLATE)에서 활성화.
+        @Disabled("Step 3 (Phase B)에서 활성화 예정 — TEMPLATE:WRITE 어휘 2 endpoint × 3 시나리오 = 6 AC")
+        @DisplayName("§A.1 placeholder Step 3: TEMPLATE:WRITE 활성화 대기")
+        void templateAuthority_placeholder_step3() {
+            // TEMPLATE:WRITE 어휘 시나리오는 Step 3에서 활성화.
         }
     }
 
