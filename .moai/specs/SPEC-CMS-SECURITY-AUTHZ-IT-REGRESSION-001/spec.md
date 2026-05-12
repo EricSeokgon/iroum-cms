@@ -1,6 +1,46 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.1
+# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.2
 
-**Status**: Planned (2026-05-12) — 진단 분리 SPEC, 회귀 발생 시점 + 원인 정밀화
+**Status**: Step 1 Completed (2026-05-12) — 회귀 commit 확정 (`942b19e` 2026-05-06)
+**Implementation commits**: 57b1ee8 (v0.1 Planned), [본 commit] (v0.2 회귀 시점 확정)
+
+## v0.2 변경 이력 (2026-05-12) — Step 1 회귀 commit 추적 완료
+
+### 회귀 commit 확정: `942b19e` (2026-05-06)
+
+```
+fix(test): 백엔드 테스트 63 → 26 실패 감소 — 마이그레이션·MyBatis·MockMvc 수정
+Author: ircp
+Date: Wed May 6 15:59:14 2026 +0900
+```
+
+이 commit에서 추가된 변경:
+- `backend/src/main/java/kr/co/ircp/cms/config/GlobalExceptionHandler.java` +16 lines
+- `@ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})` 핸들러 추가
+- `code: ACCESS_DENIED` 응답 코드 도입
+
+### 영향 타임라인
+
+| 일자 | Commit | 이벤트 | 영향 |
+|------|--------|--------|------|
+| 2026-05-06 | `942b19e` | GlobalExceptionHandler AuthorizationDeniedException 핸들러 추가 | AUTH_FORBIDDEN → ACCESS_DENIED 응답 코드 변경 시작 |
+| 2026-05-11 | `de22b95` | AUTHZ-IT-EXPAND-001 v0.2 Implemented (Sync) | **이 시점에 이미 회귀 존재 (검증 누락 또는 단독 실행 GREEN만 확인)** |
+| 2026-05-12 | `608855b` | PII-FOLLOWUP-005 v0.3 통합 실행 시 발견 | 51 unit test/IT failed 노출 |
+| 2026-05-12 | `57b1ee8` | 본 SPEC v0.1 Planned | 진단 분리 |
+
+### Step 1 결과
+- ✅ 회귀 commit hash 식별: `942b19e`
+- ✅ 회귀 변경 위치: `GlobalExceptionHandler.handleAuthorizationDenied`
+- ✅ 응답 코드 변경 확정: AUTH_FORBIDDEN → ACCESS_DENIED (authenticated user의 권한 부족 경로)
+- ✅ AUTHZ-IT-EXPAND-001 v0.2 Sync 시점 검증 누락 확인 → META-IT-GREEN-MANDATORY-001 위반 사례
+
+### META 위반 분석
+AUTHZ-IT-EXPAND-001 v0.2 Implemented (`de22b95`)는 META 정책 (단독+통합 양쪽 GREEN evidence)이 없는 상태로 Sync. 942b19e 후속 회귀를 즉시 감지하지 못한 이유:
+- 통합 실행 evidence 미확인
+- @RequestBody/@RequestParam validation 우선 발생 패턴 (403→400) 미고려
+
+본 SPEC RUN Step 2~5에서 정정 + AUTHZ-IT-EXPAND-001 v0.3 Sync 시 META checklist 4 항목 모두 충족 필수.
+
+---
 **Trigger**: PII-FOLLOWUP-005 v0.3 통합 실행 (commit 608855b) 시 발견한 51 unit test/IT failed
 **Severity**: P2 (보안 IT 회귀 — 운영 영향 0이나 SPEC 상태와 실제 GREEN 상태 불일치)
 
@@ -200,4 +240,5 @@ AUTHZ-IT-EXPAND-002만 100% GREEN — 다른 SPEC은 commit 시점 이후 운영
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | **Step 1 Completed**. 회귀 commit 확정: `942b19e` (2026-05-06 `fix(test)`). GlobalExceptionHandler에 AuthorizationDeniedException 핸들러 추가 (+ACCESS_DENIED). AUTHZ-IT-EXPAND-001 v0.2 Sync (`de22b95` 2026-05-11) 시점에 이미 회귀 존재 — META checklist 통합 evidence 누락 확인. PII-FOLLOWUP-005 v0.3 통합 실행 (commit 608855b 2026-05-12)에서 노출. Step 2~5 진행은 다음 세션. Status: Planned → Step 1 Completed. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 진단 SPEC. 본 세션 변경 영향 0건 확정 (AuthorizationMatrixExpandIT 단독 실행도 31 failed). 회귀 패턴 3가지 확정: (1) @Valid validation 우선 → 403 expected but 400, (2) GlobalExceptionHandler AuthorizationDeniedException 핸들러 추가 → AUTH_FORBIDDEN → ACCESS_DENIED 응답 코드 변경, (3) controller unit test Security 구성 차이. REQ-IRR-001~005 + 6 AC + RUN Step 1~5 분해. AUTHZ-MATRIX-001 + AUTHZ-IT-EXPAND-001 SPEC Status 정정 필요 (Implemented → Mostly Implemented). META-IT-GREEN-MANDATORY-001 첫 위반 사례. P2 (운영 영향 0, SPEC ↔ 실제 GREEN 상태 불일치 해소). |
