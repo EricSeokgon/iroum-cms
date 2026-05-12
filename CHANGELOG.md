@@ -11,6 +11,26 @@
 
 ### Added
 
+- **AUTHZ-IT-REGRESSION-001 SPEC v0.1 Planned — AUTHZ IT 51 RED 회귀 진단 분리 (운영 ACCESS_DENIED + @Valid validation 우선 + controller Security 차이)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001/spec.md` 신규
+  - PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 분리 진단
+  - 본 세션 PR 변경 영향 0건 확정: AuthorizationMatrixExpandIT 단독 실행도 31 failed (기존 회귀)
+  - 회귀 패턴 3가지:
+    - 패턴 1: `expected 403 but 400` — @Valid @RequestBody/@RequestParam validation이 @PreAuthorize 전 실행
+    - 패턴 2: `AUTH_FORBIDDEN vs ACCESS_DENIED` — GlobalExceptionHandler AuthorizationDeniedException 핸들러 추가로 응답 코드 변경
+    - 패턴 3: controller unit test 11종 401/403 차이 — Security 구성 차이
+  - REQ-IRR-001~005 + 6 AC + RUN Step 1~5 분해
+  - AUTHZ-MATRIX-001 + AUTHZ-IT-EXPAND-001 Status 정정 (Implemented → Mostly Implemented)
+  - AUTHZ-IT-EXPAND-002 (본 세션 작성)는 회귀 없음 (100% GREEN)
+  - META-IT-GREEN-MANDATORY-001 첫 위반 사례 (단독 GREEN ↔ 통합 GREEN 불일치)
+  - P2 (운영 영향 0, SPEC ↔ 실제 GREEN 상태 불일치 해소)
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.1 Planned)
+
+- **AUTHZ-IT-EXPAND-001 Status 정정 — Implemented → Mostly Implemented (v0.2 회귀, IT-REGRESSION-001 참조)**
+  - README SPEC 표 Status 갱신
+  - 운영 GlobalExceptionHandler `AuthorizationDeniedException` 핸들러 추가 (별도 commit) 시점 회귀 발견
+  - 운영 영향 0건 (응답 코드만 변경)
+
 - **PII-FOLLOWUP-005 v0.3 Implemented — Option B @DirtiesContext 적용 → 5/5 GREEN 완성, PII 트랙 전체 Implemented**
   - PiiAuditEnhanceIT 클래스 레벨 `@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)` 적용
   - SyncTaskExecutor + @Async + @Transactional(REQUIRES_NEW) 통합 race condition 완전 회피
