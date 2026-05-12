@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-ROTATION-001: PII 암호화 키 자동 회전 배치 v0.2
 
-**Status**: Planned (2026-05-12 갱신) — PII-KMS-001 Implemented 의존, META 정책 사전 합의
+**Status**: Implemented (2026-05-13) — 단위 5 GREEN / MigrationOrderIT V25 반영
 **Trigger**: PIPA 개인정보 안전성 확보 조치 의무 — 암호화 키 주기적 교체 권고
 **Severity**: P3 (장기 보안 강화, KMS 활성화 후 진입)
 
@@ -92,5 +92,6 @@ PIPA(개인정보 보호법) 제29조 안전성 확보 조치 — 암호화 키 
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-13 | MoAI orchestrator | Implemented — V25 마이그레이션(pii_key_rotation_log), PiiKeyRotationProperties/Mapper/Service/Job 구현. 청크 단위 커밋(@Transactional REQUIRES_NEW). 단위 테스트 5 GREEN. MigrationOrderIT V25 반영(24개). |
 | v0.2 | 2026-05-12 | MoAI orchestrator | META-IT-GREEN-MANDATORY-001 정책 사전 합의 + 결정 포인트 D1~D5 정밀화 (회전 주기, 회전 방식, 신규 데이터 처리, 회전 트리거, 회전 실패 처리). 의존 SPEC 진입 순서 명확화 (PII-KMS-001 → ROTATION-001). 본 세션 AUTHZ-IT-EXPAND-002/REGRESSION-001에서 검증된 META 패턴 적용. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. README SPEC 표에는 있으나 .moai/specs/ 디렉토리 누락 보완. PII-KMS-001 Implemented 의존 (장기 P3). PIPA 안전성 확보 조치 의무 키 주기적 교체 권고 대응. 결정 포인트 D1~D4 (회전 주기, 재암호화 방식, 구 키 보존 정책, 회전 트리거). REQ-PII-ROT-001/002/003 골격. 실제 RUN은 KMS 활성화 후 운영 안정화 시점 진입 권장. |

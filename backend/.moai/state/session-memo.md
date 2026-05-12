@@ -17,7 +17,8 @@ commits: 42 (5b0d5c1 최신)
 - AuthorizationCoverageArchTest baseline 110
 
 ### 다음 작업
-- SPEC-CMS-SECURITY-PII-ROTATION-001 (다음 SPEC)
+- SPEC-CMS-SECURITY-PII-ROTATION-001 완료 (단위 5 GREEN, 2026-05-13)
+- 다음: IT 테스트 추가 (PiiKeyRotationIT) 또는 PR 준비
 
 ## P3: JDK 설정
 JAVA_HOME=/home/sklee/.local/jdk17
