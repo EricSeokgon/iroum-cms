@@ -957,15 +957,90 @@ class AuthorizationMatrixExpand3IT {
         }
     }
 
-    /** §A.7 SearchPermissionDomainTests — Search + Synonym + Permission 미커버 (Phase C). */
+    /** §A.7 SearchPermissionDomainTests — Search 1 + Synonym 1 + Permission 1 미커버 (Phase C 활성화). */
     @Nested
     @DisplayName("§A.7 SearchPermissionDomainTests (Search 1 + Synonym 1 + Permission 1 미커버, Step 5 Phase C 활성화)")
     class SearchPermissionDomainTests {
+
+        // ── GET /api/v1/permissions — 클래스 레벨 hasRole(SUPER_ADMIN) ──
         @Test
-        @Disabled("Step 5 (Phase C)에서 활성화 예정 — Search reindex + Synonym CRUD + Permission CRUD")
-        @DisplayName("§A.7 placeholder: Step 5 활성화 대기")
-        void searchPermissionDomain_placeholder_step5() {
-            // Search reindex + Synonym update + Permission update
+        @DisplayName("AC-AME3-A7-1: GET /api/v1/permissions — Authorization 부재 + 401")
+        void permissionList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/permissions"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-2: GET /api/v1/permissions — DEPT_ADMIN 단독 + 403 (SUPER_ADMIN 부재)")
+        void permissionList_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/permissions")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-3: GET /api/v1/permissions — SUPER_ADMIN 보유 + 401/403 아님 (class-level)")
+        void permissionList_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/permissions")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /api/v1/search/synonyms — 클래스 레벨 hasRole(ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A7-4: GET /api/v1/search/synonyms — Authorization 부재 + 401")
+        void synonymList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/search/synonyms"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-5: GET /api/v1/search/synonyms — USER 역할 + 403")
+        void synonymList_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/search/synonyms")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-6: GET /api/v1/search/synonyms — ADMIN 보유 + 401/403 아님 (class-level)")
+        void synonymList_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/search/synonyms")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /api/v1/search/stats/queries — 메소드 레벨 hasRole(ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A7-7: GET /api/v1/search/stats/queries — Authorization 부재 + 401")
+        void searchStats_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/search/stats/queries"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-8: GET /api/v1/search/stats/queries — USER 역할 + 403")
+        void searchStats_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/search/stats/queries")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A7-9: GET /api/v1/search/stats/queries — ADMIN 보유 + 401/403 아님")
+        void searchStats_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/search/stats/queries")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 
