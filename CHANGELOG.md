@@ -11,6 +11,21 @@
 
 ### Added
 
+- **PII-FOLLOWUP-005 v0.3 Implemented — Option B @DirtiesContext 적용 → 5/5 GREEN 완성, PII 트랙 전체 Implemented**
+  - PiiAuditEnhanceIT 클래스 레벨 `@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)` 적용
+  - SyncTaskExecutor + @Async + @Transactional(REQUIRES_NEW) 통합 race condition 완전 회피
+  - 단독 GREEN ↔ 통합 GREEN 동등성 보장 (META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 첫 정식 적용 사례)
+  - 통합 실행 검증: `./gradlew :backend:integrationTest --tests "PiiAuditEnhanceIT"` → **5 tests / 0 failed / 0 skipped**
+    - AC-009-2 (본인 row 제외) — PASSED
+    - AC-009-3 (HMAC lookup-only 미적재) — PASSED
+    - AC-009-4 (self-access auditing) — PASSED
+    - AC-FU-003-1 (ADMIN findPage N건) — PASSED
+    - AC-FU-003-3 (각 target row 적재) — PASSED
+  - AC-009-2 옵션 A 진단 디버그 코드 제거 (System.out.println + jdbcTemplate.queryForList)
+  - 비용: 각 test ~30초 부팅 (5 test ≈ 2.5분), 안전성 최대
+  - PII-FOLLOWUP 1~5 트랙 전체 Implemented 완성 (5 SPEC 모두 GREEN)
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-005 v0.3 Implemented 1차)
+
 - **META-IT-GREEN-MANDATORY-001 v0.2 Implemented — README §IT user environment GREEN mandatory 정책 신설 + Sync checklist 4 항목 명문화**
   - README.md §"IT user environment GREEN mandatory 정책 (META)" 신설 (§336 ~ §라이선스 사이)
   - HARD 정책 요약 4건: 단독+통합 양쪽 GREEN / @Transactional 위험 / race condition 회피 / Sync commit message evidence

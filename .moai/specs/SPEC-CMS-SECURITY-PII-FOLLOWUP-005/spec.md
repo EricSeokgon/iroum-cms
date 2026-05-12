@@ -1,6 +1,51 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-005: PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 v0.2
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-005: PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 v0.3
 
-**Status**: Partially Diagnosed (2026-05-12) — 옵션 A 진단 결과: 단독 PASSED, 통합 race condition 확정
+**Status**: Implemented (2026-05-12) — Option B @DirtiesContext 적용 → 5/5 GREEN 완성
+**Implementation commits**: b44cab6 (v0.1 Planned), 667332d (v0.2 옵션 A 진단), [본 commit] (v0.3 Option B 적용)
+
+## v0.3 변경 이력 (2026-05-12) — Option B @DirtiesContext 적용
+
+### Status: Partially Diagnosed → Implemented
+
+PiiAuditEnhanceIT 클래스에 `@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)` 적용:
+- 각 test 후 Spring context 재생성 → SyncTaskExecutor + @Async + @Transactional(REQUIRES_NEW) 통합 race condition 완전 회피
+- 단독 GREEN ↔ 통합 GREEN 동등성 보장
+
+### 검증 결과
+- **단독 실행**: `--tests "PiiAuditEnhanceIT.findPage_selfRowExcludedFromAudit"` → PASSED
+- **통합 실행**: `./gradlew :backend:integrationTest --tests "PiiAuditEnhanceIT"` → **5 tests / 0 failed / 0 skipped**
+  - AC-009-2 (본인 row 제외) — PASSED
+  - AC-009-3 (HMAC lookup-only 미적재) — PASSED
+  - AC-009-4 (self-access auditing) — PASSED
+  - AC-FU-003-1 (ADMIN findPage N건) — PASSED
+  - AC-FU-003-3 (각 target row 적재) — PASSED
+
+### PII 트랙 완성
+PII-FOLLOWUP-001 ~ 005 모두 Implemented:
+- PII-FOLLOWUP-001: Implemented (PII 마스킹 + 분리 암호화)
+- PII-FOLLOWUP-002: Implemented (@MockitoSpyBean + Fallback Unit test)
+- PII-FOLLOWUP-003: Implemented (옵션 G TRUNCATE cleanup)
+- PII-FOLLOWUP-004: Implemented (VerificationService REQUIRES_NEW + IT 시나리오 정정, 4/5 → 5/5 회복)
+- PII-FOLLOWUP-005: **Implemented** (Option B @DirtiesContext, 5/5 GREEN)
+
+### META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 준수
+본 SPEC은 META 정책의 첫 번째 정식 적용 사례:
+- 단독 GREEN evidence: AC-009-2 단독 실행 PASSED (v0.2 commit 667332d)
+- 통합 GREEN evidence: 본 commit `./gradlew integrationTest` 5 tests 0 failed
+- race condition 회피 패턴: (a) `@DirtiesContext` AFTER_EACH_TEST_METHOD 적용 (META REQ-META-IT-003)
+
+### 비용
+- 각 test ~30초 부팅 (5 test ≈ 2.5분 추가)
+- 안전성 최대 — race condition 완전 회피
+
+### 변경 산출물
+- PiiAuditEnhanceIT.java:
+  - import org.springframework.test.annotation.DirtiesContext 추가
+  - 클래스 레벨 @DirtiesContext annotation 추가
+  - AC-009-2 진단 디버그 코드 제거 (System.out.println, jdbcTemplate.queryForList) — Option B 적용 후 정상 시나리오로 정리
+  - 클래스 javadoc에 Option B 적용 명시
+
+---
 
 ## v0.2 변경 이력 (2026-05-12) — 옵션 A 진단 결과
 
@@ -101,4 +146,6 @@ JUnit 5 deterministic 순서 적용 시 무언가 stateful 영향:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Implemented**. Option B @DirtiesContext(AFTER_EACH_TEST_METHOD) 적용 → 5/5 GREEN 완성. 단독 + 통합 양쪽 GREEN 동등성 보장 (META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 첫 정식 적용). AC-009-2 진단 디버그 코드 제거. PII-FOLLOWUP 1~5 트랙 전체 Implemented 완성. 통합 실행: 5 tests / 0 failed / 0 skipped. 비용: 각 test ~30초 부팅 (5 test ≈ 2.5분), 안전성 최대. |
+| v0.2 | 2026-05-12 | MoAI orchestrator | 옵션 A 진단 완료. AC-009-2 단독 실행 PASSED, 통합 RED — 순수 race condition 확정. Status: Planned → Partially Diagnosed. 다음 세션 권장 옵션 B (@DirtiesContext). |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-004 v0.3 Mostly Implemented 후 잔여 AC-009-2 race condition 분리 SPEC. 본 세션 시도 결과 명문화: @TestMethodOrder + @Order 적용 시 AC-009-2 GREEN되나 AC-FU-003-1 회귀 → revert. 다음 세션 옵션 A/B/C/D 검토 권장. REQ-PII-FU5-001/002 + 3 AC. P3 우선순위 (PII 트랙 100% IT 완성, 운영 영향 없음). |

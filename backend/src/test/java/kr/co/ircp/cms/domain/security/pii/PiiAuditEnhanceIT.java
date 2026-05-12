@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -49,9 +50,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 // 각 테스트에서 실제 commit으로 audit row가 별도 connection에서 가시화.
 // 격리는 @AfterEach TRUNCATE personal_data_access_log + DELETE audit_it_% users로 보장.
 // 운영 BEFORE DELETE 트리거(pda_no_delete)는 FOR EACH ROW이므로 TRUNCATE는 차단 안 됨 (PostgreSQL 표준).
+//
+// SPEC-CMS-SECURITY-PII-FOLLOWUP-005 v0.3 Option B (2026-05-12):
+// @DirtiesContext(AFTER_EACH_TEST_METHOD)로 각 test 후 Spring context 재생성 →
+// SyncTaskExecutor + @Async + @Transactional(REQUIRES_NEW) 통합 race condition 완전 회피.
+// 비용: 각 test ~30초 부팅 (5 test ≈ 2.5분), 안전성 최대.
+// 단독 GREEN ≠ 통합 GREEN 패턴 해소 — META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 준수.
 @DisplayName("PII 접근 감사 보강 통합 테스트 (SPEC-CMS-SECURITY-PII-002 Step 3)")
 @AutoConfigureMockMvc
 @Import(IntegrationAsyncConfig.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 class PiiAuditEnhanceIT extends AbstractIntegrationTest {
 
     private static final String ADMIN_USERS_URL = "/api/v1/users";
@@ -136,7 +144,9 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("AC-009-2 — ADMIN 본인 row(id=selfId)가 결과에 포함되어도 audit 미적재 (본인 제외)")
     void findPage_selfRowExcludedFromAudit() throws Exception {
-        // SPEC-CMS-SECURITY-PII-FOLLOWUP-005 옵션 A (2026-05-12): 진단 모드 — 실측 audit row 출력.
+        // SPEC-CMS-SECURITY-PII-FOLLOWUP-005 v0.3 Option B (2026-05-12):
+        // 클래스 레벨 @DirtiesContext(AFTER_EACH_TEST_METHOD)로 통합 race condition 회피.
+        // 단독 GREEN ↔ 통합 GREEN 동등성 보장 (META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 준수).
         long selfId = insertUser("admin.self@example.com");
         long auditBefore = countAuditRowsForTarget(selfId);
 
@@ -147,15 +157,6 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         long auditAfter = countAuditRowsForTarget(selfId);
-
-        // 진단 — 실제 적재된 row 출력 (root cause 확정)
-        java.util.List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(
-                "SELECT viewer_id, viewer_role, target_user_id, purpose " +
-                "FROM personal_data_access_log WHERE target_user_id = ?", selfId);
-        System.out.println("=== AC-009-2 진단 (selfId=" + selfId + ") ===");
-        System.out.println("auditBefore=" + auditBefore + ", auditAfter=" + auditAfter);
-        System.out.println("selfId target rows: " + rows);
-
         assertThat(auditAfter).isEqualTo(auditBefore);
     }
 

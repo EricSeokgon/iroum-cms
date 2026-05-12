@@ -304,7 +304,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
-| SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (분리) | Partially Diagnosed |
+| SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (Option B @DirtiesContext, 5/5 GREEN) | Implemented (1차) |
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
@@ -384,7 +384,7 @@ SPEC 문서 위치: `.moai/specs/`
 | 2 | PII-FOLLOWUP-003 | REQ-META-IT-002 (@Transactional rollback false GREEN) | TRUNCATE cleanup + @Transactional 제거 |
 | 3 | PII-FOLLOWUP-004 AC-009-3 | REQ-META-IT-002 (UnexpectedRollbackException) | REQUIRES_NEW 운영 fix |
 | 4 | PII-FOLLOWUP-004 AC-009-4 | REQ-META-IT-002 (SPEC ↔ 운영 차이) | IT 시나리오 expected 정정 |
-| 5 | PII-FOLLOWUP-005 AC-009-2 | REQ-PII-FU2-003 (단독 GREEN, 통합 RED) | @DirtiesContext (다음 세션) |
+| 5 | PII-FOLLOWUP-005 AC-009-2 | REQ-PII-FU2-003 (단독 GREEN, 통합 RED) | @DirtiesContext AFTER_EACH_TEST_METHOD → 5/5 GREEN 완성 |
 
 자세한 명세: `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md`
 
