@@ -21,9 +21,17 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import org.springframework.http.MediaType;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 RUN Step 1 — HTTP 권한 매트릭스 IT 확장 2차.
@@ -136,6 +144,31 @@ class AuthorizationMatrixExpand2IT {
         when(jwtTokenProvider.validateAccessToken(VALID_TOKEN)).thenReturn(Optional.of(claims));
     }
 
+    /**
+     * 권한 통과 검증 helper — 401/403 아님 + service IllegalArgumentException 허용.
+     *
+     * <p>운영 GlobalExceptionHandler가 IllegalArgumentException을 처리하지 않으므로
+     * (예: "페이지를 찾을 수 없습니다", "메뉴를 찾을 수 없습니다"), Spring MVC가 ServletException으로
+     * wrap하여 throw한다. 이 경우 권한 검증은 통과한 것 — IT 본질적 PASS.
+     *
+     * <p>다른 endpoint (예: I18n, Site, Dashboard)는 service가 데이터 없어도 200/404 정상 응답.
+     * 이 helper는 IllegalArgumentException으로 인한 ServletException만 허용한다.
+     */
+    @SuppressWarnings("unused")
+    private void assertAuthzPassed(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
+        try {
+            mockMvc.perform(request)
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        } catch (jakarta.servlet.ServletException e) {
+            // 권한 통과 후 service IllegalArgumentException — 권한 검증 IT 본질적 PASS
+            if (e.getCause() instanceof IllegalArgumentException) {
+                return;
+            }
+            throw e;
+        }
+    }
+
     // =================================================================================
     // §0 인프라 smoke test — Step 1에서 유일하게 활성화되는 시나리오
     // =================================================================================
@@ -153,39 +186,276 @@ class AuthorizationMatrixExpand2IT {
     // §A REQ-AM-EXP2-001 — 19 미커버 권한 어휘 매트릭스 (~100 AC, Step 2~3 활성화)
     // =================================================================================
 
-    /** §A.1 ContentReadDomainTests — CONTENT:READ, PAGE:READ, TEMPLATE:READ, ROLE:CONTENT_ADMIN (4 어휘). */
+    /** §A.1 ContentReadDomainTests — CONTENT:READ, PAGE:READ, TEMPLATE:READ, ROLE:CONTENT_ADMIN (4 어휘). Step 2 Phase A 활성화. */
     @Nested
     @DisplayName("§A.1 ContentReadDomainTests (4 어휘, Step 2 활성화)")
     class ContentReadDomainTests {
+
+        // ── CONTENT:READ — I18nController GET /api/v1/content/i18n (required: namespace, resourceId) ──
         @Test
-        @Disabled("Step 2 (Phase A)에서 활성화 예정 — CONTENT:READ/PAGE:READ/TEMPLATE:READ/CONTENT_ADMIN 매트릭스")
-        @DisplayName("§A.1 placeholder: Step 2 활성화 대기")
-        void contentReadDomain_placeholder_step2() {
-            // 4 어휘 × 평균 2 endpoint × 3 시나리오 ≈ 24 AC
+        @DisplayName("AC-AME2-A1-1: GET /api/v1/content/i18n — Authorization 부재 + 401")
+        void i18nList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/content/i18n")
+                            .param("namespace", "test")
+                            .param("resourceId", "1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-2: GET /api/v1/content/i18n — CONTENT:READ 부재 + 403")
+        void i18nList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // CONTENT:READ 미보유
+            mockMvc.perform(get("/api/v1/content/i18n")
+                            .param("namespace", "test")
+                            .param("resourceId", "1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-3: GET /api/v1/content/i18n — CONTENT:READ 보유 + 401/403 아님")
+        void i18nList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:READ"));
+            // 운영 service "지원하지 않는 네임스페이스" IllegalArgumentException 허용 (권한 통과 증명)
+            assertAuthzPassed(get("/api/v1/content/i18n")
+                    .param("namespace", "test")
+                    .param("resourceId", "1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PAGE:READ — ContentBlockController GET /api/v1/content/pages/{pageId}/blocks ──
+        @Test
+        @DisplayName("AC-AME2-A1-4: GET /api/v1/content/pages/{pageId}/blocks — Authorization 부재 + 401")
+        void pageBlocks_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/content/pages/1/blocks"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-5: GET /api/v1/content/pages/{pageId}/blocks — PAGE:READ 부재 + 403")
+        void pageBlocks_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // PAGE:READ 미보유
+            mockMvc.perform(get("/api/v1/content/pages/1/blocks")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-6: GET /api/v1/content/pages/{pageId}/blocks — PAGE:READ 보유 + 401/403 아님")
+        void pageBlocks_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:READ"));
+            mockMvc.perform(get("/api/v1/content/pages/1/blocks")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── TEMPLATE:READ — TemplateController GET /api/v1/content/templates ──
+        @Test
+        @DisplayName("AC-AME2-A1-7: GET /api/v1/content/templates — Authorization 부재 + 401")
+        void templatesList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/content/templates"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-8: GET /api/v1/content/templates — TEMPLATE:READ 부재 + 403")
+        void templatesList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // TEMPLATE:READ 미보유
+            mockMvc.perform(get("/api/v1/content/templates")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-9: GET /api/v1/content/templates — TEMPLATE:READ 보유 + 401/403 아님")
+        void templatesList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("TEMPLATE:READ"));
+            mockMvc.perform(get("/api/v1/content/templates")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── ROLE:CONTENT_ADMIN — QnaController POST /api/v1/qnas/{id}/answer (hasAnyRole, OR bypass!) ──
+        @Test
+        @DisplayName("AC-AME2-A1-10: POST /api/v1/qnas/{id}/answer — Authorization 부재 + 401")
+        void qnaAnswer_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/qnas/1/answer")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"answerHtml\":\"<p>test</p>\"}"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-11: POST /api/v1/qnas/{id}/answer — ROLE 부재 (USER만) + 403")
+        void qnaAnswer_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // CONTENT_ADMIN/ADMIN/SUPER_ADMIN 미보유
+            mockMvc.perform(post("/api/v1/qnas/1/answer")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"answerHtml\":\"<p>test</p>\"}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A1-12: POST /api/v1/qnas/{id}/answer — CONTENT_ADMIN 보유 + 401/403 아님 (OR bypass 검증)")
+        void qnaAnswer_hasContentAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("CONTENT_ADMIN"), Set.of());
+            mockMvc.perform(post("/api/v1/qnas/1/answer")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"answerHtml\":\"<p>test</p>\"}"))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 
-    /** §A.2 PageAdvancedDomainTests — PAGE:ROLLBACK, PAGE:HISTORY:READ (2 어휘). */
+    /** §A.2 PageAdvancedDomainTests — PAGE:ROLLBACK, PAGE:HISTORY:READ (2 어휘). Step 2 Phase A 활성화. */
     @Nested
     @DisplayName("§A.2 PageAdvancedDomainTests (2 어휘, Step 2 활성화)")
     class PageAdvancedDomainTests {
+
+        // ── PAGE:HISTORY:READ — PageController GET /api/v1/content/pages/{id}/history ──
         @Test
-        @Disabled("Step 2 (Phase A)에서 활성화 예정 — PAGE:ROLLBACK/PAGE:HISTORY:READ 분리 회귀 매트릭스")
-        @DisplayName("§A.2 placeholder: Step 2 활성화 대기")
-        void pageAdvancedDomain_placeholder_step2() {
-            // PAGE:ROLLBACK vs PAGE:HISTORY:READ vs 기존 PAGE:WRITE/PUBLISH 분리 회귀 검증
+        @DisplayName("AC-AME2-A2-1: GET /api/v1/content/pages/{id}/history — Authorization 부재 + 401")
+        void pageHistory_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/content/pages/1/history"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A2-2: GET /api/v1/content/pages/{id}/history — PAGE:HISTORY:READ 부재 + 403")
+        void pageHistory_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // PAGE:HISTORY:READ 미보유
+            mockMvc.perform(get("/api/v1/content/pages/1/history")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A2-3: GET /api/v1/content/pages/{id}/history — PAGE:HISTORY:READ 보유 + 401/403 아님")
+        void pageHistory_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:HISTORY:READ"));
+            mockMvc.perform(get("/api/v1/content/pages/1/history")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── PAGE:ROLLBACK — PageController POST /api/v1/content/pages/{id}/rollback/{version} ──
+        @Test
+        @DisplayName("AC-AME2-A2-4: POST /api/v1/content/pages/{id}/rollback/{version} — Authorization 부재 + 401")
+        void pageRollback_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/content/pages/1/rollback/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A2-5: POST /api/v1/content/pages/{id}/rollback/{version} — PAGE:ROLLBACK 부재 + 403")
+        void pageRollback_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // PAGE:ROLLBACK 미보유
+            mockMvc.perform(post("/api/v1/content/pages/1/rollback/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A2-6: POST /api/v1/content/pages/{id}/rollback/{version} — PAGE:ROLLBACK 보유 + 401/403 아님")
+        void pageRollback_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:ROLLBACK"));
+            // 운영 service "페이지를 찾을 수 없습니다" IllegalArgumentException 허용 (권한 통과 증명)
+            assertAuthzPassed(post("/api/v1/content/pages/1/rollback/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── 분리 회귀: PAGE:HISTORY:READ 권한자가 PAGE:ROLLBACK endpoint 호출 → 403 ──
+        @Test
+        @DisplayName("AC-AME2-A2-7: POST /api/v1/content/pages/{id}/rollback — PAGE:HISTORY:READ 권한자 + 403 (분리 회귀)")
+        void pageRollback_hasHistoryReadOnly_returns403() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:HISTORY:READ")); // PAGE:ROLLBACK 미보유, HISTORY:READ만 보유
+            mockMvc.perform(post("/api/v1/content/pages/1/rollback/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
         }
     }
 
-    /** §A.3 SiteMenuDomainTests — SITE:WRITE, MENU:PERMISSION:WRITE (2 어휘). */
+    /** §A.3 SiteMenuDomainTests — SITE:WRITE, MENU:PERMISSION:WRITE (2 어휘). Step 2 Phase A 활성화. */
     @Nested
     @DisplayName("§A.3 SiteMenuDomainTests (2 어휘, Step 2 활성화)")
     class SiteMenuDomainTests {
+
+        // SiteUpdateRequest 필드: @NotBlank name/domain/defaultLanguage
+        private static final String SITE_UPDATE_BODY =
+                "{\"name\":\"테스트 사이트\",\"domain\":\"example.com\",\"defaultLanguage\":\"ko\"}";
+
+        // ── SITE:WRITE — SiteController PUT /api/v1/content/sites/{id} ──
         @Test
-        @Disabled("Step 2 (Phase A)에서 활성화 예정 — SITE:WRITE/MENU:PERMISSION:WRITE 매트릭스")
-        @DisplayName("§A.3 placeholder: Step 2 활성화 대기")
-        void siteMenuDomain_placeholder_step2() {
-            // MENU:PERMISSION:WRITE vs 기존 MENU:WRITE 분리 회귀 검증
+        @DisplayName("AC-AME2-A3-1: PUT /api/v1/content/sites/{id} — Authorization 부재 + 401")
+        void siteUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/content/sites/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_UPDATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A3-2: PUT /api/v1/content/sites/{id} — SITE:WRITE 부재 + 403")
+        void siteUpdate_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SITE:WRITE 미보유
+            mockMvc.perform(put("/api/v1/content/sites/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_UPDATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A3-3: PUT /api/v1/content/sites/{id} — SITE:WRITE 보유 + 401/403 아님")
+        void siteUpdate_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SITE:WRITE"));
+            mockMvc.perform(put("/api/v1/content/sites/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_UPDATE_BODY))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // MenuPermissionRequest 필드: List<String> permissionCodes (Validation 없으나 deserialize 일관성)
+        private static final String MENU_PERMISSIONS_BODY =
+                "{\"permissionCodes\":[\"MENU:VIEW\",\"MENU:EDIT\"]}";
+
+        // ── MENU:PERMISSION:WRITE — MenuController POST /api/v1/content/menus/{id}/permissions ──
+        @Test
+        @DisplayName("AC-AME2-A3-4: POST /api/v1/content/menus/{id}/permissions — Authorization 부재 + 401")
+        void menuPermissions_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/content/menus/1/permissions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MENU_PERMISSIONS_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A3-5: POST /api/v1/content/menus/{id}/permissions — MENU:PERMISSION:WRITE 부재 + 403")
+        void menuPermissions_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // MENU:PERMISSION:WRITE 미보유
+            mockMvc.perform(post("/api/v1/content/menus/1/permissions")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MENU_PERMISSIONS_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A3-6: POST /api/v1/content/menus/{id}/permissions — MENU:PERMISSION:WRITE 보유 + 401/403 아님")
+        void menuPermissions_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("MENU:PERMISSION:WRITE"));
+            // 운영 service "메뉴를 찾을 수 없습니다" IllegalArgumentException 허용 (권한 통과 증명)
+            assertAuthzPassed(post("/api/v1/content/menus/1/permissions")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(MENU_PERMISSIONS_BODY));
         }
     }
 
@@ -201,15 +471,36 @@ class AuthorizationMatrixExpand2IT {
         }
     }
 
-    /** §A.5 DashboardDomainTests — SYSTEM:DASHBOARD (1 어휘). */
+    /** §A.5 DashboardDomainTests — SYSTEM:DASHBOARD (1 어휘). Step 2 Phase A 단위 검증. */
     @Nested
-    @DisplayName("§A.5 DashboardDomainTests (1 어휘, Step 3 활성화)")
+    @DisplayName("§A.5 DashboardDomainTests (1 어휘, Step 2 활성화)")
     class DashboardDomainTests {
+
+        // GET /api/v1/system/dashboard/kpi — hasAuthority('SYSTEM:DASHBOARD') (OR bypass 없음, AUTHZ-IT-EXPAND-002 v0.2 매핑)
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — SYSTEM:DASHBOARD 매트릭스")
-        @DisplayName("§A.5 placeholder: Step 3 활성화 대기")
-        void dashboardDomain_placeholder_step3() {
-            // DashboardController endpoint
+        @DisplayName("AC-AME2-A5-1: GET /api/v1/system/dashboard/kpi — Authorization 헤더 부재 + 401")
+        void dashboardKpi_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/dashboard/kpi"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A5-2: GET /api/v1/system/dashboard/kpi — SYSTEM:DASHBOARD 부재 + 403")
+        void dashboardKpi_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SYSTEM:DASHBOARD 미보유
+            mockMvc.perform(get("/api/v1/system/dashboard/kpi")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A5-3: GET /api/v1/system/dashboard/kpi — SYSTEM:DASHBOARD 보유 + 401/403 아님")
+        void dashboardKpi_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:DASHBOARD"));
+            mockMvc.perform(get("/api/v1/system/dashboard/kpi")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 
