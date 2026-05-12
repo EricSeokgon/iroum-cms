@@ -42,6 +42,21 @@
   - 정책 문서 갱신만, 운영 코드 변경 0건
   (SPEC-CMS-SECURITY-PII-KMS-001 v0.2 + SPEC-CMS-SECURITY-PII-ROTATION-001 v0.2)
 
+- **AUTHZ-IT-EXPAND-004 SPEC v0.1 Planned — 잔여 26 endpoint → 100% IT 커버 (AUTHZ 트랙 종결)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004/spec.md` 신규
+  - AUTHZ-IT-EXPAND-003 v0.4 Implemented (88 endpoint, 79%) 완성 후 자연 연장
+  - 운영 controller @PreAuthorize 114건 vs IT baseline 88 → 잔여 26 endpoint 100% 커버
+  - REQ-AM-EXP4-001~005 + 5 AC + RUN Step 1~5 분해
+  - 5 결정 포인트 D1~D5 (IT 클래스 구조, 카테고리 분할, RUN 일괄 vs 분할, baseline 시점, 트랙 종결)
+  - 패턴 100% 재사용 (assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기, OR bypass, 분리 회귀, class-level @PreAuthorize)
+  - 예상 비용 1-2 세션, 운영 코드 변경 0건
+  - 본 SPEC 완성 시 AUTHZ 트랙 6단계 진화 종결:
+    Matrix → EXPAND-001/002/003/004 + AUTODETECT + CTRL + REGRESSION + META = 8 SPEC chain
+  - 6중 OWASP A01 검증 305 AC → ~380 AC (78 AC 추가)
+  - ArchUnit baseline 88 → 114+ endpoint (100% IT 매핑)
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004 v0.1 Planned)
+
 - **AUTHZ-IT-EXPAND-003 v0.4 Implemented — 8 도메인 106 AC GREEN + ArchUnit baseline 88 (79% IT 커버 달성)**
   - AuthorizationMatrixExpand3IT.java ~1100줄 신규 (인프라 240 + Phase A 470 + Phase B 240 + Phase C 200)
   - 8 도메인 35 endpoint × 3 시나리오 = 106 AC + smoke 1 = 107 tests / 0 failures

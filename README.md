@@ -308,6 +308,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합+종합 GREEN 필수, evidence 10건: PII 5 + AUTHZ 5) | Implemented (v0.3 Evidence 강화) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31 + controller 11 = 51 RED → 0, 100% 회복) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 | HTTP 권한 매트릭스 IT 확장 3차 (8 도메인 35 endpoint × 106 AC + ArchUnit baseline 88, 79% IT 커버) | Implemented (1차) |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004 | HTTP 권한 매트릭스 IT 확장 4차 (잔여 26 endpoint → 100% 커버, AUTHZ 트랙 종결) | Planned |
 
 SPEC 문서 위치: `.moai/specs/`
 
