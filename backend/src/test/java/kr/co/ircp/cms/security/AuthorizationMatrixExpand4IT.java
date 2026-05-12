@@ -191,19 +191,127 @@ class AuthorizationMatrixExpand4IT {
     // §A REQ-AM-EXP4-001 — 27 미커버 endpoint 매트릭스 (~78 AC, Step 3 활성화)
     // =================================================================================
 
-    /** §A.1 BoardDomainTests — Qna 5 + Survey 4 + Faq 4 + Publication 3 + Bbs 1 = 17 endpoint (Phase A). */
+    /** §A.1 BoardDomainTests — Bbs DELETE 1 + Publication 3 = 4 endpoint (Phase A 부분 활성화). */
     @Nested
-    @DisplayName("§A.1 BoardDomainTests (17 미커버, Step 3 Phase A 활성화)")
+    @DisplayName("§A.1 BoardDomainTests (Bbs 1 + Publication 3 = 4 미커버, Step 3 Phase A 활성화)")
     class BoardDomainTests {
+
+        // ── DELETE /api/v1/boards/{id} — hasRole(ADMIN) ──
         @Test
-        @Disabled("Step 3 (Phase A)에서 활성화 예정 — Qna/Survey/Faq/Publication/Bbs 잔여 endpoint")
-        @DisplayName("§A.1 placeholder: Step 3 활성화 대기")
-        void boardDomain_placeholder_step3() {
-            // Qna: list/get/PUT/DELETE/추가
-            // Survey: list/get/submit/추가
-            // Faq: list/POST/PUT/DELETE
-            // Publication: list/PUT/DELETE
-            // Bbs: list
+        @DisplayName("AC-AME4-A1-1: DELETE /api/v1/boards/{id} — Authorization 부재 + 401")
+        void bbsDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/boards/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-2: DELETE /api/v1/boards/{id} — USER 역할 + 403")
+        void bbsDelete_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/boards/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-3: DELETE /api/v1/boards/{id} — ADMIN 보유 + 401/403 아님")
+        void bbsDelete_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/boards/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PublicationController (CONTENT:WRITE OR ADMIN/SUPER_ADMIN/CONTENT_ADMIN) ──
+        // PublicationCreateRequest required: title, publicationYear, documentType
+        private static final String PUB_CREATE_BODY =
+                "{\"title\":\"테스트 발간물\",\"publicationYear\":2026,\"documentType\":\"REPORT\"}";
+        private static final String PUB_UPDATE_BODY = "{}";
+
+        // ── POST /api/v1/publications ──
+        @Test
+        @DisplayName("AC-AME4-A1-4: POST /api/v1/publications — Authorization 부재 + 401")
+        void pubCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/publications")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(PUB_CREATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-5: POST /api/v1/publications — CONTENT:WRITE/ADMIN/CONTENT_ADMIN 모두 부재 + 403")
+        void pubCreate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/publications")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(PUB_CREATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-6: POST /api/v1/publications — CONTENT_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void pubCreate_hasContentAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("CONTENT_ADMIN"), Set.of());
+            assertAuthzPassed(post("/api/v1/publications")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(PUB_CREATE_BODY));
+        }
+
+        // ── PUT /api/v1/publications/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-7: PUT /api/v1/publications/{id} — Authorization 부재 + 401")
+        void pubUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/publications/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(PUB_UPDATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-8: PUT /api/v1/publications/{id} — 모든 권한 부재 + 403")
+        void pubUpdate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(put("/api/v1/publications/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(PUB_UPDATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-9: PUT /api/v1/publications/{id} — CONTENT:WRITE 보유 + 401/403 아님 (OR bypass)")
+        void pubUpdate_hasContentWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(put("/api/v1/publications/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(PUB_UPDATE_BODY));
+        }
+
+        // ── DELETE /api/v1/publications/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-10: DELETE /api/v1/publications/{id} — Authorization 부재 + 401")
+        void pubDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/publications/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-11: DELETE /api/v1/publications/{id} — 모든 권한 부재 + 403")
+        void pubDelete_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/publications/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-12: DELETE /api/v1/publications/{id} — ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void pubDelete_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/publications/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }
 
