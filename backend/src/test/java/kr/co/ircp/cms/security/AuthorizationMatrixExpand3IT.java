@@ -177,15 +177,203 @@ class AuthorizationMatrixExpand3IT {
     // §A REQ-AM-EXP3-001 — ~60 미커버 endpoint 매트릭스 (~180 AC, Step 3~5 활성화)
     // =================================================================================
 
-    /** §A.1 OrganizationDomainTests — OrganizationController 7개 미커버 endpoint (Phase A). */
+    /** §A.1 OrganizationDomainTests — OrganizationController 7개 미커버 endpoint (Phase A 활성화). */
     @Nested
-    @DisplayName("§A.1 OrganizationDomainTests (7 미커버, Step 3 Phase A 활성화)")
+    @DisplayName("§A.1 OrganizationDomainTests (7 미커버 endpoint, Step 3 Phase A 활성화)")
     class OrganizationDomainTests {
+
+        // ── GET /organizations/tree — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
         @Test
-        @Disabled("Step 3 (Phase A)에서 활성화 예정 — Organization GET/PATCH/DELETE/tree/move 등")
-        @DisplayName("§A.1 placeholder: Step 3 활성화 대기")
-        void organizationDomain_placeholder_step3() {
-            // GET /organizations, GET /organizations/tree, PATCH/DELETE /organizations/{id} 등
+        @DisplayName("AC-AME3-A1-1: GET /api/v1/organizations/tree — Authorization 부재 + 401")
+        void orgTree_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/organizations/tree"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-2: GET /api/v1/organizations/tree — USER 역할 + 403 (SUPER_ADMIN/DEPT_ADMIN 부재)")
+        void orgTree_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations/tree")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-3: GET /api/v1/organizations/tree — DEPT_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void orgTree_hasDeptAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations/tree")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /organizations — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A1-4: GET /api/v1/organizations — Authorization 부재 + 401")
+        void orgList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/organizations"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-5: GET /api/v1/organizations — USER 역할 + 403")
+        void orgList_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-6: GET /api/v1/organizations — SUPER_ADMIN 보유 + 401/403 아님")
+        void orgList_hasSuperAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /organizations/{id} — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A1-7: GET /api/v1/organizations/{id} — Authorization 부재 + 401")
+        void orgGet_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/organizations/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-8: GET /api/v1/organizations/{id} — USER 역할 + 403")
+        void orgGet_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-9: GET /api/v1/organizations/{id} — DEPT_ADMIN 보유 + 401/403 아님")
+        void orgGet_hasDeptAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            // 운영 service "조직을 찾을 수 없습니다" IllegalArgumentException 허용
+            assertAuthzPassed(get("/api/v1/organizations/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PUT /organizations/{id} — hasRole(SUPER_ADMIN) ──
+        private static final String ORG_UPDATE_BODY = "{\"name\":\"업데이트 조직\",\"sortOrder\":1}";
+
+        @Test
+        @DisplayName("AC-AME3-A1-10: PUT /api/v1/organizations/{id} — Authorization 부재 + 401")
+        void orgUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/organizations/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(ORG_UPDATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-11: PUT /api/v1/organizations/{id} — DEPT_ADMIN 단독 + 403 (SUPER_ADMIN 부재)")
+        void orgUpdate_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(put("/api/v1/organizations/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(ORG_UPDATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-12: PUT /api/v1/organizations/{id} — SUPER_ADMIN 보유 + 401/403 아님")
+        void orgUpdate_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            assertAuthzPassed(put("/api/v1/organizations/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(ORG_UPDATE_BODY));
+        }
+
+        // ── DELETE /organizations/{id} — hasRole(SUPER_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A1-13: DELETE /api/v1/organizations/{id} — Authorization 부재 + 401")
+        void orgDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/organizations/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-14: DELETE /api/v1/organizations/{id} — DEPT_ADMIN 단독 + 403")
+        void orgDelete_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(delete("/api/v1/organizations/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-15: DELETE /api/v1/organizations/{id} — SUPER_ADMIN 보유 + 401/403 아님")
+        void orgDelete_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/organizations/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /organizations/{id}/history — hasRole(SUPER_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A1-16: GET /api/v1/organizations/{id}/history — Authorization 부재 + 401")
+        void orgHistory_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/organizations/1/history"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-17: GET /api/v1/organizations/{id}/history — DEPT_ADMIN 단독 + 403 (SUPER_ADMIN 부재)")
+        void orgHistory_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/organizations/1/history")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-18: GET /api/v1/organizations/{id}/history — SUPER_ADMIN 보유 + 401/403 아님")
+        void orgHistory_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            assertAuthzPassed(get("/api/v1/organizations/1/history")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── POST /organizations/users/{userId}/organization — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A1-19: POST /api/v1/organizations/users/{userId}/organization — Authorization 부재 + 401")
+        void orgAssignUser_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/organizations/users/1/organization")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"organizationId\":1}"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-20: POST /api/v1/organizations/users/{userId}/organization — USER 역할 + 403")
+        void orgAssignUser_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/organizations/users/1/organization")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"organizationId\":1}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A1-21: POST /api/v1/organizations/users/{userId}/organization — DEPT_ADMIN 보유 + 401/403 아님")
+        void orgAssignUser_hasDeptAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            assertAuthzPassed(post("/api/v1/organizations/users/1/organization")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"organizationId\":1}"));
         }
     }
 
