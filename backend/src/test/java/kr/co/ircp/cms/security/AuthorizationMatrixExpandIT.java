@@ -283,10 +283,12 @@ class AuthorizationMatrixExpandIT {
         void popupCreate_forbidden_whenContentWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of()); // CONTENT:WRITE 미보유
 
+            // PopupRequest required fields: siteId, title, contentHtml, showFrom, showUntil
             mockMvc.perform(post("/api/v1/content/popups")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"title\":\"테스트 팝업\",\"contentHtml\":\"<p>test</p>\","
+                                    + "\"showFrom\":\"2026-12-31T00:00:00Z\",\"showUntil\":\"2026-12-31T01:00:00Z\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -327,10 +329,11 @@ class AuthorizationMatrixExpandIT {
         void pageUpdate_forbidden_whenPageWriteMissing() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE")); // PAGE:WRITE 미보유
 
+            // PageUpdateRequest required fields: title, slug (Pattern: ^[a-z0-9][a-z0-9\\-/]*$)
             mockMvc.perform(put("/api/v1/content/pages/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"title\":\"테스트 페이지\",\"slug\":\"test-page\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -497,10 +500,12 @@ class AuthorizationMatrixExpandIT {
         void templateCreate_forbidden_whenTemplateWriteMissing() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE"));
 
+            // TemplateRequest required: code, name, layoutType(FULL|SIDEBAR_LEFT|...), htmlTemplate ({{CONTENT}} 슬롯 필수)
             mockMvc.perform(post("/api/v1/content/templates")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_TPL\",\"name\":\"테스트 템플릿\",\"layoutType\":\"FULL\","
+                                    + "\"htmlTemplate\":\"<!DOCTYPE html><html><body>{{CONTENT}}</body></html>\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -538,10 +543,12 @@ class AuthorizationMatrixExpandIT {
         void templateUpdate_forbidden_whenTemplateWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // TemplateRequest required: code, name, layoutType, htmlTemplate
             mockMvc.perform(put("/api/v1/content/templates/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_TPL\",\"name\":\"테스트 템플릿\",\"layoutType\":\"FULL\","
+                                    + "\"htmlTemplate\":\"<!DOCTYPE html><html><body>{{CONTENT}}</body></html>\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -596,10 +603,11 @@ class AuthorizationMatrixExpandIT {
         void blockCreate_forbidden_whenBlockWriteMissing_separationFromPageWrite() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE")); // BLOCK:WRITE 미보유
 
+            // ContentBlockRequest required: blockType(RICH_TEXT|IMAGE|HTML|MARKDOWN|EMBED), sortOrder, payload
             mockMvc.perform(post("/api/v1/content/pages/1/blocks")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"blockType\":\"RICH_TEXT\",\"sortOrder\":0,\"payload\":\"{\\\"html\\\":\\\"test\\\"}\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -637,10 +645,11 @@ class AuthorizationMatrixExpandIT {
         void blockUpdate_forbidden_whenBlockWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // ContentBlockRequest required: blockType, sortOrder, payload
             mockMvc.perform(put("/api/v1/content/pages/1/blocks/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"blockType\":\"RICH_TEXT\",\"sortOrder\":0,\"payload\":\"{\\\"html\\\":\\\"test\\\"}\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -698,10 +707,12 @@ class AuthorizationMatrixExpandIT {
         void widgetCreate_forbidden_whenOnlyDeptAdmin() throws Exception {
             givenValidToken(Set.of("DEPT_ADMIN"), Set.of()); // SUPER_ADMIN 부재
 
+            // WidgetRequest required: code, name, widgetType, dataSource, dataSourceConfig
             mockMvc.perform(post("/api/v1/dashboard/widgets")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_W\",\"name\":\"테스트 위젯\",\"widgetType\":\"CHART\","
+                                    + "\"dataSource\":\"sql\",\"dataSourceConfig\":\"{}\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -739,10 +750,12 @@ class AuthorizationMatrixExpandIT {
         void widgetUpdate_forbidden_whenNotAdminRole() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // WidgetRequest required: code, name, widgetType, dataSource, dataSourceConfig
             mockMvc.perform(put("/api/v1/dashboard/widgets/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_W\",\"name\":\"테스트 위젯\",\"widgetType\":\"CHART\","
+                                    + "\"dataSource\":\"sql\",\"dataSourceConfig\":\"{}\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -894,10 +907,11 @@ class AuthorizationMatrixExpandIT {
         void organizationCreate_forbidden_whenNotSuperAdmin() throws Exception {
             givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
 
+            // OrganizationCreateRequest required: code, name (+ sortOrder int default 0)
             mockMvc.perform(post("/api/v1/organizations")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_ORG\",\"name\":\"테스트 조직\",\"sortOrder\":0}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1251,10 +1265,11 @@ class AuthorizationMatrixExpandIT {
         void qualityRulesCreate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of());
 
+            // QualityRuleRequest required: targetTable, ruleType, threshold
             mockMvc.perform(post("/api/v1/governance/quality-rules")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"targetTable\":\"users\",\"ruleType\":\"NOT_NULL\",\"threshold\":0.95}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
