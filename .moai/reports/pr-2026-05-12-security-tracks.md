@@ -1,18 +1,20 @@
-# PR: Security Tracks 2026-05-12 — PII 5/5 GREEN + AUTHZ 199 AC + META Policy
+# PR v2: Security Tracks 2026-05-12 — PII 5/5 + AUTHZ 199 AC + META + REGRESSION-001 (51→0)
 
 **Branch**: feature/security-tracks-2026-05-12
 **Base**: main
-**Commits**: 8 commits (`667332d` ~ `608855b`)
-**Files**: 8 changed (+1173 / −72)
+**Commits**: **16 commits** (`667332d` ~ `be4b370`)
+**Files**: **25 changed (+1900 / −150)**
 
 ---
 
 ## Summary
 
-본 PR은 보안 IT 매트릭스 확장 + PII 트랙 완성 + IT 작성 정책 명문화의 3가지 트랙을 일괄 제출합니다.
+본 PR은 **4가지 보안 트랙**을 일괄 제출합니다 — 모두 운영 코드 변경 **0건** (IT 시나리오 정정 + 정책 문서 + 회귀 진단 전용).
 
-- **PII 트랙 5/5 Implemented**: PII-FOLLOWUP-005 Option B @DirtiesContext 적용으로 race condition 회피 → 5 tests 0 failed GREEN. PII-FOLLOWUP-001 ~ 005 전체 Implemented 완성.
-- **AUTHZ 트랙 5중 검증 199 AC**: AUTHZ-IT-EXPAND-002 Phase A+B 57 AC GREEN + ArchUnit baseline 35 → 54 endpoint 갱신. 19 권한 어휘 × 100% IT 커버.
+- **PII 트랙 5/5 Implemented**: PII-FOLLOWUP-005 Option B @DirtiesContext 적용 → 5 tests 0 failed. PII-FOLLOWUP-001 ~ 005 전체 Implemented.
+- **AUTHZ-IT-EXPAND-002 5중 검증 199 AC**: 19 권한 어휘 × 57 AC + ArchUnit baseline 35 → 54 endpoint 갱신 + 31 어휘 100% IT 커버.
+- **META-IT-GREEN-MANDATORY-001 Implemented**: HARD 정책 4건 + Sync checklist 4 항목 + README §IT mandatory 정책 섹션 신설.
+- **AUTHZ-IT-REGRESSION-001 Implemented (51→0 100% 회복)**: 942b19e 회귀 commit 추적 + ExpandIT 31 RED + controller test 11+종 정정 = 51 RED 100% 회복. AUTHZ-IT-EXPAND-001 v0.2 Status 정상화.
 - **META 정책 정식 적용**: META-IT-GREEN-MANDATORY-001 v0.2 Implemented. README §IT user environment GREEN mandatory 정책 신설 + Sync checklist 4 항목 명문화.
 
 ---
@@ -71,7 +73,9 @@
 
 ---
 
-## Commits
+## Commits (16개)
+
+### Phase 1: PII + AUTHZ + META 작업 (commits 1-9)
 
 | # | SHA | Title |
 |---|-----|-------|
@@ -83,32 +87,67 @@
 | 6 | `75da38a` | docs(spec): META-IT-GREEN-MANDATORY-001 v0.1 Planned |
 | 7 | `7c58647` | docs(sync): META-IT-GREEN-MANDATORY-001 v0.2 Implemented |
 | 8 | `608855b` | test(security): PII-FOLLOWUP-005 v0.3 Implemented |
+| 9 | `e247b01` | docs(report): PR Summary v1 작성 |
+
+### Phase 2: REGRESSION-001 (commits 10-16, 51→0 회복)
+
+| # | SHA | Title |
+|---|-----|-------|
+| 10 | `57b1ee8` | docs(spec): AUTHZ-IT-REGRESSION-001 v0.1 Planned |
+| 11 | `ecb9f59` | docs(spec): v0.2 — Step 1 회귀 commit 942b19e 확정 |
+| 12 | `3624c1c` | test(security): v0.3 — Phase A 응답 코드 28건 (8 GREEN) |
+| 13 | `5eef304` | test(security): v0.4 — Phase B 10건 DTO body (10 GREEN) |
+| 14 | `22e2ab2` | test(security): v0.5 — Phase B5 helper + 4 시나리오 (87/0 100%) |
+| 15 | `9e52912` | test(security): v0.6 — Step 4 controller test 11종 (51→0) |
+| 16 | `be4b370` | docs(sync): v0.7 Implemented — Step 5 Sync 완료 |
 
 ---
 
-## Files Changed
+## Files Changed (25개)
 
+### SPEC + 문서 (8개)
 | File | Change |
 |------|--------|
 | `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md` | +200 (신규) |
+| `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001/spec.md` | +400 (신규) |
 | `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002/spec.md` | +104 |
 | `.moai/specs/SPEC-CMS-SECURITY-PII-FOLLOWUP-005/spec.md` | +77 |
-| `CHANGELOG.md` | +55 |
-| `README.md` | +60 |
-| `backend/src/test/java/kr/co/ircp/cms/domain/security/pii/PiiAuditEnhanceIT.java` | +24 / -7 |
-| `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpand2IT.java` | +665 / -22 |
-| `backend/src/test/java/kr/co/ircp/cms/security/archunit/AuthorizationCoverageArchTest.java` | +60 / -43 |
-| **합계** | **+1173 / −72** |
+| `.moai/reports/pr-2026-05-12-security-tracks.md` | +250 (신규) |
+| `CHANGELOG.md` | +100 |
+| `README.md` | +100 |
+
+### Test Code (17개)
+| File | Change |
+|------|--------|
+| `PiiAuditEnhanceIT.java` | +24 / -7 (@DirtiesContext) |
+| `AuthorizationMatrixExpand2IT.java` | +665 / -22 (신규 19 어휘) |
+| `AuthorizationMatrixExpandIT.java` | +130 / -50 (51 정정) |
+| `AuthorizationCoverageArchTest.java` | +60 / -43 (baseline 54) |
+| `PermissionChangeControllerTest.java` | +7 / -5 |
+| `UserControllerTest.java` | +5 / -5 |
+| `RoleControllerTest.java` | +5 / -5 |
+| `BbsMasterControllerTest.java` | +5 / -5 |
+| `RetentionPolicyControllerTest.java` | +5 / -5 |
+| `GovernanceStatsControllerTest.java` | +5 / -5 |
+| `DictionaryControllerTest.java` | +5 / -5 |
+| `DataQualityControllerTest.java` | +5 / -5 |
+| `RecoveryDrillControllerTest.java` | +5 / -5 |
+| `BatchExecutionLogControllerTest.java` | +5 / -5 |
+| `DashboardControllerTest.java` | +5 / -5 |
+| `AccessLogControllerTest.java` | +5 / -5 |
+| **합계** | **+1900 / −150** |
 
 ---
 
-## SPEC Status 변경
+## SPEC Status 변경 (5개)
 
 | SPEC | Before | After |
 |------|--------|-------|
 | PII-FOLLOWUP-005 | Planned | **Implemented v0.3** |
 | AUTHZ-IT-EXPAND-002 | Planned | **Implemented v0.3** |
 | META-IT-GREEN-MANDATORY-001 | (신규) | **Implemented v0.2** |
+| AUTHZ-IT-REGRESSION-001 | (신규) | **Implemented v0.7** (51→0 100%) |
+| AUTHZ-IT-EXPAND-001 | Mostly Implemented (회귀) | **Implemented (1차)** (회복) |
 
 ---
 
