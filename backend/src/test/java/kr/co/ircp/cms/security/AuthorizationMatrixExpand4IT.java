@@ -438,6 +438,95 @@ class AuthorizationMatrixExpand4IT {
             assertAuthzPassed(delete("/api/v1/faqs/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
+
+        // ── QnaController (isAuthenticated() 5 endpoint, 2 시나리오 패턴) ──
+        // isAuthenticated는 인증만 검증 — 권한 분리 시나리오 없음, 2 시나리오 적용
+        private static final String QNA_CREATE_BODY =
+                "{\"title\":\"테스트 질문\",\"questionHtml\":\"<p>내용</p>\",\"isPrivate\":false}";
+
+        // ── GET /api/v1/qnas ──
+        @Test
+        @DisplayName("AC-AME4-A1-25: GET /api/v1/qnas — Authorization 부재 + 401")
+        void qnaList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/qnas"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-26: GET /api/v1/qnas — 인증 보유 + 401/403 아님 (isAuthenticated 통과)")
+        void qnaList_authenticated_passesAuthz() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            assertAuthzPassed(get("/api/v1/qnas")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /api/v1/qnas/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-27: GET /api/v1/qnas/{id} — Authorization 부재 + 401")
+        void qnaGet_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/qnas/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-28: GET /api/v1/qnas/{id} — 인증 보유 + 401/403 아님")
+        void qnaGet_authenticated_passesAuthz() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            assertAuthzPassed(get("/api/v1/qnas/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── POST /api/v1/qnas ──
+        @Test
+        @DisplayName("AC-AME4-A1-29: POST /api/v1/qnas — Authorization 부재 + 401")
+        void qnaCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/qnas")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(QNA_CREATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-30: POST /api/v1/qnas — 인증 보유 + 401/403 아님")
+        void qnaCreate_authenticated_passesAuthz() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            assertAuthzPassed(post("/api/v1/qnas")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(QNA_CREATE_BODY));
+        }
+
+        // ── POST /api/v1/qnas/{id}/close ──
+        @Test
+        @DisplayName("AC-AME4-A1-31: POST /api/v1/qnas/{id}/close — Authorization 부재 + 401")
+        void qnaClose_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/qnas/1/close"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-32: POST /api/v1/qnas/{id}/close — 인증 보유 + 401/403 아님")
+        void qnaClose_authenticated_passesAuthz() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            assertAuthzPassed(post("/api/v1/qnas/1/close")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── DELETE /api/v1/qnas/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-33: DELETE /api/v1/qnas/{id} — Authorization 부재 + 401")
+        void qnaDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/qnas/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-34: DELETE /api/v1/qnas/{id} — 인증 보유 + 401/403 아님")
+        void qnaDelete_authenticated_passesAuthz() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            assertAuthzPassed(delete("/api/v1/qnas/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
     }
 
     /** §A.2 ContentDomainTests — Block 3 + Popup 3 + Page 2 + Template DELETE 1 = 9 endpoint (Phase B). */
