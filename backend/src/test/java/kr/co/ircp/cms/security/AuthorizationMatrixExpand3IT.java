@@ -1044,15 +1044,143 @@ class AuthorizationMatrixExpand3IT {
         }
     }
 
-    /** §A.8 GovernanceStatsDomainTests — Governance + Stats 미커버 (Phase C). */
+    /** §A.8 GovernanceStatsDomainTests — Governance 3 + Stats 3 미커버 (Phase C 활성화). */
     @Nested
-    @DisplayName("§A.8 GovernanceStatsDomainTests (Governance 5 + Stats 3 미커버, Step 5 Phase C 활성화)")
+    @DisplayName("§A.8 GovernanceStatsDomainTests (Governance 3 + Stats 3 미커버, Step 5 Phase C 활성화)")
     class GovernanceStatsDomainTests {
+
+        // ── GET /api/v1/governance/batch-logs — 클래스 레벨 hasRole(ADMIN) ──
         @Test
-        @Disabled("Step 5 (Phase C)에서 활성화 예정 — Governance/Stats 잔여 endpoint")
-        @DisplayName("§A.8 placeholder: Step 5 활성화 대기")
-        void governanceStatsDomain_placeholder_step5() {
-            // Governance audit + Stats trend 잔여
+        @DisplayName("AC-AME3-A8-1: GET /api/v1/governance/batch-logs — Authorization 부재 + 401")
+        void batchLogs_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/governance/batch-logs"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-2: GET /api/v1/governance/batch-logs — USER 역할 + 403")
+        void batchLogs_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/batch-logs")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-3: GET /api/v1/governance/batch-logs — ADMIN 보유 + 401/403 아님 (class-level)")
+        void batchLogs_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/batch-logs")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /api/v1/governance/dictionary — 클래스 레벨 hasRole(ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A8-4: GET /api/v1/governance/dictionary — Authorization 부재 + 401")
+        void dictionary_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/governance/dictionary"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-5: GET /api/v1/governance/dictionary — USER 역할 + 403")
+        void dictionary_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/dictionary")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-6: GET /api/v1/governance/dictionary — ADMIN 보유 + 401/403 아님 (class-level)")
+        void dictionary_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/dictionary")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /api/v1/governance/stats/policies — 클래스 레벨 hasRole(ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A8-7: GET /api/v1/governance/stats/policies — Authorization 부재 + 401")
+        void governanceStats_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/governance/stats/policies"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-8: GET /api/v1/governance/stats/policies — USER 역할 + 403")
+        void governanceStats_missingAdminRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/stats/policies")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-9: GET /api/v1/governance/stats/policies — ADMIN 보유 + 401/403 아님")
+        void governanceStats_hasAdminRole_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/governance/stats/policies")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /api/v1/system/stats/top-pages — hasAuthority(SYSTEM:STATS) ──
+        @Test
+        @DisplayName("AC-AME3-A8-10: GET /api/v1/system/stats/top-pages — Authorization 부재 + 401")
+        void statsTopPages_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/stats/top-pages"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-11: GET /api/v1/system/stats/top-pages — SYSTEM:STATS 부재 + 403")
+        void statsTopPages_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/stats/top-pages")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-12: GET /api/v1/system/stats/top-pages — SYSTEM:STATS 보유 + 401/403 아님")
+        void statsTopPages_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:STATS"));
+            assertAuthzPassed(get("/api/v1/system/stats/top-pages")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── POST /api/v1/system/stats/recompute — hasAuthority(SYSTEM:STATS) ──
+        @Test
+        @DisplayName("AC-AME3-A8-13: POST /api/v1/system/stats/recompute — Authorization 부재 + 401")
+        void statsRecompute_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/system/stats/recompute")
+                            .param("from", "2026-01-01").param("to", "2026-01-31"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-14: POST /api/v1/system/stats/recompute — SYSTEM:STATS 부재 + 403")
+        void statsRecompute_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/system/stats/recompute")
+                            .param("from", "2026-01-01").param("to", "2026-01-31")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A8-15: POST /api/v1/system/stats/recompute — SYSTEM:STATS 보유 + 401/403 아님")
+        void statsRecompute_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:STATS"));
+            assertAuthzPassed(post("/api/v1/system/stats/recompute")
+                    .param("from", "2026-01-01").param("to", "2026-01-31")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }
 }
