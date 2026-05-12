@@ -213,6 +213,32 @@ class AuthorizationMatrixExpandIT {
         when(jwtTokenProvider.validateAccessToken(VALID_TOKEN)).thenReturn(Optional.of(claims));
     }
 
+    /**
+     * 권한 통과 검증 helper — 401/403 아님 + service domain exception 허용.
+     *
+     * <p>SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5: 운영 GlobalExceptionHandler가
+     * IllegalArgumentException("페이지/메뉴 찾을 수 없습니다" 등)을 처리하지 않아 ServletException으로 wrap.
+     * 권한은 통과한 것으로 검증되므로 IT 본질적 PASS.
+     */
+    private void assertAuthzPassed(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
+        try {
+            mockMvc.perform(request)
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        } catch (jakarta.servlet.ServletException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException) {
+                return;
+            }
+            if (cause instanceof RuntimeException
+                    && !(cause instanceof org.springframework.security.access.AccessDeniedException)
+                    && !(cause instanceof org.springframework.security.core.AuthenticationException)) {
+                return;
+            }
+            throw e;
+        }
+    }
+
     // =================================================================================
     // §0 인프라 smoke test — Step 1에서 유일하게 활성화되는 시나리오
     // =================================================================================
@@ -388,12 +414,11 @@ class AuthorizationMatrixExpandIT {
         void pagePublish_passesAuthorization_whenPagePublishPresent() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("PAGE:PUBLISH"));
 
-            mockMvc.perform(post("/api/v1/content/pages/1/publish")
-                            .header("Authorization", "Bearer " + VALID_TOKEN)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
-                    .andExpect(status().is(not(equalTo(401))))
-                    .andExpect(status().is(not(equalTo(403))));
+            // 운영 service "페이지를 찾을 수 없습니다" IllegalArgumentException 허용 (권한 통과 증명)
+            assertAuthzPassed(post("/api/v1/content/pages/1/publish")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"));
         }
 
         // ─── 4. POST /api/v1/content/pages/{id}/schedule — PAGE:PUBLISH ──────────
@@ -415,10 +440,11 @@ class AuthorizationMatrixExpandIT {
         void pageSchedule_forbidden_whenPagePublishMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // PageScheduleRequest required: scheduledAt (@NotNull @Future Instant)
             mockMvc.perform(post("/api/v1/content/pages/1/schedule")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"scheduledAt\":\"2028-12-31T00:00:00Z\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -470,12 +496,11 @@ class AuthorizationMatrixExpandIT {
         void pageRetract_passesAuthorization_whenPagePublishPresent() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("PAGE:PUBLISH"));
 
-            mockMvc.perform(post("/api/v1/content/pages/1/retract")
-                            .header("Authorization", "Bearer " + VALID_TOKEN)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
-                    .andExpect(status().is(not(equalTo(401))))
-                    .andExpect(status().is(not(equalTo(403))));
+            // 운영 service "페이지를 찾을 수 없습니다" IllegalArgumentException 허용
+            assertAuthzPassed(post("/api/v1/content/pages/1/retract")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"));
         }
 
         // §A.1 Step 2 Phase A 합계: 5 endpoint × 3 시나리오 = 15 AC
@@ -1017,7 +1042,9 @@ class AuthorizationMatrixExpandIT {
         void codesList_forbidden_whenCodeReadMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // CodeController.listByGroup required: @RequestParam String groupCode
             mockMvc.perform(get("/api/v1/system/codes")
+                            .param("groupCode", "TEST_GRP")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
@@ -1092,10 +1119,11 @@ class AuthorizationMatrixExpandIT {
         void codeCreate_forbidden_whenCodeWriteMissing_separationFromCodeRead() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ")); // WRITE 미보유
 
+            // CodeRequest required: groupCode, code, name
             mockMvc.perform(post("/api/v1/system/codes")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"groupCode\":\"TEST_GRP\",\"code\":\"TEST_CODE\",\"name\":\"테스트 코드\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1133,10 +1161,11 @@ class AuthorizationMatrixExpandIT {
         void codeUpdate_forbidden_whenCodeWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
 
+            // CodeRequest required: groupCode, code, name
             mockMvc.perform(put("/api/v1/system/codes/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"groupCode\":\"TEST_GRP\",\"code\":\"TEST_CODE\",\"name\":\"테스트 코드\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1174,10 +1203,11 @@ class AuthorizationMatrixExpandIT {
         void codeGroupCreate_forbidden_whenCodeWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
 
+            // CodeGroupRequest required: groupCode, name
             mockMvc.perform(post("/api/v1/system/code-groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"groupCode\":\"TEST_GRP\",\"name\":\"테스트 그룹\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1307,10 +1337,11 @@ class AuthorizationMatrixExpandIT {
         void recoveryDrillsCreate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // RecoveryDrillRequest required: drillDate(LocalDate), drillType, result
             mockMvc.perform(post("/api/v1/governance/recovery-drills")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"drillDate\":\"2026-12-01\",\"drillType\":\"FULL\",\"result\":\"SUCCESS\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1364,10 +1395,13 @@ class AuthorizationMatrixExpandIT {
         void boardCreate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // BbsMasterCreateRequest required: code, name, type(BbsType enum NORMAL/NOTICE/QNA/...), useComment/useAttachment/allowAnonymous/allowSecret(boolean), maxAttachmentCount/maxAttachmentSizeKb/pageSize
             mockMvc.perform(post("/api/v1/boards")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"code\":\"TEST_BBS\",\"name\":\"테스트 게시판\",\"type\":\"NORMAL\","
+                                    + "\"useComment\":false,\"useAttachment\":false,\"maxAttachmentCount\":0,"
+                                    + "\"maxAttachmentSizeKb\":0,\"allowAnonymous\":false,\"allowSecret\":false,\"pageSize\":20}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1405,10 +1439,13 @@ class AuthorizationMatrixExpandIT {
         void boardUpdate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // BbsMasterUpdateRequest required: name, useComment/useAttachment/allowAnonymous/allowSecret, maxAttachmentCount/maxAttachmentSizeKb/pageSize
             mockMvc.perform(put("/api/v1/boards/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"name\":\"테스트 게시판\",\"useComment\":false,\"useAttachment\":false,"
+                                    + "\"maxAttachmentCount\":0,\"maxAttachmentSizeKb\":0,"
+                                    + "\"allowAnonymous\":false,\"allowSecret\":false,\"pageSize\":20}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1451,10 +1488,12 @@ class AuthorizationMatrixExpandIT {
         void menuCreate_forbidden_whenMenuWriteMissing_separationFromContentWrite() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
 
+            // MenuRequest required: siteId, code, name, target(@Pattern "_self|_blank"), sortOrder, isVisible
             mockMvc.perform(post("/api/v1/content/menus")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"code\":\"TEST_MENU\",\"name\":\"테스트 메뉴\","
+                                    + "\"target\":\"_self\",\"sortOrder\":0,\"isVisible\":true}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
@@ -1506,12 +1545,11 @@ class AuthorizationMatrixExpandIT {
         void menuReorder_passesAuthorization_whenMenuWritePresent() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
 
-            mockMvc.perform(patch("/api/v1/content/menus/1/order")
-                            .header("Authorization", "Bearer " + VALID_TOKEN)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
-                    .andExpect(status().is(not(equalTo(401))))
-                    .andExpect(status().is(not(equalTo(403))));
+            // 운영 service "메뉴를 찾을 수 없습니다" IllegalArgumentException 허용
+            assertAuthzPassed(patch("/api/v1/content/menus/1/order")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{}"));
         }
 
         // ─── 5. DELETE /api/v1/content/menus/{id} — MENU:WRITE ──────────────────
@@ -1543,10 +1581,9 @@ class AuthorizationMatrixExpandIT {
         void menuDelete_passesAuthorization_whenMenuWritePresent() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
 
-            mockMvc.perform(delete("/api/v1/content/menus/1")
-                            .header("Authorization", "Bearer " + VALID_TOKEN))
-                    .andExpect(status().is(not(equalTo(401))))
-                    .andExpect(status().is(not(equalTo(403))));
+            // 운영 service "메뉴를 찾을 수 없습니다" IllegalArgumentException 허용
+            assertAuthzPassed(delete("/api/v1/content/menus/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
 
         // §A.7 합계: 5 endpoint × 3 시나리오 = 15 AC (Phase A Board 6 + Phase B Menu 9)

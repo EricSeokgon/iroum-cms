@@ -298,7 +298,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 | ControllerTest 메소드 레벨 401/403 회귀 보강 (12 적용 + 19 IT 위임) | Implemented (1차) |
 | SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Mostly Implemented (v0.2 회귀, 본 SPEC IT-REGRESSION-001 참조) |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Implemented (1차, IT-REGRESSION-001로 v0.2 회귀 100% 회복) |
 | SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (54 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 | HTTP 권한 매트릭스 IT 확장 2차 (19 어휘 × 57 AC + ArchUnit 31 어휘 100% IT 커버, 분리 회귀 4건) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
@@ -306,7 +306,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (Option B @DirtiesContext, 5/5 GREEN) | Implemented (1차) |
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 (운영 ACCESS_DENIED 변경 + @Valid 우선 발생 + controller test Security 차이) | Planned |
+| SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31→0 RED, 100% 회복) | Step 2 Implemented (controller test 11종 잔여) |
 
 SPEC 문서 위치: `.moai/specs/`
 
