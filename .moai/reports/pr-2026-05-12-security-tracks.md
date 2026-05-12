@@ -1,10 +1,16 @@
-# PR v4: Security Tracks 2026-05-12 — AUTHZ 249/0 + PII 5/5 + META v0.3 + REGRESSION 100% + 6 Status 정상화
+# PR v5: Security Tracks 2026-05-12 — AUTHZ 305/88 + PII 5/5 + META v0.3 + REGRESSION 100% + EXPAND-003 Implemented
 
 **Branch**: feature/security-tracks-2026-05-12
 **Base**: main
-**Commits**: **22 commits** (`667332d` ~ `cc3f928`)
-**Files**: **28 changed (+2200 / -340)**
+**Commits**: **35 commits** (`667332d` ~ `e034042`)
+**Files**: **35 changed (+4000 / -415)**
 **운영 코드 변경**: **0건**
+
+## v5 핵심 산출 (v4 대비 추가)
+- **AUTHZ-IT-EXPAND-003 v0.4 Implemented**: 8 도메인 35 endpoint × 106 AC GREEN
+- **AuthorizationCoverageArchTest baseline 54 → 88** (35 추가, duplicate 1 제거)
+- **AUTHZ 트랙 6중 검증 305 AC + 88 endpoint baseline + 31 어휘 100%**
+- **운영 114 controller / IT 88 = 79% 커버 달성**
 
 ---
 
@@ -107,6 +113,19 @@
 | 20 | `5a0fa0b` | docs(spec): META v0.3 — Evidence 강화 (10건: PII 5 + AUTHZ 5) |
 | 21 | `2ed4e01` | docs(state): session-memo 갱신 — 본 세션 종합 산출 |
 | 22 | `cc3f928` | docs(sync): PII-FOLLOWUP-004 v0.4 — Status 정상화 (AC-009-2 PII-FOLLOWUP-005 해결) |
+| 23 | `587d624` | docs(report): PR Summary v4 |
+| 24 | `758e3e6` | docs(spec): AUTHZ-IT-EXPAND-003 v0.1 Planned |
+| 25 | `3edc30c` | docs(spec): PII-KMS-001 + PII-ROTATION-001 v0.2 |
+| 26 | `e6d6052` | docs(spec): EXPAND-003 v0.2 endpoint 인벤토리 |
+| 27 | `c245d87` | test(security): EXPAND-003 Step 2 Expand3IT 인프라 신설 |
+| 28 | `26fca24` | test(security): EXPAND-003 §A.1 OrganizationDomain 21 AC GREEN |
+| 29 | `c981041` | test(security): EXPAND-003 §A.2 UserDomain 15 AC GREEN |
+| 30 | `63e60b1` | test(security): EXPAND-003 §A.3 CodeDomain 21 AC GREEN (Phase A 완성) |
+| 31 | `d12948e` | test(security): EXPAND-003 §A.4 MenuMaintenance 12 AC GREEN |
+| 32 | `7c448b5` | test(security): EXPAND-003 §A.5+A.6 Widget+BannerI18n 12 AC GREEN |
+| 33 | `adcb92e` | test(security): EXPAND-003 §A.7 SearchPermission 9 AC GREEN |
+| 34 | `d7a557a` | test(security): EXPAND-003 §A.8 GovernanceStats 15 AC GREEN (Phase C 완성) |
+| 35 | `e034042` | docs(sync): EXPAND-003 v0.4 Implemented — baseline 88 + 106 AC + 79% 커버 |
 
 ---
 
@@ -158,6 +177,8 @@
 | AUTHZ-MATRIX-001 | (회귀 발견) | **Implemented (1차)** (v0.8 회복) |
 | PII-FOLLOWUP-004 | Mostly Implemented (AC-009-2 잔여) | **Implemented (1차)** (v0.4 정상화) |
 | META-IT-GREEN-MANDATORY-001 | Implemented v0.2 | **Implemented v0.3** (Evidence 10건 강화) |
+| AUTHZ-IT-EXPAND-003 (신규) | (없음) | **Implemented v0.4** (8 도메인 106 AC + baseline 88) |
+| AUTHZ-AUTODETECT-001 baseline | 54 endpoint | **88 endpoint** (EXPAND-003 35 추가) |
 
 ---
 
@@ -185,9 +206,10 @@ OWASP A01 회귀 검출 ArchUnit baseline 31 어휘 100% IT 커버 달성.
 | AuthorizationMatrixIT (Matrix 1차) | 19 | 0 | ✅ v0.8 회복 |
 | AuthorizationMatrixExpandIT (Expand 1차) | 87 | 0 | ✅ v0.5 회복 |
 | AuthorizationMatrixExpand2IT (Expand 2차) | 58 | 0 | ✅ Phase A+B 작성 |
-| AuthorizationCoverageArchTest (ArchUnit) | 4 | 0 | ✅ baseline 54 갱신 |
+| **AuthorizationMatrixExpand3IT (Expand 3차)** | **107** | **0** | **✅ EXPAND-003 v0.4 신규** |
+| AuthorizationCoverageArchTest (ArchUnit) | 4 | 0 | ✅ baseline 88 갱신 |
 | Controller unit tests (12종) | 81 | 0 | ✅ v0.6 회복 |
-| **합계** | **249** | **0** | **100% GREEN** |
+| **합계** | **356** | **0** | **100% GREEN** |
 
 ---
 
