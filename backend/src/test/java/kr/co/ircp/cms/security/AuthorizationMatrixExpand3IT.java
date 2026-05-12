@@ -713,15 +713,117 @@ class AuthorizationMatrixExpand3IT {
         }
     }
 
-    /** §A.4 MenuMaintenanceDomainTests — MenuController + MaintenanceController 미커버 (Phase B). */
+    /** §A.4 MenuMaintenanceDomainTests — Menu 2 + Maintenance 2 미커버 endpoint (Phase B 활성화). */
     @Nested
-    @DisplayName("§A.4 MenuMaintenanceDomainTests (Menu 4 + Maintenance 2 미커버, Step 4 Phase B 활성화)")
+    @DisplayName("§A.4 MenuMaintenanceDomainTests (Menu 2 + Maintenance 2 미커버, Step 4 Phase B 활성화)")
     class MenuMaintenanceDomainTests {
+
+        // ── PATCH /menus/{id}/move — hasAuthority(MENU:WRITE) ──
         @Test
-        @Disabled("Step 4 (Phase B)에서 활성화 예정 — Menu PUT + Maintenance PUT/DELETE 등")
-        @DisplayName("§A.4 placeholder: Step 4 활성화 대기")
-        void menuMaintenanceDomain_placeholder_step4() {
-            // Menu PUT /{id} + Maintenance complete/cancel 등
+        @DisplayName("AC-AME3-A4-1: PATCH /api/v1/content/menus/{id}/move — Authorization 부재 + 401")
+        void menuMove_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(patch("/api/v1/content/menus/1/move")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"newParentId\":null}"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-2: PATCH /api/v1/content/menus/{id}/move — MENU:WRITE 부재 + 403")
+        void menuMove_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(patch("/api/v1/content/menus/1/move")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"newParentId\":null}"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-3: PATCH /api/v1/content/menus/{id}/move — MENU:WRITE 보유 + 401/403 아님")
+        void menuMove_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
+            assertAuthzPassed(patch("/api/v1/content/menus/1/move")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"newParentId\":null}"));
+        }
+
+        // ── PATCH /menus/{id}/visibility — hasAuthority(MENU:WRITE) ──
+        @Test
+        @DisplayName("AC-AME3-A4-4: PATCH /api/v1/content/menus/{id}/visibility — Authorization 부재 + 401")
+        void menuVisibility_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(patch("/api/v1/content/menus/1/visibility").param("isVisible", "true"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-5: PATCH /api/v1/content/menus/{id}/visibility — MENU:WRITE 부재 + 403")
+        void menuVisibility_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(patch("/api/v1/content/menus/1/visibility")
+                            .param("isVisible", "true")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-6: PATCH /api/v1/content/menus/{id}/visibility — MENU:WRITE 보유 + 401/403 아님")
+        void menuVisibility_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("MENU:WRITE"));
+            assertAuthzPassed(patch("/api/v1/content/menus/1/visibility")
+                    .param("isVisible", "true")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /system/maintenance/{id} — hasAuthority(SYSTEM:MAINT:READ) ──
+        @Test
+        @DisplayName("AC-AME3-A4-7: GET /api/v1/system/maintenance/{id} — Authorization 부재 + 401")
+        void maintGet_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/maintenance/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-8: GET /api/v1/system/maintenance/{id} — SYSTEM:MAINT:READ 부재 + 403")
+        void maintGet_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/maintenance/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-9: GET /api/v1/system/maintenance/{id} — SYSTEM:MAINT:READ 보유 + 401/403 아님")
+        void maintGet_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:READ"));
+            assertAuthzPassed(get("/api/v1/system/maintenance/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── POST /system/maintenance/{id}/activate — hasAuthority(SYSTEM:MAINT:WRITE) ──
+        @Test
+        @DisplayName("AC-AME3-A4-10: POST /api/v1/system/maintenance/{id}/activate — Authorization 부재 + 401")
+        void maintActivate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/system/maintenance/1/activate"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-11: POST /api/v1/system/maintenance/{id}/activate — SYSTEM:MAINT:WRITE 부재(READ만) + 403 (분리 회귀)")
+        void maintActivate_missingWriteAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:READ")); // WRITE 부재
+            mockMvc.perform(post("/api/v1/system/maintenance/1/activate")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A4-12: POST /api/v1/system/maintenance/{id}/activate — SYSTEM:MAINT:WRITE 보유 + 401/403 아님")
+        void maintActivate_hasWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:WRITE"));
+            assertAuthzPassed(post("/api/v1/system/maintenance/1/activate")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }
 
