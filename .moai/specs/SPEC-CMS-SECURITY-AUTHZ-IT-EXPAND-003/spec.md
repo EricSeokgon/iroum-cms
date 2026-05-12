@@ -1,6 +1,6 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.1
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.2
 
-**Status**: Planned (2026-05-12) — AUTHZ-IT-EXPAND-002 + REGRESSION-001 v0.8 완성 후 자연 연장
+**Status**: Planned (2026-05-12 갱신) — Step 1 endpoint 인벤토리 완료, Phase A-C 분할 확정
 **Trigger**: AuthorizationCoverageArchTest baseline 54 endpoint vs 운영 103 메소드 + 120 endpoint 실측 갭 노출
 **Severity**: P2 (보안 회귀 검출 능력 완전 커버, 운영 영향 0)
 
@@ -176,8 +176,81 @@
 
 ---
 
-## 10. 변경 이력
+## 10. Appendix A — 운영 endpoint 인벤토리 (2026-05-12 실측)
+
+본 부록은 다음 세션 RUN Step 1 (운영 endpoint 인벤토리) 진입 시 활용. 실측 기준 2026-05-12.
+
+### 운영 @PreAuthorize 분포
+
+- **총 @PreAuthorize 수**: 120건 (config/SecurityConfig 4 + GlobalExceptionHandler 1 + UserService 1 = 6 제외 → **controller 114건**)
+- **controller 수**: 38개 (config 2 + service 1 제외)
+
+### Controller별 @PreAuthorize 카운트 (38개)
+
+#### 5건 이상 (커버 우선순위 高)
+
+| Controller | @PreAuthorize | 도메인 | EXPAND-001/002 커버 |
+|-----------|---------------|--------|---------------------|
+| OrganizationController | 8 | Auth | 1건 (POST) |
+| PageController | 7 | Content | 5건 (publish/schedule/retract/rollback/history) |
+| UserController | 7 | Auth | 1건 (POST /users) |
+| CodeController | 6 | System | 3건 (GET/POST/PUT) |
+| MenuController | 6 | Content | 4건 (POST/PATCH/DELETE/permissions) |
+| QnaController | 6 | Board | 1건 (POST /answer) |
+| CodeGroupController | 5 | System | 1건 (POST) |
+| TemplateController | 5 | Content | 4건 (GET/{id}/POST/PUT) |
+| ContentBlockController | 5 | Content | 2건 (GET/POST) |
+
+소계: 55건 @PreAuthorize / 22건 IT 커버 (40%)
+
+#### 3~4건 (커버 우선순위 中)
+
+MaintenanceController(4), DashboardWidgetController(4), PopupController(4), SurveyController(4), FaqController(4), StatsController(3), SystemSettingController(3), SeoRedirectController(3), BannerController(3), PublicationController(3), BbsMasterController(3)
+
+소계: 38건 @PreAuthorize / ~15건 IT 커버
+
+#### 1~2건 (커버 우선순위 低)
+
+CacheAdminController(2), SiteController(2), I18nController(2), DashboardController(1), AccessLogController(1), SynonymController(1), SearchController(1), RetentionPolicyController(1), RecoveryDrillController(1), GovernanceStatsController(1), DictionaryController(1), DataQualityController(1), BatchExecutionLogController(1), RoleController(1), PersonalDataAccessController(1), PermissionController(1), PermissionChangeController(1), LoginHistoryController(1)
+
+소계: 19건 @PreAuthorize / 약 17건 IT 커버
+
+### 누적 IT 커버 vs 운영 갭
+
+| Layer | IT endpoint | 운영 endpoint | 커버율 |
+|-------|------------|--------------|--------|
+| AUTHZ-MATRIX-001 (1차) | 6 | (포함) | - |
+| AUTHZ-IT-EXPAND-001 (2차) | 29 | (포함) | - |
+| AUTHZ-IT-EXPAND-002 (3차) | 19 | (포함) | - |
+| **누적** | **54** | **114** | **47%** |
+| **남은 커버 대상** | - | **~60 endpoint** | **53%** |
+
+### 미커버 controller 우선순위 (Phase A 후보)
+
+본 SPEC RUN Step 1에서 PermissionController, SynonymController, SearchController, GovernanceStatsController + OrganizationController의 미커버 endpoint 등 ~60건 매핑.
+
+### RUN Phase 분할 권장
+
+| Phase | 대상 controller | 예상 endpoint |
+|-------|----------------|---------------|
+| Phase A (30) | OrganizationController + UserController + PageController + CodeController/CodeGroup 미커버 | ~30 endpoint |
+| Phase B (30) | MenuController + Maintenance + DashboardWidget + Setting + Banner + Site + I18n 미커버 | ~30 endpoint |
+| Phase C (잔여) | Search + Synonym + PermissionController + Governance + Stats + 기타 | ~10-20 endpoint |
+
+### 검증 명령 (다음 세션)
+
+```bash
+# 운영 @PreAuthorize 실측
+grep -rE "@PreAuthorize" src/main/java --include="*.java" | wc -l  # 120
+# 각 controller 분포
+grep -rE "@PreAuthorize" src/main/java --include="*.java" | awk -F':' '{print $1}' | sort | uniq -c | sort -rn
+```
+
+---
+
+## 11. 변경 이력
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | Appendix A 운영 endpoint 인벤토리 추가. 운영 @PreAuthorize 120건 실측 (controller 114건 / 38 controller, config + service 6건 제외). controller별 분포 확정 (5건↑ 9건, 3-4건 11건, 1-2건 18건). 누적 IT 커버 54/114 = 47% 갭 확정. Phase A-C 분할 권장 (30+30+잔여). 미커버 우선순위 controller 명시 (PermissionController, SynonymController, Search, Governance, Stats 등). RUN Step 1 endpoint 인벤토리 사전 완료 — 다음 세션은 Step 2 (Expand3IT 인프라) 진입 가능. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. AUTHZ-IT-EXPAND-002 + REGRESSION-001 v0.8 완성 후 자연 연장. 운영 ~120 endpoint 전체 IT 매트릭스 적용 계획. AUTHZ-AUTODETECT-001 baseline (54 endpoint, 103 메소드) 활용. REQ-AM-EXP3-001~005 + 6 AC + RUN Step 1~6 분해. 결정 포인트 D1~D5 (IT 클래스 구조, endpoint 수집, 시나리오 자동화, baseline 갱신, Implementation 위임). META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의. 예상 비용 3-4 세션, 운영 코드 변경 0건. P2 (보안 회귀 검출 능력 완전 커버, 운영 영향 0). |
