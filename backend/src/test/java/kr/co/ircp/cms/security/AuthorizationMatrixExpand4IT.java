@@ -313,6 +313,131 @@ class AuthorizationMatrixExpand4IT {
             assertAuthzPassed(delete("/api/v1/publications/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
+
+        // ── FaqController (CONTENT:WRITE OR ADMIN/SUPER_ADMIN/CONTENT_ADMIN) ──
+        // FaqCreateRequest required: categoryCode, question, answerHtml, sortOrder
+        private static final String FAQ_CREATE_BODY =
+                "{\"categoryCode\":\"GEN\",\"question\":\"테스트 질문\",\"answerHtml\":\"<p>답변</p>\",\"sortOrder\":0}";
+        private static final String FAQ_UPDATE_BODY = "{}";
+        private static final String FAQ_REORDER_BODY = "{\"items\":[{\"id\":1,\"sortOrder\":0}]}";
+
+        // ── POST /api/v1/faqs ──
+        @Test
+        @DisplayName("AC-AME4-A1-13: POST /api/v1/faqs — Authorization 부재 + 401")
+        void faqCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/faqs")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_CREATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-14: POST /api/v1/faqs — 모든 권한 부재 + 403")
+        void faqCreate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/faqs")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_CREATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-15: POST /api/v1/faqs — CONTENT_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void faqCreate_hasContentAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("CONTENT_ADMIN"), Set.of());
+            assertAuthzPassed(post("/api/v1/faqs")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(FAQ_CREATE_BODY));
+        }
+
+        // ── PUT /api/v1/faqs/reorder ──
+        @Test
+        @DisplayName("AC-AME4-A1-16: PUT /api/v1/faqs/reorder — Authorization 부재 + 401")
+        void faqReorder_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/faqs/reorder")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_REORDER_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-17: PUT /api/v1/faqs/reorder — 모든 권한 부재 + 403")
+        void faqReorder_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(put("/api/v1/faqs/reorder")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_REORDER_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-18: PUT /api/v1/faqs/reorder — CONTENT:WRITE 보유 + 401/403 아님")
+        void faqReorder_hasContentWrite_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(put("/api/v1/faqs/reorder")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(FAQ_REORDER_BODY));
+        }
+
+        // ── PUT /api/v1/faqs/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-19: PUT /api/v1/faqs/{id} — Authorization 부재 + 401")
+        void faqUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/faqs/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_UPDATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-20: PUT /api/v1/faqs/{id} — 모든 권한 부재 + 403")
+        void faqUpdate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(put("/api/v1/faqs/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(FAQ_UPDATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-21: PUT /api/v1/faqs/{id} — ADMIN 보유 + 401/403 아님")
+        void faqUpdate_hasAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            assertAuthzPassed(put("/api/v1/faqs/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(FAQ_UPDATE_BODY));
+        }
+
+        // ── DELETE /api/v1/faqs/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-22: DELETE /api/v1/faqs/{id} — Authorization 부재 + 401")
+        void faqDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/faqs/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-23: DELETE /api/v1/faqs/{id} — 모든 권한 부재 + 403")
+        void faqDelete_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/faqs/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-24: DELETE /api/v1/faqs/{id} — SUPER_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void faqDelete_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/faqs/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
     }
 
     /** §A.2 ContentDomainTests — Block 3 + Popup 3 + Page 2 + Template DELETE 1 = 9 endpoint (Phase B). */
