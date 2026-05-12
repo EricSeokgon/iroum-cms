@@ -1,6 +1,30 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.2
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.3
 
-**Status**: Planned (2026-05-12 갱신) — Step 1 endpoint 인벤토리 사전 완료, 다음 세션 Step 2-5 즉시 진입 가능
+**Status**: Step 2 인프라 완료 (2026-05-12) — AuthorizationMatrixExpand4IT 신설 + smoke GREEN
+
+## v0.3 변경 이력 (2026-05-12) — Step 2 IT 인프라 신설
+
+### 산출물
+- `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpand4IT.java` 신규 (~220줄)
+- AUTHZ-MATRIX/EXPAND-001/002/003 패턴 100% 재사용
+- assertAuthzPassed helper 사전 포함 (REGRESSION-001 v0.5 검증 패턴)
+- 3 도메인 @Nested 그룹 placeholder:
+  - §A.1 BoardDomain (17 미커버: Qna 5 + Survey 4 + Faq 4 + Publication 3 + Bbs 1)
+  - §A.2 ContentDomain (9 미커버: Block 3 + Popup 3 + Page 2 + Template 1)
+  - §A.3 AuthSystemDomain (3 미커버: Role 1 + User 1 + CacheAdmin 1)
+- smoke test 1건 활성 (AC-AME4-002-1: 컨텍스트 부팅 + JWT Mock 주입 검증)
+
+### Step 2 검증 결과
+`./gradlew test --tests "AuthorizationMatrixExpand4IT"` → **1 test / 0 failures BUILD SUCCESSFUL**
+
+### Status: v0.2 Step 1 인벤토리 → v0.3 Step 2 인프라 완료
+
+### 다음 세션 RUN 진입
+- Step 3 시나리오 활성화 (29 endpoint × 3 = ~87 AC, 일괄 권장)
+- Step 4 ArchUnit baseline 88 → 115 갱신
+- Step 5 Sync v0.4 Implemented + AUTHZ 트랙 종결
+
+---
 
 ## v0.2 변경 이력 (2026-05-12) — Step 1 endpoint 인벤토리 정밀화
 
@@ -264,5 +288,6 @@ Step 1 endpoint 인벤토리 사전 완료로 다음 세션 Step 2 (Expand4IT �
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Step 2 인프라 완료**. AuthorizationMatrixExpand4IT.java 신설 (~220줄). AUTHZ-MATRIX/EXPAND-001/002/003 + REGRESSION-001 패턴 100% 재사용 (@SpringBootTest + Testcontainers + JWT Mock + assertAuthzPassed helper). 3 도메인 @Nested 그룹 placeholder (Board 17 + Content 9 + AuthSystem 3 = 29). smoke test 1건 활성 BUILD SUCCESSFUL. 다음 세션은 Step 3 (29 endpoint × 3 = 87 AC 일괄 활성화) 진입 가능. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | Step 1 endpoint 인벤토리 정밀화. 운영 @PreAuthorize 115건 실측 (이전 추정 114 → 115, UserService service-level 포함). controller별 미커버 정확화: 27개 미커버 endpoint 식별 (Qna 5 + Survey 4 + Faq 4 + Block 3 + Popup 3 + Publication 3 + Page 2 + Role 1 + Bbs 1 + Template DELETE 1 + User 1 + CacheAdmin 1 + UserService 1 제외 = 27). 우선순위 분류 (Qna/Survey/Faq 高 + Popup/Block/Publication 中 + Role/Page/Bbs/User/Template/CacheAdmin 低). 현재 누적 baseline 88 / 운영 114 = 77% → EXPAND-004로 100% 목표. Step 1 사전 완료로 다음 세션 Step 2-5 즉시 진입 가능. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. AUTHZ-IT-EXPAND-003 v0.4 Implemented 완성 후 자연 연장. 운영 controller @PreAuthorize 114건 / IT baseline 88 → 잔여 26 endpoint 100% 커버 목표. REQ-AM-EXP4-001~005 + 5 AC + RUN Step 1~5 분해. 5 결정 포인트 D1~D5 (IT 클래스 구조, 카테고리 분할, RUN 분할 vs 일괄, baseline 시점, 트랙 종결). 패턴 100% 재사용 (assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기, OR bypass, 분리 회귀, class-level @PreAuthorize). 예상 비용 1-2 세션, 운영 코드 변경 0건. P3 (한계 도전, AUTHZ 트랙 종결). META Sync checklist 4 항목 사전 합의. 본 SPEC 완성 시 AUTHZ 트랙 6단계 진화 종결 (Matrix + EXPAND-001/002/003/004 + AUTODETECT + CTRL + REGRESSION + META = 8 SPEC). |
