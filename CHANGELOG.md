@@ -32,6 +32,22 @@
   - 운영 코드 변경 0건, IT 시나리오 정정만
   (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
 
+- **AUTHZ-IT-EXPAND-003 SPEC v0.1 Planned — 운영 ~120 endpoint 전체 IT 커버 (AUTHZ 트랙 3차)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003/spec.md` 신규
+  - AUTHZ-IT-EXPAND-001 (29) + EXPAND-002 (19) = 누적 54 endpoint → 운영 실측 ~120 endpoint 미커버 ~66 갭
+  - AUTHZ-AUTODETECT-001 baseline (103 메소드 / 31 어휘) 활용
+  - REQ-AM-EXP3-001~005 + 6 AC + RUN Step 1~6 분해
+  - 결정 포인트 D1~D5 (IT 클래스 구조, endpoint 수집, 시나리오 자동화, baseline 갱신, Implementation 위임)
+  - 패턴 재사용: AUTHZ-IT-EXPAND-002 + REGRESSION-001 검증 패턴 100%
+    - assertAuthzPassed helper
+    - DTO 정상 body 정상화
+    - 응답 코드 분기 (AUTH_REQUIRED 401 / ACCESS_DENIED 403)
+    - @WebMvcTest 한계 명시
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  - 예상 비용 3-4 세션, 운영 코드 변경 0건 (IT 전용)
+  - 본 SPEC 완성 시 ArchUnit baseline 100% IT 매핑 + OWASP A01 완전 검출
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 v0.1 Planned)
+
 - **PII-FOLLOWUP-004 v0.4 Implemented — Status 정상화 (AC-009-2가 PII-FOLLOWUP-005 v0.3에서 해결, 5/5 GREEN)**
   - SPEC v0.3 Mostly Implemented → v0.4 Implemented (1차)
   - AC-009-2 race condition은 본 SPEC v0.3에서 PII-FOLLOWUP-005로 분리되어 후속 해결됨
