@@ -1,8 +1,71 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002: HTTP 권한 매트릭스 IT 확장 2차 — ArchUnit baseline 31 어휘 100% IT 커버 v0.1
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002: HTTP 권한 매트릭스 IT 확장 2차 — ArchUnit baseline 31 어휘 100% IT 커버 v0.2
 
-**Status**: Planned (2026-05-11) — 다음 세션 RUN 진입 권장
+**Status**: Diagnosed (2026-05-12) — endpoint 정밀 매핑 완료, Step 2 RUN 진입 준비됨
 **Trigger**: AUTHZ-AUTODETECT-001 Step 2 GREEN 확정으로 ArchUnit 운영 실측 권한 어휘 31종 노출 + IT 매트릭스 12 어휘 커버 갭 19종 식별
 **Severity**: P2 (보안 회귀 검출 능력 확대, 운영 영향 0)
+
+---
+
+## v0.2 변경 이력 (2026-05-12) — Step 2 endpoint 정밀 진단 완료
+
+### Explore subagent 정밀 매핑 결과
+
+19 어휘 × 운영 컨트롤러 14개 정밀 grep 후 정확한 HTTP method + path 추출 완료. Step 2 Phase A 13 RED revert (commit `afe06fb`) 원인 해소.
+
+### 정확한 Endpoint 매핑 표 (실측 24 endpoint)
+
+| # | 어휘 | Controller | HTTP | Full Path | @PreAuthorize | OR bypass |
+|---|------|-----------|------|-----------|---------------|-----------|
+| 1 | ROLE:CONTENT_ADMIN | QnaController | POST | /api/v1/qnas/{id}/answer | hasAnyRole('CONTENT_ADMIN','ADMIN','SUPER_ADMIN') | **ADMIN, SUPER_ADMIN** |
+| 2 | CONTENT:READ | I18nController | GET | /api/v1/content/i18n | hasAuthority('CONTENT:READ') | 없음 |
+| 2-1 | CONTENT:READ | PopupController | GET | /api/v1/content/popups | hasAuthority('CONTENT:READ') | 없음 |
+| 3 | PAGE:READ | ContentBlockController | GET | /api/v1/content/pages/{pageId}/blocks | hasAuthority('PAGE:READ') | 없음 |
+| 4 | PAGE:ROLLBACK | PageController | POST | /api/v1/content/pages/{id}/rollback/{version} | hasAuthority('PAGE:ROLLBACK') | 없음 |
+| 5 | PAGE:HISTORY:READ | PageController | GET | /api/v1/content/pages/{id}/history | hasAuthority('PAGE:HISTORY:READ') | 없음 |
+| 6 | SITE:WRITE | SiteController | PUT | /api/v1/content/sites/{id} | hasAuthority('SITE:WRITE') | 없음 |
+| 7 | MENU:PERMISSION:WRITE | MenuController | POST | /api/v1/content/menus/{id}/permissions | hasAuthority('MENU:PERMISSION:WRITE') | 없음 |
+| 8 | TEMPLATE:READ | TemplateController | GET | /api/v1/content/templates | hasAuthority('TEMPLATE:READ') | 없음 |
+| 8-1 | TEMPLATE:READ | TemplateController | GET | /api/v1/content/templates/{id} | hasAuthority('TEMPLATE:READ') | 없음 |
+| 9 | USER:READ | PersonalDataAccessController | GET | /api/v1/audit/personal-data-access | AUDIT:READ **AND** USER:READ | 없음 (AND 조건) |
+| 10 | SYSTEM:DASHBOARD | DashboardController | GET | /api/v1/system/dashboard/kpi | hasAuthority('SYSTEM:DASHBOARD') | 없음 |
+| 11 | SYSTEM:READ | SeoRedirectController | GET | /api/v1/content/seo/redirects | hasAuthority('SYSTEM:READ') | 없음 |
+| 12 | SYSTEM:SETTING:READ | SystemSettingController | GET | /api/v1/system/settings | hasAuthority('SYSTEM:SETTING:READ') | 없음 |
+| 12-1 | SYSTEM:SETTING:READ | SystemSettingController | GET | /api/v1/system/settings/{key} | hasAuthority('SYSTEM:SETTING:READ') | 없음 |
+| 13 | SYSTEM:SETTING:WRITE | SystemSettingController | PUT | /api/v1/system/settings/{key} | hasAuthority('SYSTEM:SETTING:WRITE') | 없음 |
+| 14 | SYSTEM:MAINT:READ | MaintenanceController | GET | /api/v1/system/maintenance | hasAuthority('SYSTEM:MAINT:READ') | 없음 |
+| 14-1 | SYSTEM:MAINT:READ | MaintenanceController | GET | /api/v1/system/maintenance/{id} | hasAuthority('SYSTEM:MAINT:READ') | 없음 |
+| 15 | SYSTEM:MAINT:WRITE | MaintenanceController | POST | /api/v1/system/maintenance | hasAuthority('SYSTEM:MAINT:WRITE') | 없음 |
+| 15-1 | SYSTEM:MAINT:WRITE | MaintenanceController | POST | /api/v1/system/maintenance/{id}/activate | hasAuthority('SYSTEM:MAINT:WRITE') | 없음 |
+| 16 | SYSTEM:LOG:READ | AccessLogController | GET | /api/v1/system/access-logs | hasAuthority('SYSTEM:LOG:READ') | 없음 |
+| 17 | SYSTEM:ADMIN | SiteController | POST | /api/v1/content/sites | hasAuthority('SYSTEM:ADMIN') | 없음 |
+| 17-1 | SYSTEM:ADMIN | SeoRedirectController | POST | /api/v1/content/seo/redirects | hasAuthority('SYSTEM:ADMIN') | 없음 |
+| 17-2 | SYSTEM:ADMIN | SeoRedirectController | DELETE | /api/v1/content/seo/redirects/{id} | hasAuthority('SYSTEM:ADMIN') | 없음 |
+| 18 | AUDIT:READ | PermissionChangeController | GET | /api/v1/audit/permission-changes (class-level) | hasAuthority('AUDIT:READ') [class-level] | 없음 |
+| 18-1 | AUDIT:READ | LoginHistoryController | GET | /api/v1/audit/login-history (class-level) | hasAuthority('AUDIT:READ') [class-level] | 없음 |
+
+### SecurityConfig 정책 (Explore 확인)
+
+- **permitAll**: /api/v1/health/*, /api/v1/auth/*, /v3/api-docs/*, /swagger-ui/*, /actuator/health|info|backupStatus, GET /api/v1/boards/**, GET /api/v1/faqs/**, GET /api/v1/publications/**, POST /api/v1/publications/*/download-zip, GET /api/v1/surveys/**, POST /api/v1/surveys/*/responses, GET /api/v1/search*, POST /api/v1/search/click
+- **authenticated()**: 기타 모든 endpoint
+- **JWT Filter**: UsernamePasswordAuthenticationFilter 앞 배치, STATELESS
+
+### Phase A 13 RED revert 원인 확정
+
+1. **HTTP method 부정확** — POST/PUT/GET 혼동으로 404 발생 (특히 SITE:WRITE는 PUT, SYSTEM:MAINT:WRITE는 POST)
+2. **path 부정확** — {pageId}/blocks vs {id}/blocks 등 path variable 오류
+3. **USER:READ 단독 endpoint 부재** — AUDIT:READ AND USER:READ AND 조건만 운영 (USER:READ 단독 시나리오 작성 시 403 fall-through)
+4. **클래스 레벨 @PreAuthorize** — PermissionChangeController/LoginHistoryController는 클래스 레벨, 메소드 path 별도 확인 필요
+
+### Step 2 RUN 진입 준비 완료
+
+SPEC §8 "다음 세션 RUN 진입 전 필수 작업" #1~#3 완료:
+- ✅ 각 운영 endpoint 정밀 검증 (24 endpoint 확정)
+- ✅ 운영 권한 정책 OR 조건 확인 (QnaController만 ADMIN/SUPER_ADMIN bypass)
+- ✅ endpoint 매핑 표 정확화 (위 표)
+
+다음 작업 (#4): Step 2 시나리오 작성 시 위 24 endpoint 1개씩 단위 검증 → 확정 후 일괄 추가
+
+---
 
 ---
 
@@ -172,4 +235,5 @@ OWASP A01 회귀 검출 능력 완전 확보 — IT 매트릭스가 ArchUnit bas
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | Step 2 endpoint 정밀 진단 완료. Explore subagent로 14 컨트롤러 grep + Read 실측 → 19 어휘 × 24 endpoint 매핑 표 작성. Phase A 13 RED revert 원인 4가지 확정 (HTTP method 부정확, path variable 오류, USER:READ 단독 부재, 클래스 레벨 @PreAuthorize). SecurityConfig permitAll 화이트리스트 + authenticated() 정책 확인. Status: Planned → **Diagnosed** (Step 2 RUN 진입 준비 완료). 다음 작업: 24 endpoint 1개씩 단위 검증 후 일괄 시나리오 활성화. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. AUTHZ-AUTODETECT-001 Step 2 GREEN 확정으로 ArchUnit 운영 실측 31 권한 어휘 노출 + AUTHZ-IT-EXPAND-001 12 어휘 커버 갭 19종 식별. REQ-AM-EXP2-001/002/003/004 정의. RUN Step 1~4 분해. 19 어휘 운영 endpoint 매핑 (CONTENT_ADMIN/CONTENT:READ/PAGE:READ/ROLLBACK/HISTORY:READ/SITE:WRITE/MENU:PERMISSION:WRITE/TEMPLATE:READ/USER:READ/SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN/AUDIT:READ). 운영 코드 변경 0건 (IT 신설 전용). 본 SPEC 완성 시 OWASP A01 회귀 검출 능력 ArchUnit baseline 100% IT 커버 + 5중 검증 (HTTP 1차 19 + HTTP 확장 88 + HTTP 확장 2차 ~100 + 메소드 31 + ArchUnit 4) ≈ 240+ AC 달성. 사용자 결정 D1~D4 다음 세션 RUN 진입 전 확정 필요. |
