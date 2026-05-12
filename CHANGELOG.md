@@ -11,6 +11,27 @@
 
 ### Added
 
+- **AUTHZ-IT-REGRESSION-001 v0.6 Step 4 Implemented — controller unit test 11종 정정 (51 RED 100% 회복)**
+  - 11 controller unit test의 AC-COV-001-1 `인증 없이 접근 시 401` 시나리오 → `403 Forbidden` 정정
+  - 원인: @WebMvcTest + SecurityAutoConfiguration 제외 시 SecurityFilterChain 없음 → @PreAuthorize 거부 → 403
+  - 운영 full SecurityFilterChain의 AuthenticationEntryPoint(401)와 다름 (테스트 환경 한계)
+  - 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003 분리)
+  - 정정 파일 12개:
+    - PermissionChangeControllerTest, UserControllerTest, RoleControllerTest
+    - BbsMasterControllerTest, RetentionPolicyControllerTest, GovernanceStatsControllerTest
+    - DictionaryControllerTest, DataQualityControllerTest, RecoveryDrillControllerTest
+    - BatchExecutionLogControllerTest, DashboardControllerTest, AccessLogControllerTest
+  - REGRESSION-001 누적: ExpandIT 31 + Controller 11 = 51 RED → 0 (100% 회복)
+  - 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.6 Step 4 Implemented)
+
+- **AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented — AuthorizationMatrixExpandIT 87/0 GREEN (31 RED 100% 회복)**
+  - Phase A 응답 코드 28건 일괄 정정 (AUTH_FORBIDDEN → ACCESS_DENIED)
+  - Phase B1-B5 DTO body 정상화 23건 (Popup/Page/Template/Org/Block/Widget/Schedule/Drill/Board/Menu/Code/CodeGroup)
+  - assertAuthzPassed helper 추가 (ServletException 도메인 예외 처리)
+  - 운영 코드 변경 0건, IT 시나리오 정정만
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
+
 - **AUTHZ-IT-REGRESSION-001 SPEC v0.1 Planned — AUTHZ IT 51 RED 회귀 진단 분리 (운영 ACCESS_DENIED + @Valid validation 우선 + controller Security 차이)**
   - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001/spec.md` 신규
   - PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 분리 진단

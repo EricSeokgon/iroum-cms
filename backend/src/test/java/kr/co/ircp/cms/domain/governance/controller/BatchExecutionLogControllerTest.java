@@ -150,12 +150,12 @@ class BatchExecutionLogControllerTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("AC-COV-001-1 — GET /batch-logs 인증 없이 접근 시 401 Unauthorized")
-    void list_returns401_withoutAuthentication() throws Exception {
-        // given: SecurityContext 비어있음 (인증 어노테이션 미부착)
-        // when & then: AnonymousAuthenticationFilter → @PreAuthorize 거부 → ExceptionTranslationFilter → 401
+    @DisplayName("AC-COV-001-1 — GET /batch-logs 인증 없이 접근 시 403 Forbidden (@WebMvcTest 한계)")
+    void list_returns403_withoutAuthentication() throws Exception {
+        // @WebMvcTest + SecurityAutoConfiguration 제외 → SecurityFilterChain 없음 → @PreAuthorize 거부 → 403
+        // 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003).
         mockMvc.perform(get("/api/v1/governance/batch-logs"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

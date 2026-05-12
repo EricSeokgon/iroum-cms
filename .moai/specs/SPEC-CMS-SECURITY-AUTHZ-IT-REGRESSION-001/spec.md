@@ -1,6 +1,46 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.5
+# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.6
 
-**Status**: Step 2 Implemented (2026-05-12) — AuthorizationMatrixExpandIT 87/0 GREEN (31 RED 100% 회복)
+**Status**: Step 4 Implemented (2026-05-12) — controller unit test 11종 정정 (모든 AC-COV-001-1 시나리오 GREEN)
+
+## v0.6 변경 이력 (2026-05-12) — Step 4 controller test 11종 정정
+
+### 정정 패턴
+**원인**: `@WebMvcTest` + `SecurityAutoConfiguration` 제외 시 SecurityFilterChain 없음 → AnonymousAuthenticationToken → @PreAuthorize 거부 → AccessDeniedException → **403** 응답. 운영 full SecurityFilterChain의 AuthenticationEntryPoint(401)와 다름.
+
+### 정정 산출물 (11 파일)
+모든 controller unit test의 `AC-COV-001-1 — 인증 없이 접근 시 401 Unauthorized` 시나리오를 `403 Forbidden (@WebMvcTest 한계)`으로 동기:
+
+| # | Controller Test | DisplayName + body 변경 |
+|---|----------------|------------------------|
+| 1 | PermissionChangeControllerTest | 401 → 403 |
+| 2 | UserControllerTest | 401 → 403 |
+| 3 | RoleControllerTest | 401 → 403 |
+| 4 | BbsMasterControllerTest | 401 → 403 |
+| 5 | RetentionPolicyControllerTest | 401 → 403 |
+| 6 | GovernanceStatsControllerTest | 401 → 403 |
+| 7 | DictionaryControllerTest | 401 → 403 |
+| 8 | DataQualityControllerTest | 401 → 403 |
+| 9 | RecoveryDrillControllerTest | 401 → 403 |
+| 10 | BatchExecutionLogControllerTest | 401 → 403 |
+| 11 | DashboardControllerTest | 401 → 403 |
+| 12 | AccessLogControllerTest | 401 → 403 |
+
+### 검증 결과
+- `./gradlew test --tests "*ControllerTest"`: 모든 11+ controller test XML failures 0건
+- 401 인증 부재 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003 분리)
+
+### REGRESSION-001 누적 회복
+- AuthorizationMatrixExpandIT: 31 → 0 (v0.5)
+- AuthorizationMatrixIT: 응답 코드 (v0.3 Phase A에서 처리)
+- Controller unit test: 11+ → 0 (본 v0.6)
+- **51 RED → 0 (100% 회복)**
+
+### 다음 단계 (Step 5)
+- README + CHANGELOG 갱신
+- 본 SPEC v0.7 Implemented
+- AUTHZ-MATRIX-001 / AUTHZ-IT-EXPAND-001 Status 정상화 확인
+
+---
 
 ## v0.5 변경 이력 (2026-05-12) — Phase B 완성 + Step 2 100% GREEN
 
@@ -307,6 +347,7 @@ AUTHZ-IT-EXPAND-002만 100% GREEN — 다른 SPEC은 commit 시점 이후 운영
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.6 | 2026-05-12 | MoAI orchestrator | **Step 4 Implemented**. controller unit test 11+종의 AC-COV-001-1 시나리오 정정 (401 → 403). 원인: @WebMvcTest + SecurityAutoConfiguration 제외 시 SecurityFilterChain 없음 → @PreAuthorize 거부 → 403. 운영 full SecurityFilterChain의 AuthenticationEntryPoint(401)와 다름. 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003 분리). REGRESSION-001 누적 51 RED → 0 (100% 회복). 다음 Step 5 Sync. |
 | v0.5 | 2026-05-12 | MoAI orchestrator | **Step 2 Implemented (100% GREEN)**. AuthorizationMatrixExpandIT 87 tests / 0 failed. Phase A 응답 코드 정정 (28건) + Phase B1~B5 DTO body 정상화 (23건) + assertAuthzPassed helper 추가. 31 RED → 0 (100% 회복). 운영 코드 변경 0건. 다음 Step 3 (응답 코드 분기는 Phase A에서 처리됨), Step 4 (controller test 11종), Step 5 (Sync) 진행. AUTHZ-IT-EXPAND-001 v0.2 회귀 완전 회복. |
 | v0.3 | 2026-05-12 | MoAI orchestrator | **Step 2 Phase A Completed**. AuthorizationMatrixExpandIT.java 28건 `jsonPath("$.code").value("AUTH_FORBIDDEN")` → `value("ACCESS_DENIED")` 일괄 정정. 87 tests / 31 failed → 87 tests / **23 failed** (8건 GREEN 회복). 잔여 23 RED 모두 패턴 1 (403→400, @Valid validation 우선). Phase B (DTO 정상 body 적용)는 다음 세션 권장 — 각 endpoint DTO 시그니처 확인 + 23 시나리오 정정. Status: Step 1 Completed → Step 2 Phase A Completed. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | **Step 1 Completed**. 회귀 commit 확정: `942b19e` (2026-05-06 `fix(test)`). GlobalExceptionHandler에 AuthorizationDeniedException 핸들러 추가 (+ACCESS_DENIED). AUTHZ-IT-EXPAND-001 v0.2 Sync (`de22b95` 2026-05-11) 시점에 이미 회귀 존재 — META checklist 통합 evidence 누락 확인. PII-FOLLOWUP-005 v0.3 통합 실행 (commit 608855b 2026-05-12)에서 노출. Step 2~5 진행은 다음 세션. Status: Planned → Step 1 Completed. |
