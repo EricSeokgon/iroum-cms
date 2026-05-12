@@ -518,15 +518,198 @@ class AuthorizationMatrixExpand3IT {
         }
     }
 
-    /** §A.3 CodeDomainTests — CodeController + CodeGroupController 미커버 endpoint (Phase A). */
+    /** §A.3 CodeDomainTests — Code 3 + CodeGroup 4 미커버 endpoint (Phase A 활성화). */
     @Nested
-    @DisplayName("§A.3 CodeDomainTests (Code 4 + CodeGroup 4 미커버, Step 3 Phase A 활성화)")
+    @DisplayName("§A.3 CodeDomainTests (Code 3 + CodeGroup 4 미커버, Step 3 Phase A 활성화)")
     class CodeDomainTests {
+
+        // ── GET /system/codes/bulk — hasAuthority(SYSTEM:CODE:READ) ──
         @Test
-        @Disabled("Step 3 (Phase A)에서 활성화 예정 — Code GET/{id}/bulk + CodeGroup GET/PUT/DELETE")
-        @DisplayName("§A.3 placeholder: Step 3 활성화 대기")
-        void codeDomain_placeholder_step3() {
-            // Code: bulk, get(id), update, delete + CodeGroup: list, get, update, delete
+        @DisplayName("AC-AME3-A3-1: GET /api/v1/system/codes/bulk — Authorization 부재 + 401")
+        void codesBulk_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/codes/bulk").param("groups", "GRP1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-2: GET /api/v1/system/codes/bulk — SYSTEM:CODE:READ 부재 + 403")
+        void codesBulk_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/codes/bulk")
+                            .param("groups", "GRP1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-3: GET /api/v1/system/codes/bulk — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codesBulk_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            mockMvc.perform(get("/api/v1/system/codes/bulk")
+                            .param("groups", "GRP1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /system/codes/{id} — hasAuthority(SYSTEM:CODE:READ) ──
+        @Test
+        @DisplayName("AC-AME3-A3-4: GET /api/v1/system/codes/{id} — Authorization 부재 + 401")
+        void codeGet_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/codes/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-5: GET /api/v1/system/codes/{id} — SYSTEM:CODE:READ 부재 + 403")
+        void codeGet_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/codes/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-6: GET /api/v1/system/codes/{id} — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codeGet_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            assertAuthzPassed(get("/api/v1/system/codes/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── DELETE /system/codes/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
+        @Test
+        @DisplayName("AC-AME3-A3-7: DELETE /api/v1/system/codes/{id} — Authorization 부재 + 401")
+        void codeDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/system/codes/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-8: DELETE /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE 부재(READ만) + 403 (어휘 분리)")
+        void codeDelete_missingWriteAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ")); // WRITE 부재
+            mockMvc.perform(delete("/api/v1/system/codes/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-9: DELETE /api/v1/system/codes/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeDelete_hasWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+            assertAuthzPassed(delete("/api/v1/system/codes/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /system/code-groups — hasAuthority(SYSTEM:CODE:READ) ──
+        @Test
+        @DisplayName("AC-AME3-A3-10: GET /api/v1/system/code-groups — Authorization 부재 + 401")
+        void codeGroupList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/code-groups"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-11: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 부재 + 403")
+        void codeGroupList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-12: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codeGroupList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            mockMvc.perform(get("/api/v1/system/code-groups")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── GET /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:READ) ──
+        @Test
+        @DisplayName("AC-AME3-A3-13: GET /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        void codeGroupGet_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/code-groups/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-14: GET /api/v1/system/code-groups/{id} — SYSTEM:CODE:READ 부재 + 403")
+        void codeGroupGet_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/system/code-groups/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-15: GET /api/v1/system/code-groups/{id} — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        void codeGroupGet_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            assertAuthzPassed(get("/api/v1/system/code-groups/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PUT /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
+        private static final String CODE_GROUP_BODY = "{\"groupCode\":\"TEST_GRP\",\"name\":\"테스트 그룹\"}";
+
+        @Test
+        @DisplayName("AC-AME3-A3-16: PUT /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        void codeGroupUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/system/code-groups/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(CODE_GROUP_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-17: PUT /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 부재 + 403 (분리 회귀)")
+        void codeGroupUpdate_missingWriteAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            mockMvc.perform(put("/api/v1/system/code-groups/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(CODE_GROUP_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-18: PUT /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeGroupUpdate_hasWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+            assertAuthzPassed(put("/api/v1/system/code-groups/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(CODE_GROUP_BODY));
+        }
+
+        // ── DELETE /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
+        @Test
+        @DisplayName("AC-AME3-A3-19: DELETE /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        void codeGroupDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/system/code-groups/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-20: DELETE /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 부재 + 403")
+        void codeGroupDelete_missingWriteAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
+            mockMvc.perform(delete("/api/v1/system/code-groups/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A3-21: DELETE /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        void codeGroupDelete_hasWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
+            assertAuthzPassed(delete("/api/v1/system/code-groups/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }
 
