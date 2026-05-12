@@ -134,10 +134,10 @@ class AuthorizationCoverageArchTest {
      *
      * <p>AuthorizationMatrixIT(19 AC) + AuthorizationMatrixExpandIT(88 AC + smoke 1)
      * + AuthorizationMatrixExpand2IT(57 AC + smoke 1)에서 @DisplayName 정규식으로 unique endpoint set 추출.
-     * baseline: 54 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19).
+     * baseline: 88 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19).
      */
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (54 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (88 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
@@ -146,18 +146,18 @@ class AuthorizationCoverageArchTest {
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에서 시나리오 추가/제거가 발생했습니다. " +
                         "본 baseline(54)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(54);
+                .hasSize(88);
     }
 
     /**
-     * AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
+     * AC-AAD-002-1: 88 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
      *
-     * <p>baseline 54 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
+     * <p>baseline 88 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
      * 누락(missingFromIt) 또는 추가(extraInIt) 발생 시 RED + 어떤 endpoint가 변동되었는지 메시지 출력.
      */
     @Test
-    @DisplayName("AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
-    void it_endpointSet_matchesBaseline54() {
+    @DisplayName("AC-AAD-002-1: 88 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    void it_endpointSet_matchesBaseline88() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
 
@@ -172,13 +172,13 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 54 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                .as("baseline 88 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에 해당 시나리오가 제거되었습니다. " +
                         "회귀 검토 필요.", missingFromIt)
                 .isEmpty();
 
         assertThat(extraInIt)
-                .as("IT에는 있으나 baseline 54에 없는 신규 endpoint: %s. " +
+                .as("IT에는 있으나 baseline 88에 없는 신규 endpoint: %s. " +
                         "신규 시나리오 추가 시 본 ArchUnit baselineEndpoints() 메소드를 갱신하세요.", extraInIt)
                 .isEmpty();
     }
@@ -482,7 +482,51 @@ class AuthorizationCoverageArchTest {
                 // §A.7 SystemOperation 3 (MAINT:READ/WRITE + LOG:READ)
                 "GET /api/v1/system/maintenance",
                 "POST /api/v1/system/maintenance",
-                "GET /api/v1/system/access-logs"
+                "GET /api/v1/system/access-logs",
+
+                // ─── AUTHZ-IT-EXPAND-003 35 endpoint (Phase A + B + C) ───────────
+                // §A.1 OrganizationDomain (7)
+                "GET /api/v1/organizations/tree",
+                "GET /api/v1/organizations",
+                "GET /api/v1/organizations/{id}",
+                "PUT /api/v1/organizations/{id}",
+                "DELETE /api/v1/organizations/{id}",
+                "GET /api/v1/organizations/{id}/history",
+                "POST /api/v1/organizations/users/{id}/organization",
+                // §A.2 UserDomain (5)
+                "GET /api/v1/users",
+                "GET /api/v1/users/{id}",
+                "PUT /api/v1/users/{id}",
+                "DELETE /api/v1/users/{id}",
+                "POST /api/v1/users/{id}/unlock",
+                // §A.3 CodeDomain (6, GET /code-groups는 EXPAND-001 §A.5에 이미 baseline 등록됨)
+                "GET /api/v1/system/codes/bulk",
+                "GET /api/v1/system/codes/{id}",
+                "DELETE /api/v1/system/codes/{id}",
+                "GET /api/v1/system/code-groups/{id}",
+                "PUT /api/v1/system/code-groups/{id}",
+                "DELETE /api/v1/system/code-groups/{id}",
+                // §A.4 MenuMaintenance (4)
+                "PATCH /api/v1/content/menus/{id}/move",
+                "PATCH /api/v1/content/menus/{id}/visibility",
+                "GET /api/v1/system/maintenance/{id}",
+                "POST /api/v1/system/maintenance/{id}/activate",
+                // §A.5 Widget (2)
+                "DELETE /api/v1/dashboard/widgets/{id}",
+                "POST /api/v1/dashboard/widgets/preview",
+                // §A.6 BannerI18n (2)
+                "DELETE /api/v1/content/banners/{id}",
+                "PUT /api/v1/content/i18n",
+                // §A.7 SearchPermission (3)
+                "GET /api/v1/permissions",
+                "GET /api/v1/search/synonyms",
+                "GET /api/v1/search/stats/queries",
+                // §A.8 GovernanceStats (5)
+                "GET /api/v1/governance/batch-logs",
+                "GET /api/v1/governance/dictionary",
+                "GET /api/v1/governance/stats/policies",
+                "GET /api/v1/system/stats/top-pages",
+                "POST /api/v1/system/stats/recompute"
         );
     }
 }

@@ -42,6 +42,31 @@
   - 정책 문서 갱신만, 운영 코드 변경 0건
   (SPEC-CMS-SECURITY-PII-KMS-001 v0.2 + SPEC-CMS-SECURITY-PII-ROTATION-001 v0.2)
 
+- **AUTHZ-IT-EXPAND-003 v0.4 Implemented — 8 도메인 106 AC GREEN + ArchUnit baseline 88 (79% IT 커버 달성)**
+  - AuthorizationMatrixExpand3IT.java ~1100줄 신규 (인프라 240 + Phase A 470 + Phase B 240 + Phase C 200)
+  - 8 도메인 35 endpoint × 3 시나리오 = 106 AC + smoke 1 = 107 tests / 0 failures
+    - §A.1 Organization 7 endpoint × 3 = 21 AC
+    - §A.2 User 5 endpoint × 3 = 15 AC
+    - §A.3 Code+CodeGroup 7 endpoint × 3 = 21 AC
+    - §A.4 MenuMaintenance 4 endpoint × 3 = 12 AC
+    - §A.5 Widget 2 endpoint × 3 = 6 AC
+    - §A.6 BannerI18n 2 endpoint × 3 = 6 AC
+    - §A.7 SearchPermission 3 endpoint × 3 = 9 AC (class-level @PreAuthorize 검증)
+    - §A.8 GovernanceStats 5 endpoint × 3 = 15 AC
+  - AuthorizationCoverageArchTest baseline 54 → 88 endpoint 갱신 (35 추가, GET /code-groups duplicate 1 제거)
+  - hasSize(88), javadoc 3 hardcoding 갱신, method name Baseline54 → Baseline88
+  - 분리 회귀 검증 (SETTING:READ vs WRITE, MAINT:READ vs WRITE, CODE:READ vs WRITE 등)
+  - OR bypass 검증 (hasAnyRole 시나리오)
+  - 클래스 레벨 @PreAuthorize 검증 (PermissionController, SynonymController, Governance 6 controller)
+  - 패턴 재사용 100%: assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기 (AUTH_REQUIRED 401 / ACCESS_DENIED 403)
+  - 누적 IT 커버: 운영 114 endpoint 중 88 = 79%
+  - 6중 OWASP A01 회귀 검출 305 AC + 88 endpoint baseline + 31 어휘 100% 커버
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 충족
+  - 운영 코드 변경 0건 (SPEC §3.2 비범위 준수)
+  - 검증: ./gradlew test --tests "AuthorizationMatrixExpand3IT" → BUILD SUCCESSFUL
+  - 검증: ./gradlew test --tests "AuthorizationCoverageArchTest" → 4 tests / 0 failures
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 v0.4 Implemented 1차)
+
 - **AUTHZ-IT-EXPAND-003 SPEC v0.1 Planned — 운영 ~120 endpoint 전체 IT 커버 (AUTHZ 트랙 3차)**
   - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003/spec.md` 신규
   - AUTHZ-IT-EXPAND-001 (29) + EXPAND-002 (19) = 누적 54 endpoint → 운영 실측 ~120 endpoint 미커버 ~66 갭

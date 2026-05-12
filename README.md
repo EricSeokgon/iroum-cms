@@ -299,7 +299,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Implemented (1차, IT-REGRESSION-001로 v0.2 회귀 100% 회복) |
-| SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (54 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차) |
+| SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (88 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차, EXPAND-003 v0.4 baseline 88 갱신) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 | HTTP 권한 매트릭스 IT 확장 2차 (19 어휘 × 57 AC + ArchUnit 31 어휘 100% IT 커버, 분리 회귀 4건) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
@@ -307,7 +307,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (Option B @DirtiesContext, 5/5 GREEN) | Implemented (1차) |
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합+종합 GREEN 필수, evidence 10건: PII 5 + AUTHZ 5) | Implemented (v0.3 Evidence 강화) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31 + controller 11 = 51 RED → 0, 100% 회복) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 | HTTP 권한 매트릭스 IT 확장 3차 (운영 ~120 endpoint 전체 IT 커버, ArchUnit baseline 54 → 120+) | Planned |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 | HTTP 권한 매트릭스 IT 확장 3차 (8 도메인 35 endpoint × 106 AC + ArchUnit baseline 88, 79% IT 커버) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 

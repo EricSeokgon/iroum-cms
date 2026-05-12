@@ -1,6 +1,54 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.3
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.4
 
-**Status**: Step 2 인프라 완료 (2026-05-12) — AuthorizationMatrixExpand3IT 신설 + smoke test GREEN
+**Status**: Implemented (2026-05-12) — 8 도메인 106 AC GREEN + ArchUnit baseline 54 → 88 endpoint 갱신
+
+## v0.4 변경 이력 (2026-05-12) — Step 3-6 완성: Phase A+B+C + Sync
+
+### 모든 8 도메인 100% GREEN
+| § | 도메인 | endpoint | AC | Commit |
+|---|--------|----------|-----|--------|
+| §0 | smoke | - | 1 | c245d87 |
+| §A.1 | Organization | 7 | 21 | 26fca24 |
+| §A.2 | User | 5 | 15 | c981041 |
+| §A.3 | Code+CodeGroup | 7 | 21 | 63e60b1 |
+| §A.4 | MenuMaintenance | 4 | 12 | d12948e |
+| §A.5 | Widget | 2 | 6 | 7c448b5 |
+| §A.6 | BannerI18n | 2 | 6 | 7c448b5 |
+| §A.7 | SearchPermission | 3 | 9 | adcb92e |
+| §A.8 | GovernanceStats | 5 | 15 | d7a557a |
+| **합계** | **8 도메인** | **35** | **106** | **0 failures** |
+
+### Step 6 Sync (본 commit)
+- AuthorizationCoverageArchTest baseline 54 → 88 endpoint 갱신 (35 추가, GET /code-groups duplicate 제거)
+- hasSize(88), javadoc 3 hardcoding 갱신
+- AC-AAD-001-2 / AC-AAD-002-1 모두 GREEN (4 tests / 0 failures)
+
+### 누적 IT endpoint 커버 — 79% 달성
+- AUTHZ-MATRIX-001 + EXPAND-001 + EXPAND-002 = 54
+- + EXPAND-003 35 endpoint = **89 endpoint** (실제 baseline 88, duplicate 1 제외)
+- 운영 controller @PreAuthorize 114건 / 79%
+
+### 6중 OWASP A01 회귀 검출
+| 레이어 | SPEC | AC | endpoint |
+|--------|------|-----|----------|
+| HTTP 1차 | AUTHZ-MATRIX-001 | 19 | 6 |
+| HTTP 확장 1차 | AUTHZ-IT-EXPAND-001 | 88 | 29 |
+| HTTP 확장 2차 | AUTHZ-IT-EXPAND-002 | 57 | 19 |
+| **HTTP 확장 3차** | **AUTHZ-IT-EXPAND-003** | **106** | **35** |
+| 메소드 슬라이스 | CTRL-AUTHZ-COVERAGE-001 | 31 | - |
+| ArchUnit 자동 검출 | AUTHZ-AUTODETECT-001 | 4 | 88 baseline |
+| **합계** | - | **305** | **88** |
+
+### META-IT-GREEN-MANDATORY-001 Sync Checklist (4 항목 충족)
+- ✅ 단독 GREEN: `./gradlew test --tests "AuthorizationMatrixExpand3IT"` 107/0
+- ✅ 통합 GREEN: ArchTest 4/0 baseline 88 매칭
+- ✅ @Transactional 위험: 해당 없음 (IT 신설 전용)
+- ✅ race condition 회피: 해당 없음 (Mock JWT, 비동기 없음)
+
+### Status: Step 2 인프라 → Implemented
+운영 코드 변경 0건. 패턴 100% 재사용 (assertAuthzPassed, DTO 정상 body, 응답 코드 분기).
+
+---
 **Implementation commits**: 758e3e6 (v0.1 초안), e6d6052 (v0.2 Step 1 인벤토리), [본 commit] (v0.3 Step 2 인프라)
 
 ## v0.3 변경 이력 (2026-05-12) — Step 2 IT 인프라 신설
@@ -283,6 +331,7 @@ grep -rE "@PreAuthorize" src/main/java --include="*.java" | awk -F':' '{print $1
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.4 | 2026-05-12 | MoAI orchestrator | **Implemented**. Step 3-5 (8 도메인 §A.1-A.8 활성화 = 106 AC GREEN) + Step 6 Sync (ArchTest baseline 54 → 88 갱신, duplicate 1 제거). 누적 EXPAND-003: 35 endpoint × 3 시나리오 = 106 AC + smoke 1 = 107 tests / 0 failures. 전체 AUTHZ 트랙 6중 검증 305 AC. AuthorizationMatrixExpand3IT.java ~1100줄 (인프라 240 + Phase A 470 + Phase B 240 + Phase C 200). META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 충족. 운영 코드 변경 0건. |
 | v0.3 | 2026-05-12 | MoAI orchestrator | **Step 2 인프라 완료**. AuthorizationMatrixExpand3IT.java 신설 (~240줄). AUTHZ-IT-EXPAND-001/002 + REGRESSION-001 패턴 100% 재사용 (@SpringBootTest + Testcontainers + JWT Mock + assertAuthzPassed helper). 8 도메인 @Nested 그룹 placeholder (Phase A-C 분할). smoke test 1건 활성 BUILD SUCCESSFUL. 다음 세션은 Step 3 (Phase A: Org/User/Code ~30 endpoint) 진입 가능. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | Appendix A 운영 endpoint 인벤토리 추가. 운영 @PreAuthorize 120건 실측 (controller 114건 / 38 controller, config + service 6건 제외). controller별 분포 확정 (5건↑ 9건, 3-4건 11건, 1-2건 18건). 누적 IT 커버 54/114 = 47% 갭 확정. Phase A-C 분할 권장 (30+30+잔여). 미커버 우선순위 controller 명시 (PermissionController, SynonymController, Search, Governance, Stats 등). RUN Step 1 endpoint 인벤토리 사전 완료 — 다음 세션은 Step 2 (Expand3IT 인프라) 진입 가능. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. AUTHZ-IT-EXPAND-002 + REGRESSION-001 v0.8 완성 후 자연 연장. 운영 ~120 endpoint 전체 IT 매트릭스 적용 계획. AUTHZ-AUTODETECT-001 baseline (54 endpoint, 103 메소드) 활용. REQ-AM-EXP3-001~005 + 6 AC + RUN Step 1~6 분해. 결정 포인트 D1~D5 (IT 클래스 구조, endpoint 수집, 시나리오 자동화, baseline 갱신, Implementation 위임). META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의. 예상 비용 3-4 세션, 운영 코드 변경 0건. P2 (보안 회귀 검출 능력 완전 커버, 운영 영향 0). |
