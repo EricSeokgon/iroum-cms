@@ -1,6 +1,41 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002: HTTP 권한 매트릭스 IT 확장 2차 — ArchUnit baseline 31 어휘 100% IT 커버 v0.2
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002: HTTP 권한 매트릭스 IT 확장 2차 — ArchUnit baseline 31 어휘 100% IT 커버 v0.3
 
-**Status**: Diagnosed (2026-05-12) — endpoint 정밀 매핑 완료, Step 2 RUN 진입 준비됨
+**Status**: Implemented (2026-05-12) — 19 어휘 × 57 AC GREEN + ArchUnit baseline 54 endpoint 매칭
+**Implementation commits**: fc4a569 (Step 1 인프라), c450299 (Phase A 29 AC), 7a058e5 (Phase B 28 AC), [본 commit] (ArchTest baseline 54 갱신)
+
+## v0.3 변경 이력 (2026-05-12) — Step 4 baseline 갱신 + Implemented
+
+### 완성 산출물
+- AuthorizationMatrixExpand2IT.java: 19 어휘 × 평균 3 시나리오 + 분리 회귀 4건 = **57 AC GREEN** + smoke 1
+- AuthorizationCoverageArchTest baselineEndpoints(): 35 → **54 endpoint** (AUTHZ-MATRIX-001 6 + EXPAND-001 29 + EXPAND-002 19)
+- baseline javadoc + assertion size 35 → 54 갱신 (3 hardcoding 위치)
+
+### 5중 검증 달성 (~240 AC)
+| 레이어 | SPEC | AC | endpoint | 어휘 |
+|--------|------|-----|----------|------|
+| HTTP 1차 | AUTHZ-MATRIX-001 | 19 | 6 | (포함) |
+| HTTP 확장 1차 | AUTHZ-IT-EXPAND-001 | 88 | 29 | 12 |
+| HTTP 확장 2차 | **AUTHZ-IT-EXPAND-002** | **57** | **19** | **19** |
+| 메소드 슬라이스 | CTRL-AUTHZ-COVERAGE-001 | 31 | - | - |
+| ArchUnit 자동 검출 | AUTHZ-AUTODETECT-001 | 4 | 54 baseline | 31 |
+| **합계** | - | **199+** | **54** | **31** |
+
+### OWASP A01 회귀 검출 능력
+- ArchUnit baseline 31 어휘 100% IT 매트릭스 커버
+- 분리 회귀 검증 4건: PAGE:HISTORY:READ vs ROLLBACK, SETTING:READ vs WRITE, SYSTEM:READ vs ADMIN, MAINT:READ vs WRITE
+- AND 조건 검증: USER:READ AND AUDIT:READ (PersonalDataAccessController)
+- OR bypass 검증: ROLE:CONTENT_ADMIN (CONTENT_ADMIN/ADMIN/SUPER_ADMIN)
+
+### 운영 코드 변경 0건 (SPEC §3.2 준수)
+IT 신설 전용 + helper 확장만. SecurityConfig + 컨트롤러 @PreAuthorize 무변경.
+
+### assertAuthzPassed helper 확장
+운영 GlobalExceptionHandler가 도메인 RuntimeException 미처리 시 ServletException wrap 처리.
+- IllegalArgumentException 허용
+- 일반 RuntimeException 허용 (SiteMultiDisabledException 등)
+- AccessDeniedException/AuthenticationException 제외 (권한 실패는 RED)
+
+---
 **Trigger**: AUTHZ-AUTODETECT-001 Step 2 GREEN 확정으로 ArchUnit 운영 실측 권한 어휘 31종 노출 + IT 매트릭스 12 어휘 커버 갭 19종 식별
 **Severity**: P2 (보안 회귀 검출 능력 확대, 운영 영향 0)
 
@@ -235,5 +270,6 @@ OWASP A01 회귀 검출 능력 완전 확보 — IT 매트릭스가 ArchUnit bas
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Implemented**. Step 1~4 모두 완료. Phase A (10 어휘 29 AC, commit c450299) + Phase B (9 어휘 28 AC, commit 7a058e5) + ArchTest baseline 54 endpoint 갱신 (본 commit). AuthorizationCoverageArchTest hasSize(35) → hasSize(54), javadoc/메시지 3 hardcoding 갱신. PUT /api/v1/system/settings/{id} parser normalize 적용. A2-7 분리 회귀 시나리오 @DisplayName에 /{version} 추가. ArchTest 4 AC GREEN (BUILD SUCCESSFUL). OWASP A01 회귀 검출 능력 5중 검증 199 AC + 54 endpoint baseline + 31 어휘 100% 커버. 운영 코드 변경 0건 (SPEC §3.2 준수). assertAuthzPassed helper 확장: IllegalArgumentException + 일반 RuntimeException 허용 (도메인 예외 처리), AccessDeniedException/AuthenticationException 제외 (권한 실패 RED 보존). |
 | v0.2 | 2026-05-12 | MoAI orchestrator | Step 2 endpoint 정밀 진단 완료. Explore subagent로 14 컨트롤러 grep + Read 실측 → 19 어휘 × 24 endpoint 매핑 표 작성. Phase A 13 RED revert 원인 4가지 확정 (HTTP method 부정확, path variable 오류, USER:READ 단독 부재, 클래스 레벨 @PreAuthorize). SecurityConfig permitAll 화이트리스트 + authenticated() 정책 확인. Status: Planned → **Diagnosed** (Step 2 RUN 진입 준비 완료). 다음 작업: 24 endpoint 1개씩 단위 검증 후 일괄 시나리오 활성화. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. AUTHZ-AUTODETECT-001 Step 2 GREEN 확정으로 ArchUnit 운영 실측 31 권한 어휘 노출 + AUTHZ-IT-EXPAND-001 12 어휘 커버 갭 19종 식별. REQ-AM-EXP2-001/002/003/004 정의. RUN Step 1~4 분해. 19 어휘 운영 endpoint 매핑 (CONTENT_ADMIN/CONTENT:READ/PAGE:READ/ROLLBACK/HISTORY:READ/SITE:WRITE/MENU:PERMISSION:WRITE/TEMPLATE:READ/USER:READ/SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN/AUDIT:READ). 운영 코드 변경 0건 (IT 신설 전용). 본 SPEC 완성 시 OWASP A01 회귀 검출 능력 ArchUnit baseline 100% IT 커버 + 5중 검증 (HTTP 1차 19 + HTTP 확장 88 + HTTP 확장 2차 ~100 + 메소드 31 + ArchUnit 4) ≈ 240+ AC 달성. 사용자 결정 D1~D4 다음 세션 RUN 진입 전 확정 필요. |

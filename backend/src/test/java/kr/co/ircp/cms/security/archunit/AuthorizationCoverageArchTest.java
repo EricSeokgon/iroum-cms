@@ -130,34 +130,34 @@ class AuthorizationCoverageArchTest {
     // =================================================================================
 
     /**
-     * AC-AAD-001-2: IT 두 클래스의 @DisplayName에서 endpoint(METHOD + path) 추출 + baseline.
+     * AC-AAD-001-2: IT 세 클래스의 @DisplayName에서 endpoint(METHOD + path) 추출 + baseline.
      *
-     * <p>AuthorizationMatrixIT(19 AC) + AuthorizationMatrixExpandIT(88 AC + smoke 1)에서
-     * @DisplayName 정규식으로 unique endpoint set 추출.
-     * baseline: 35 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29).
+     * <p>AuthorizationMatrixIT(19 AC) + AuthorizationMatrixExpandIT(88 AC + smoke 1)
+     * + AuthorizationMatrixExpand2IT(57 AC + smoke 1)에서 @DisplayName 정규식으로 unique endpoint set 추출.
+     * baseline: 54 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19).
      */
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (35 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (54 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
         assertThat(itEndpoints)
                 .as("IT @DisplayName에서 추출된 unique endpoint(METHOD+path) 개수가 변경되었습니다. " +
-                        "AuthorizationMatrixIT 또는 AuthorizationMatrixExpandIT에서 시나리오 추가/제거가 발생했습니다. " +
-                        "본 baseline(35)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에서 시나리오 추가/제거가 발생했습니다. " +
+                        "본 baseline(54)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(35);
+                .hasSize(54);
     }
 
     /**
-     * AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
+     * AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
      *
-     * <p>baseline 35 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
+     * <p>baseline 54 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
      * 누락(missingFromIt) 또는 추가(extraInIt) 발생 시 RED + 어떤 endpoint가 변동되었는지 메시지 출력.
      */
     @Test
-    @DisplayName("AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
-    void it_endpointSet_matchesBaseline35() {
+    @DisplayName("AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    void it_endpointSet_matchesBaseline54() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
 
@@ -172,13 +172,13 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 35 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
-                        "AuthorizationMatrixIT 또는 AuthorizationMatrixExpandIT에 해당 시나리오가 제거되었습니다. " +
+                .as("baseline 54 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에 해당 시나리오가 제거되었습니다. " +
                         "회귀 검토 필요.", missingFromIt)
                 .isEmpty();
 
         assertThat(extraInIt)
-                .as("IT에는 있으나 baseline 35에 없는 신규 endpoint: %s. " +
+                .as("IT에는 있으나 baseline 54에 없는 신규 endpoint: %s. " +
                         "신규 시나리오 추가 시 본 ArchUnit baselineEndpoints() 메소드를 갱신하세요.", extraInIt)
                 .isEmpty();
     }
@@ -454,7 +454,35 @@ class AuthorizationCoverageArchTest {
                 "PATCH /api/v1/content/menus/{id}/order",
                 "DELETE /api/v1/content/menus/{id}",
                 "POST /api/v1/boards",
-                "PUT /api/v1/boards/{id}"
+                "PUT /api/v1/boards/{id}",
+
+                // ─── AUTHZ-IT-EXPAND-002 19 endpoint (Phase A + B) ───────────────
+                // §A.1 ContentRead 4 (CONTENT:READ/PAGE:READ/TEMPLATE:READ/ROLE:CONTENT_ADMIN)
+                "GET /api/v1/content/i18n",
+                "GET /api/v1/content/pages/{id}/blocks",
+                "GET /api/v1/content/templates",
+                "POST /api/v1/qnas/{id}/answer",
+                // §A.2 PageAdvanced 2 (PAGE:ROLLBACK + PAGE:HISTORY:READ)
+                "GET /api/v1/content/pages/{id}/history",
+                "POST /api/v1/content/pages/{id}/rollback/{id}",
+                // §A.3 SiteMenu 2 (SITE:WRITE + MENU:PERMISSION:WRITE)
+                "PUT /api/v1/content/sites/{id}",
+                "POST /api/v1/content/menus/{id}/permissions",
+                // §A.4 UserAudit 3 (USER:READ AND AUDIT:READ + AUDIT:READ class-level)
+                "GET /api/v1/audit/personal-data-access",
+                "GET /api/v1/audit/permission-changes",
+                "GET /api/v1/audit/login-history",
+                // §A.5 Dashboard 1 (SYSTEM:DASHBOARD)
+                "GET /api/v1/system/dashboard/kpi",
+                // §A.6 SystemSetting 4 (SYSTEM:READ + SETTING:READ/WRITE + SYSTEM:ADMIN)
+                "GET /api/v1/content/seo/redirects",
+                "GET /api/v1/system/settings",
+                "PUT /api/v1/system/settings/{id}",
+                "POST /api/v1/content/sites",
+                // §A.7 SystemOperation 3 (MAINT:READ/WRITE + LOG:READ)
+                "GET /api/v1/system/maintenance",
+                "POST /api/v1/system/maintenance",
+                "GET /api/v1/system/access-logs"
         );
     }
 }

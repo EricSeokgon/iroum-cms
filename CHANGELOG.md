@@ -11,6 +11,22 @@
 
 ### Added
 
+- **AUTHZ-IT-EXPAND-002 Implemented — 19 미커버 권한 어휘 IT 매트릭스 (57 AC GREEN, ArchUnit baseline 54 endpoint 100% IT 커버)**
+  - `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpand2IT.java` 신규 658줄
+  - 19 권한 어휘 (CONTENT:READ, PAGE:READ/ROLLBACK/HISTORY:READ, SITE:WRITE, MENU:PERMISSION:WRITE, TEMPLATE:READ, USER:READ, AUDIT:READ, SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN, ROLE:CONTENT_ADMIN) × 평균 3 시나리오 + 분리 회귀 4건 = 57 AC GREEN
+  - 7 도메인 @Nested 그룹 (ContentRead/PageAdvanced/SiteMenu/UserAudit/Dashboard/SystemSetting/SystemOperation)
+  - Phase A 29 AC (commit c450299) + Phase B 28 AC (commit 7a058e5) 단계적 활성화
+  - 분리 회귀 검증 4건: PAGE:HISTORY:READ vs ROLLBACK, SETTING:READ vs WRITE, SYSTEM:READ vs ADMIN, MAINT:READ vs WRITE
+  - AND 조건 검증: USER:READ AND AUDIT:READ (PersonalDataAccessController)
+  - OR bypass 검증: ROLE:CONTENT_ADMIN (CONTENT_ADMIN/ADMIN/SUPER_ADMIN)
+  - assertAuthzPassed helper 신설: GlobalExceptionHandler 미처리 도메인 RuntimeException 허용 (권한 통과 증명), AccessDeniedException/AuthenticationException 제외
+  - AuthorizationCoverageArchTest baselineEndpoints() 35 → 54 endpoint 갱신 + javadoc/assertion size 3 hardcoding 갱신
+  - OWASP A01 회귀 검출 5중 검증 199 AC + 54 endpoint baseline + 31 어휘 100% 커버 달성
+  - 운영 코드 변경 0건 (SPEC §3.2 비범위 준수)
+  - 실제 Java 17 + Gradle 구동 검증: BUILD SUCCESSFUL (Expand2IT + ArchTest 모두 GREEN)
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 v0.3 Implemented 1차, commits fc4a569 + c450299 + 7a058e5 + [본 sync])
+
+
 - **AuthorizationCoverageArchTest — ArchUnit 기반 운영 @PreAuthorize 자동 검출 (4 @Test, 실제 구동 GREEN)**
   - `backend/src/test/java/kr/co/ircp/cms/security/archunit/AuthorizationCoverageArchTest.java` 신규 448줄
   - ArchUnit 1.3.0 기반 (기존 의존성 재사용, 신규 의존성 0건)

@@ -378,7 +378,7 @@ class AuthorizationMatrixExpand2IT {
 
         // ── 분리 회귀: PAGE:HISTORY:READ 권한자가 PAGE:ROLLBACK endpoint 호출 → 403 ──
         @Test
-        @DisplayName("AC-AME2-A2-7: POST /api/v1/content/pages/{id}/rollback — PAGE:HISTORY:READ 권한자 + 403 (분리 회귀)")
+        @DisplayName("AC-AME2-A2-7: POST /api/v1/content/pages/{id}/rollback/{version} — PAGE:HISTORY:READ 권한자 + 403 (분리 회귀)")
         void pageRollback_hasHistoryReadOnly_returns403() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("PAGE:HISTORY:READ")); // PAGE:ROLLBACK 미보유, HISTORY:READ만 보유
             mockMvc.perform(post("/api/v1/content/pages/1/rollback/1")

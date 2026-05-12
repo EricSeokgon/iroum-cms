@@ -299,8 +299,8 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-TEST-INFRA-RECONFIG-001 | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-MASKING-001 | PII 운영 노출 통제 (Logback 마스킹 + MDC SHA-256 + JWT log 정정) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 | HTTP 권한 매트릭스 IT 확장 (29 endpoint × 12 권한 어휘 100% 회귀 검출, 89 @Test) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (35 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 | HTTP 권한 매트릭스 IT 확장 2차 (12 → 31 어휘 100% 커버, 19 미커버 어휘 IT 추가) | Planned |
+| SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 (54 endpoint baseline + 31 권한 어휘 baseline, 4 AC) | Implemented (1차) |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002 | HTTP 권한 매트릭스 IT 확장 2차 (19 어휘 × 57 AC + ArchUnit 31 어휘 100% IT 커버, 분리 회귀 4건) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-002 | PII-FOLLOWUP-001 잔여 RED 분리 (@MockitoSpyBean + @Async 충돌 해소 + Fallback Unit test) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
