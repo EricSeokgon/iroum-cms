@@ -305,7 +305,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (Option B @DirtiesContext, 5/5 GREEN) | Implemented (1차) |
-| SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Implemented (1차) |
+| SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합+종합 GREEN 필수, evidence 10건: PII 5 + AUTHZ 5) | Implemented (v0.3 Evidence 강화) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31 + controller 11 = 51 RED → 0, 100% 회복) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
@@ -377,7 +377,9 @@ SPEC 문서 위치: `.moai/specs/`
 
 4개 중 1개라도 누락 시 Implemented가 아닌 Mostly Implemented / Partially Diagnosed 상태로만 인정. PII-FOLLOWUP-005 (AC-009-2 단독 GREEN, 통합 race condition)이 이 정책의 첫 적용 사례.
 
-### 적용 사례 (Evidence 5건)
+### 적용 사례 (Evidence 10건 — PII 5건 + AUTHZ 5건)
+
+PII 트랙 (회귀 발견 → 회복):
 
 | Case | SPEC | 위반 REQ | 해결 패턴 |
 |------|------|----------|----------|
@@ -385,7 +387,17 @@ SPEC 문서 위치: `.moai/specs/`
 | 2 | PII-FOLLOWUP-003 | REQ-META-IT-002 (@Transactional rollback false GREEN) | TRUNCATE cleanup + @Transactional 제거 |
 | 3 | PII-FOLLOWUP-004 AC-009-3 | REQ-META-IT-002 (UnexpectedRollbackException) | REQUIRES_NEW 운영 fix |
 | 4 | PII-FOLLOWUP-004 AC-009-4 | REQ-META-IT-002 (SPEC ↔ 운영 차이) | IT 시나리오 expected 정정 |
-| 5 | PII-FOLLOWUP-005 AC-009-2 | REQ-PII-FU2-003 (단독 GREEN, 통합 RED) | @DirtiesContext AFTER_EACH_TEST_METHOD → 5/5 GREEN 완성 |
+| 5 | PII-FOLLOWUP-005 AC-009-2 | REQ-PII-FU2-003 (단독 GREEN, 통합 RED) | @DirtiesContext AFTER_EACH_TEST_METHOD → 5/5 GREEN |
+
+AUTHZ 트랙 (REGRESSION-001 회귀 회복):
+
+| Case | SPEC | 위반 REQ | 해결 패턴 |
+|------|------|----------|----------|
+| 6 | REGRESSION-001 (응답 코드) | REQ-META-IT-002 (운영 변경 미동기) | jsonPath AUTH_FORBIDDEN → ACCESS_DENIED 28+17건 |
+| 7 | REGRESSION-001 (@Valid 우선) | REQ-META-IT-002 (validation 위험 미명시) | 23+4 DTO body 정상화 |
+| 8 | REGRESSION-001 (@WebMvcTest 한계) | REQ-META-IT-002 (Security 구성 차이 미명시) | SecurityFilterChain 없음 → @PreAuthorize → 403 동기 |
+| 9 | REGRESSION-001 v0.8 (MatrixIT 8 RED) | REQ-PII-FU2-003 (종합 검증 미실행) | 종합 회귀 검증 → 8 RED 추가 발견 → 정정 (249/0) |
+| 10 | REGRESSION-001 (도메인 예외) | REQ-META-IT-002 (GlobalExceptionHandler 미커버) | assertAuthzPassed helper (ServletException + cause) |
 
 자세한 명세: `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md`
 

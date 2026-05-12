@@ -32,6 +32,22 @@
   - 운영 코드 변경 0건, IT 시나리오 정정만
   (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
 
+- **META-IT-GREEN-MANDATORY-001 v0.3 Evidence 강화 — REGRESSION-001 AUTHZ 회귀 5 case 통합 (PII 5 + AUTHZ 5 = 10 evidence)**
+  - SPEC v0.2 Implemented → v0.3 Evidence 강화
+  - 추가 evidence 5 case (AUTHZ REGRESSION-001 회복 패턴):
+    - Case 6: 응답 코드 변경 (AUTH_FORBIDDEN → ACCESS_DENIED 28+17건)
+    - Case 7: @Valid validation 우선 (23+4 DTO body 정상화)
+    - Case 8: @WebMvcTest Security 한계 (11+종 controller test 정정)
+    - Case 9: 종합 회귀 검증 미실행 (MatrixIT 8 RED 추가 발견)
+    - Case 10: 운영 GlobalExceptionHandler 미커버 (assertAuthzPassed helper)
+  - REQ-PII-FU2-003 강화: 종합 회귀 검증 추가
+  - REQ-META-IT-002 확대: GlobalExceptionHandler 커버리지 명시
+  - REQ-META-IT-006 신설: 응답 코드 동기 (AUTH_REQUIRED 401 vs ACCESS_DENIED 403 분기)
+  - 본 정책 정식 적용 SPEC 3건: PII-FOLLOWUP-005, AUTHZ-IT-EXPAND-002, AUTHZ-IT-REGRESSION-001
+  - README §IT mandatory 정책 evidence 표 5 → 10건 확장
+  - 정책 문서 전용 — 운영 코드/IT 신설 0건
+  (SPEC-CMS-META-IT-GREEN-MANDATORY-001 v0.3 Evidence 강화)
+
 - **AUTHZ-IT-REGRESSION-001 SPEC v0.1 Planned — AUTHZ IT 51 RED 회귀 진단 분리 (운영 ACCESS_DENIED + @Valid validation 우선 + controller Security 차이)**
   - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001/spec.md` 신규
   - PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 분리 진단
