@@ -1,7 +1,50 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.2
+# SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.3
 
-**Status**: Step 1 Completed (2026-05-12) — 회귀 commit 확정 (`942b19e` 2026-05-06)
-**Implementation commits**: 57b1ee8 (v0.1 Planned), [본 commit] (v0.2 회귀 시점 확정)
+**Status**: Step 2 Phase A Completed (2026-05-12) — AUTH_FORBIDDEN → ACCESS_DENIED 일괄 정정 (31→23 RED, 8 GREEN 회복)
+**Implementation commits**: 57b1ee8 (v0.1 Planned), ecb9f59 (v0.2 회귀 시점 확정), [본 commit] (v0.3 Phase A 응답 코드 정정)
+
+## v0.3 변경 이력 (2026-05-12) — Step 2 Phase A 응답 코드 일괄 정정
+
+### 산출물
+AuthorizationMatrixExpandIT.java: 28건 `jsonPath("$.code").value("AUTH_FORBIDDEN")` → `value("ACCESS_DENIED")` 일괄 정정 (1 Edit replace_all).
+
+### 검증 결과
+- Phase A 정정 전: 87 tests / 31 failed
+- Phase A 정정 후: 87 tests / **23 failed** (8건 GREEN 회복)
+- 단독 실행: `./gradlew :backend:test --tests "AuthorizationMatrixExpandIT"`
+
+### 잔여 23 RED — 모두 패턴 1 (`403→400`)
+모든 잔여 시나리오가 `expected:<403> but was:<400>` — @Valid @RequestBody validation이 @PreAuthorize 전 실행되어 400 응답.
+
+| 시나리오 ID | endpoint | DTO required fields |
+|------------|----------|---------------------|
+| AC-AME-001-A1-2 | POST /api/v1/content/popups | PopupRequest |
+| AC-AME-001-A1-5 | PUT /api/v1/content/pages/{id} | PageUpdateRequest |
+| AC-AME-001-A1-11 | POST /api/v1/content/pages/{id}/schedule | (path variable + body) |
+| AC-AME-001-A1-17 | POST /api/v1/content/templates | TemplateRequest |
+| AC-AME-001-A1-20 | PUT /api/v1/content/templates/{id} | TemplateRequest |
+| AC-AME-001-A2-2 | POST /api/v1/content/pages/{pageId}/blocks | ContentBlockRequest |
+| AC-AME-001-A2-5 | PUT /api/v1/content/pages/{pageId}/blocks/{blockId} | ContentBlockRequest |
+| AC-AME-001-A3-2 | POST /api/v1/dashboard/widgets | DashboardWidgetRequest |
+| AC-AME-001-A3-5 | PUT /api/v1/dashboard/widgets/{id} | DashboardWidgetRequest |
+| AC-AME-001-A4-5 | POST /api/v1/organizations | OrganizationRequest |
+| AC-AME-001-A5-2 | GET /api/v1/system/codes | @RequestParam required |
+| AC-AME-001-A5-8 | POST /api/v1/system/codes | SystemCodeRequest |
+| AC-AME-001-A5-11 | PUT /api/v1/system/codes/{id} | SystemCodeRequest |
+| AC-AME-001-A5-14 | POST /api/v1/system/code-groups | SystemCodeGroupRequest |
+| AC-AME-001-A6-5 | POST /api/v1/governance/quality-rules | QualityRuleRequest |
+| AC-AME-001-A6-8 | POST /api/v1/governance/recovery-drills | RecoveryDrillRequest |
+| AC-AME-001-A7-2 | POST /api/v1/boards | BoardRequest |
+| AC-AME-001-A7-5 | PUT /api/v1/boards/{id} | BoardRequest |
+| AC-AME-001-A7-8 | POST /api/v1/content/menus | MenuRequest |
+| (+ 4건 추가) | 기타 | - |
+
+### 다음 단계 (Phase B)
+- 각 endpoint DTO 시그니처 확인 → 정상 JSON body 적용
+- 23 시나리오 × `.content("정상body")` 또는 `.param("key", "value")` 적용
+- expert-backend subagent 위임 또는 단계적 정정 권장
+
+---
 
 ## v0.2 변경 이력 (2026-05-12) — Step 1 회귀 commit 추적 완료
 
@@ -240,5 +283,6 @@ AUTHZ-IT-EXPAND-002만 100% GREEN — 다른 SPEC은 commit 시점 이후 운영
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Step 2 Phase A Completed**. AuthorizationMatrixExpandIT.java 28건 `jsonPath("$.code").value("AUTH_FORBIDDEN")` → `value("ACCESS_DENIED")` 일괄 정정. 87 tests / 31 failed → 87 tests / **23 failed** (8건 GREEN 회복). 잔여 23 RED 모두 패턴 1 (403→400, @Valid validation 우선). Phase B (DTO 정상 body 적용)는 다음 세션 권장 — 각 endpoint DTO 시그니처 확인 + 23 시나리오 정정. Status: Step 1 Completed → Step 2 Phase A Completed. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | **Step 1 Completed**. 회귀 commit 확정: `942b19e` (2026-05-06 `fix(test)`). GlobalExceptionHandler에 AuthorizationDeniedException 핸들러 추가 (+ACCESS_DENIED). AUTHZ-IT-EXPAND-001 v0.2 Sync (`de22b95` 2026-05-11) 시점에 이미 회귀 존재 — META checklist 통합 evidence 누락 확인. PII-FOLLOWUP-005 v0.3 통합 실행 (commit 608855b 2026-05-12)에서 노출. Step 2~5 진행은 다음 세션. Status: Planned → Step 1 Completed. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 진단 SPEC. 본 세션 변경 영향 0건 확정 (AuthorizationMatrixExpandIT 단독 실행도 31 failed). 회귀 패턴 3가지 확정: (1) @Valid validation 우선 → 403 expected but 400, (2) GlobalExceptionHandler AuthorizationDeniedException 핸들러 추가 → AUTH_FORBIDDEN → ACCESS_DENIED 응답 코드 변경, (3) controller unit test Security 구성 차이. REQ-IRR-001~005 + 6 AC + RUN Step 1~5 분해. AUTHZ-MATRIX-001 + AUTHZ-IT-EXPAND-001 SPEC Status 정정 필요 (Implemented → Mostly Implemented). META-IT-GREEN-MANDATORY-001 첫 위반 사례. P2 (운영 영향 0, SPEC ↔ 실제 GREEN 상태 불일치 해소). |

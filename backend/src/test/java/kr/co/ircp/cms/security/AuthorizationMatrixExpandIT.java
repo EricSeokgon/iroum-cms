@@ -288,7 +288,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-3: Popup 생성 — CONTENT:WRITE 보유 → 401/403 외(권한 통과). */
@@ -332,7 +332,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-6: Page 수정 — PAGE:WRITE 보유 → 401/403 외. */
@@ -376,7 +376,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-9: Page publish — PAGE:PUBLISH 보유 → 401/403 외. */
@@ -417,7 +417,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-12: Page schedule — PAGE:PUBLISH 보유 → 401/403 외. */
@@ -458,7 +458,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-15: Page retract — PAGE:PUBLISH 보유 → 401/403 외. */
@@ -502,7 +502,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-18: Template 생성 — TEMPLATE:WRITE 보유 → 401/403 외. */
@@ -543,7 +543,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A1-21: Template 수정 — TEMPLATE:WRITE 보유 → 401/403 외. */
@@ -601,7 +601,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A2-3: Block 생성 — BLOCK:WRITE 보유 → 401/403 외. */
@@ -642,7 +642,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A2-6: Block 수정 — BLOCK:WRITE 보유 → 401/403 외. */
@@ -703,7 +703,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A3-3: Widget 생성 — SUPER_ADMIN 보유 → 401/403 외. */
@@ -744,7 +744,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A3-6: Widget 수정 — SUPER_ADMIN 보유 → 401/403 외. */
@@ -800,7 +800,7 @@ class AuthorizationMatrixExpandIT {
             mockMvc.perform(get("/api/v1/system/stats/trend")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A3-10: Stats trend — SYSTEM:STATS 보유 → 401/403 외. */
@@ -858,7 +858,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A4-3: User 강제 로그아웃 — SUPER_ADMIN 보유 → 401/403 외. */
@@ -899,7 +899,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A4-6: Organization 생성 — SUPER_ADMIN 보유 → 401/403 외. */
@@ -1006,7 +1006,7 @@ class AuthorizationMatrixExpandIT {
             mockMvc.perform(get("/api/v1/system/codes")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A5-3: Code 목록 — SYSTEM:CODE:READ 보유 → 401/403 외. */
@@ -1041,7 +1041,7 @@ class AuthorizationMatrixExpandIT {
             mockMvc.perform(get("/api/v1/system/code-groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A5-6: CodeGroup 목록 — SYSTEM:CODE:READ 보유 → 401/403 외. */
@@ -1083,7 +1083,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A5-9: Code 생성 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
@@ -1124,7 +1124,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A5-12: Code 수정 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
@@ -1165,7 +1165,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A5-15: CodeGroup 생성 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
@@ -1217,7 +1217,7 @@ class AuthorizationMatrixExpandIT {
             mockMvc.perform(get("/api/v1/governance/quality-rules")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A6-3: 품질 규칙 조회 — ADMIN 보유 → 401/403 외. */
@@ -1256,7 +1256,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A6-6: 품질 규칙 생성 — ADMIN 보유 → 401/403 외. */
@@ -1297,7 +1297,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A6-9: 복구 훈련 생성 — ADMIN 보유 → 401/403 외. */
@@ -1354,7 +1354,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A7-3: Board 생성 — ADMIN 보유 → 401/403 외. */
@@ -1395,7 +1395,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A7-6: Board 수정 — ADMIN 보유 → 401/403 외. */
@@ -1441,7 +1441,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A7-9: Menu 생성 — MENU:WRITE 보유 → 401/403 외. */
@@ -1482,7 +1482,7 @@ class AuthorizationMatrixExpandIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A7-12: Menu 순서 변경 — MENU:WRITE 보유 → 401/403 외. */
@@ -1519,7 +1519,7 @@ class AuthorizationMatrixExpandIT {
             mockMvc.perform(delete("/api/v1/content/menus/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /** AC-AME-001-A7-15: Menu 삭제 — MENU:WRITE 보유 → 401/403 외. */
