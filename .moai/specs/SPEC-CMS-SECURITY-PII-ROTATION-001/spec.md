@@ -1,8 +1,32 @@
-# SPEC-CMS-SECURITY-PII-ROTATION-001: PII 암호화 키 자동 회전 배치 v0.1
+# SPEC-CMS-SECURITY-PII-ROTATION-001: PII 암호화 키 자동 회전 배치 v0.2
 
-**Status**: Planned (2026-05-11) — PII-KMS-001 Implemented 의존
+**Status**: Planned (2026-05-12 갱신) — PII-KMS-001 Implemented 의존, META 정책 사전 합의
 **Trigger**: PIPA 개인정보 안전성 확보 조치 의무 — 암호화 키 주기적 교체 권고
 **Severity**: P3 (장기 보안 강화, KMS 활성화 후 진입)
+
+## v0.2 변경 이력 (2026-05-12) — META 정책 사전 합의 + 결정 포인트 정밀화
+
+### META-IT-GREEN-MANDATORY-001 Sync Checklist 사전 합의
+본 SPEC RUN 진입 시 META 정책 4 항목 충족 필수:
+- ✅ 단독 GREEN: 키 회전 배치 단위 테스트 + 점진 재암호화 시나리오 GREEN
+- ✅ 통합 GREEN: PII-KMS-001 통합 + Testcontainers (DB + KMS Mock) IT GREEN
+- ✅ @Transactional 위험: 대량 재암호화는 batch transaction (chunk 단위 commit) — 위험 명시
+- ✅ race condition 회피: 회전 중 새 데이터 암호화 시 active version 결정 atomic 필요
+
+### 의존 SPEC 진입 순서
+1. PII-KMS-001 Implemented 완료 (KMS 어댑터 활성화) → 결정 D1-D5
+2. 본 SPEC RUN 진입: 키 회전 배치 + 점진 재암호화 → 결정 D1-D5
+
+### 사용자 결정 (다음 세션 RUN 진입 전)
+| 결정 | 옵션 | 영향 |
+|------|------|------|
+| **D1** 회전 주기 | (a) 1년 (KISA 권고) / (b) 6개월 (PIPA 강화) / (c) 사용자 정의 | 컴플라이언스 vs 운영 부담 |
+| **D2** 회전 방식 | (a) Big bang (전체 일괄) / (b) Rolling (점진 재암호화) / (c) Lazy (decrypt 시점 재암호화) | 운영 영향 vs 일관성 |
+| **D3** 신규 데이터 처리 | (a) 회전 즉시 새 키 사용 / (b) 기간 (graceperiod) 후 새 키 | 가시성 vs 일관성 |
+| **D4** 회전 트리거 | (a) 수동 (관리자 명령) / (b) 자동 (스케줄러, 주기 후) / (c) 하이브리드 | 자동화 vs 통제 |
+| **D5** 회전 실패 처리 | (a) Rollback (이전 키 복원) / (b) Forward fix (수동 개입) / (c) 단계 commit | 데이터 안전성 |
+
+---
 
 ---
 
@@ -68,4 +92,5 @@ PIPA(개인정보 보호법) 제29조 안전성 확보 조치 — 암호화 키 
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | META-IT-GREEN-MANDATORY-001 정책 사전 합의 + 결정 포인트 D1~D5 정밀화 (회전 주기, 회전 방식, 신규 데이터 처리, 회전 트리거, 회전 실패 처리). 의존 SPEC 진입 순서 명확화 (PII-KMS-001 → ROTATION-001). 본 세션 AUTHZ-IT-EXPAND-002/REGRESSION-001에서 검증된 META 패턴 적용. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. README SPEC 표에는 있으나 .moai/specs/ 디렉토리 누락 보완. PII-KMS-001 Implemented 의존 (장기 P3). PIPA 안전성 확보 조치 의무 키 주기적 교체 권고 대응. 결정 포인트 D1~D4 (회전 주기, 재암호화 방식, 구 키 보존 정책, 회전 트리거). REQ-PII-ROT-001/002/003 골격. 실제 RUN은 KMS 활성화 후 운영 안정화 시점 진입 권장. |

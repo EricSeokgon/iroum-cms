@@ -32,6 +32,16 @@
   - 운영 코드 변경 0건, IT 시나리오 정정만
   (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
 
+- **PII-KMS-001 + PII-ROTATION-001 v0.2 — META 정책 사전 합의 + 결정 포인트 정밀화**
+  - PII-KMS-001: D1-D5 (KMS 공급자, 키 가져오기, 캐싱, Failover, IT 환경) + RUN 진입 절차 5단계
+  - PII-ROTATION-001: D1-D5 (회전 주기, 회전 방식, 신규 데이터 처리, 회전 트리거, 회전 실패 처리)
+  - 두 SPEC 모두 META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  - 본 세션 검증된 패턴 (helper, race condition 회피) 사전 참조
+  - 의존 SPEC 진입 순서 명확화: PII-KMS-001 → PII-ROTATION-001
+  - RUN 진입 전 사용자 결정 확정 필요 (AskUserQuestion)
+  - 정책 문서 갱신만, 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-PII-KMS-001 v0.2 + SPEC-CMS-SECURITY-PII-ROTATION-001 v0.2)
+
 - **AUTHZ-IT-EXPAND-003 SPEC v0.1 Planned — 운영 ~120 endpoint 전체 IT 커버 (AUTHZ 트랙 3차)**
   - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003/spec.md` 신규
   - AUTHZ-IT-EXPAND-001 (29) + EXPAND-002 (19) = 누적 54 endpoint → 운영 실측 ~120 endpoint 미커버 ~66 갭
