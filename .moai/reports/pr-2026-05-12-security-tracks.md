@@ -1,3 +1,20 @@
+# PR v7: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS-001 + META v0.3 + REGRESSION 100% + EXPAND-004 완결
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **42 commits** (`667332d` ~ `5b0d5c1`)
+**Files**: **41 changed (+5220 / -415)**
+**운영 코드 변경**: **2건** (AwsKmsPiiKeyVault, AwsKmsPiiKeyVaultProperties)
+
+## v7 핵심 산출 (v6 대비 추가)
+- **SPEC-CMS-SECURITY-PII-KMS-001 Implemented**: AWS KMS KEK-DEK 어댑터 완성
+  - AwsKmsPiiKeyVault: 부팅 시 fail-fast 복호화, ConcurrentHashMap 캐시, @Autowired + 패키지-프라이빗 테스트 생성자
+  - AwsKmsPiiKeyVaultProperties: @ConfigurationProperties("pii.keyvault.aws-kms") 타입-세이프 레코드
+  - 단위 테스트 4 GREEN (Mockito KmsClient mock), LocalStack IT 3 GREEN (실제 KMS API)
+  - build.gradle.kts: aws-sdk-kms:2.25.70 + testcontainers-localstack:1.20.4
+
+---
+
 # PR v6: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII 5/5 + META v0.3 + REGRESSION 100% + EXPAND-004 Implemented — AUTHZ 트랙 완전 종결
 
 **Branch**: feature/security-tracks-2026-05-12
