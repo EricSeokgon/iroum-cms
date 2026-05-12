@@ -161,8 +161,15 @@ class AuthorizationMatrixExpand2IT {
                     .andExpect(status().is(not(equalTo(401))))
                     .andExpect(status().is(not(equalTo(403))));
         } catch (jakarta.servlet.ServletException e) {
-            // 권한 통과 후 service IllegalArgumentException — 권한 검증 IT 본질적 PASS
-            if (e.getCause() instanceof IllegalArgumentException) {
+            // 권한 통과 후 service domain exception (IllegalArgumentException 또는 운영 도메인 RuntimeException)
+            // — 권한 검증 IT 본질적 PASS. AuthenticationException/AccessDeniedException은 권한 실패이므로 제외.
+            Throwable cause = e.getCause();
+            if (cause instanceof IllegalArgumentException) {
+                return;
+            }
+            if (cause instanceof RuntimeException
+                    && !(cause instanceof org.springframework.security.access.AccessDeniedException)
+                    && !(cause instanceof org.springframework.security.core.AuthenticationException)) {
                 return;
             }
             throw e;
@@ -459,15 +466,74 @@ class AuthorizationMatrixExpand2IT {
         }
     }
 
-    /** §A.4 UserAuditDomainTests — USER:READ, AUDIT:READ (2 어휘). */
+    /** §A.4 UserAuditDomainTests — USER:READ, AUDIT:READ (2 어휘). Step 3 Phase B 활성화. */
     @Nested
     @DisplayName("§A.4 UserAuditDomainTests (2 어휘, Step 3 활성화)")
     class UserAuditDomainTests {
+
+        // ── USER:READ + AUDIT:READ AND 조건 — PersonalDataAccessController GET /api/v1/audit/personal-data-access ──
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — USER:READ/AUDIT:READ 매트릭스")
-        @DisplayName("§A.4 placeholder: Step 3 활성화 대기")
-        void userAuditDomain_placeholder_step3() {
-            // PersonalDataAccessController, LoginHistoryController endpoint
+        @DisplayName("AC-AME2-A4-1: GET /api/v1/audit/personal-data-access — Authorization 부재 + 401")
+        void pdaList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/audit/personal-data-access"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A4-2: GET /api/v1/audit/personal-data-access — AUDIT:READ만 보유 (USER:READ 부재) + 403")
+        void pdaList_missingUserRead_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("AUDIT:READ")); // USER:READ 부재
+            mockMvc.perform(get("/api/v1/audit/personal-data-access")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A4-3: GET /api/v1/audit/personal-data-access — AUDIT:READ + USER:READ 동시 보유 + 401/403 아님 (AND 통과)")
+        void pdaList_hasBothAuthorities_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("AUDIT:READ", "USER:READ"));
+            mockMvc.perform(get("/api/v1/audit/personal-data-access")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── AUDIT:READ — PermissionChangeController class-level GET /api/v1/audit/permission-changes ──
+        @Test
+        @DisplayName("AC-AME2-A4-4: GET /api/v1/audit/permission-changes — Authorization 부재 + 401")
+        void permissionChanges_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/audit/permission-changes"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A4-5: GET /api/v1/audit/permission-changes — AUDIT:READ 부재 + 403")
+        void permissionChanges_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // AUDIT:READ 부재
+            mockMvc.perform(get("/api/v1/audit/permission-changes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A4-6: GET /api/v1/audit/permission-changes — AUDIT:READ 보유 + 401/403 아님")
+        void permissionChanges_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("AUDIT:READ"));
+            mockMvc.perform(get("/api/v1/audit/permission-changes")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── AUDIT:READ — LoginHistoryController class-level GET /api/v1/audit/login-history ──
+        @Test
+        @DisplayName("AC-AME2-A4-7: GET /api/v1/audit/login-history — AUDIT:READ 보유 + 401/403 아님 (class-level 검증)")
+        void loginHistory_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("AUDIT:READ"));
+            mockMvc.perform(get("/api/v1/audit/login-history")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 
@@ -504,27 +570,263 @@ class AuthorizationMatrixExpand2IT {
         }
     }
 
-    /** §A.6 SystemSettingDomainTests — SYSTEM:READ, SETTING:READ/WRITE, ADMIN (4 어휘). */
+    /** §A.6 SystemSettingDomainTests — SYSTEM:READ, SETTING:READ/WRITE, ADMIN (4 어휘). Step 3 Phase B 활성화. */
     @Nested
     @DisplayName("§A.6 SystemSettingDomainTests (4 어휘, Step 3 활성화)")
     class SystemSettingDomainTests {
+
+        // ── SYSTEM:READ — SeoRedirectController GET /api/v1/content/seo/redirects ──
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — SYSTEM:READ/SETTING:READ/WRITE/ADMIN 매트릭스")
-        @DisplayName("§A.6 placeholder: Step 3 활성화 대기")
-        void systemSettingDomain_placeholder_step3() {
-            // SYSTEM:SETTING:READ vs WRITE 분리 회귀 + SYSTEM:READ vs ADMIN 분리 회귀 검증
+        @DisplayName("AC-AME2-A6-1: GET /api/v1/content/seo/redirects — Authorization 부재 + 401")
+        void seoList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/content/seo/redirects"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-2: GET /api/v1/content/seo/redirects — SYSTEM:READ 부재 + 403")
+        void seoList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SYSTEM:READ 부재
+            mockMvc.perform(get("/api/v1/content/seo/redirects")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-3: GET /api/v1/content/seo/redirects — SYSTEM:READ 보유 + 401/403 아님")
+        void seoList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:READ"));
+            mockMvc.perform(get("/api/v1/content/seo/redirects")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── SYSTEM:SETTING:READ — SystemSettingController GET /api/v1/system/settings ──
+        @Test
+        @DisplayName("AC-AME2-A6-4: GET /api/v1/system/settings — Authorization 부재 + 401")
+        void settingsList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/settings"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-5: GET /api/v1/system/settings — SYSTEM:SETTING:READ 부재 + 403")
+        void settingsList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SYSTEM:SETTING:READ 부재
+            mockMvc.perform(get("/api/v1/system/settings")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-6: GET /api/v1/system/settings — SYSTEM:SETTING:READ 보유 + 401/403 아님")
+        void settingsList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:SETTING:READ"));
+            mockMvc.perform(get("/api/v1/system/settings")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── SYSTEM:SETTING:WRITE — SystemSettingController PUT /api/v1/system/settings/{key} ──
+        private static final String SETTING_BODY = "{\"value\":\"test-value\",\"description\":\"test\"}";
+
+        @Test
+        @DisplayName("AC-AME2-A6-7: PUT /api/v1/system/settings/{key} — Authorization 부재 + 401")
+        void settingsPut_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/system/settings/test.key")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SETTING_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-8: PUT /api/v1/system/settings/{key} — SETTING:WRITE 부재 + 403")
+        void settingsPut_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SETTING:WRITE 부재
+            mockMvc.perform(put("/api/v1/system/settings/test.key")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SETTING_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-9: PUT /api/v1/system/settings/{key} — SETTING:WRITE 보유 + 401/403 아님")
+        void settingsPut_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:SETTING:WRITE"));
+            assertAuthzPassed(put("/api/v1/system/settings/test.key")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(SETTING_BODY));
+        }
+
+        // ── 분리 회귀: SETTING:READ 권한자가 PUT 시도 → 403 ──
+        @Test
+        @DisplayName("AC-AME2-A6-10: PUT /api/v1/system/settings/{key} — SETTING:READ만 보유 + 403 (분리 회귀)")
+        void settingsPut_hasReadOnly_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:SETTING:READ")); // WRITE 부재
+            mockMvc.perform(put("/api/v1/system/settings/test.key")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SETTING_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        // ── SYSTEM:ADMIN — SiteController POST /api/v1/content/sites ──
+        private static final String SITE_CREATE_BODY =
+                "{\"name\":\"테스트 사이트\",\"domain\":\"new.example.com\",\"defaultLanguage\":\"ko\"}";
+
+        @Test
+        @DisplayName("AC-AME2-A6-11: POST /api/v1/content/sites — Authorization 부재 + 401")
+        void siteCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/content/sites")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_CREATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-12: POST /api/v1/content/sites — SYSTEM:ADMIN 부재 + 403")
+        void siteCreate_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // SYSTEM:ADMIN 부재
+            mockMvc.perform(post("/api/v1/content/sites")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_CREATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A6-13: POST /api/v1/content/sites — SYSTEM:ADMIN 보유 + 401/403 아님")
+        void siteCreate_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:ADMIN"));
+            // 운영 service SiteMultiDisabledException (멀티사이트 비활성) — 권한 통과 증명
+            assertAuthzPassed(post("/api/v1/content/sites")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(SITE_CREATE_BODY));
+        }
+
+        // ── 분리 회귀: SYSTEM:READ 권한자가 POST /sites (SYSTEM:ADMIN) 시도 → 403 ──
+        @Test
+        @DisplayName("AC-AME2-A6-14: POST /api/v1/content/sites — SYSTEM:READ만 보유 + 403 (분리 회귀)")
+        void siteCreate_hasReadOnly_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:READ")); // SYSTEM:ADMIN 부재
+            mockMvc.perform(post("/api/v1/content/sites")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SITE_CREATE_BODY))
+                    .andExpect(status().isForbidden());
         }
     }
 
-    /** §A.7 SystemOperationDomainTests — SYSTEM:MAINT:READ/WRITE, LOG:READ (3 어휘). */
+    /** §A.7 SystemOperationDomainTests — SYSTEM:MAINT:READ/WRITE, LOG:READ (3 어휘). Step 3 Phase B 활성화. */
     @Nested
     @DisplayName("§A.7 SystemOperationDomainTests (3 어휘, Step 3 활성화)")
     class SystemOperationDomainTests {
+
+        // ── SYSTEM:MAINT:READ — MaintenanceController GET /api/v1/system/maintenance ──
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — SYSTEM:MAINT:READ/WRITE/LOG:READ 매트릭스")
-        @DisplayName("§A.7 placeholder: Step 3 활성화 대기")
-        void systemOperationDomain_placeholder_step3() {
-            // SYSTEM:MAINT:READ vs WRITE 분리 회귀 + LOG:READ 매트릭스
+        @DisplayName("AC-AME2-A7-1: GET /api/v1/system/maintenance — Authorization 부재 + 401")
+        void maintList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/maintenance"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-2: GET /api/v1/system/maintenance — SYSTEM:MAINT:READ 부재 + 403")
+        void maintList_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // MAINT:READ 부재
+            mockMvc.perform(get("/api/v1/system/maintenance")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-3: GET /api/v1/system/maintenance — SYSTEM:MAINT:READ 보유 + 401/403 아님")
+        void maintList_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:READ"));
+            mockMvc.perform(get("/api/v1/system/maintenance")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── SYSTEM:MAINT:WRITE — MaintenanceController POST /api/v1/system/maintenance ──
+        private static final String MAINT_BODY =
+                "{\"title\":\"테스트 점검\",\"startAt\":\"2026-12-31T00:00:00Z\",\"endAt\":\"2026-12-31T01:00:00Z\"}";
+
+        @Test
+        @DisplayName("AC-AME2-A7-4: POST /api/v1/system/maintenance — Authorization 부재 + 401")
+        void maintCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/system/maintenance")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MAINT_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-5: POST /api/v1/system/maintenance — SYSTEM:MAINT:WRITE 부재 + 403")
+        void maintCreate_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // MAINT:WRITE 부재
+            mockMvc.perform(post("/api/v1/system/maintenance")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MAINT_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-6: POST /api/v1/system/maintenance — SYSTEM:MAINT:WRITE 보유 + 401/403 아님")
+        void maintCreate_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:WRITE"));
+            mockMvc.perform(post("/api/v1/system/maintenance")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MAINT_BODY))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
+        }
+
+        // ── 분리 회귀: MAINT:READ 권한자가 POST 시도 → 403 ──
+        @Test
+        @DisplayName("AC-AME2-A7-7: POST /api/v1/system/maintenance — MAINT:READ만 보유 + 403 (분리 회귀)")
+        void maintCreate_hasReadOnly_returns403() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:MAINT:READ")); // WRITE 부재
+            mockMvc.perform(post("/api/v1/system/maintenance")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(MAINT_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        // ── SYSTEM:LOG:READ — AccessLogController GET /api/v1/system/access-logs ──
+        @Test
+        @DisplayName("AC-AME2-A7-8: GET /api/v1/system/access-logs — Authorization 부재 + 401")
+        void accessLogs_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/system/access-logs"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-9: GET /api/v1/system/access-logs — SYSTEM:LOG:READ 부재 + 403")
+        void accessLogs_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of()); // LOG:READ 부재
+            mockMvc.perform(get("/api/v1/system/access-logs")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME2-A7-10: GET /api/v1/system/access-logs — SYSTEM:LOG:READ 보유 + 401/403 아님")
+        void accessLogs_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:LOG:READ"));
+            mockMvc.perform(get("/api/v1/system/access-logs")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 }
