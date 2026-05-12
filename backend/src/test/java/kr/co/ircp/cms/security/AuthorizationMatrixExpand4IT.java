@@ -651,32 +651,215 @@ class AuthorizationMatrixExpand4IT {
         }
     }
 
-    /** §A.2 ContentDomainTests — Block 3 + Popup 3 + Page 2 + Template DELETE 1 = 9 endpoint (Phase B). */
+    /** §A.2 ContentDomainTests — Block 2 + Popup 2 + Template PATCH status 1 = 5 endpoint (Phase B 활성화, Page는 100% 커버). */
     @Nested
-    @DisplayName("§A.2 ContentDomainTests (9 미커버, Step 3 Phase B 활성화)")
+    @DisplayName("§A.2 ContentDomainTests (5 미커버, Step 3 Phase B 활성화)")
     class ContentDomainTests {
+
+        // ── DELETE /api/v1/content/pages/{pageId}/blocks/{blockId} — hasAuthority(BLOCK:WRITE) ──
         @Test
-        @Disabled("Step 3 (Phase B)에서 활성화 예정 — Block/Popup/Page/Template 잔여 endpoint")
-        @DisplayName("§A.2 placeholder: Step 3 활성화 대기")
-        void contentDomain_placeholder_step3() {
-            // Block: PUT order/DELETE/get
-            // Popup: list/PUT/DELETE
-            // Page: list/get
-            // Template: DELETE
+        @DisplayName("AC-AME4-A2-1: DELETE /api/v1/content/pages/{pageId}/blocks/{blockId} — Authorization 부재 + 401")
+        void blockDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/content/pages/1/blocks/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-2: DELETE /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE 부재 + 403")
+        void blockDelete_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("PAGE:WRITE"));
+            mockMvc.perform(delete("/api/v1/content/pages/1/blocks/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-3: DELETE /api/v1/content/pages/{pageId}/blocks/{blockId} — BLOCK:WRITE 보유 + 401/403 아님")
+        void blockDelete_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("BLOCK:WRITE"));
+            assertAuthzPassed(delete("/api/v1/content/pages/1/blocks/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PATCH /api/v1/content/pages/{pageId}/blocks/order — hasAuthority(BLOCK:WRITE) ──
+        private static final String BLOCK_ORDER_BODY = "{\"items\":[{\"id\":1,\"sortOrder\":0}]}";
+
+        @Test
+        @DisplayName("AC-AME4-A2-4: PATCH /api/v1/content/pages/{pageId}/blocks/order — Authorization 부재 + 401")
+        void blockOrder_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(patch("/api/v1/content/pages/1/blocks/order")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(BLOCK_ORDER_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-5: PATCH /api/v1/content/pages/{pageId}/blocks/order — BLOCK:WRITE 부재 + 403")
+        void blockOrder_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(patch("/api/v1/content/pages/1/blocks/order")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(BLOCK_ORDER_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-6: PATCH /api/v1/content/pages/{pageId}/blocks/order — BLOCK:WRITE 보유 + 401/403 아님")
+        void blockOrder_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("BLOCK:WRITE"));
+            assertAuthzPassed(patch("/api/v1/content/pages/1/blocks/order")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(BLOCK_ORDER_BODY));
+        }
+
+        // ── PUT /api/v1/content/popups/{id} — hasAuthority(CONTENT:WRITE) ──
+        // PopupRequest required: siteId, title, contentHtml, showFrom, showUntil
+        private static final String POPUP_BODY =
+                "{\"siteId\":1,\"title\":\"테스트 팝업\",\"contentHtml\":\"<p>test</p>\","
+                        + "\"showFrom\":\"2026-12-31T00:00:00Z\",\"showUntil\":\"2026-12-31T01:00:00Z\"}";
+
+        @Test
+        @DisplayName("AC-AME4-A2-7: PUT /api/v1/content/popups/{id} — Authorization 부재 + 401")
+        void popupUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/content/popups/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(POPUP_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-8: PUT /api/v1/content/popups/{id} — CONTENT:WRITE 부재 + 403")
+        void popupUpdate_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(put("/api/v1/content/popups/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(POPUP_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-9: PUT /api/v1/content/popups/{id} — CONTENT:WRITE 보유 + 401/403 아님")
+        void popupUpdate_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(put("/api/v1/content/popups/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(POPUP_BODY));
+        }
+
+        // ── DELETE /api/v1/content/popups/{id} — hasAuthority(CONTENT:WRITE) ──
+        @Test
+        @DisplayName("AC-AME4-A2-10: DELETE /api/v1/content/popups/{id} — Authorization 부재 + 401")
+        void popupDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/content/popups/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-11: DELETE /api/v1/content/popups/{id} — CONTENT:WRITE 부재 + 403")
+        void popupDelete_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/content/popups/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-12: DELETE /api/v1/content/popups/{id} — CONTENT:WRITE 보유 + 401/403 아님")
+        void popupDelete_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(delete("/api/v1/content/popups/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PATCH /api/v1/content/templates/{id}/status — hasAuthority(TEMPLATE:WRITE) ──
+        @Test
+        @DisplayName("AC-AME4-A2-13: PATCH /api/v1/content/templates/{id}/status — Authorization 부재 + 401")
+        void templateStatus_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(patch("/api/v1/content/templates/1/status").param("status", "ACTIVE"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-14: PATCH /api/v1/content/templates/{id}/status — TEMPLATE:WRITE 부재 + 403")
+        void templateStatus_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(patch("/api/v1/content/templates/1/status")
+                            .param("status", "ACTIVE")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A2-15: PATCH /api/v1/content/templates/{id}/status — TEMPLATE:WRITE 보유 + 401/403 아님")
+        void templateStatus_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("TEMPLATE:WRITE"));
+            assertAuthzPassed(patch("/api/v1/content/templates/1/status")
+                    .param("status", "ACTIVE")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }
 
-    /** §A.3 AuthSystemDomainTests — Role 1 + User 1 + CacheAdmin 1 = 3 endpoint (Phase C). */
+    /** §A.3 AuthSystemDomainTests — Role 1 (class-level) + CacheAdmin stats 1 = 2 endpoint (Phase C 활성화). */
     @Nested
-    @DisplayName("§A.3 AuthSystemDomainTests (3 미커버, Step 3 Phase C 활성화)")
+    @DisplayName("§A.3 AuthSystemDomainTests (2 미커버, Step 3 Phase C 활성화)")
     class AuthSystemDomainTests {
+
+        // ── GET /api/v1/roles — 클래스 레벨 hasRole(SUPER_ADMIN) ──
         @Test
-        @Disabled("Step 3 (Phase C)에서 활성화 예정 — Role/User 추가/CacheAdmin 잔여")
-        @DisplayName("§A.3 placeholder: Step 3 활성화 대기")
-        void authSystemDomain_placeholder_step3() {
-            // Role: GET list
-            // User: 추가 endpoint
-            // CacheAdmin: PUT
+        @DisplayName("AC-AME4-A3-1: GET /api/v1/roles — Authorization 부재 + 401")
+        void roleList_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/roles"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A3-2: GET /api/v1/roles — DEPT_ADMIN 단독 + 403 (SUPER_ADMIN 부재, class-level)")
+        void roleList_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/roles")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A3-3: GET /api/v1/roles — SUPER_ADMIN 보유 + 401/403 아님 (class-level)")
+        void roleList_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            // assertAuthzPassed: 운영 RoleMapper의 createdat 컬럼 타입 매핑 오류(DataIntegrityViolationException)가
+            // ServletException으로 wrap되는 known 운영 버그 → 권한 통과 IT 본질적 PASS 처리
+            assertAuthzPassed(get("/api/v1/roles")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /api/v1/dashboard/cache/stats — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME4-A3-4: GET /api/v1/dashboard/cache/stats — Authorization 부재 + 401")
+        void cacheStats_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(get("/api/v1/dashboard/cache/stats"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A3-5: GET /api/v1/dashboard/cache/stats — USER 역할 + 403")
+        void cacheStats_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/dashboard/cache/stats")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A3-6: GET /api/v1/dashboard/cache/stats — DEPT_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void cacheStats_hasDeptAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(get("/api/v1/dashboard/cache/stats")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().is(not(equalTo(401))))
+                    .andExpect(status().is(not(equalTo(403))));
         }
     }
 }
