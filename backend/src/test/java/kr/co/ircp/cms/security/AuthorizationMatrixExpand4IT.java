@@ -527,6 +527,128 @@ class AuthorizationMatrixExpand4IT {
             assertAuthzPassed(delete("/api/v1/qnas/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
+
+        // ── SurveyController (CONTENT:WRITE OR ADMIN/SUPER_ADMIN/CONTENT_ADMIN) ──
+        // SurveyCreateRequest required: title, startAt, endAt, questions (NotEmpty)
+        // SurveyQuestionRequest required: questionText, questionType
+        private static final String SURVEY_CREATE_BODY =
+                "{\"title\":\"테스트 설문\",\"startAt\":\"2026-12-31T00:00:00Z\",\"endAt\":\"2026-12-31T23:59:59Z\","
+                        + "\"isAnonymous\":false,"
+                        + "\"questions\":[{\"questionText\":\"Q1\",\"questionType\":\"TEXT\",\"required\":true,\"sortOrder\":0}]}";
+        private static final String SURVEY_UPDATE_BODY = "{}";
+
+        // ── POST /api/v1/surveys ──
+        @Test
+        @DisplayName("AC-AME4-A1-35: POST /api/v1/surveys — Authorization 부재 + 401")
+        void surveyCreate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/surveys")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SURVEY_CREATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-36: POST /api/v1/surveys — 모든 권한 부재 + 403")
+        void surveyCreate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/surveys")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SURVEY_CREATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-37: POST /api/v1/surveys — CONTENT_ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void surveyCreate_hasContentAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("CONTENT_ADMIN"), Set.of());
+            assertAuthzPassed(post("/api/v1/surveys")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(SURVEY_CREATE_BODY));
+        }
+
+        // ── PUT /api/v1/surveys/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-38: PUT /api/v1/surveys/{id} — Authorization 부재 + 401")
+        void surveyUpdate_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/surveys/1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SURVEY_UPDATE_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-39: PUT /api/v1/surveys/{id} — 모든 권한 부재 + 403")
+        void surveyUpdate_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(put("/api/v1/surveys/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(SURVEY_UPDATE_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-40: PUT /api/v1/surveys/{id} — CONTENT:WRITE 보유 + 401/403 아님")
+        void surveyUpdate_hasContentWrite_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(put("/api/v1/surveys/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(SURVEY_UPDATE_BODY));
+        }
+
+        // ── DELETE /api/v1/surveys/{id} ──
+        @Test
+        @DisplayName("AC-AME4-A1-41: DELETE /api/v1/surveys/{id} — Authorization 부재 + 401")
+        void surveyDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/surveys/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-42: DELETE /api/v1/surveys/{id} — 모든 권한 부재 + 403")
+        void surveyDelete_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/surveys/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-43: DELETE /api/v1/surveys/{id} — ADMIN 보유 + 401/403 아님 (OR bypass)")
+        void surveyDelete_hasAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/surveys/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /api/v1/surveys/{id}/results — CONTENT:READ OR ADMIN/SUPER_ADMIN/CONTENT_ADMIN ──
+        // 운영 SecurityConfig: GET /api/v1/surveys/** permitAll → anonymous 통과 후 @PreAuthorize 거부 → 403
+        @Test
+        @DisplayName("AC-AME4-A1-44: GET /api/v1/surveys/{id}/results — Authorization 부재 + 403 (permitAll → @PreAuthorize 거부)")
+        void surveyResults_unauthenticated_returns403() throws Exception {
+            mockMvc.perform(get("/api/v1/surveys/1/results"))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-45: GET /api/v1/surveys/{id}/results — 모든 권한 부재 + 403")
+        void surveyResults_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/surveys/1/results")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-46: GET /api/v1/surveys/{id}/results — CONTENT:READ 보유 + 401/403 아님 (OR bypass)")
+        void surveyResults_hasContentRead_passesAuthz() throws Exception {
+            givenValidToken(Set.of("VIEWER"), Set.of("CONTENT:READ"));
+            assertAuthzPassed(get("/api/v1/surveys/1/results")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
     }
 
     /** §A.2 ContentDomainTests — Block 3 + Popup 3 + Page 2 + Template DELETE 1 = 9 endpoint (Phase B). */
