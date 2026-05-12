@@ -827,27 +827,133 @@ class AuthorizationMatrixExpand3IT {
         }
     }
 
-    /** §A.5 DashboardWidgetSettingDomainTests — DashboardWidget + SystemSetting 미커버 (Phase B). */
+    /** §A.5 DashboardWidgetDomainTests — Widget 2 미커버 endpoint (Phase B 활성화, Setting은 EXPAND-002 100% 커버). */
     @Nested
-    @DisplayName("§A.5 DashboardWidgetSettingDomainTests (Widget 2 + Setting 2 미커버, Step 4 Phase B 활성화)")
+    @DisplayName("§A.5 DashboardWidgetDomainTests (Widget 2 미커버, Step 4 Phase B 활성화)")
     class DashboardWidgetSettingDomainTests {
+
+        // WidgetRequest required: code, name, widgetType, dataSource, dataSourceConfig
+        private static final String WIDGET_BODY = "{\"code\":\"TEST_W\",\"name\":\"테스트 위젯\","
+                + "\"widgetType\":\"CHART\",\"dataSource\":\"sql\",\"dataSourceConfig\":\"{}\"}";
+
+        // ── DELETE /widgets/{id} — hasRole(SUPER_ADMIN) ──
         @Test
-        @Disabled("Step 4 (Phase B)에서 활성화 예정 — Widget GET/DELETE + Setting DELETE 등")
-        @DisplayName("§A.5 placeholder: Step 4 활성화 대기")
-        void widgetSettingDomain_placeholder_step4() {
-            // Widget list, get, delete + Setting delete
+        @DisplayName("AC-AME3-A5-1: DELETE /api/v1/dashboard/widgets/{id} — Authorization 부재 + 401")
+        void widgetDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/dashboard/widgets/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A5-2: DELETE /api/v1/dashboard/widgets/{id} — DEPT_ADMIN 단독 + 403 (SUPER_ADMIN 부재)")
+        void widgetDelete_missingSuperAdmin_returns403() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            mockMvc.perform(delete("/api/v1/dashboard/widgets/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A5-3: DELETE /api/v1/dashboard/widgets/{id} — SUPER_ADMIN 보유 + 401/403 아님")
+        void widgetDelete_hasSuperAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("SUPER_ADMIN"), Set.of());
+            assertAuthzPassed(delete("/api/v1/dashboard/widgets/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── POST /widgets/preview — hasAnyRole(SUPER_ADMIN, DEPT_ADMIN) ──
+        @Test
+        @DisplayName("AC-AME3-A5-4: POST /api/v1/dashboard/widgets/preview — Authorization 부재 + 401")
+        void widgetPreview_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(post("/api/v1/dashboard/widgets/preview")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(WIDGET_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A5-5: POST /api/v1/dashboard/widgets/preview — USER 역할 + 403")
+        void widgetPreview_missingRole_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(post("/api/v1/dashboard/widgets/preview")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(WIDGET_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A5-6: POST /api/v1/dashboard/widgets/preview — DEPT_ADMIN 보유 + 401/403 아님")
+        void widgetPreview_hasDeptAdmin_passesAuthz() throws Exception {
+            givenValidToken(Set.of("DEPT_ADMIN"), Set.of());
+            assertAuthzPassed(post("/api/v1/dashboard/widgets/preview")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(WIDGET_BODY));
         }
     }
 
-    /** §A.6 BannerSiteI18nDomainTests — Banner + Site + I18n 미커버 (Phase B). */
+    /** §A.6 BannerI18nDomainTests — Banner 1 + I18n 1 미커버 (Phase B 활성화, Site는 EXPAND-002 100% 커버). */
     @Nested
-    @DisplayName("§A.6 BannerSiteI18nDomainTests (Banner 2 + Site 1 + I18n 1 미커버, Step 4 Phase B 활성화)")
+    @DisplayName("§A.6 BannerI18nDomainTests (Banner 1 + I18n 1 미커버, Step 4 Phase B 활성화)")
     class BannerSiteI18nDomainTests {
+
+        // ── DELETE /banners/{id} — hasAuthority(CONTENT:WRITE) ──
         @Test
-        @Disabled("Step 4 (Phase B)에서 활성화 예정 — Banner GET/DELETE + Site GET + I18n PUT 등")
-        @DisplayName("§A.6 placeholder: Step 4 활성화 대기")
-        void bannerSiteI18nDomain_placeholder_step4() {
-            // Banner list/delete + Site get + I18n update
+        @DisplayName("AC-AME3-A6-1: DELETE /api/v1/content/banners/{id} — Authorization 부재 + 401")
+        void bannerDelete_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(delete("/api/v1/content/banners/1"))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A6-2: DELETE /api/v1/content/banners/{id} — CONTENT:WRITE 부재 + 403")
+        void bannerDelete_missingAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(delete("/api/v1/content/banners/1")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A6-3: DELETE /api/v1/content/banners/{id} — CONTENT:WRITE 보유 + 401/403 아님")
+        void bannerDelete_hasAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(delete("/api/v1/content/banners/1")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── PUT /content/i18n — hasAuthority(CONTENT:WRITE) ──
+        private static final String I18N_BODY = "{\"items\":[]}";
+
+        @Test
+        @DisplayName("AC-AME3-A6-4: PUT /api/v1/content/i18n — Authorization 부재 + 401")
+        void i18nBulkUpsert_unauthenticated_returns401() throws Exception {
+            mockMvc.perform(put("/api/v1/content/i18n")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(I18N_BODY))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A6-5: PUT /api/v1/content/i18n — CONTENT:WRITE 부재(CONTENT:READ만) + 403 (분리 회귀)")
+        void i18nBulkUpsert_missingWriteAuthority_returns403() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:READ")); // WRITE 부재
+            mockMvc.perform(put("/api/v1/content/i18n")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(I18N_BODY))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME3-A6-6: PUT /api/v1/content/i18n — CONTENT:WRITE 보유 + 401/403 아님")
+        void i18nBulkUpsert_hasWriteAuthority_passesAuthz() throws Exception {
+            givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE"));
+            assertAuthzPassed(put("/api/v1/content/i18n")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(I18N_BODY));
         }
     }
 
