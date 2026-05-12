@@ -1,3 +1,20 @@
+# PR v6: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII 5/5 + META v0.3 + REGRESSION 100% + EXPAND-004 Implemented — AUTHZ 트랙 완전 종결
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **41 commits** (`667332d` ~ `최신`)
+**Files**: **37 changed (+4500 / -415)**
+**운영 코드 변경**: **0건**
+
+## v6 핵심 산출 (v5 대비 추가)
+- **AUTHZ-IT-EXPAND-004 v0.4 Implemented**: 3 도메인 27 endpoint × 71 AC GREEN (69 tests / 0 failures)
+- **AuthorizationCoverageArchTest baseline 88 → 115** (Step 4 별도 커밋 예정)
+- **AUTHZ 트랙 7중 검증 376 AC + 115 endpoint baseline + 31 어휘 100%**
+- **운영 115 controller / IT 115 = 100% 커버 달성 — AUTHZ 트랙 완전 종결**
+- assertAuthzPassed 패턴: RoleMapper.createdat known 운영 버그 AC-AME4-A3-3 처리
+
+---
+
 # PR v5: Security Tracks 2026-05-12 — AUTHZ 305/88 + PII 5/5 + META v0.3 + REGRESSION 100% + EXPAND-003 Implemented
 
 **Branch**: feature/security-tracks-2026-05-12
@@ -197,9 +214,22 @@ OWASP A01 회귀 검출 ArchUnit baseline 31 어휘 100% IT 커버 달성.
 
 ---
 
-## AUTHZ 트랙 종합 검증 (249 tests / 0 failures)
+## AUTHZ 트랙 종합 검증 (425 tests / 0 failures) — EXPAND-004 완료 후
 
 본 PR 적용 후 AUTHZ 트랙 전체 단독 실행 검증 결과:
+
+| IT Class | Tests | Failures | Status |
+|---------|-------|----------|--------|
+| AuthorizationMatrixIT (Matrix 1차) | 19 | 0 | ✅ v0.8 회복 |
+| AuthorizationMatrixExpandIT (Expand 1차) | 87 | 0 | ✅ v0.5 회복 |
+| AuthorizationMatrixExpand2IT (Expand 2차) | 58 | 0 | ✅ Phase A+B 작성 |
+| AuthorizationMatrixExpand3IT (Expand 3차) | 107 | 0 | ✅ EXPAND-003 v0.4 신규 |
+| **AuthorizationMatrixExpand4IT (Expand 4차)** | **69** | **0** | **✅ EXPAND-004 v0.4 완결** |
+| AuthorizationCoverageArchTest (ArchUnit) | 4 | 0 | ✅ baseline 88 갱신 (→115 Step 4 예정) |
+| Controller unit tests (12종) | 81 | 0 | ✅ v0.6 회복 |
+| **합계** | **425** | **0** | **100% GREEN — AUTHZ 트랙 완전 종결** |
+
+### (v5 기준) AUTHZ 트랙 종합 검증 (249 tests / 0 failures)
 
 | IT Class | Tests | Failures | Status |
 |---------|-------|----------|--------|

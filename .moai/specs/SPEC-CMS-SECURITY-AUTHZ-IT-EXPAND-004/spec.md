@@ -1,6 +1,34 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.3
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.4
 
-**Status**: Step 2 인프라 완료 (2026-05-12) — AuthorizationMatrixExpand4IT 신설 + smoke GREEN
+**Status**: Implemented (2026-05-12) — 69 tests / 0 failures / 71 AC GREEN
+
+## v0.4 변경 이력 (2026-05-12) — Step 3 §A.2+§A.3 완성 + AUTHZ 트랙 종결
+
+### 산출물
+- `AuthorizationMatrixExpand4IT.java`: §A.2 ContentDomainTests 18 AC + §A.3 AuthSystemDomainTests 6 AC 추가
+- 누적 AC: §0(1) + §A.1(46) + §A.2(18) + §A.3(6) = 71 AC — 69 tests / 0 failures GREEN
+- assertAuthzPassed 패턴: AC-AME4-A3-3 RoleMapper.createdat known 운영 버그 처리
+
+### §A.2 ContentDomainTests (18 AC) — 5 endpoint
+- DELETE /api/v1/content/pages/{pageId}/blocks/{blockId} (BLOCK:WRITE) — 3 AC
+- PATCH /api/v1/content/pages/{pageId}/blocks/order (BLOCK:WRITE) — 3 AC
+- POST /api/v1/popups (CONTENT:WRITE OR ADMIN/CONTENT_ADMIN) — 3 AC
+- DELETE /api/v1/popups/{id} (CONTENT:WRITE OR ADMIN/CONTENT_ADMIN) — 3 AC
+- PATCH /api/v1/content/templates/{id}/status (CONTENT:WRITE) — 3 AC
+- (Phase B: 3 AC 추가)
+
+### §A.3 AuthSystemDomainTests (6 AC) — 2 endpoint
+- GET /api/v1/roles (SUPER_ADMIN class-level) — 3 AC
+- GET /api/v1/dashboard/cache/stats (SUPER_ADMIN OR DEPT_ADMIN) — 3 AC
+
+### AUTHZ 트랙 완전 종결
+- AUTHZ-MATRIX-001(19) + EXPAND-001(88) + EXPAND-002(57) + EXPAND-003(106) + EXPAND-004(71) + CTRL-001(31) + AUTODETECT-001(4) ≈ 376 AC
+- ArchUnit baseline 115 endpoint 100% IT 매핑 달성 (Step 4에서 갱신 예정)
+
+### Step 3 검증 결과
+`./gradlew cleanTest test --tests "AuthorizationMatrixExpand4IT"` → **69 tests / 0 failures BUILD SUCCESSFUL**
+
+---
 
 ## v0.3 변경 이력 (2026-05-12) — Step 2 IT 인프라 신설
 
