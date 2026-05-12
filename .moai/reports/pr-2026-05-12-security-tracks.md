@@ -1,9 +1,10 @@
-# PR v2: Security Tracks 2026-05-12 — PII 5/5 + AUTHZ 199 AC + META + REGRESSION-001 (51→0)
+# PR v3: Security Tracks 2026-05-12 — AUTHZ 249/0 + PII 5/5 + META + REGRESSION-001 (59→0, 100%)
 
 **Branch**: feature/security-tracks-2026-05-12
 **Base**: main
-**Commits**: **16 commits** (`667332d` ~ `be4b370`)
-**Files**: **25 changed (+1900 / −150)**
+**Commits**: **18 commits** (`667332d` ~ `401931e`)
+**Files**: **27 changed (+2000 / −180)**
+**운영 코드 변경**: **0건**
 
 ---
 
@@ -14,7 +15,7 @@
 - **PII 트랙 5/5 Implemented**: PII-FOLLOWUP-005 Option B @DirtiesContext 적용 → 5 tests 0 failed. PII-FOLLOWUP-001 ~ 005 전체 Implemented.
 - **AUTHZ-IT-EXPAND-002 5중 검증 199 AC**: 19 권한 어휘 × 57 AC + ArchUnit baseline 35 → 54 endpoint 갱신 + 31 어휘 100% IT 커버.
 - **META-IT-GREEN-MANDATORY-001 Implemented**: HARD 정책 4건 + Sync checklist 4 항목 + README §IT mandatory 정책 섹션 신설.
-- **AUTHZ-IT-REGRESSION-001 Implemented (51→0 100% 회복)**: 942b19e 회귀 commit 추적 + ExpandIT 31 RED + controller test 11+종 정정 = 51 RED 100% 회복. AUTHZ-IT-EXPAND-001 v0.2 Status 정상화.
+- **AUTHZ-IT-REGRESSION-001 Fully Implemented (59→0 100% 회복)**: 942b19e 회귀 commit 추적 + ExpandIT 31 + controller test 12종 + MatrixIT 8 = 59 RED 100% 회복. AUTHZ-IT-EXPAND-001 + AUTHZ-MATRIX-001 Status 정상화. **AUTHZ 트랙 종합 검증: 249 tests / 0 failures**.
 - **META 정책 정식 적용**: META-IT-GREEN-MANDATORY-001 v0.2 Implemented. README §IT user environment GREEN mandatory 정책 신설 + Sync checklist 4 항목 명문화.
 
 ---
@@ -100,6 +101,8 @@
 | 14 | `22e2ab2` | test(security): v0.5 — Phase B5 helper + 4 시나리오 (87/0 100%) |
 | 15 | `9e52912` | test(security): v0.6 — Step 4 controller test 11종 (51→0) |
 | 16 | `be4b370` | docs(sync): v0.7 Implemented — Step 5 Sync 완료 |
+| 17 | `73dd887` | docs(report): PR Summary v2 (REGRESSION-001 추가) |
+| 18 | `401931e` | test(security): v0.8 Fully Implemented — MatrixIT 8 RED 추가 회복 (59→0 100%) |
 
 ---
 
@@ -146,8 +149,9 @@
 | PII-FOLLOWUP-005 | Planned | **Implemented v0.3** |
 | AUTHZ-IT-EXPAND-002 | Planned | **Implemented v0.3** |
 | META-IT-GREEN-MANDATORY-001 | (신규) | **Implemented v0.2** |
-| AUTHZ-IT-REGRESSION-001 | (신규) | **Implemented v0.7** (51→0 100%) |
+| AUTHZ-IT-REGRESSION-001 | (신규) | **Fully Implemented v0.8** (59→0 100%) |
 | AUTHZ-IT-EXPAND-001 | Mostly Implemented (회귀) | **Implemented (1차)** (회복) |
+| AUTHZ-MATRIX-001 | (회귀 발견) | **Implemented (1차)** (v0.8 회복) |
 
 ---
 
@@ -163,6 +167,21 @@
 | **합계** | - | **199** | **54** | **31** |
 
 OWASP A01 회귀 검출 ArchUnit baseline 31 어휘 100% IT 커버 달성.
+
+---
+
+## AUTHZ 트랙 종합 검증 (249 tests / 0 failures)
+
+본 PR 적용 후 AUTHZ 트랙 전체 단독 실행 검증 결과:
+
+| IT Class | Tests | Failures | Status |
+|---------|-------|----------|--------|
+| AuthorizationMatrixIT (Matrix 1차) | 19 | 0 | ✅ v0.8 회복 |
+| AuthorizationMatrixExpandIT (Expand 1차) | 87 | 0 | ✅ v0.5 회복 |
+| AuthorizationMatrixExpand2IT (Expand 2차) | 58 | 0 | ✅ Phase A+B 작성 |
+| AuthorizationCoverageArchTest (ArchUnit) | 4 | 0 | ✅ baseline 54 갱신 |
+| Controller unit tests (12종) | 81 | 0 | ✅ v0.6 회복 |
+| **합계** | **249** | **0** | **100% GREEN** |
 
 ---
 
