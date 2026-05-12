@@ -1,7 +1,28 @@
-# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.3
+# SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.4
 
-**Status**: Mostly Implemented (2026-05-12) — AC-009-4 + AC-009-3 GREEN + AC-009-2 잔여 (race condition)
-**Implementation commits**: dc224f2 (AC-009-4 IT 시나리오 정정), b5npgelot RUN (VerificationService REQUIRES_NEW)
+**Status**: Implemented (2026-05-12) — AC-009-3/4 GREEN, AC-009-2는 PII-FOLLOWUP-005 v0.3에서 완전 해결 (5/5 GREEN)
+**Implementation commits**: dc224f2 (AC-009-4 IT 시나리오 정정), a886b20 (VerificationService REQUIRES_NEW), 608855b (AC-009-2 v0.3 Option B)
+
+## v0.4 변경 이력 (2026-05-12) — AC-009-2 PII-FOLLOWUP-005에서 해결, Status 정상화
+
+### AC-009-2 race condition 해결 확정 (PII-FOLLOWUP-005 v0.3)
+본 SPEC v0.3에서 분리된 AC-009-2 race condition은 PII-FOLLOWUP-005 v0.3 Option B (@DirtiesContext AFTER_EACH_TEST_METHOD)로 완전 해결:
+- 단독 GREEN ↔ 통합 GREEN 동등성 보장
+- PiiAuditEnhanceIT 5 tests / 0 failures (BUILD SUCCESSFUL)
+- META-IT-GREEN-MANDATORY-001 REQ-PII-FU2-003 첫 정식 적용 사례
+
+### PII 트랙 5 AC 모두 GREEN
+PiiAuditEnhanceIT.java 5 시나리오:
+- AC-009-2: 본인 row 제외 — GREEN (PII-FOLLOWUP-005)
+- AC-009-3: HMAC lookup-only 미적재 — GREEN (본 SPEC v0.3)
+- AC-009-4: self-access auditing — GREEN (본 SPEC v0.2)
+- AC-FU-003-1: ADMIN findPage N건 — GREEN
+- AC-FU-003-3: 각 target row 적재 — GREEN
+
+### Status: Mostly Implemented → Implemented
+AC-009-2가 후속 SPEC (PII-FOLLOWUP-005)에서 완전 해결되었으므로 본 SPEC도 Implemented로 정상화. 분리 SPEC의 완성을 본 SPEC의 완성으로 인정 (PII 트랙 전체 5/5 GREEN).
+
+---
 
 ## v0.3 변경 이력 (2026-05-12) — UnexpectedRollbackException 해소
 

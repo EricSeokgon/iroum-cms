@@ -32,6 +32,15 @@
   - 운영 코드 변경 0건, IT 시나리오 정정만
   (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
 
+- **PII-FOLLOWUP-004 v0.4 Implemented — Status 정상화 (AC-009-2가 PII-FOLLOWUP-005 v0.3에서 해결, 5/5 GREEN)**
+  - SPEC v0.3 Mostly Implemented → v0.4 Implemented (1차)
+  - AC-009-2 race condition은 본 SPEC v0.3에서 PII-FOLLOWUP-005로 분리되어 후속 해결됨
+  - PII-FOLLOWUP-005 v0.3 Option B (@DirtiesContext) 적용으로 5/5 GREEN 완성
+  - PII 트랙 5 AC 모두 GREEN (AC-009-2/3/4 + AC-FU-003-1/3)
+  - README SPEC 표: Mostly Implemented → Implemented (1차) 정상화
+  - 정책 문서 갱신만 — 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-004 v0.4 Implemented)
+
 - **META-IT-GREEN-MANDATORY-001 v0.3 Evidence 강화 — REGRESSION-001 AUTHZ 회귀 5 case 통합 (PII 5 + AUTHZ 5 = 10 evidence)**
   - SPEC v0.2 Implemented → v0.3 Evidence 강화
   - 추가 evidence 5 case (AUTHZ REGRESSION-001 회복 패턴):
