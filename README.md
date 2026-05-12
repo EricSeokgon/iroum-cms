@@ -305,7 +305,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-003 | PII Audit IT 잔여 2 AC 해소 (옵션 G TRUNCATE cleanup, 핵심 2 AC GREEN) | Implemented (1차) |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (분리) | Partially Diagnosed |
-| SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Planned |
+| SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 
@@ -334,6 +334,59 @@ SPEC 문서 위치: `.moai/specs/`
 5. **GREEN 재확인**: `./gradlew :backend:test --tests "kr.co.ircp.cms.security.archunit.AuthorizationCoverageArchTest"`
 
 자세한 명세: `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001/spec.md` + `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001/spec.md`
+
+---
+
+## IT user environment GREEN mandatory 정책 (META)
+
+**SPEC-CMS-META-IT-GREEN-MANDATORY-001 (2026-05-12 ~)**: PII-FOLLOWUP-001 ~ 005 트랙에서 발견된 5건 false GREEN/race condition evidence 기반 IT 작성 정책.
+
+### HARD 정책 요약 (신규 IT 작성/SPEC Sync 시 필수)
+
+1. **단독 + 통합 양쪽 GREEN 필수** (REQ-PII-FU2-003)
+   - 단독 실행: `./gradlew :backend:test --tests "TestClass.testMethod"` → PASS
+   - 통합 실행: `./gradlew :backend:test` 또는 `./gradlew :backend:integrationTest` → BUILD SUCCESSFUL
+   - 단독만 GREEN인 SPEC은 **Mostly Implemented / Partially Diagnosed**로만 인정
+
+2. **@Transactional 위험 명시** (REQ-META-IT-002)
+   - IT 클래스에 `@Transactional` 사용 시 spec.md에 audit/async 효과 가림 위험 섹션 명시
+   - post-commit 검증 시나리오 최소 1건 포함 (TRUNCATE cleanup 또는 @DirtiesContext)
+
+3. **race condition 회피 패턴 명시** (REQ-META-IT-003)
+   - async (`@Async`, `SyncTaskExecutor`, `CompletableFuture`) + `@Transactional` 조합 시 다음 중 1개 선택:
+     - (a) `@DirtiesContext` per method
+     - (b) `@TestMethodOrder` + explicit cleanup
+     - (c) standalone-only 모드 (javadoc + CI 분리)
+
+4. **Sync commit message evidence** (REQ-META-IT-005)
+   - 단독 GREEN 명시 (예: "단독 PASSED — `--tests \"...testMethod\"`")
+   - 통합 BUILD SUCCESSFUL 명시 (예: "통합 ./gradlew check BUILD SUCCESSFUL")
+   - 둘 다 누락 시 Sync 재진입 또는 Status 강등
+
+### Sync checklist (Implemented 인정 조건)
+
+신규 SPEC이 Status: Implemented (1차/N차)로 진입하려면 commit message 또는 spec.md에 다음 4개 항목 모두 명시 필요:
+
+| # | 항목 | 예시 |
+|---|------|------|
+| 1 | 단독 GREEN evidence | `--tests "kr.co.ircp.cms.X.YIT"` → PASSED |
+| 2 | 통합 GREEN evidence | `./gradlew :backend:test` BUILD SUCCESSFUL |
+| 3 | @Transactional 위험 (해당 시) | post-commit 검증 시나리오 포함 |
+| 4 | race condition 회피 (해당 시) | @DirtiesContext/@TestMethodOrder/standalone-only 명시 |
+
+4개 중 1개라도 누락 시 Implemented가 아닌 Mostly Implemented / Partially Diagnosed 상태로만 인정. PII-FOLLOWUP-005 (AC-009-2 단독 GREEN, 통합 race condition)이 이 정책의 첫 적용 사례.
+
+### 적용 사례 (Evidence 5건)
+
+| Case | SPEC | 위반 REQ | 해결 패턴 |
+|------|------|----------|----------|
+| 1 | PII-FOLLOWUP-001 | REQ-META-IT-002 (@Async + @MockitoSpyBean 위험) | Fallback Unit test 분리 |
+| 2 | PII-FOLLOWUP-003 | REQ-META-IT-002 (@Transactional rollback false GREEN) | TRUNCATE cleanup + @Transactional 제거 |
+| 3 | PII-FOLLOWUP-004 AC-009-3 | REQ-META-IT-002 (UnexpectedRollbackException) | REQUIRES_NEW 운영 fix |
+| 4 | PII-FOLLOWUP-004 AC-009-4 | REQ-META-IT-002 (SPEC ↔ 운영 차이) | IT 시나리오 expected 정정 |
+| 5 | PII-FOLLOWUP-005 AC-009-2 | REQ-PII-FU2-003 (단독 GREEN, 통합 RED) | @DirtiesContext (다음 세션) |
+
+자세한 명세: `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md`
 
 ---
 

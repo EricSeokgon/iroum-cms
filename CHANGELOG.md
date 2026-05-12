@@ -11,6 +11,17 @@
 
 ### Added
 
+- **META-IT-GREEN-MANDATORY-001 v0.2 Implemented — README §IT user environment GREEN mandatory 정책 신설 + Sync checklist 4 항목 명문화**
+  - README.md §"IT user environment GREEN mandatory 정책 (META)" 신설 (§336 ~ §라이선스 사이)
+  - HARD 정책 요약 4건: 단독+통합 양쪽 GREEN / @Transactional 위험 / race condition 회피 / Sync commit message evidence
+  - Sync checklist 4 항목 표: 단독 GREEN / 통합 GREEN / @Transactional 위험 / race condition 회피
+  - 적용 사례 5건 evidence 표: PII-FOLLOWUP-001 (@Async + @MockitoSpyBean), PII-FOLLOWUP-003 (@Transactional rollback), PII-FOLLOWUP-004 AC-009-3 (UnexpectedRollbackException), PII-FOLLOWUP-004 AC-009-4 (SPEC↔운영 차이), PII-FOLLOWUP-005 (단독 GREEN vs 통합 race condition)
+  - PII-FOLLOWUP-005가 본 정책의 첫 적용 사례 (Partially Diagnosed 상태 정확화)
+  - 신규 SPEC Implemented 인정 조건: checklist 4 항목 모두 evidence 명시 필수
+  - 누락 시 Mostly Implemented / Partially Diagnosed 상태로 강등
+  - 정책 문서 전용 — 운영 코드/IT 신설 0건
+  (SPEC-CMS-META-IT-GREEN-MANDATORY-001 v0.2 Implemented 1차)
+
 - **META-IT-GREEN-MANDATORY-001 SPEC v0.1 Planned — IT user environment GREEN mandatory 정책 명문화 (PII-FOLLOWUP 5건 evidence 기반)**
   - `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md` 신규 (정책 참조 문서)
   - **REQ-PII-FU2-003 HARD**: 신규 IT는 단독 실행 PASS + 통합 실행 BUILD SUCCESSFUL 양쪽 검증 필수

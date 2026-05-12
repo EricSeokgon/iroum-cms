@@ -1,6 +1,26 @@
-# SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.1
+# SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.2
 
-**Status**: Planned (2026-05-12) — META SPEC (정책 명문화)
+**Status**: Implemented (2026-05-12) — README §"IT user environment GREEN mandatory 정책" 신설 + Sync checklist 4 항목 명문화
+**Implementation commits**: 75da38a (v0.1 정책 초안), [본 commit] (v0.2 README §IT mandatory 정책 + Sync checklist)
+
+## v0.2 변경 이력 (2026-05-12) — README 정책 섹션 신설 + Sync checklist 명문화
+
+### 산출물
+- README.md §"IT user environment GREEN mandatory 정책 (META)" 신설
+- HARD 정책 요약 4건 (단독+통합 양쪽 GREEN / @Transactional 위험 / race condition 회피 / Sync evidence)
+- Sync checklist 4 항목 표 (단독 GREEN / 통합 GREEN / @Transactional 위험 / race condition 회피)
+- 적용 사례 5건 evidence 표 (PII-FOLLOWUP-001~005)
+- SPEC 참조 링크 추가
+
+### Status: Planned → Implemented
+정책 문서이므로 IT 신설 0건, 운영 코드 변경 0건. README + spec.md만 갱신.
+
+### 향후 적용
+- 신규 SPEC RUN 단계: HARD 정책 4건 준수
+- SPEC Sync 단계: checklist 4 항목 모두 evidence 명시
+- 누락 시 Implemented 아닌 Mostly Implemented / Partially Diagnosed 상태로만 인정
+
+---
 **Trigger**: PII-FOLLOWUP-001 ~ PII-FOLLOWUP-005 트랙에서 반복 발견된 false GREEN + race condition 패턴
 **Severity**: P2 (cross-cutting 정책, 향후 SPEC 품질 보장)
 
@@ -176,4 +196,5 @@ PII 트랙에서 5건의 false GREEN/race condition 패턴이 발견됨:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | **Implemented**. README §"IT user environment GREEN mandatory 정책 (META)" 신설 — HARD 정책 요약 4건 + Sync checklist 4 항목 표 + 적용 사례 5건 evidence 표 + SPEC 참조 링크. PII-FOLLOWUP-005가 본 정책의 첫 적용 사례 (단독 GREEN, 통합 race condition → Partially Diagnosed). 정책 문서 전용, 운영 코드/IT 신설 0건. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-001~005 트랙에서 발견된 false GREEN/race condition 패턴 5건 evidence 기반 IT user environment GREEN mandatory 정책 명문화. REQ-PII-FU2-003 (단독+통합 양쪽 GREEN 필수) + REQ-META-IT-002 (@Transactional 위험 명시) + REQ-META-IT-003 (race condition 회피 패턴) + REQ-META-IT-004 (정책 문서 위치) + REQ-META-IT-005 (Sync 단계 검증 강화) 정의. 7 AC. 결정 포인트 D1~D4. RUN Step 1~4 분해. 정책 문서 전용, 운영 코드/IT 신설 0건. PII 트랙 5건 회고로 evidence 검증. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |
