@@ -11,6 +11,19 @@
 
 ### Added
 
+- **META-IT-GREEN-MANDATORY-001 SPEC v0.1 Planned — IT user environment GREEN mandatory 정책 명문화 (PII-FOLLOWUP 5건 evidence 기반)**
+  - `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md` 신규 (정책 참조 문서)
+  - **REQ-PII-FU2-003 HARD**: 신규 IT는 단독 실행 PASS + 통합 실행 BUILD SUCCESSFUL 양쪽 검증 필수
+  - REQ-META-IT-002: @Transactional 위험 명시 (audit/async 효과 가림 패턴 회피)
+  - REQ-META-IT-003: race condition 회피 패턴 (@DirtiesContext / @TestMethodOrder / standalone-only)
+  - REQ-META-IT-004: 정책 문서 위치 (본 SPEC spec.md 참조)
+  - REQ-META-IT-005: Sync 단계 evidence 검증 강화 (단독 GREEN + 통합 BUILD SUCCESSFUL 양쪽 commit message 명시)
+  - 적용 사례 4건 회고: PII-FOLLOWUP-001 (@MockitoSpyBean + @Async 충돌), PII-FOLLOWUP-003 (@Transactional rollback false GREEN), PII-FOLLOWUP-004 (SPEC ↔ 운영 차이), PII-FOLLOWUP-005 (단독 GREEN vs 통합 race condition)
+  - 운영 코드/IT 신설 0건 — 정책 문서 전용
+  - 7 AC + 4 결정 포인트 + RUN Step 1~4 분해
+  - 향후 SPEC RUN/Sync 단계 품질 게이트로 작동
+  (SPEC-CMS-META-IT-GREEN-MANDATORY-001 v0.1 Planned)
+
 - **AUTHZ-IT-EXPAND-002 Implemented — 19 미커버 권한 어휘 IT 매트릭스 (57 AC GREEN, ArchUnit baseline 54 endpoint 100% IT 커버)**
   - `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpand2IT.java` 신규 658줄
   - 19 권한 어휘 (CONTENT:READ, PAGE:READ/ROLLBACK/HISTORY:READ, SITE:WRITE, MENU:PERMISSION:WRITE, TEMPLATE:READ, USER:READ, AUDIT:READ, SYSTEM:READ/DASHBOARD/SETTING:READ/WRITE/MAINT:READ/WRITE/LOG:READ/ADMIN, ROLE:CONTENT_ADMIN) × 평균 3 시나리오 + 분리 회귀 4건 = 57 AC GREEN
