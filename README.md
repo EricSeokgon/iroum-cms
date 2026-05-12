@@ -306,7 +306,7 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-004 | AC-009-3/4 false GREEN 정밀 진단 (AC-009-3/4 GREEN, AC-009-2 race condition 잔여) | Mostly Implemented |
 | SPEC-CMS-SECURITY-PII-FOLLOWUP-005 | PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 (Option B @DirtiesContext, 5/5 GREEN) | Implemented (1차) |
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합 양쪽 GREEN 필수, @Transactional 위험 명시, race condition 회피 패턴) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31+ controller 11 = 51 RED, 100% 회복) | Step 4 Implemented (Sync 잔여) |
+| SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31 + controller 11 = 51 RED → 0, 100% 회복) | Implemented (1차) |
 
 SPEC 문서 위치: `.moai/specs/`
 
