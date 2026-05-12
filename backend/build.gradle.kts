@@ -139,6 +139,13 @@ dependencies {
     // SXSSFWorkbook 으로 100만 행 OOM 없이 청크 단위 시트 작성.
     implementation("org.apache.poi:poi:5.2.5")
     implementation("org.apache.poi:poi-ooxml:5.2.5")
+
+    // ─── AWS SDK v2 KMS (SPEC-CMS-SECURITY-PII-KMS-001) ──────────────────────
+    // AwsKmsPiiKeyVault — KMS 기반 DEK/HMAC 키 복호화 어댑터
+    implementation("software.amazon.awssdk:kms:2.25.70")
+
+    // LocalStack — KMS 통합 테스트용 (Docker 가용 시)
+    testImplementation("org.testcontainers:localstack:$testcontainersVersion")
 }
 
 // ─── 빌드 설정 ────────────────────────────────────────────────────────────
