@@ -1,6 +1,92 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 26 endpoint 100% IT 커버 (Final) v0.1
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.2
 
-**Status**: Planned (2026-05-12) — AUTHZ-IT-EXPAND-003 v0.4 Implemented 완성 후 자연 연장
+**Status**: Planned (2026-05-12 갱신) — Step 1 endpoint 인벤토리 사전 완료, 다음 세션 Step 2-5 즉시 진입 가능
+
+## v0.2 변경 이력 (2026-05-12) — Step 1 endpoint 인벤토리 정밀화
+
+### 운영 @PreAuthorize 실측 (115건)
+
+이전 추정 114건 → 실측 **115건** (1건 추가 발견, UserService service-level @PreAuthorize 포함):
+
+| Controller | @PreAuthorize 수 | EXPAND-001-003 커버 | 미커버 |
+|-----------|------------------|---------------------|--------|
+| OrganizationController | 8 | 1 (POST) + 7 (EXPAND-003 §A.1) | **0** ✅ |
+| PageController | 7 | 5 (publish/schedule/retract/rollback/history) | **2** |
+| UserController | 7 | 1 (POST) + 5 (EXPAND-003 §A.2) | **1** (force-logout만 EXPAND-001) |
+| CodeController | 6 | 3 (list/POST/PUT) + 3 (EXPAND-003 §A.3) | **0** ✅ |
+| MenuController | 6 | 4 (POST/PATCH order/DELETE/permissions) + 2 (EXPAND-003 §A.4) | **0** ✅ |
+| QnaController | 6 | 1 (POST answer) | **5** |
+| CodeGroupController | 5 | 1 (POST) + 4 (EXPAND-003 §A.3) | **0** ✅ |
+| TemplateController | 5 | 4 (GET/{id}/POST/PUT) | **1** (DELETE) |
+| ContentBlockController | 5 | 2 (GET/POST) | **3** (PUT/DELETE/PUT order) |
+| MaintenanceController | 4 | 4 (list/get/POST/activate) | **0** ✅ |
+| DashboardWidgetController | 4 | 2 (POST/PUT) + 2 (EXPAND-003 §A.5) | **0** ✅ |
+| PopupController | 4 | 1 (POST) | **3** |
+| SurveyController | 4 | 0 | **4** |
+| FaqController | 4 | 0 | **4** |
+| StatsController | 3 | 1 (trend) + 2 (EXPAND-003 §A.8) | **0** ✅ |
+| SystemSettingController | 3 | 3 (list/get/PUT) | **0** ✅ |
+| SeoRedirectController | 3 | 3 (GET/POST/DELETE) | **0** ✅ |
+| BannerController | 3 | 2 (POST/PUT) + 1 (EXPAND-003 §A.6) | **0** ✅ |
+| PublicationController | 3 | 0 | **3** |
+| BbsMasterController | 3 | 2 (POST/PUT) | **1** |
+| CacheAdminController | 2 | 1 (invalidate) | **1** |
+| SiteController | 2 | 2 (PUT/POST) | **0** ✅ |
+| I18nController | 2 | 1 (GET) + 1 (EXPAND-003 §A.6) | **0** ✅ |
+| DashboardController (stats) | 1 | 1 (kpi) | **0** ✅ |
+| AccessLogController | 1 | 1 (list) | **0** ✅ |
+| SynonymController (class-level) | 1 | 1 | **0** ✅ |
+| SearchController | 1 | 1 (stats/queries) | **0** ✅ |
+| Governance 6 (class-level) | 6 | 3 (BatchLog + Dictionary + GovernanceStats) + 3 (DataQuality/RetentionPolicy/RecoveryDrill 이미 EXPAND-001 커버) | **0** ✅ |
+| RoleController (class-level) | 1 | 0 | **1** |
+| PersonalDataAccessController | 1 | 1 (AUDIT:READ AND USER:READ) | **0** ✅ |
+| PermissionController (class-level) | 1 | 1 (GET) | **0** ✅ |
+| PermissionChangeController (class-level) | 1 | 1 (GET) | **0** ✅ |
+| LoginHistoryController (class-level) | 1 | 1 (GET) | **0** ✅ |
+| UserService (service-level) | 1 | 0 | **1** (Service method security, IT 대상 외) |
+
+### 잔여 미커버 27 endpoint (Phase 분할 권장)
+
+| Controller | 미커버 endpoint 추정 | 우선순위 |
+|-----------|---------------------|----------|
+| QnaController | 5 (GET list/get/PUT/DELETE 등) | 高 |
+| SurveyController | 4 (GET list/get/POST submit 등) | 高 |
+| FaqController | 4 (GET list/POST/PUT/DELETE) | 高 |
+| ContentBlockController | 3 (PUT order/DELETE/get 추가) | 中 |
+| PopupController | 3 (GET list/PUT/DELETE) | 中 |
+| PublicationController | 3 (GET list/PUT/DELETE) | 中 |
+| PageController | 2 (GET list/get 추가) | 中 |
+| RoleController | 1 (GET list) | 低 |
+| BbsMasterController | 1 (GET list) | 低 |
+| TemplateController | 1 (DELETE) | 低 |
+| UserController | 1 (force-logout 외 추가) | 低 |
+| CacheAdminController | 1 (PUT 등) | 低 |
+| UserService service-level | 1 (IT 대상 외, 메소드 슬라이스 영역) | 제외 |
+| **합계 (controller IT 대상)** | **27** | - |
+
+### Step 1 완료 — 다음 세션 진입 가능
+
+Step 1 endpoint 인벤토리 사전 완료로 다음 세션 Step 2 (Expand4IT 인프라) → Step 3 (시나리오 일괄 활성화) → Step 4 (baseline 갱신) → Step 5 (Sync) 즉시 진입 가능.
+
+### 누적 IT 커버 vs 운영 갭
+
+| Layer | IT endpoint | 운영 controller @PreAuthorize | 비율 |
+|-------|------------|-------------------------------|------|
+| AUTHZ-MATRIX-001 (1차) | 6 | (포함) | - |
+| AUTHZ-IT-EXPAND-001 (2차) | 29 | (포함) | - |
+| AUTHZ-IT-EXPAND-002 (3차) | 19 | (포함) | - |
+| AUTHZ-IT-EXPAND-003 (4차) | 35 (baseline 88 - duplicate 1) | (포함) | - |
+| **현재 누적 baseline** | **88** | **114 (Service 제외)** | **77%** |
+| **EXPAND-004 (본 SPEC)** | **+27 → 114+** | **114** | **100% 목표** |
+
+### 본 SPEC 완성 시 효과
+
+- ArchUnit baseline 100% 운영 endpoint 매핑 (현재 77% → 100%)
+- OWASP A01 완전 회귀 검출 능력 도달
+- 6중 검증 305 AC → ~380 AC (78 AC 추가)
+- AUTHZ 트랙 8 SPEC chain 완성
+
+---
 **Trigger**: 운영 controller @PreAuthorize 114건 / IT baseline 88 → 잔여 갭 26 endpoint 식별 (79% → 100% 목표)
 **Severity**: P3 (보안 회귀 검출 능력 완전 커버, 운영 영향 0, 한계 도전)
 
@@ -178,4 +264,5 @@
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-12 | MoAI orchestrator | Step 1 endpoint 인벤토리 정밀화. 운영 @PreAuthorize 115건 실측 (이전 추정 114 → 115, UserService service-level 포함). controller별 미커버 정확화: 27개 미커버 endpoint 식별 (Qna 5 + Survey 4 + Faq 4 + Block 3 + Popup 3 + Publication 3 + Page 2 + Role 1 + Bbs 1 + Template DELETE 1 + User 1 + CacheAdmin 1 + UserService 1 제외 = 27). 우선순위 분류 (Qna/Survey/Faq 高 + Popup/Block/Publication 中 + Role/Page/Bbs/User/Template/CacheAdmin 低). 현재 누적 baseline 88 / 운영 114 = 77% → EXPAND-004로 100% 목표. Step 1 사전 완료로 다음 세션 Step 2-5 즉시 진입 가능. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. AUTHZ-IT-EXPAND-003 v0.4 Implemented 완성 후 자연 연장. 운영 controller @PreAuthorize 114건 / IT baseline 88 → 잔여 26 endpoint 100% 커버 목표. REQ-AM-EXP4-001~005 + 5 AC + RUN Step 1~5 분해. 5 결정 포인트 D1~D5 (IT 클래스 구조, 카테고리 분할, RUN 분할 vs 일괄, baseline 시점, 트랙 종결). 패턴 100% 재사용 (assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기, OR bypass, 분리 회귀, class-level @PreAuthorize). 예상 비용 1-2 세션, 운영 코드 변경 0건. P3 (한계 도전, AUTHZ 트랙 종결). META Sync checklist 4 항목 사전 합의. 본 SPEC 완성 시 AUTHZ 트랙 6단계 진화 종결 (Matrix + EXPAND-001/002/003/004 + AUTODETECT + CTRL + REGRESSION + META = 8 SPEC). |
