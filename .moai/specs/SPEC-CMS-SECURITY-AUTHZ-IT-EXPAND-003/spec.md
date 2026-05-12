@@ -1,6 +1,37 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.2
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.3
 
-**Status**: Planned (2026-05-12 갱신) — Step 1 endpoint 인벤토리 완료, Phase A-C 분할 확정
+**Status**: Step 2 인프라 완료 (2026-05-12) — AuthorizationMatrixExpand3IT 신설 + smoke test GREEN
+**Implementation commits**: 758e3e6 (v0.1 초안), e6d6052 (v0.2 Step 1 인벤토리), [본 commit] (v0.3 Step 2 인프라)
+
+## v0.3 변경 이력 (2026-05-12) — Step 2 IT 인프라 신설
+
+### 산출물
+- `backend/src/test/java/kr/co/ircp/cms/security/AuthorizationMatrixExpand3IT.java` 신규 (~240줄)
+- AUTHZ-MATRIX/EXPAND-001/002 인프라 100% 재사용 (@SpringBootTest + Testcontainers + JWT Mock)
+- assertAuthzPassed helper 사전 포함 (REGRESSION-001 v0.5 검증 패턴)
+- 8 도메인 @Nested 그룹 placeholder:
+  - §A.1 OrganizationDomain (Phase A)
+  - §A.2 UserDomain (Phase A)
+  - §A.3 CodeDomain (Phase A)
+  - §A.4 MenuMaintenanceDomain (Phase B)
+  - §A.5 DashboardWidgetSettingDomain (Phase B)
+  - §A.6 BannerSiteI18nDomain (Phase B)
+  - §A.7 SearchPermissionDomain (Phase C)
+  - §A.8 GovernanceStatsDomain (Phase C)
+- smoke test 1건 활성 (AC-AME3-002-1: 컨텍스트 부팅 + JWT Mock 주입 검증)
+
+### Step 2 검증 결과
+`./gradlew test --tests "AuthorizationMatrixExpand3IT"` → **1 test / 0 failures BUILD SUCCESSFUL**
+
+### Status: v0.2 Step 1 인벤토리 → v0.3 Step 2 인프라 완료
+
+### 다음 세션 RUN 진입
+- Step 3 (Phase A): §A.1-A.3 활성화 (Org/User/Code ~30 endpoint)
+- Step 4 (Phase B): §A.4-A.6 활성화 (Menu/Maintenance/Widget/Setting/Banner/Site/I18n ~30)
+- Step 5 (Phase C): §A.7-A.8 활성화 (Search/Permission/Governance/Stats ~10-20)
+- Step 6: ArchUnit baseline 54 → 120+ 갱신 + Sync
+
+---
 **Trigger**: AuthorizationCoverageArchTest baseline 54 endpoint vs 운영 103 메소드 + 120 endpoint 실측 갭 노출
 **Severity**: P2 (보안 회귀 검출 능력 완전 커버, 운영 영향 0)
 
@@ -252,5 +283,6 @@ grep -rE "@PreAuthorize" src/main/java --include="*.java" | awk -F':' '{print $1
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Step 2 인프라 완료**. AuthorizationMatrixExpand3IT.java 신설 (~240줄). AUTHZ-IT-EXPAND-001/002 + REGRESSION-001 패턴 100% 재사용 (@SpringBootTest + Testcontainers + JWT Mock + assertAuthzPassed helper). 8 도메인 @Nested 그룹 placeholder (Phase A-C 분할). smoke test 1건 활성 BUILD SUCCESSFUL. 다음 세션은 Step 3 (Phase A: Org/User/Code ~30 endpoint) 진입 가능. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | Appendix A 운영 endpoint 인벤토리 추가. 운영 @PreAuthorize 120건 실측 (controller 114건 / 38 controller, config + service 6건 제외). controller별 분포 확정 (5건↑ 9건, 3-4건 11건, 1-2건 18건). 누적 IT 커버 54/114 = 47% 갭 확정. Phase A-C 분할 권장 (30+30+잔여). 미커버 우선순위 controller 명시 (PermissionController, SynonymController, Search, Governance, Stats 등). RUN Step 1 endpoint 인벤토리 사전 완료 — 다음 세션은 Step 2 (Expand3IT 인프라) 진입 가능. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. AUTHZ-IT-EXPAND-002 + REGRESSION-001 v0.8 완성 후 자연 연장. 운영 ~120 endpoint 전체 IT 매트릭스 적용 계획. AUTHZ-AUTODETECT-001 baseline (54 endpoint, 103 메소드) 활용. REQ-AM-EXP3-001~005 + 6 AC + RUN Step 1~6 분해. 결정 포인트 D1~D5 (IT 클래스 구조, endpoint 수집, 시나리오 자동화, baseline 갱신, Implementation 위임). META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의. 예상 비용 3-4 세션, 운영 코드 변경 0건. P2 (보안 회귀 검출 능력 완전 커버, 운영 영향 0). |
