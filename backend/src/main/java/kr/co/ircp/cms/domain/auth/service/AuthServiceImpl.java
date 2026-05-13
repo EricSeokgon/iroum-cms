@@ -59,10 +59,6 @@ public class AuthServiceImpl implements AuthService {
     private final PermissionService permissionService;
     private final VerificationService verificationService;
     private final EmailService emailService;
-    /**
-     * SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-006 — email lookup HMAC 격상.
-     * findByEmailHash(SHA-256) 경로를 findByEmailHmac(HMAC-SHA256) 으로 자동 마이그레이션한다.
-     */
     private final EmailEncryptionService emailEncryptionService;
 
     public AuthServiceImpl(
