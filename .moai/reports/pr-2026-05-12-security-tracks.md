@@ -1,3 +1,21 @@
+# PR v10: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS/ROTATION(bugfix) + Content/Board Step 2 GREEN + META v0.3
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **47 commits** (`667332d` ~ `42bd2fe`)
+**Files**: **65 changed (+6024 / -406)**
+**운영 코드 변경**: **10건** (+ PiiKeyRotationService per-row error handling)
+
+## v10 핵심 산출 (v9 대비 추가)
+- **PiiKeyRotationService 버그 수정** (Singleton Container 교차 오염 방어):
+  - `rotateChunk()`: 행별 try-catch 추가 — 복호화 실패 row WARN 로그 후 skip (AEADBadTagException 방어)
+  - `RotationChunkResult` 내부 레코드 신설 (processed/skipped/maxId)
+  - `rotatePendingAll()`: `lastId=0` 고정 → cursor-based 페이징으로 전환 (무한 루프 예방)
+  - 단위 테스트 5/5 GREEN (skip 시나리오 + cursor 전진 검증 추가)
+  - **`PiiKeyRotationIT` 4/4 GREEN** (이전 AEADBadTagException 4건 해소)
+- **알려진 미해결 이슈**: `PiiAuditEnhanceIT.AC-009-2` — `@AfterEach` DELETE users FK 위반
+  (`@Transactional(REQUIRES_NEW)` + `@DirtiesContext` 타이밍 경합, pre-existing 버그)
+
 # PR v9: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS/ROTATION + Content/Board Step 2 GREEN + META v0.3 + REGRESSION 100%
 
 **Branch**: feature/security-tracks-2026-05-12
