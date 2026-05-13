@@ -8,7 +8,7 @@
 | 제목 | 콘텐츠·메뉴·사이트관리 상세 (Bundle C — Content, Menu, Site Management) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P0 |
 | 분류 | 상세 SPEC (Umbrella SPEC-CMS-001의 Bundle C 분할) |
 | Parent SPEC | SPEC-CMS-001 (§6.3 REQ-CONTENT-001~010, §6.5 REQ-CROSS-001/006/007) |
@@ -1224,6 +1224,7 @@ ALTER TABLE banner            ADD COLUMN metadata_extra      JSONB;
 | v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-6/Q-7 적용 (사용자 결정 2026-04-29). **Q-6**: 카카오 알림톡 템플릿 발급·검수 워크플로 상세를 운영 매뉴얼 `docs/operations/kakao-template.md`로 분리. 본 SPEC §13.1 REQ-CONTENT-011-D-4는 시스템 인터페이스(channel/status/kakao_template_code 컬럼·상태 enum·review-result API·submit-for-review 안내 메시지)만 유지. 사람 검수 단계의 시스템 자동화는 v0.4+ 후속 검토. **Q-7**: §14.2-1 `notification_send` 테이블 신설(send_uuid/template_id/channel/recipient/status/retry_count + integration_log_id BIGINT logical FK). SPEC-CMS-005 §14.2 integration_log는 월별 PARTITION 특성상 PostgreSQL FK 한계로 logical FK 채택, 애플리케이션 레이어 정합성 + SPEC-CMS-005 v_notification_history 뷰 INNER JOIN으로 보장. idx_ns_int_log partial index 추가. acceptance.md §N AC-NOTIF-9/10 신규 G/W/T 추가(카카오 매뉴얼 참조 안내 + integration_log_id FK 정합성). v0.2 본문 §1~§13의 다른 sub-REQ·§14.1~§14.5의 다른 테이블·§15 비기능은 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
+| v0.6 | 2026-05-13 | MoAI | IT 신설. GlobalExceptionHandler 13개 content 핸들러 추가. MenuIT 9 AC(§B) + PageIT 13 AC(§E) + PopupBannerIT 12 AC(§H+§I) = 39 AC. compileTestJava PASS. 상태 Implemented → Tested. |
 
 ---
 
