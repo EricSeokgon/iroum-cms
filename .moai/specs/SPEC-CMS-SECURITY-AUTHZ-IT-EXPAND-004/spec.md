@@ -1,6 +1,29 @@
-# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.4
+# SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.5
 
-**Status**: Implemented (2026-05-12) — 69 tests / 0 failures / 71 AC GREEN
+**Status**: Implemented (2026-05-13) — Step 4+5 완료 / AUTHZ 트랙 완전 종결
+
+## v0.5 변경 이력 (2026-05-13) — Step 4 ArchUnit baseline 확정 + Step 5 Sync
+
+### Step 4 결과 (ArchUnit baseline 확정)
+- `AuthorizationCoverageArchTest`: EXPAND-004 22 endpoint 반영 완료 — baseline **110 endpoint** 확정
+  - (SPEC 추정 115 vs 실측 110: GET/POST /api/v1/qnas 등 5건이 EXPAND-001 baseline에서 이미 dedup됨)
+- inline 주석 오타 수정: "AUTHZ-IT-EXPAND-003 **35** endpoint" → **34** endpoint (실제 entry 수 일치)
+- AC-AAD-001-1 (운영 @PreAuthorize **103** 메소드) GREEN ✅
+- AC-AAD-001-2 (IT unique endpoint **110** 개) GREEN ✅
+- AC-AAD-002-1 (baseline 정확 매칭) GREEN ✅
+- AC-AAD-003-1 (권한 어휘 set baseline) GREEN ✅
+- 로컬 개발 기동 fix: `application-local.yml`에 `LocalEnvPiiKeyVault` dev 키 추가
+
+### Step 5 — AUTHZ 트랙 최종 종결 선언
+- AUTHZ-MATRIX-001(19 AC) + EXPAND-001(88 AC) + EXPAND-002(57 AC) + EXPAND-003(106 AC)
+  + EXPAND-004(71 AC) + CTRL-001(31 AC) + AUTODETECT-001(4 AC) = **376 AC** 전체 GREEN
+- ArchUnit baseline: **110 endpoint** (메소드 레벨 @PreAuthorize 103건) 자동 감시 가동
+- V26 email DROP 마이그레이션 병행 완료 (SPEC-CMS-SECURITY-PII-001 §V26)
+
+### Step 4+5 검증 결과
+`./gradlew test --tests "*.archunit.AuthorizationCoverageArchTest"` → **4 tests / 0 failures BUILD SUCCESSFUL**
+
+---
 
 ## v0.4 변경 이력 (2026-05-12) — Step 3 §A.2+§A.3 완성 + AUTHZ 트랙 종결
 
