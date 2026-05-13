@@ -11,7 +11,7 @@
 | 제목 | HTTP 권한 매트릭스 IT 확장 (AUTHZ-MATRIX-001 6 endpoint → 30 endpoint, 12 권한 어휘 회귀 검출) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Planned |
+| 상태 | Tested |
 | 우선순위 | **P2 (보안 트랙 보강)** |
 | 분류 | Cross-cutting Security IT Coverage Expansion SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 v0.2 (Implemented 1차 — IT 인프라 패턴 재사용), SPEC-CMS-002 §16.x SecurityConfig (운영 정책), SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 (검증 레이어 분리) |
@@ -491,6 +491,7 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-05-11 | manager-spec (MoAI) | 초안 작성. SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 v0.2 (Implemented 1차)의 자연스러운 확장. 사용자 입력 "22+ endpoint" 추정을 MoAI 정밀 진단으로 정정 — 운영 `@PreAuthorize` 적용 **120개**, 권한 어휘 **12종** 분포 식별. 사용자 사전 결정 D1~D4 채택: (D1) 12 권한 어휘 모두 커버 ~30 endpoint × 3 시나리오 = ~90 AC, (D2) 새 `AuthorizationMatrixExpandIT` 클래스 분리 (AUTHZ-MATRIX-001 461줄 + 추가 시 폭발 방지), (D3) 수동 enum + 수동 갱신 (README 안내, ArchUnit 자동 검출은 후속 SPEC 위임), (D4) 도메인별 `@Nested` 그룹화 6개 (content/dashboard/auth/system/governance/board). REQ-AM-EXP-001/002/003 정의. Step 1~4 분해 (Step 1 인프라 + endpoint 선정, Step 2 Phase A 어휘 1~6, Step 3 Phase B 어휘 7~12, Step 4 회귀 검증 + README). AUTHZ-MATRIX-001 + CTRL-AUTHZ-COVERAGE-001과의 검증 레이어 분리 명시. 운영 코드 변경 0건 강제. RISK-AME-01 ~ 08 + ASSUM-AME-01 ~ 05. 후속 SPEC 트랙 (`-EXPAND-002/-003/-AUTODETECT-001`) 명시. 본 SPEC RUN 1차 GREEN 확보 시 OWASP A01 회귀 검출 인프라가 권한 어휘 4종 → 12종(100%) 확대 + 3중 검증 레이어(HTTP 매트릭스 1차 6 + HTTP 매트릭스 확장 30 + 메소드 슬라이스 31)로 완성. |
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AuthorizationMatrixExpandIT.java 88 AC GREEN (REQ-AM-EXP-001/002/003). Implemented → Tested. |
 | v0.2 | 2026-05-11 | MoAI orchestrator | **Implemented 1차 완성**. RUN Step 1~3 GREEN 확보 (Java 미설치 환경 정적 검증 한정, 사용자 환경 IT 실행 안내). `AuthorizationMatrixExpandIT.java` 신규 1,540줄, **89 @Test 메소드** (smoke 1 + 시나리오 88). 29 endpoint × 평균 3 시나리오 매트릭스 + 5건 어휘 분리 회귀(PAGE:WRITE/PAGE:PUBLISH, BLOCK:WRITE/PAGE:WRITE, SYSTEM:CODE:READ/WRITE, MENU:WRITE/CONTENT:WRITE, TEMPLATE:WRITE/PAGE:WRITE) + multi-role 분기 검증(hasAnyRole DEPT_ADMIN 단독 통과). 권한 어휘 12종 100% 커버 달성: SUPER_ADMIN(5 endpoint), ADMIN(5), hasAnyRole(1), CONTENT:WRITE(1), PAGE:WRITE(1), PAGE:PUBLISH(3), SYSTEM:CODE:READ(2), SYSTEM:CODE:WRITE(3), SYSTEM:STATS(1), MENU:WRITE(3), BLOCK:WRITE(2), TEMPLATE:WRITE(2), isAuthenticated(2 — 403 N/A). 진행 방식 비고: expert-testing 위임이 content filtering policy로 2회 연속 차단되어 사용자 결정 따라 MoAI orchestrator가 직접 Edit으로 구현 (보안 정책 우회 예외 적용). commit 분해: Step 1 인프라(151a864), Phase A Content(df11edd), Phase A B/Dashboard/Auth/Governance/BoardMenu(dcaac84), Phase B Block/Stats/isAuth/System/Menu/Template(dd4bf82). 회귀 검증 정적: 운영 코드 0줄, AUTHZ-MATRIX-001 19 AC 0줄, CTRL-AUTHZ-COVERAGE-001 0줄, PII IT 0줄. Step 4 README 갱신 + Sync 본 v0.2 갱신 동시 수행. 보안 트랙 OWASP A01 회귀 검출 능력 확대 완성: HTTP 매트릭스 1차 19 AC + HTTP 매트릭스 확장 88 AC + 메소드 슬라이스 31 AC = **3중 검증 138+ AC**. |
 
 ---

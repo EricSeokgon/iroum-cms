@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.8
 
-**Status**: Fully Implemented (2026-05-12) — AuthorizationMatrixIT 8 RED 추가 회복, AUTHZ 트랙 100% GREEN
+**Status**: Tested (2026-05-13) — AuthorizationMatrixIT 8 RED 추가 회복, AUTHZ 트랙 100% GREEN
 
 ## v0.8 변경 이력 (2026-05-12) — AuthorizationMatrixIT 추가 회복 + 종합 회귀 검증
 
@@ -400,6 +400,7 @@ AUTHZ-IT-EXPAND-002만 100% GREEN — 다른 SPEC은 commit 시점 이후 운영
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.9 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AUTHZ 트랙 51 RED → 0 회복 + 100% GREEN 상태 검증 완료 (REQ-IRR-001~005). Fully Implemented → Tested. |
 | v0.8 | 2026-05-12 | MoAI orchestrator | **Fully Implemented**. 종합 회귀 검증으로 AuthorizationMatrixIT의 추가 8 RED 발견 → 정정 완료. AUTH_FORBIDDEN → ACCESS_DENIED 17건 일괄 + Banner/Page/User DTO body 정상화 4건. AuthorizationMatrixIT 19 tests / 0 failures, AUTHZ 트랙 (Matrix + ExpandIT + Expand2IT + ArchUnit) 170 tests / 0 failures 종합 GREEN. 누적 59 RED → 0 (100% 회복). AUTHZ-MATRIX-001 자체도 Status 정상화. |
 | v0.7 | 2026-05-12 | MoAI orchestrator | **Implemented (1차)**. Step 1~5 모두 완료. AUTHZ IT 51 RED → 0 (100% 회복). Step 1 회귀 commit 추적 (942b19e), Step 2 ExpandIT 31 RED 정정 (응답 코드 + DTO body + helper), Step 4 controller test 11+종 정정 (401 → 403 @WebMvcTest 한계 명시), Step 5 README + CHANGELOG Sync. AUTHZ-IT-EXPAND-001 v0.2 Mostly Implemented → Implemented 정상화. META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 충족. 운영 코드 변경 0건. |
 | v0.6 | 2026-05-12 | MoAI orchestrator | **Step 4 Implemented**. controller unit test 11+종의 AC-COV-001-1 시나리오 정정 (401 → 403). 원인: @WebMvcTest + SecurityAutoConfiguration 제외 시 SecurityFilterChain 없음 → @PreAuthorize 거부 → 403. 운영 full SecurityFilterChain의 AuthenticationEntryPoint(401)와 다름. 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003 분리). REGRESSION-001 누적 51 RED → 0 (100% 회복). 다음 Step 5 Sync. |

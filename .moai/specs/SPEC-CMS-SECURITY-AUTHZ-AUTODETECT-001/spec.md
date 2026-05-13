@@ -29,7 +29,7 @@
 | 제목 | ArchUnit 기반 운영 @PreAuthorize 자동 검출 — IT 매트릭스 누락 PR 차단 |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Planned |
+| 상태 | Tested |
 | 우선순위 | **P2 (보안 트랙 자동화 보강)** |
 | 분류 | Cross-cutting Security IT Auto-Detection SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 v0.2 (Implemented — IT 인프라 1차), SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 v0.2 (Implemented — IT 매트릭스 확장 88 AC), 운영 SecurityConfig (`SPEC-CMS-002 §16.x`), ArchUnit 1.3.0 (의존성 기존) |
@@ -450,6 +450,7 @@ docs(security): SPEC-AAD-001 sync — README D3 절차 갱신 + SPEC v0.2 Implem
 
 | 버전 | 날짜 | 변경 사항 |
 |------|------|----------|
+| **v0.3** | 2026-05-13 | IT 검증 완료 — AuthorizationCoverageArchTest 4 AC GREEN (REQ-AAD-001~003). Implemented → Tested. |
 | **v0.1** | 2026-05-11 | 초안 작성. SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001 v0.2 §11 후속 SPEC 트랙 D3 수동 갱신 부담 자동화. MoAI 정밀 진단으로 ArchUnit 1.3.0 기존 의존성 + PiiEmailMaskArchTest 271줄 패턴 + 35 endpoint baseline + 120 운영 @PreAuthorize 분포 + 12 권한 어휘 매트릭스 확인. 사용자 결정 D1~D4 채택(ArchUnit + Test RED + IT 둘 다 + 신규/어휘변경 둘 다). REQ-AAD-001~005 정의. Step 1~4 분해(인프라 신설 → 어휘 검출 → RED 시뮬레이션 → sync). 운영 코드 변경 0건. AuthorizationCoverageArchTest 신설로 35 endpoint baseline + 권한 어휘 변경 회귀 자동 검출 + Gradle check CI PR 차단 + 한국어 RED 메시지 + README D3 절차 안내. 후속 SPEC 트랙 5개 명시(CODEGEN-001 / EXPAND-002 / EXPAND-003 / CONFIG-INTEGRITY-001 / VOCABULARY-EXPAND-001). |
 
 ---
