@@ -35,14 +35,14 @@ public class DashboardLayoutController {
 
     @GetMapping
     public ResponseEntity<List<LayoutResponse>> list(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam(required = false) List<String> roles) {
         return ResponseEntity.ok(service.listForUser(userId, roles == null ? List.of() : roles));
     }
 
     @PostMapping
     public ResponseEntity<LayoutResponse> create(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Valid @RequestBody LayoutRequest req) {
         return ResponseEntity.ok(service.create(userId, req));
     }
@@ -71,7 +71,7 @@ public class DashboardLayoutController {
     @PutMapping("/{id}")
     public ResponseEntity<LayoutResponse> update(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Valid @RequestBody LayoutRequest req) {
         return ResponseEntity.ok(service.update(id, userId, req));
     }
@@ -79,7 +79,7 @@ public class DashboardLayoutController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         service.delete(id, userId);
         return ResponseEntity.noContent().build();
     }
@@ -88,7 +88,7 @@ public class DashboardLayoutController {
     @PostMapping("/{id}/clone")
     public ResponseEntity<LayoutResponse> clone(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         return ResponseEntity.ok(service.clone(id, userId));
     }
 
@@ -96,7 +96,7 @@ public class DashboardLayoutController {
     @PutMapping("/{id}/default")
     public ResponseEntity<Void> setDefault(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         service.setDefault(id, userId);
         return ResponseEntity.noContent().build();
     }

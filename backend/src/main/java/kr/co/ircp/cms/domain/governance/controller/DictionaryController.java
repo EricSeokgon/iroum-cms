@@ -85,7 +85,7 @@ public class DictionaryController {
     public ResponseEntity<DictionaryResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody DictionaryRequest req,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         DataDictionary updated = DataDictionary.builder()
                 .id(id)
                 .tableName(req.tableName())

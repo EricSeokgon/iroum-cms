@@ -49,7 +49,7 @@ public class SynonymController {
     @PostMapping
     public ResponseEntity<SearchSynonym> create(
             @Valid @RequestBody SynonymCreateRequest req,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         SearchSynonym created = synonymService.createSynonym(req, userId);
         return ResponseEntity.created(URI.create("/api/v1/search/synonyms/" + created.getId()))
@@ -60,7 +60,7 @@ public class SynonymController {
     public ResponseEntity<SearchSynonym> update(
             @PathVariable Long id,
             @Valid @RequestBody SynonymUpdateRequest req,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(synonymService.updateSynonym(id, req, userId));
     }
@@ -68,7 +68,7 @@ public class SynonymController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         synonymService.deleteSynonym(id, userId);
         return ResponseEntity.noContent().build();

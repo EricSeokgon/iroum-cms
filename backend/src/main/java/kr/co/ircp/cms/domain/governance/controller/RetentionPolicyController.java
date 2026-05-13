@@ -59,7 +59,7 @@ public class RetentionPolicyController {
     @PostMapping
     public ResponseEntity<RetentionPolicyResponse> create(
             @Valid @RequestBody RetentionPolicyRequest req,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         RetentionPolicy entity = build(req, null, userId);
         RetentionPolicy created = service.create(entity);
         return ResponseEntity.created(URI.create("/api/v1/governance/retention-policies/" + created.getId()))
@@ -70,7 +70,7 @@ public class RetentionPolicyController {
     public ResponseEntity<RetentionPolicyResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody RetentionPolicyRequest req,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         RetentionPolicy entity = build(req, id, userId);
         RetentionPolicy updated = service.update(entity);
         return ResponseEntity.ok(RetentionPolicyResponse.from(updated));

@@ -36,7 +36,7 @@ public class ExportController {
 
     @PostMapping
     public ResponseEntity<ExportResponse> create(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Valid @RequestBody ExportRequest req) {
         ExportResponse resp = service.createExport(userId, req);
         // PROCESSING → 202 Accepted, COMPLETED → 200 OK
@@ -49,7 +49,7 @@ public class ExportController {
     @GetMapping("/{id}/status")
     public ResponseEntity<ExportResponse> status(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         return ResponseEntity.ok(service.getStatus(id, userId));
     }
 
@@ -57,7 +57,7 @@ public class ExportController {
     @GetMapping("/{id}/download")
     public void download(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam(value = "sig", required = false) String signature,
             @RequestParam(value = "exp", required = false) Long exp,
             HttpServletResponse response) throws java.io.IOException {
@@ -79,7 +79,7 @@ public class ExportController {
 
     @GetMapping
     public ResponseEntity<List<ExportResponse>> history(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(service.listHistory(userId, status));
     }

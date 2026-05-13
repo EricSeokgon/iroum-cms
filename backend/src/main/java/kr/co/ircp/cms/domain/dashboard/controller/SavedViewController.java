@@ -32,14 +32,14 @@ public class SavedViewController {
 
     @GetMapping
     public ResponseEntity<List<SavedViewResponse>> list(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam(name = "dashboard_id", required = false) Long dashboardId) {
         return ResponseEntity.ok(service.listForUser(userId, dashboardId));
     }
 
     @PostMapping
     public ResponseEntity<SavedViewResponse> create(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Valid @RequestBody SavedViewRequest req) {
         return ResponseEntity.ok(service.create(userId, req));
     }
@@ -47,7 +47,7 @@ public class SavedViewController {
     @PutMapping("/{id}")
     public ResponseEntity<SavedViewResponse> update(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @Valid @RequestBody SavedViewRequest req) {
         return ResponseEntity.ok(service.update(id, userId, req));
     }
@@ -55,7 +55,7 @@ public class SavedViewController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         service.delete(id, userId);
         return ResponseEntity.noContent().build();
     }
@@ -64,7 +64,7 @@ public class SavedViewController {
     @PostMapping("/{id}/apply")
     public ResponseEntity<SavedViewResponse> apply(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         return ResponseEntity.ok(service.apply(id, userId));
     }
 }

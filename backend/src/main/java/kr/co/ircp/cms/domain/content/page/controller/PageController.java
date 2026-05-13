@@ -40,7 +40,7 @@ public class PageController {
     @PreAuthorize("hasAuthority('PAGE:WRITE')")
     public ResponseEntity<PageResponse> createPage(
             @Valid @RequestBody PageCreateRequest request,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         PageResponse created = pageService.createPage(request, userId);
         return ResponseEntity.created(URI.create("/api/v1/content/pages/" + created.id())).body(created);
@@ -52,7 +52,7 @@ public class PageController {
     public ResponseEntity<PageResponse> updatePage(
             @PathVariable Long id,
             @Valid @RequestBody PageUpdateRequest request,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(pageService.updatePage(id, request, userId));
     }
@@ -63,7 +63,7 @@ public class PageController {
     public ResponseEntity<PageResponse> publishPage(
             @PathVariable Long id,
             @RequestBody(required = false) PagePublishRequest request,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(pageService.publishPage(id, request, userId));
     }
@@ -74,7 +74,7 @@ public class PageController {
     public ResponseEntity<PageResponse> schedulePage(
             @PathVariable Long id,
             @Valid @RequestBody PageScheduleRequest request,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(pageService.schedulePage(id, request, userId));
     }
@@ -84,7 +84,7 @@ public class PageController {
     @PreAuthorize("hasAuthority('PAGE:PUBLISH')")
     public ResponseEntity<PageResponse> retractPage(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(pageService.retractPage(id, userId));
     }
@@ -102,7 +102,7 @@ public class PageController {
     public ResponseEntity<PageResponse> rollbackPage(
             @PathVariable Long id,
             @PathVariable int version,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         return ResponseEntity.ok(pageService.rollbackPage(id, version, userId));
     }

@@ -65,7 +65,7 @@ public class FaqController {
     @PreAuthorize("hasAuthority('CONTENT:WRITE') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
     public ResponseEntity<FaqDetail> createFaq(
             @Valid @RequestBody FaqCreateRequest request,
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal(expression = "userId") Long userId
     ) {
         FaqDetail created = faqService.createFaq(request, userId);
         return ResponseEntity.created(URI.create("/api/v1/faqs/" + created.id())).body(created);

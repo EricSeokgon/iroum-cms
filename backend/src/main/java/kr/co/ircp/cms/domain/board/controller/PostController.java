@@ -59,7 +59,7 @@ public class PostController {
     public ResponseEntity<PostDetail> getPost(
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal(expression = "userId") Long userId,
             @RequestParam(required = false) String ipHash
     ) {
         return ResponseEntity.ok(postService.getPost(postId, userId, ipHash));

@@ -50,7 +50,7 @@ public class DashboardWidgetController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<WidgetResponse> create(
             @Valid @RequestBody WidgetRequest req,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         return ResponseEntity.ok(service.create(req, userId));
     }
 
@@ -67,7 +67,7 @@ public class DashboardWidgetController {
     public ResponseEntity<WidgetResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody WidgetRequest req,
-            @AuthenticationPrincipal Long userId) {
+            @AuthenticationPrincipal(expression = "userId") Long userId) {
         return ResponseEntity.ok(service.update(id, req, userId, resolveRoles()));
     }
 
