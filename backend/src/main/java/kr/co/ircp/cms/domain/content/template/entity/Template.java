@@ -9,7 +9,6 @@ import java.time.Instant;
  * 페이지 템플릿 엔티티.
  * REQ-CONTENT-004-D: 템플릿 정의 (Mustache 슬롯 기반)
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-004-D)
  */
 @Data
 @Builder

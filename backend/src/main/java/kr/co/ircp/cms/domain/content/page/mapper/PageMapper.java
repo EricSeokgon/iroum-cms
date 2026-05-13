@@ -13,7 +13,6 @@ import java.util.Optional;
  *
  * // @MX:ANCHOR: [AUTO] PageMapper — 페이지 핵심 데이터 접근 계층
  * // @MX:REASON: PageService에서 fan_in >= 3으로 참조 (CRUD + 발행 + 이력)
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현 필요
  */
 @Mapper
 public interface PageMapper {

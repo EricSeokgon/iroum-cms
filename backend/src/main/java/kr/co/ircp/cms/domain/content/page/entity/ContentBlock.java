@@ -9,7 +9,6 @@ import java.time.Instant;
  * 콘텐츠 블록 엔티티.
  * REQ-CONTENT-006-D: 5종 블록 타입 (RICH_TEXT/IMAGE/HTML/MARKDOWN/EMBED)
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-006-D)
  */
 @Data
 @Builder

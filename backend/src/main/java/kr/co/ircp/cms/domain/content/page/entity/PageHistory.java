@@ -9,7 +9,6 @@ import java.time.Instant;
  * 페이지 변경 이력 엔티티 (풀 스냅샷).
  * REQ-CONTENT-005-D-2/7: 수정 이력 누적, 롤백
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-005-D)
  */
 @Data
 @Builder

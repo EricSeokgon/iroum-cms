@@ -11,7 +11,6 @@ import java.time.Instant;
  *
  * // @MX:ANCHOR: [AUTO] Site — 콘텐츠 도메인의 루트 엔티티. 모든 메뉴·페이지·팝업·배너의 site_id 참조 원점
  * // @MX:REASON: MenuService, PageService, PopupService, BannerService에서 fan_in >= 4로 참조
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-003-D)
  */
 @Data
 @Builder

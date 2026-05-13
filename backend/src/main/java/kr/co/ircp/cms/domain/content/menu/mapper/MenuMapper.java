@@ -15,7 +15,6 @@ import java.util.Optional;
  *
  * // @MX:ANCHOR: [AUTO] MenuMapper — 메뉴 트리 핵심 데이터 접근 계층
  * // @MX:REASON: MenuService, MenuPermissionService에서 fan_in >= 3으로 참조
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현 필요
  */
 @Mapper
 public interface MenuMapper {

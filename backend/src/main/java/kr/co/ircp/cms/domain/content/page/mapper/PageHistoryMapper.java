@@ -11,7 +11,6 @@ import java.util.Optional;
  * 페이지 변경 이력 MyBatis 매퍼.
  * REQ-CONTENT-005-D-2/6/7: 이력 누적, 조회, 롤백
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현 필요
  */
 @Mapper
 public interface PageHistoryMapper {

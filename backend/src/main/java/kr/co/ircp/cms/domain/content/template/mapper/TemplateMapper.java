@@ -11,7 +11,6 @@ import java.util.Optional;
  * 템플릿 MyBatis 매퍼.
  * REQ-CONTENT-004-D: 템플릿 CRUD
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현 필요
  */
 @Mapper
 public interface TemplateMapper {

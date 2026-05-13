@@ -11,7 +11,6 @@ import java.time.Instant;
  *
  * // @MX:ANCHOR: [AUTO] Menu — 메뉴 트리의 핵심 엔티티
  * // @MX:REASON: MenuService, MenuPermissionService, PageService에서 fan_in >= 3으로 참조
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-001-D)
  */
 @Data
 @Builder
