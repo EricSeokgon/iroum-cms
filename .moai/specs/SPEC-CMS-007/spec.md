@@ -9,7 +9,7 @@
 | 작성일 | 2026-04-29 |
 | 버전 | v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P0 |
 | 분류 | RFP 신규 P0 SPEC (SFR-007 + SFR-008) |
 | Parent | SPEC-CMS-001 v0.3.2 (Umbrella) |
@@ -774,6 +774,7 @@ INCLUDE 룰의 경우 `operator`별 평가:
 | v0.1 | 2026-04-29 | manager-spec (MoAI) | 초안 — RFP SFR-007/008 통합. 10개 테이블, 6 parent REQ × 28 sub-REQ, 30 REST endpoints, 매칭 알고리즘 명세, 발송 정책, 5 시퀀스 다이어그램. SPEC-CMS-004 v0.2.1 `notification_send` + SPEC-CMS-005 v0.2.1 `integration_log`/`v_notification_history` 재사용. AI/벡터 임베딩은 SPEC-CMS-AI-001 옵션 트랙으로 분리. (SPEC-CMS-001 v0.3.2 §15.2 SFR-007/008, SPEC-CMS-004 v0.2.1 notification_send, SPEC-CMS-005 v0.2.1 integration_log) |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
+| v0.6 | 2026-05-13 | MoAI orchestrator | IT 신설 — PolicyMatchingIT.java 15 AC (§REQ-001 프로그램 5, §REQ-002 매칭 3, §REQ-003 발송 3, §REQ-004 구독 2, §REQ-005 추적 2). @AuthenticationPrincipal 미사용 → 전 영역 완전 IT 가능. Implemented → Tested. |
 
 ---
 
