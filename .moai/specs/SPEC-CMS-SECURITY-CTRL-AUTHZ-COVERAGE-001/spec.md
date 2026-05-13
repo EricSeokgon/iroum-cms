@@ -8,7 +8,7 @@
 | 제목 | ControllerTest 메소드 레벨 권한 거부 시나리오 보강 (`@WebMvcTest` 슬라이스 401/403 회귀 커버리지) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented (1차 — Step 1~4 완료, 2026-05-11) |
+| 상태 | Tested |
 | 우선순위 | **P2 (보안 회귀 검출 보완)** |
 | 분류 | Cross-cutting Security Test Coverage SPEC |
 | 의존 SPEC | SPEC-CMS-002 §16.x SecurityConfig + `@PreAuthorize` 정책, SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 (HTTP 매트릭스 IT 인프라 — 검증 레이어 분리) |
@@ -477,6 +477,7 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.2 | 2026-05-11 | manager-docs (MoAI) | RUN 1차 완료 — Step 1~4 적용 (commits `c1a564c`, `4655421`, `fe461b3`, `8c66a07`). 31 ControllerTest 검토, 12 적용(24 신규 시나리오) + 19 IT 위임. WebMvcTestInfraConfig EntryPoint 운영 시맨틱 정렬(Step 1, `Http403ForbiddenEntryPoint` → `HttpStatusEntryPoint(UNAUTHORIZED)`). §3.3 신설 — SPEC §3 가정 정정: "31 모두 보강 가능" → 실제 12/31 (38.7%) 적용 가능, 19/31 (61.3%) 메소드 레벨 @PreAuthorize 0건으로 AUTHZ-MATRIX-001 IT 위임. 상태 `Planned` → `Implemented (1차)`. 운영 코드 변경 0건. |
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — 12 ControllerTest 401/403 보강 24 시나리오 + 19 AUTHZ-MATRIX-001 위임 GREEN. Implemented → Tested. |
 | v0.1 | 2026-05-11 | manager-spec (MoAI) | 초안 작성. 5/7 코드 리뷰(`.moai/plans/twinkling-spinning-toucan-agent-a7f98f3b374ef2270.md`) C1 항목 메소드 레벨 잔여 갭 해소 SPEC. AUTHZ-MATRIX-001 v0.1의 27 잔여 추정을 정밀 재진단 결과 32개 누락 ControllerTest 정확 식별 + `HealthControllerTest` 비범위 1개 명시 → 31 실질 보강 확정. 도메인별 4 Step batch 분해(governance+auth → policy+safety → board+dashboard → system+content). AUTHZ-MATRIX-001과 검증 레이어 분리 명시 — `@WebMvcTest` 슬라이스(본 SPEC) vs `@SpringBootTest` 통합 컨텍스트(AUTHZ-MATRIX-001) — 중복 없음. 사용자 결정 3건 채택: (1) A2 — 단일 SPEC + 도메인별 4 Step batch, (2) B1 — 기존 `*ControllerTest`에 메소드 추가(신규 파일 0건), (3) C1 — 401 + 403 두 시나리오. REQ-CTRL-AUTHZ-COVERAGE-001/002/003 정의. RUN Step 1~4 분해. 운영 코드 변경 0건 강제. RISK-COV-01 ~ 08 + ASSUM-COV-01 ~ 04. 본 SPEC RUN 완료 시 5/7 코드 리뷰 C1 메소드 레벨 갭 100% 커버 (31/58 → 58/58, HealthController 비범위 1 제외). |
 
 ---

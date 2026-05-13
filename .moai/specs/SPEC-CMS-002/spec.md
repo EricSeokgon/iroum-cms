@@ -9,7 +9,7 @@
 | 부모 SPEC | SPEC-CMS-001 v0.2 (Umbrella) — §15.2 SFR-014 / SFR-010 / SFR-015, §16, §17 매핑 |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 버전 | v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |
@@ -1342,6 +1342,7 @@ CREATE TRIGGER trg_pdal_archive_no_update
 | v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-1 적용 (사용자 결정 2026-04-29) — SMS 본인인증 채널을 v0.4+ 후속 검토로 미루고 1차는 이메일 OTP만 유지. §16.1 REQ-AUTH-017-D 5개 sub-REQ 갱신: D-1 channel 파라미터 EMAIL만 허용(SMS 요청 시 400 + VERIFY_CHANNEL_NOT_SUPPORTED), D-2 SMS 발송 경로 비활성화·Spring Mail SMTP만 유지, D-3 그대로, D-4 SmsProvider 인터페이스 placeholder만 정의(NhnCloud/NaverCloud/AwsSns/Aligo 어댑터 skeleton 1차 제외, NoOpSmsProvider만 wired)·v0.4+ 후속 표기, D-5 그대로. §17.1 verification_request DDL `chk_vreq_channel` 제약을 `(SMS,EMAIL)` → `(EMAIL only)`로 강화하고 channel 컬럼은 v0.4+ 호환 위해 보존. §16.3 PER 임계값을 이메일 채널 기준으로 갱신. v0.3 본문 §1~§15·§16.2 REQ-AUTH-018-D·§17.2~§17.5는 변경 없이 유지. |
 | v0.3.2 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-4 적용 (사용자 결정 2026-04-29) — SYSADMIN→SUPER_ADMIN 단순 alias 정책 명시화. 둘 다 `roles` 테이블에 row 보존하며 alias 관계는 `roles.aliased_to` 컬럼으로 표현. §4.2.2 `roles` DDL에 `aliased_to VARCHAR(50) NULL REFERENCES roles(code)` 컬럼 추가 + `idx_roles_aliased_to` 인덱스 + COMMENT. SYSADMIN row의 `aliased_to='SUPER_ADMIN'`로 V2.1 마이그레이션 적용(idempotent UPDATE). §14.1 v0.2 시드 SUPER_ADMIN/DEPT_ADMIN/EDITOR/VIEWER에 `aliased_to=NULL` 명시. §13.1 REQ-AUTH-013-D-5 신설 (역할 alias 해석 sub-REQ — Ubiquitous): 권한 검사 시 alias 코드는 `aliased_to`를 따라 실제 역할로 해석, 한 단계 chain 금지, audit_log에 `role_alias_resolved` 이벤트 기록. acceptance.md §H-007 신규 G/W/T 추가. v0.3.1 본문 §16~§17 SmsProvider/이메일 OTP·§14 organization/permission_change_history 등은 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). Bundle A 완성 (16/18 풀스택 GREEN), 운영 결정 Q-17~Q-37 누적 통합 — 본문은 변경 없이 헤더·변경 이력만 갱신. |
+| v0.6 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AuthFlowIT.java + UserMapperIT.java + OrganizationMapperIT.java + PasswordHistoryMapperIT.java GREEN (REQ-AUTH-001~018). Implemented → Tested. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
 
 ---

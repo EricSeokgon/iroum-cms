@@ -8,7 +8,7 @@
 | 제목 | PII 노출 통제 (Admin 검색 partial 차단 + 응답 마스킹 + PII 접근 감사 보강) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented (1차 — Step 1~4 완료, 2026-05-08) |
+| 상태 | Tested |
 | 우선순위 | **P0 (PIPA 추가 완화)** |
 | 분류 | Cross-cutting Security SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-001 §5.3/§5.4/§5.5 (REQ-007/008/009 정의 원본), SPEC-CMS-002 §16.2 REQ-AUTH-018-D (PII 접근 감사 인프라), SPEC-CMS-002 §17.3 personal_data_access_log DDL |
@@ -476,6 +476,7 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-05-08 | manager-spec (MoAI plan_research 팀: researcher/analyst/architect 합의) | 초안 작성. SPEC-CMS-SECURITY-PII-001 §3.2 비범위 항목 중 KMS 인프라 의사결정에 독립적인 3건(REQ-PII-EMAIL-007 admin partial 차단 / REQ-PII-EMAIL-008 응답 마스킹 / REQ-PII-EMAIL-009 `findPage(actor)` 감사 보강)을 cross-cutting 보안 SPEC으로 분리하여 RUN 단계로 이행. PIPA 제29조 접근 통제·접속 기록 보관 추가 완화 P0. 사용자 결정 4건 반영: (1) 2자 local-part 마스킹 `**` (SPEC-PII-001 §5.4 원문 따름, analyst의 `a*` 해석 무효), (2) `email=` 빈 문자열은 무시(전체 검색 분기), (3) AOP advice INSERT 실패 시 user-facing 에러 미전파(ERROR 로그 + Micrometer + 알림), (4) `existsByEmail` HMAC 교체는 본 SPEC 범위 외(V25 DROP 시 자연 해결). architect 자율 결정: `accessed_fields` 컬럼명 통일(SPEC-CMS-002 §17.3 실제 DDL 따름, SPEC-PII-001 `accessed_field` 오타 보정), ArchUnit 강제 Step 4 포함. RUN 1차 범위 Step 1~4 (REQ-007 차단 + REQ-008 마스킹 + REQ-009 감사 보강 + ArchUnit). 1차 비범위로 KMS 키 회전 자동화 / 다른 PII 컬럼 암호화 / 백업 마스킹 / Logback 마스킹 / `existsByEmail` 교체 / 비밀번호 재설정 흐름 적재 명시. RISK-PII-002-01 ~ 10 + ASSUM-PII-002-01 ~ 04. |
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — PiiEmailAdminSearchIT + PiiAuditEnhanceIT IT 24 GREEN (REQ-PII-EMAIL-007/008/009). Implemented → Tested. |
 | v0.2 | 2026-05-08 | manager-docs (MoAI sync) | RUN 1차 완료 — Step 1~4 적용 (commits 3a8be0f, fbedd8c, 04b9fe3, 0b3d05e, 1b1f7d0), 단위 50 + IT 24 + ArchUnit 5 GREEN, 3 @Disabled follow-up SPEC-CMS-SECURITY-PII-FOLLOWUP-001 추적. MX 태그 보강: `PersonalDataAccessLogServiceImpl.recordBulk` @MX:SPEC sub-line 추가, `GlobalExceptionHandler.handleAdminEmailPartialSearch` @MX:NOTE+@MX:SPEC 신규 추가. |
 
 ---

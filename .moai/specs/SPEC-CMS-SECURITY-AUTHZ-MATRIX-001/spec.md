@@ -8,7 +8,7 @@
 | 제목 | HTTP 권한 매트릭스 통합 테스트 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented (1차 — Step 1~3 완료, 2026-05-11) |
+| 상태 | Tested |
 | 우선순위 | **P1 (보안 회귀 검출 인프라)** |
 | 분류 | Cross-cutting Security IT SPEC |
 | 의존 SPEC | SPEC-CMS-002 §16.x SecurityConfig + JwtAuthenticationFilter, SPEC-CMS-SECURITY-PII-001 (PII 더미 키 인프라 패턴 재사용), SPEC-CMS-SECURITY-PII-002 (`SecurityConfigIntegrationTest` 참조 패턴) |
@@ -417,5 +417,6 @@ sequenceDiagram
 |------|------|--------|----------|
 | v0.1 | 2026-05-08 | manager-spec (MoAI) | 초안 작성. 5/7 코드 리뷰 C1 항목(`.moai/plans/twinkling-spinning-toucan-agent-a7f98f3b374ef2270.md`) 재진단 결과 반영 — 22→58 ControllerTest exclude 정정, isForbidden 검증 0→31건 정정. 진정한 갭으로 운영 SecurityFilterChain 회귀 검출 인프라 부재(HTTP 인증 매트릭스 + `@PreAuthorize` 운영 컨텍스트 회귀)에 집중. 27 컨트롤러 메소드 레벨 isForbidden 보강은 별도 SPEC `SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001`로 분리. 사용자 결정 5건 반영: (1) SPEC 범위로 HTTP 권한 매트릭스 IT 신설 채택, (2) 별도 IT 클래스 신설 패턴(`AuthorizationMatrixIT`), (3) 운영 SecurityFilterChain 그대로 사용(`@SpringBootTest`), (4) 401/403/200 3 시나리오 표준화, (5) 5~7 핵심 endpoint(WRITE 우선) 매트릭스. REQ-AUTHZ-MATRIX-001/002/003 정의. RUN Step 1~3 분해. 운영 코드 변경 0건 강제. RISK-AM-01 ~ 08 + ASSUM-AM-01 ~ 05. 본 SPEC RUN 1차 GREEN 확보 시 OWASP A01 회귀 검출 인프라 운영 배포 가능 수준 달성. |
 | v0.2 | 2026-05-11 | manager-docs (MoAI) | RUN 1차 완료 — Step 1~3 적용 (commit `f0ae970`). AuthorizationMatrixIT 461줄 신규 (`@SpringBootTest` + `@Testcontainers` + `JwtTokenProvider`/`TokenBlacklistMapper` `@MockitoBean` + PII 더미 키 + `givenValidToken` helper + 3 `@Nested` + 19 `@Test`). 19/19 AC 매핑 완료. 운영 코드 변경 0건. `JwtPrincipal.getAuthorities()` ROLE_ prefix 처리 정적 검증 PASS. `RetentionPolicyController` GET endpoint 존재 확인. 상태 `Planned` → `Implemented (1차)` 갱신. |
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AuthorizationMatrixIT.java 19 AC (REQ-AUTHZ-MATRIX-001/002/003) GREEN. Implemented → Tested. |
 
 ---

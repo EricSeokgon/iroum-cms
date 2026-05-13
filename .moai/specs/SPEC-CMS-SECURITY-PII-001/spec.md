@@ -8,7 +8,7 @@
 | 제목 | 개인정보 암호화 (PII Encryption — Email AES-256-GCM + HMAC + 키 관리) |
 | 작성일 | 2026-05-07 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented (1차 — Step 1~4 완료, 2026-05-08) |
+| 상태 | Tested |
 | 우선순위 | **P0 (운영 배포 차단)** |
 | 분류 | Cross-cutting Security SPEC |
 | 의존 SPEC | SPEC-CMS-002 §17.2 (PII 처리 정책), REQ-CROSS-002, REQ-AUTH-001~006 |
@@ -562,6 +562,7 @@ sequenceDiagram
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
 | v0.1 | 2026-05-07 | manager-spec | 초안 작성. PIPA 대응 P0(운영 배포 차단). 코드 리뷰(`8c9ffd3`) HIGH #3 + `.moai/reports/security-todo-pii.md` Path A 권장에 정확히 대응. SPEC-CMS-002 §17.2 PII 처리 정책의 GREEN 단계 약속을 cross-cutting Security SPEC으로 분리하여 이행. AES-256-GCM 암호화 TypeHandler + HMAC-SHA256 lookup 격상 + 키 관리 인터페이스(KMS/Vault 추상화 + Local Dev fallback) + V24 마이그레이션(4개 신규 컬럼 + UNIQUE 인덱스) + 데이터 마이그레이션 운영 매뉴얼(M1~M6) + API 응답 마스킹(`m***@d***.com`) + 관리자 검색 제약(partial 차단) + PII 접근 감사(REQ-AUTH-018 통합) 6개 축에 REQ-PII-EMAIL-001 ~ 010 (총 10개 부모 REQ) 정의. 1차 비범위에 PostgreSQL TDE / 다른 PII 컬럼 / 백업·로그 마스킹 / partial 검색 / 키 회전 자동화 / HSM / IdP 연동 명시. RISK-PII-01 ~ 12 + ASSUM-PII-01 ~ 04. PIPA 제29조 매핑 §10. |
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AES-256-GCM + HMAC-SHA256 + KeyVault + V24 migration 통합 4 IT GREEN (REQ-PII-EMAIL-001~006). Implemented → Tested. |
 | v0.2 | 2026-05-08 | manager-docs (sync) | RUN Phase 1차 완료 (Step 1~4 + follow-up fix). 단위 17 GREEN + 통합 4 GREEN + 다중 IT 회귀 0. PIPA 제29조 운영 배포 차단 해소. Step 5 (PiiEmailMigrationJob + V25 컬럼 DROP) 및 SPEC §3.2 비범위 항목들은 후속 SPEC으로 분리 (PII-002, KMS-001, ROTATION-001, MASKING-001). 관련 commit: 1d4ae61, 0a6b14e, e432d53, 29878b9, f91628a, 44cc3b8. |
 
 ---
