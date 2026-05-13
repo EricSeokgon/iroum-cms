@@ -1,4 +1,4 @@
-# SPEC-CMS-010: 통합 검색 (Unified Search) v0.1
+# SPEC-CMS-010: 통합 검색 (Unified Search) v0.2
 
 ## 1. 개요
 
@@ -8,7 +8,7 @@
 | 제목 | 통합 검색 (Unified Search — 풀텍스트·자동완성·인기검색어·하이라이트) |
 | 작성일 | 2026-05-07 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P1 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-002 (인증·권한 — 비공개 콘텐츠 가드), SPEC-CMS-003 (게시판·FAQ·QnA `search_vector`/`pg_trgm` GIN), SPEC-CMS-004 (콘텐츠 페이지 `tsv_ko`/`tsv_en` 다국어 tsvector), SPEC-CMS-005 (`access_log` 기반 검색 통계 소스 + 알림 큐), SPEC-CMS-006 (`safety_incidents.search_vector`), SPEC-CMS-007 (정책사업 검색), SPEC-CMS-MEDIA-001 (미디어 메타데이터 GIN), SPEC-CMS-009 (`policy_match_stats`/`content_view_stats`/`batch_execution_log`/`retention_policy` analytics 신호 + 보존 정책) |
@@ -675,6 +675,7 @@ sequenceDiagram
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-13 | MoAI | IT 신설. SearchIT 20 AC(§A 통합검색 6 + §B 자동완성 4 + §C 인기검색어 3 + §D 클릭추적 3 + §E 동의어확장 2 + §F 보안 3), SynonymIT 9 AC(§E-G 목록 2 + §E-C 등록 4 + §E-U 수정 2 + §E-D 삭제 1). XSS sanitize / 비공개 가드 / SELF·DUPLICATE 제약 / soft-delete DB 행 검증 포함. compileTestJava PASS. 상태 Implemented → Tested. |
 | v0.1 | 2026-05-07 | manager-spec | 초안 작성. SPEC-CMS-001 §15.2 SFR(통합 검색) / §15.4 INR / §16(SPEC 트리)을 상세화. PostgreSQL FTS(`tsvector` + GIN + `pg_trgm`) 단일 스택 결정, ElasticSearch 후속 트랙(SPEC-CMS-SEARCH-ES-001) 비범위 명시. 6개 축(통합 검색 / 자동완성 / 인기 검색어 / 검색 로그 / 동의어 / 비기능)에 REQ-SEARCH-001 ~ 010 (총 10개 부모 REQ) 정의. 신규 3개 테이블 DDL(`search_log`, `search_popular_cache`, `search_synonym`) + 정책 검색 인덱스 보완(IF NOT EXISTS) + SPEC-CMS-009 `retention_policy` 시드 2건. 9개 REST 엔드포인트(검색·자동완성·인기·클릭·통계·동의어 CRUD). 4개 배치 잡(일/주/월 인기 검색어 + retention hook). SPEC-CMS-003/004/006/MEDIA-001 인덱스 자산을 입력으로 사용하며 재정의하지 않음을 명시. 1차 비범위에 ElasticSearch / Mecab-ko / 시맨틱 검색 / 자연어 질의 / 개인화 / 음성·이미지 검색 명시. |
 
 ---
