@@ -11,6 +11,32 @@
 
 ### Added
 
+- **SPEC-CMS-001 공공기관 CMS 플랫폼 1차 출시 완료 (2026-05-14)**
+  - **Bundle A — 회원·권한·로그인** (SPEC-CMS-002, 003, 004)
+    - 회원 관리: 가입·수정·탈퇴, 비밀번호 정책, PII 마스킹
+    - 권한 관리: 역할(Role)·메뉴별 권한 매트릭스
+    - JWT 로그인·로그아웃·토큰 재발급, Refresh Token 순환
+  - **Bundle B — 게시판·공지·Q&A·FAQ** (SPEC-CMS-005, 006, 007)
+    - 게시판 마스터 설정, 게시글 CRUD, 첨부파일 업로드
+    - 공지사항·팝업·배너 관리
+    - Q&A 답변 워크플로우, FAQ 카테고리 관리
+    - 안전 관리(SafetyManagement) 15 AC GREEN
+    - 정책 매칭(PolicyMatching) 15 AC GREEN
+  - **Bundle C — 콘텐츠·메뉴·사이트** (SPEC-CMS-008, 009, 010)
+    - 페이지·팝업·템플릿·블록·위젯 콘텐츠 관리
+    - 메뉴 트리 관리 (드래그앤드롭 정렬 지원)
+    - 사이트 다국어(한/영) 설정·스케줄 발행
+  - **미디어 파일 관리** (SPEC-MEDIA-001)
+    - 이미지·동영상 업로드, 썸네일 자동 생성
+    - 미디어 라이브러리 검색·태그
+  - **보안 강화 28종** (SPEC-CMS-SECURITY 트랙 전종 Tested)
+    - PII 마스킹·감사로그 AOP·메타 검증
+    - AUTHZ 인가 매트릭스 IT 커버: 114 endpoint × 3 시나리오
+    - ArchUnit 아키텍처 가드 + OWASP A01 회귀 검출 305 AC
+  (SPEC-CMS-001 v0.5 Tested — ea54ddb)
+
+
+
 - **AUTHZ-IT-REGRESSION-001 v0.6 Step 4 Implemented — controller unit test 11종 정정 (51 RED 100% 회복)**
   - 11 controller unit test의 AC-COV-001-1 `인증 없이 접근 시 401` 시나리오 → `403 Forbidden` 정정
   - 원인: @WebMvcTest + SecurityAutoConfiguration 제외 시 SecurityFilterChain 없음 → @PreAuthorize 거부 → 403
