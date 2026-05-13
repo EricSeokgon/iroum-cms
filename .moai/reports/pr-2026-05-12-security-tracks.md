@@ -1,3 +1,22 @@
+# PR v8: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS-001 + PII ROTATION-001 + META v0.3 + REGRESSION 100% + EXPAND-004 완결
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **43 commits** (`667332d` ~ `6384ed1`)
+**Files**: **47 changed (+5897 / -344)**
+**운영 코드 변경**: **8건** (AwsKmsPiiKeyVault, AwsKmsPiiKeyVaultProperties, PiiKeyRotationService, PiiKeyRotationMapper, PiiKeyRotationJob, PiiKeyRotationProperties, UserPiiRow, RotationLogInsert)
+
+## v8 핵심 산출 (v7 대비 추가)
+- **SPEC-CMS-SECURITY-PII-ROTATION-001 Implemented**: PIPA 제29조 PII 키 자동 회전 배치 완성
+  - PiiKeyRotationService: 청크 단위 커밋 (@Transactional REQUIRES_NEW), DEK 회전 시 HMAC 불변
+  - PiiKeyRotationMapper + XML: `_long` javaType alias 수정 (MyBatis primitive 매핑 버그 수정)
+  - PiiKeyRotationJob: @Scheduled cron (6개월 주기), PiiKeyRotationProperties
+  - V25 migration: pii_key_rotation_log 테이블 신설, MigrationOrderIT V25 반영 (24건)
+  - 단위 테스트 5 GREEN (Mockito), PostgreSQL IT 4 GREEN (ControlledPiiKeyVault @Primary)
+  - IT 시나리오: key_version 갱신 / decrypt round-trip / email_hmac 불변 / rotation_log COMPLETED
+
+---
+
 # PR v7: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS-001 + META v0.3 + REGRESSION 100% + EXPAND-004 완결
 
 **Branch**: feature/security-tracks-2026-05-12
