@@ -19,7 +19,7 @@
     -->
     <resultMap id="userPiiRowMap" type="kr.co.ircp.cms.domain.security.pii.rotation.UserPiiRow">
         <constructor>
-            <idArg   column="id"                javaType="long"/>
+            <idArg   column="id"                javaType="_long"/>
             <arg     column="email_encrypted"   javaType="_byte[]" jdbcType="BINARY"/>
             <arg     column="email_iv"          javaType="_byte[]" jdbcType="BINARY"/>
             <arg     column="email_tag"         javaType="_byte[]" jdbcType="BINARY"/>
