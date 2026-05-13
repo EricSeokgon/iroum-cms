@@ -11,7 +11,7 @@
 | 작성일 | 2026-04-29 |
 | 최종 수정 | 2026-04-29 (v0.4 — Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P0 (A에 의존, A와 병렬로 C/D 진행 가능) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | cop/bbs(일반게시판), cop/ntc(공지사항), cop/com/faq(FAQ), cop/com/qna(Q&A), cop/cmm/fms(첨부파일) |
@@ -1463,6 +1463,7 @@ COMMENT ON COLUMN bbs_master.taxonomy_code IS 'S-Meta 호환 분류체계 코드
 | v0.2 | 2026-04-29 | manager-spec | RFP 통합 보강(SPEC-CMS-001 v0.2 §15.2 SFR-014/SFR-008 매핑). §14 신규 sub-REQ 4개 부모(011-D~014-D)·19개 자식 추가: 게시판 유형 enum 7종(NORMAL, NOTICE, QNA, FAQ, GALLERY, PUBLICATION, SURVEY) 및 type 변경 차단 게이트, 발간자료 메타·카테고리 트리(depth ≤ 3)·다운로드 통계·zip 압축 다운로드, 설문조사 5종 질문(SINGLE/MULTI/TEXT/RATING/DATE)·익명/식별 응답 분리·결과 통계 시각화, Q&A 답변 알림 멱등성·재시도 3회·옵트아웃. §15 신규 DDL 9개 테이블(bbs_type_template, bbs_post_publication_meta, publication_category, publication_download_stat, survey, survey_question, survey_response, survey_answer, qna_notification_optout, qna_notification_log) — Flyway V2_*. §16 RFP 비기능(PER-003 검색 < 3초, SER-004 강화 — 다운로드 매직넘버 재검사·권한 재검증·URL 변조 방지, DAR-007 S-Meta 분류체계). 기존 §1~§13은 보존. |
 | v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-5 적용 (사용자 결정 2026-04-29) — 발간자료 압축 zip 보존 정책 추가. §14.2 REQ-BOARD-012-D-4 본문 갱신: 7일 보존 + 매일 0시 정리 배치 명시 + 만료 후 410 ZIP_EXPIRED. REQ-BOARD-012-D-4-2 신설(zip 만료 자동 삭제 — Event-driven, PublicationZipExpireJob @Scheduled cron 0 0 0 * * *). §15.4-1 `publication_zip_archive` DDL 신규 테이블 추가(download_id UUID UNIQUE, expires_at default NOW()+7일, deleted_at, download_count, asset_uuids UUID[], mode SYNC/ASYNC, idx_pza_expires partial index). 파일 본체는 SPEC-CMS-001 v0.3.1 Q-2 결정 LocalFileSystemStorage에 보관. acceptance.md §I-RFP-09/10 신규 G/W/T 추가(만료 자동 삭제 + 보존 기간 내 재다운로드). v0.2 본문 §1~§14의 다른 sub-REQ·§15 다른 테이블·§16 비기능은 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). Bundle B Step 1 RED 완료, GREEN 대기. 본문은 변경 없이 헤더·변경 이력만 갱신. |
+| v0.6 | 2026-05-13 | MoAI | IT 신설. BbsMasterIT 9 AC(§A) + PostIT 11 AC(§B+§F) + FaqIT 7 AC(§G) + QnaIT 9 AC(§H) = 35 AC. compileTestJava PASS. 상태 Implemented → Tested. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 Draft (v0.4) → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
 
 ---
