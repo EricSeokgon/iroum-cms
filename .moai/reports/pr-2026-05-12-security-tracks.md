@@ -1,3 +1,21 @@
+# PR v9: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS/ROTATION + Content/Board Step 2 GREEN + META v0.3 + REGRESSION 100%
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **46 commits** (`667332d` ~ `6e6b603`)
+**Files**: **63 changed (+5923 / -363)**
+**운영 코드 변경**: **9건** (AwsKmsPiiKeyVault, AwsKmsPiiKeyVaultProperties, PiiKeyRotationService, PiiKeyRotationMapper, PiiKeyRotationJob, PiiKeyRotationProperties, UserPiiRow, RotationLogInsert, PageHistoryServiceImpl)
+
+## v9 핵심 산출 (v8 대비 추가)
+- **Content 도메인 Step 2 GREEN 완결**:
+  - `PageHistoryServiceImpl.listHistory/getHistory` UnsupportedOperationException → 실제 구현 (REQ-CONTENT-005-D-6/7)
+  - Mapper 인터페이스 6종 `@MX:TODO` 해소 (XML 구현 완성 확인: Site/Template/Page/ContentBlock/PageHistory/Menu)
+  - Entity 6종 `@MX:TODO` 해소 (구현 완성 확인: Site/Page/ContentBlock/PageHistory/Menu/Template)
+- **Board 도메인 Step 2 GREEN 완결**:
+  - BbsMasterMapper/BbsPostMapper `@MX:TODO` 해소 (TSVECTOR 전문검색 포함 XML 완성 확인)
+  - BbsMaster entity `@MX:TODO` 해소
+- **단위 테스트 BUILD SUCCESSFUL** 확인
+
 # PR v8: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS-001 + PII ROTATION-001 + META v0.3 + REGRESSION 100% + EXPAND-004 완결
 
 **Branch**: feature/security-tracks-2026-05-12
