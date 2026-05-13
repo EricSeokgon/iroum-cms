@@ -348,7 +348,6 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
          * "cannot execute INSERT in a read-only transaction" PG 오류 발생. 메소드에 별도
          * {@code @Transactional}(readOnly=false) 가 필요하다. 운영 fix 이후 enable 복귀.
          */
-        @Disabled("BLOCKED: DashboardWidgetServiceImpl.getData() readOnly TX 버그 — 캐시 INSERT 실패. 운영 fix 필요.")
         @Test
         @DisplayName("E-2: 동일 파라미터 재호출 시 cache_hit=true (chart_dataset_cache 활성 행 사용)")
         void widgetData_cacheHit_onSecondCall() throws Exception {
@@ -483,7 +482,6 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
      */
     @Test
     @DisplayName("A-8: DEPT_ADMIN 이 타 부서 위젯 수정 시 403 WIDGET_DEPT_MISMATCH")
-    @Disabled("BLOCKED: @AuthenticationPrincipal Long userId 가 null 반환 — 운영 ArgumentResolver 보강 후 enable")
     void widgetUpdate_returns403_whenDeptMismatch() throws Exception {
         // 1) 두 부서(org A, org B) 와 각각의 사용자 시드
         long orgAId = insertOrganization("A8_ORG_A_" + UUID.randomUUID().toString().substring(0, 8));

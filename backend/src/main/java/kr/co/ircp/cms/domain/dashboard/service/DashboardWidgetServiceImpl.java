@@ -145,6 +145,7 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
     // ─── 데이터 페치 + 캐시 (REQ-VIZ-005-D-1, D-3) ─────────────────────────────
 
     @Override
+    @Transactional
     public WidgetDataResponse getData(Long widgetId, Map<String, Object> filters, List<String> userRoles) {
         DashboardWidget w = widgetMapper.findById(widgetId)
                 .orElseThrow(() -> new DashboardWidgetNotFoundException(widgetId));

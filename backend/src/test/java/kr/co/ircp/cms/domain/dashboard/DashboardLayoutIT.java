@@ -159,7 +159,6 @@ class DashboardLayoutIT extends AbstractIntegrationTest {
     // 임시 조치: 운영 fix 가 완료될 때까지 @Disabled 처리. fix 후 enable 복귀하면 본 IT 가
     // B-1/B-3/B-6/B-9 시나리오를 검증한다.
     // =================================================================================
-    @Disabled("BLOCKED: @AuthenticationPrincipal Long userId 가 null 반환. 운영 ArgumentResolver 보강 필요.")
     @Nested
     @DisplayName("§B 대시보드 레이아웃")
     class LayoutCrud {
@@ -382,7 +381,6 @@ class DashboardLayoutIT extends AbstractIntegrationTest {
      */
     @Test
     @DisplayName("A-5: 레이아웃 로딩 시 SUPER_ADMIN 전용 위젯이 EDITOR 응답에서 묵시적으로 제거됨")
-    @Disabled("BLOCKED: @AuthenticationPrincipal Long userId 가 null 반환 — 운영 ArgumentResolver 보강 후 enable")
     void layoutGet_filtersWidgetsForEditor() throws Exception {
         givenValidToken(ownerId, Set.of("EDITOR"));
 
