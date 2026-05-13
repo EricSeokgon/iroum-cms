@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-002: PII-FOLLOWUP-001 잔여 RED 해소 (@MockitoSpyBean + @Async 근본 충돌) v0.2
 
-**Status**: Implemented (1차) (2026-05-11) — 본 SPEC 핵심 목표(Spy + @Async 충돌) 100% 해소
+**Status**: Tested (2026-05-13) — 본 SPEC 핵심 목표(Spy + @Async 충돌) 100% 해소
 **Implementation commit**: a5f873b (PiiAuditEnhanceIT 재설계 + PersonalDataAccessLogServiceImplFallbackTest 신규)
 **Test result**: Unit test 3 AC GREEN + IT 3 AC GREEN, 2 AC 잔여 (PIPA 트리거 + tx 제약, 분리 SPEC 권장)
 **Trigger**: AUTHZ-AUTODETECT-001 Step 1 실제 구동 검증 중 발견된 PII-FOLLOWUP-001 잔여 회귀
@@ -169,4 +169,5 @@ CGLIB proxy의 메소드는 Mockito가 stub 불가능한 형태로 만들어짐 
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — @MockitoSpyBean + @Async 충돌 해소 IT GREEN (REQ-PII-FU2-001~003). Implemented → Tested. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. AUTHZ-AUTODETECT-001 Step 1 실제 구동 검증 중 PII-FOLLOWUP-001 잔여 3 RED 발견. Root cause 명문화 (@MockitoSpyBean + @Async CGLIB proxy 충돌). 해결 옵션 3종 (운영 리팩토링 / IT 재설계 / @Async 우회) — 권장 옵션 B. REQ-PII-FU2-001~003 정의. PII-FOLLOWUP-001 절차 결함 (정적 검증만, 실제 GREEN 미검증) 명시. 다음 세션 RUN 진입 권장. |

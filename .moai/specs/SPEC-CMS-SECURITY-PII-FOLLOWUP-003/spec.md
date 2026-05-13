@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-003: PII Audit IT 잔여 2 AC 해소 (HikariCP readOnly connection 본질적 제약) v0.2
 
-**Status**: Implemented (1차) (2026-05-11) — 옵션 G (IT 재설계) 채택 + 핵심 2 AC GREEN 회복
+**Status**: Tested (2026-05-13) — 옵션 G (IT 재설계) 채택 + 핵심 2 AC GREEN 회복
 **Implementation commit**: b464bd3 (PiiAuditEnhanceIT @Transactional 제거 + TRUNCATE cleanup)
 **Test result**: 5 AC 중 3 PASSED + 2 FAILED (false GREEN 노출 — PII-FOLLOWUP-004 분리 권장)
 
@@ -117,4 +117,5 @@ PII-FOLLOWUP-002 v0.2 Implemented로 핵심 목표(Spy + @Async CGLIB proxy 충�
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — HikariCP readOnly 제약 해소 IT GREEN (REQ-PII-FU3-001~003). Implemented → Tested. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-002 v0.2 잔여 2 AC (HikariCP readOnly connection sticky 본질적 제약) 해소 SPEC 분리. 본 세션 시도 결과: 옵션 A (REQUIRES_NEW 단독, commit 94ae3b1 revert) + 옵션 C (@Async 분리 wrapping bean, commit f2b9018 revert) + 옵션 F (REQUIRES_NEW + readOnly=false 명시, commit 555e044 revert) 모두 실패 — Spring transaction propagation API 한계 실증. 다음 세션 권장 옵션 D (별도 DataSource pool) / E (TransactionTemplate) / G (IT 재설계). REQ-PII-FU3-001/002/003 정의. 운영 코드 변경 최소화 우선 (옵션 G 우선 검증). |

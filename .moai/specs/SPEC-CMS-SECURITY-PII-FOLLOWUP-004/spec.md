@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.4
 
-**Status**: Implemented (2026-05-12) — AC-009-3/4 GREEN, AC-009-2는 PII-FOLLOWUP-005 v0.3에서 완전 해결 (5/5 GREEN)
+**Status**: Tested (2026-05-13) — AC-009-3/4 GREEN, AC-009-2는 PII-FOLLOWUP-005 v0.3에서 완전 해결 (5/5 GREEN)
 **Implementation commits**: dc224f2 (AC-009-4 IT 시나리오 정정), a886b20 (VerificationService REQUIRES_NEW), 608855b (AC-009-2 v0.3 Option B)
 
 ## v0.4 변경 이력 (2026-05-12) — AC-009-2 PII-FOLLOWUP-005에서 해결, Status 정상화
@@ -152,4 +152,5 @@ PII-FOLLOWUP-003 옵션 G (PiiAuditEnhanceIT `@Transactional` 제거 + TRUNCATE 
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.5 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AC-009-3/4 GREEN + AC-009-2 PII-FOLLOWUP-005에서 완전 해결. Implemented → Tested. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-003 v0.2 Implemented 옵션 G 적용 후 노출된 false GREEN 2건 (AC-009-3 비밀번호 재설정 미적재 + AC-009-4 GET /me 미적재) 분리 SPEC. PII-002 본래 SPEC §결론과 운영 동작 차이 정밀 진단 권장. AC-009-3 추정 원인: requestPasswordReset/verificationService.request 직접 audit 없음, mockMvc 부수효과 의심. AC-009-4 추정 원인: PersonalDataAccessAspect selfAccessOnly 매칭 로직 또는 viewer.userId() 추출 시점 차이. REQ-PII-FU4-001/002/003 + 5 AC + 결정 포인트 D1~D3 명시. 다음 세션 RUN 진입 권장. |

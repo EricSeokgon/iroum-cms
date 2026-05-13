@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001: HTTP 권한 매트릭스 IT 확장 (AUTHZ-MATRIX-001 6 endpoint → 30 endpoint, 12 권한 어휘 회귀 검출) v0.2
 
-**Status**: Implemented (2026-05-11)
+**Status**: Tested (2026-05-13)
 **Implementation commits**: 151a864 (Step 1), df11edd (Phase A Content), dcaac84 (Phase A B), dd4bf82 (Phase B)
 
 ## 1. 개요

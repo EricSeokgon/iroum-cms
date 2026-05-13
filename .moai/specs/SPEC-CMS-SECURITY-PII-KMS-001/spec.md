@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-KMS-001: 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault) v0.3
 
-**Status**: Implemented (2026-05-13) — AWS KMS 어댑터 구현 완료 / 단위 4 GREEN + LocalStack IT 3 GREEN
+**Status**: Tested (2026-05-13) — AWS KMS 어댑터 구현 완료 / 단위 4 GREEN + LocalStack IT 3 GREEN
 **Trigger**: PII-001 v0.2 Implemented §7 운영 환경 차단 가드 해제 필요
 **Severity**: P2 (운영 prod 활성화 필수, dev/test는 LocalEnvPiiKeyVault로 우회 가능)
 
@@ -96,6 +96,7 @@ PII-001 v0.2 Implemented 시점에 운영 환경 차단 가드 적용:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.4 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — AwsKmsPiiKeyVaultIT 3 AC GREEN (REQ-PII-KMS-001~003). Implemented → Tested. |
 | v0.3 | 2026-05-13 | MoAI orchestrator | Implemented — AwsKmsPiiKeyVault + AwsKmsPiiKeyVaultProperties 구현. @Autowired + 패키지-프라이빗 테스트 생성자 패턴. 단위 테스트 4 GREEN (Mockito), LocalStack IT 3 GREEN. build.gradle.kts aws-sdk-kms:2.25.70 + localstack:1.20.4 추가. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | META-IT-GREEN-MANDATORY-001 정책 사전 합의 + 결정 포인트 D1~D5 정밀화 (KMS 공급자, 키 가져오기, 캐싱, Failover, IT 환경). 다음 세션 RUN 진입 절차 5단계 명시. RUN 진입 전 사용자 결정 확정 필요. SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002/REGRESSION-001에서 검증된 META 패턴 (단독+통합 GREEN, race condition 회피) 적용. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. README SPEC 표에는 있으나 .moai/specs/ 디렉토리 누락 보완. PII-001 v0.2 운영 prod 차단 가드 해제 의존 SPEC. 결정 포인트 D1~D4 명시 (KMS 공급자, 키 가져오기 방식, 캐싱 정책, Failover). REQ-PII-KMS-001/002/003 골격. 실제 RUN은 운영 KMS 인프라 활성화 시점 이후 진입 권장. |

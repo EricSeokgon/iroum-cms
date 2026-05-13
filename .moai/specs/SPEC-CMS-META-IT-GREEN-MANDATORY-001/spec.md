@@ -1,6 +1,6 @@
 # SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.3
 
-**Status**: Implemented (2026-05-12) — Evidence 강화 (PII 5건 + AUTHZ 회귀 6건 + Controller test 12건)
+**Status**: Tested (2026-05-13) — Evidence 강화 (PII 5건 + AUTHZ 회귀 6건 + Controller test 12건)
 **Implementation commits**: 75da38a (v0.1 정책 초안), 7c58647 (v0.2 README + Sync checklist), [본 commit] (v0.3 AUTHZ evidence 추가)
 
 ## v0.3 변경 이력 (2026-05-12) — AUTHZ REGRESSION-001 evidence 통합
@@ -236,6 +236,7 @@ PII 트랙에서 5건의 false GREEN/race condition 패턴이 발견됨:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.4 | 2026-05-13 | MoAI orchestrator | IT 검증 완료 — META-IT 정책 운영 적용 검증 완료 (PII + AUTHZ 트랙 100% GREEN). Implemented → Tested. |
 | v0.3 | 2026-05-12 | MoAI orchestrator | **Evidence 강화**. REGRESSION-001 RUN에서 발견한 추가 회귀 5 case (응답 코드 변경 28+17건, @Valid 우선 23+4건, @WebMvcTest 한계 11+종, MatrixIT 8건 종합 검증 미실행, service IllegalArgumentException helper) 통합. REQ-PII-FU2-003 강화 (종합 회귀 검증 추가), REQ-META-IT-002 확대 (GlobalExceptionHandler 커버리지), REQ-META-IT-006 신설 (응답 코드 동기). 본 정책 정식 적용 SPEC 3건 명시 (PII-FU-005 + AUTHZ-EXPAND-002 + REGRESSION-001). 정책 문서 전용, 운영 코드/IT 신설 0건. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | **Implemented**. README §"IT user environment GREEN mandatory 정책 (META)" 신설 — HARD 정책 요약 4건 + Sync checklist 4 항목 표 + 적용 사례 5건 evidence 표 + SPEC 참조 링크. PII-FOLLOWUP-005가 본 정책의 첫 적용 사례 (단독 GREEN, 통합 race condition → Partially Diagnosed). 정책 문서 전용, 운영 코드/IT 신설 0건. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-001~005 트랙에서 발견된 false GREEN/race condition 패턴 5건 evidence 기반 IT user environment GREEN mandatory 정책 명문화. REQ-PII-FU2-003 (단독+통합 양쪽 GREEN 필수) + REQ-META-IT-002 (@Transactional 위험 명시) + REQ-META-IT-003 (race condition 회피 패턴) + REQ-META-IT-004 (정책 문서 위치) + REQ-META-IT-005 (Sync 단계 검증 강화) 정의. 7 AC. 결정 포인트 D1~D4. RUN Step 1~4 분해. 정책 문서 전용, 운영 코드/IT 신설 0건. PII 트랙 5건 회고로 evidence 검증. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |
