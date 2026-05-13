@@ -1,3 +1,22 @@
+# PR v11: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS/ROTATION + PiiAuditEnhanceIT 5/5 GREEN
+
+**Branch**: feature/security-tracks-2026-05-12
+**Base**: main
+**Commits**: **48 commits** (`667332d` ~ `42cd034`)
+**Files**: **65 changed**
+**운영 코드 변경**: **10건**
+
+## v11 핵심 산출 (v10 대비 추가)
+- **`PiiAuditEnhanceIT` AC-009-2 FK 위반 수정**:
+  - 원인: `TRUNCATE personal_data_access_log` + `DELETE FROM users WHERE audit_it_%` 가
+    별개 auto-commit 문으로 실행 → 두 문 사이에 `@Async` REQUIRES_NEW 커밋이 끼어들어
+    `pda_log.viewer_id → users(id)` FK 위반 발생
+  - 수정: `@BeforeEach` / `@AfterEach` 양쪽에서 `TransactionTemplate`으로 두 문을 단일
+    트랜잭션으로 묶음 → TRUNCATE의 ACCESS EXCLUSIVE 잠금이 COMMIT까지 유지되어 동시 INSERT 차단
+  - `PlatformTransactionManager txManager @Autowired` 추가
+  - **`PiiAuditEnhanceIT` 5/5 GREEN** (이전 AC-009-2 FK 위반 해소)
+  - **전체 IT 스위트 회귀 없음** 확인
+
 # PR v10: Security Tracks 2026-05-12 — AUTHZ 376/115 + PII KMS/ROTATION(bugfix) + Content/Board Step 2 GREEN + META v0.3
 
 **Branch**: feature/security-tracks-2026-05-12
