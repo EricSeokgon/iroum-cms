@@ -159,7 +159,8 @@ class UserServiceTest {
                 "새사용자", "ACTIVE", Set.of("VIEWER"));
 
         when(userMapper.existsByUsername("newuser")).thenReturn(false);
-        when(userMapper.existsByEmail("new@test.com")).thenReturn(false);
+        // V26: existsByEmail → existsByEmailHmac (computeHmac stub: "a"*64)
+        when(userMapper.existsByEmailHmac("a".repeat(64))).thenReturn(false);
         when(passwordPolicyService.hash("ValidP@ss123!")).thenReturn("$2a$12$hashed");
 
         // insert 호출 후 id가 채워지도록 doAnswer 사용
@@ -186,7 +187,7 @@ class UserServiceTest {
 
         verify(passwordPolicyService).validate("ValidP@ss123!");
         verify(userMapper).existsByUsername("newuser");
-        verify(userMapper).existsByEmail("new@test.com");
+        verify(userMapper).existsByEmailHmac("a".repeat(64));
         verify(userMapper).insert(any(User.class));
         verify(userMapper).insertRole(anyLong(), eq("VIEWER"), eq(1L), any(Instant.class));
         assertThat(result.username()).isEqualTo("newuser");
@@ -211,7 +212,8 @@ class UserServiceTest {
         UserCreateRequest req = new UserCreateRequest(
                 "unique", "admin@test.com", "ValidP@ss123!", "다른", null, Set.of());
         when(userMapper.existsByUsername("unique")).thenReturn(false);
-        when(userMapper.existsByEmail("admin@test.com")).thenReturn(true);
+        // V26: existsByEmailHmac (computeHmac stub: "a"*64)
+        when(userMapper.existsByEmailHmac("a".repeat(64))).thenReturn(true);
 
         assertThatThrownBy(() -> userService.create(req, 1L))
                 .isInstanceOf(DuplicateUserException.class)
@@ -422,7 +424,8 @@ class UserServiceTest {
                 "새사용자", "ACTIVE", Set.of("VIEWER"));
 
         when(userMapper.existsByUsername("newuser")).thenReturn(false);
-        when(userMapper.existsByEmail("new@test.com")).thenReturn(false);
+        // V26: existsByEmailHmac (computeHmac stub: "a"*64)
+        when(userMapper.existsByEmailHmac("a".repeat(64))).thenReturn(false);
         when(passwordPolicyService.hash("ValidP@ss123!")).thenReturn("$2a$12$hashed");
 
         org.mockito.Mockito.doAnswer(invocation -> {

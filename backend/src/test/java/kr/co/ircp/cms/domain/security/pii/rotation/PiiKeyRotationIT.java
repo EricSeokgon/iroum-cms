@@ -255,12 +255,13 @@ class PiiKeyRotationIT extends AbstractIntegrationTest {
      * 테스트용 사용자 row 를 users 테이블에 삽입하고 생성된 id 를 반환한다.
      */
     private long insertTestUser(String username, EncryptedEmail enc, String emailHmac) {
+        // V26: email 평문 컬럼 DROP — INSERT 에서 email 제거
         jdbcTemplate.update(
                 "INSERT INTO users " +
-                "(username, email, password_hash, name, status, " +
+                "(username, password_hash, name, status, " +
                 " email_encrypted, email_iv, email_tag, email_hmac, email_key_version, " +
                 " password_changed_at, created_at, updated_at) " +
-                "VALUES (?, NULL, 'test-hash', 'Rotation Test', 'ACTIVE', " +
+                "VALUES (?, 'test-hash', 'Rotation Test', 'ACTIVE', " +
                 "        ?, ?, ?, ?, 1, NOW(), NOW(), NOW())",
                 username,
                 enc.ciphertext(), enc.iv(), enc.tag(), emailHmac

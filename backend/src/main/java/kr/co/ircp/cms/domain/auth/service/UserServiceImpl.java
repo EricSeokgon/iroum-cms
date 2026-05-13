@@ -135,6 +135,7 @@ public class UserServiceImpl implements UserService {
     public UserDetail findById(long id) {
         User user = userMapper.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+        resolveEmail(user);
         Set<String> roles = userMapper.findRoleCodesByUserId(id);
         return toDetail(user, roles);
     }
@@ -149,10 +150,12 @@ public class UserServiceImpl implements UserService {
         passwordPolicyService.validate(req.password());
 
         // 중복 검사
+        // V26: email 평문 컬럼 DROP — HMAC 기반 중복 확인으로 전환
         if (userMapper.existsByUsername(req.username())) {
             throw new DuplicateUserException("username", req.username());
         }
-        if (userMapper.existsByEmail(req.email())) {
+        String emailHmac = emailEncryptionService.computeHmac(req.email());
+        if (userMapper.existsByEmailHmac(emailHmac)) {
             throw new DuplicateUserException("email", req.email());
         }
 
@@ -162,13 +165,12 @@ public class UserServiceImpl implements UserService {
                 ? UserStatus.valueOf(req.status())
                 : UserStatus.ACTIVE;
 
-        // SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-001/003 — email AES-256-GCM 암호화 + HMAC 격상
+        // SPEC-CMS-SECURITY-PII-001 REQ-PII-EMAIL-001/003 — email AES-256-GCM 암호화 + HMAC
         EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(req.email());
-        String emailHmac = emailEncryptionService.computeHmac(req.email());
 
         User user = User.builder()
                 .username(req.username())
-                .email(req.email())                                  // 메모리 평문 (V25 전까지 컬럼도 평문)
+                .email(req.email())                                  // 메모리 평문 캐시 (DB 컬럼 없음 — V26)
                 .passwordHash(hashed)
                 .name(req.name())
                 .status(initialStatus)
@@ -205,7 +207,6 @@ public class UserServiceImpl implements UserService {
         // SPEC-CMS-SECURITY-PII-001 — email 변경 시 신규 암호화 + 신규 HMAC 적재
         User.UserBuilder patchBuilder = User.builder()
                 .id(id)
-                .email(req.email())
                 .name(req.name())
                 .status(newStatus);
         if (req.email() != null) {
@@ -284,6 +285,7 @@ public class UserServiceImpl implements UserService {
     public UserSelf getMe(long currentUserId) {
         User user = userMapper.findById(currentUserId)
                 .orElseThrow(() -> new UserNotFoundException(currentUserId));
+        resolveEmail(user);
         Set<String> roles = userMapper.findRoleCodesByUserId(currentUserId);
         return new UserSelf(user.getId(), user.getUuid(), user.getUsername(),
                 user.getEmail(), user.getName(), roles);
@@ -299,7 +301,6 @@ public class UserServiceImpl implements UserService {
         // SPEC-CMS-SECURITY-PII-001 — email 변경 시 신규 암호화 + HMAC 적재
         User.UserBuilder patchBuilder = User.builder()
                 .id(currentUserId)
-                .email(req.email())
                 .name(req.name());
         if (req.email() != null) {
             EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(req.email());
@@ -316,6 +317,21 @@ public class UserServiceImpl implements UserService {
     }
 
     // ─── 내부 변환 헬퍼 ───────────────────────────────────────────
+
+    /**
+     * V26: email 평문 컬럼 DROP 이후 email 필드는 DB에서 직접 읽을 수 없다.
+     * emailEncrypted 가 존재하면 복호화하여 User.email 메모리 필드에 주입한다.
+     */
+    private void resolveEmail(User user) {
+        if (user.getEmailEncrypted() != null) {
+            user.setEmail(emailEncryptionService.decrypt(
+                    new kr.co.ircp.cms.domain.security.pii.EncryptedEmail(
+                            user.getEmailEncrypted(),
+                            user.getEmailIv(),
+                            user.getEmailTag(),
+                            user.getEmailKeyVersion() != null ? user.getEmailKeyVersion() : 1)));
+        }
+    }
 
     private UserDetail toDetail(User u, Set<String> roles) {
         return new UserDetail(

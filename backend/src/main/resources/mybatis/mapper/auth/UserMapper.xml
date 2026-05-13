@@ -22,7 +22,10 @@
         <id     property="id"                column="id"/>
         <result property="uuid"              column="uuid"/>
         <result property="username"          column="username"/>
-        <result property="email"             column="email"/>
+        <!--
+          email 필드는 V26 에서 DB 컬럼 DROP 완료. 메모리 전용 평문 캐시로만 동작.
+          서비스 레이어에서 emailEncrypted 복호화 후 user.setEmail() 로 주입한다.
+        -->
         <result property="passwordHash"      column="password_hash"/>
         <result property="name"              column="name"/>
         <result property="status"            column="status"
@@ -54,8 +57,13 @@
       V24 적용 후 PII 암호화 컬럼 (email_encrypted/iv/tag/hmac/key_version) 포함.
       평문 email 컬럼은 V25에서 DROP 예정 (현재는 backward compat).
     -->
+    <!--
+      공통 SELECT 컬럼 sql fragment.
+      V26: 평문 email 컬럼 DROP 완료 — 목록에서 제거.
+      email 필드는 서비스 레이어 복호화 후 메모리 주입.
+    -->
     <sql id="userSelectColumns">
-        id, uuid, username, email, password_hash, name,
+        id, uuid, username, password_hash, name,
         status, fail_count, locked_until, last_login_at,
         password_changed_at, created_at, updated_at, deleted_at,
         organization_id,
@@ -146,8 +154,12 @@
       사용자 목록 페이징 조회.
       sort 컬럼은 Java 측에서 화이트리스트 검증 후 전달 (SQL Injection 방지).
     -->
+    <!--
+      V26: email 평문 컬럼 DROP — NULL AS email 로 UserSummary 생성자 시그니처 유지.
+      email 복호화는 서비스 레이어에서 별도 처리.
+    -->
     <select id="findPage" resultType="kr.co.ircp.cms.domain.auth.dto.UserSummary">
-        SELECT id, uuid, username, email AS email, name,
+        SELECT id, uuid, username, CAST(NULL AS VARCHAR) AS email, name,
                status, last_login_at AS lastLoginAt, created_at AS createdAt
         FROM users
         <where>
@@ -195,8 +207,11 @@
       orgPathPrefix가 설정되면 해당 조직 path LIKE '{orgPathPrefix}%' 필터 적용.
       sort 컬럼은 Java 측에서 화이트리스트 검증 후 전달 (SQL Injection 방지).
     -->
+    <!--
+      V26: u.email 평문 컬럼 DROP — NULL AS email 로 UserSummary 생성자 시그니처 유지.
+    -->
     <select id="findPageWithScope" resultType="kr.co.ircp.cms.domain.auth.dto.UserSummary">
-        SELECT u.id, u.uuid, u.username, u.email AS email, u.name,
+        SELECT u.id, u.uuid, u.username, CAST(NULL AS VARCHAR) AS email, u.name,
                u.status, u.last_login_at AS lastLoginAt, u.created_at AS createdAt
         FROM users u
         <if test="orgPathPrefix != null">
@@ -258,14 +273,17 @@
       V24 적용 후 email 평문 컬럼은 backward compat 차원에서 NULL 허용으로 INSERT.
       서비스 레이어에서 emailEncrypted/Iv/Tag/Hmac/KeyVersion 필드 채워서 전달해야 한다.
     -->
+    <!--
+      V26: email 평문 컬럼 제거. INSERT 시 email_encrypted / email_hmac 경로만 사용.
+    -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO users (
-            username, email, password_hash, name, status,
+            username, password_hash, name, status,
             email_encrypted, email_iv, email_tag, email_hmac, email_key_version,
             password_changed_at, created_at, updated_at
         )
         VALUES (
-            #{username}, #{email}, #{passwordHash}, #{name},
+            #{username}, #{passwordHash}, #{name},
             COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, 'ACTIVE'),
             #{emailEncrypted}, #{emailIv}, #{emailTag}, #{emailHmac},
             COALESCE(#{emailKeyVersion}, 1),
@@ -277,10 +295,12 @@
       사용자 정보 수정 (email, name, status + V24 PII 암호화 컬럼).
       email* 필드를 동시에 set 하지 않으면 기존 값을 유지한다 (COALESCE).
     -->
+    <!--
+      V26: email 평문 컬럼 제거. email_encrypted / email_hmac 경로만 UPDATE.
+    -->
     <update id="update">
         UPDATE users
-        SET email             = COALESCE(#{email}, email),
-            name              = COALESCE(#{name}, name),
+        SET name              = COALESCE(#{name}, name),
             status            = COALESCE(#{status,typeHandler=org.apache.ibatis.type.EnumTypeHandler}, status),
             email_encrypted   = COALESCE(#{emailEncrypted}, email_encrypted),
             email_iv          = COALESCE(#{emailIv},        email_iv),
@@ -328,11 +348,15 @@
         WHERE username = #{username}
     </select>
 
-    <!-- email 존재 여부 확인 -->
-    <select id="existsByEmail" resultType="boolean">
+    <!--
+      email_hmac 존재 여부 확인 (REQ-PII-EMAIL-003).
+      V26: 평문 email 컬럼 DROP 이후 표준 중복 확인 경로.
+      호출자는 EmailEncryptionService.computeHmac(email) 결과를 전달해야 한다.
+    -->
+    <select id="existsByEmailHmac" resultType="boolean">
         SELECT COUNT(*) > 0
         FROM users
-        WHERE email = #{email}
+        WHERE email_hmac = #{emailHmac}
     </select>
 
     <!-- 계정 잠금 해제 (status=ACTIVE, locked_until=NULL, fail_count=0) -->
