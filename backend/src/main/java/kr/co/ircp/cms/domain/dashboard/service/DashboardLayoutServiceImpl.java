@@ -4,8 +4,10 @@ import kr.co.ircp.cms.domain.dashboard.dto.LayoutRequest;
 import kr.co.ircp.cms.domain.dashboard.dto.LayoutResponse;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayout;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayoutWidget;
+import kr.co.ircp.cms.domain.dashboard.entity.DashboardWidget;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper;
+import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 public class DashboardLayoutServiceImpl implements DashboardLayoutService {
 
     private final DashboardLayoutMapper layoutMapper;
+    private final DashboardWidgetMapper widgetMapper;
 
     @Override
     @Transactional
@@ -103,6 +106,37 @@ public class DashboardLayoutServiceImpl implements DashboardLayoutService {
         DashboardLayout l = layoutMapper.findById(id)
                 .orElseThrow(() -> new DashboardLayoutNotFoundException(id));
         return LayoutResponse.from(l, layoutMapper.findWidgetsByLayoutId(id));
+    }
+
+    /**
+     * REQ-VIZ-001-D-5 A-5: 사용자 역할 기반 위젯 묵시적 필터.
+     *
+     * <p>EDITOR 가 SUPER_ADMIN 전용 위젯을 포함한 레이아웃을 조회하면, 해당 위젯을
+     * 응답에서 제거하고 접근 가능한 위젯만 반환한다 (403 미발생, placeholder 없음).
+     *
+     * // @MX:NOTE: [AUTO] enforceRole(WidgetServiceImpl) 의 throw 동작과 달리 본 메소드는
+     *                 묵시적 필터를 적용한다 — Layout 응답 안정성을 위해 의도된 차이.
+     */
+    @Override
+    public LayoutResponse getByIdForUser(Long id, List<String> userRoles) {
+        DashboardLayout l = layoutMapper.findById(id)
+                .orElseThrow(() -> new DashboardLayoutNotFoundException(id));
+        List<DashboardLayoutWidget> mappings = layoutMapper.findWidgetsByLayoutId(id);
+        List<String> roles = userRoles == null ? Collections.emptyList() : userRoles;
+        boolean isSuperAdmin = roles.contains("SUPER_ADMIN");
+
+        List<DashboardLayoutWidget> visible = mappings.stream()
+                .filter(m -> {
+                    if (isSuperAdmin) return true;
+                    DashboardWidget w = widgetMapper.findById(m.getWidgetId()).orElse(null);
+                    if (w == null) return true;  // 위젯 메타 부재 시 표시(레거시 호환)
+                    List<String> required = w.getRequiredRoleCodes();
+                    if (required == null || required.isEmpty()) return true;
+                    return roles.stream().anyMatch(required::contains);
+                })
+                .collect(Collectors.toList());
+
+        return LayoutResponse.from(l, visible);
     }
 
     @Override

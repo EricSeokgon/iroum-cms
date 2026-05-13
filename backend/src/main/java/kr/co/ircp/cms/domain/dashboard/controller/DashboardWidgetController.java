@@ -8,7 +8,9 @@ import kr.co.ircp.cms.domain.dashboard.service.DashboardWidgetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 대시보드 위젯 REST 컨트롤러.
@@ -56,12 +59,27 @@ public class DashboardWidgetController {
         return ResponseEntity.ok(service.getById(id));
     }
 
+    /**
+     * REQ-VIZ-001-D-8 A-8: 위젯 수정 — DEPT_ADMIN 의 경우 부서 범위 검증.
+     */
     @PutMapping("/widgets/{id}")
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')")
     public ResponseEntity<WidgetResponse> update(
             @PathVariable Long id,
-            @Valid @RequestBody WidgetRequest req) {
-        return ResponseEntity.ok(service.update(id, req));
+            @Valid @RequestBody WidgetRequest req,
+            @AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(service.update(id, req, userId, resolveRoles()));
+    }
+
+    /** SecurityContext 의 ROLE_* authority 를 ROLE_ prefix 제거된 역할 코드 리스트로 변환. */
+    private List<String> resolveRoles() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) return List.of();
+        return auth.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a != null && a.startsWith("ROLE_"))
+                .map(a -> a.substring("ROLE_".length()))
+                .collect(Collectors.toList());
     }
 
     @DeleteMapping("/widgets/{id}")

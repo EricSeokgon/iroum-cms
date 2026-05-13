@@ -48,6 +48,7 @@ import kr.co.ircp.cms.domain.dashboard.exception.ExportNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
 import kr.co.ircp.cms.domain.dashboard.exception.SavedViewNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
+import kr.co.ircp.cms.domain.dashboard.exception.WidgetDeptMismatchException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleConflictException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleNotFoundException;
 import kr.co.ircp.cms.domain.policy.matching.exception.CompanyMatchInputNotFoundException;
@@ -812,6 +813,15 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Widget Access Denied");
         detail.setProperty("code", "WIDGET_ACCESS_DENIED");
+        return detail;
+    }
+
+    /** 위젯 부서 범위 위반 → 403. REQ-VIZ-001-D-8 A-8 */
+    @ExceptionHandler(WidgetDeptMismatchException.class)
+    public ProblemDetail handleWidgetDeptMismatch(WidgetDeptMismatchException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Widget Dept Mismatch");
+        detail.setProperty("code", "WIDGET_DEPT_MISMATCH");
         return detail;
     }
 

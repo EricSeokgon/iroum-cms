@@ -17,6 +17,15 @@ public interface DashboardWidgetService {
 
     WidgetResponse update(Long id, WidgetRequest req);
 
+    /**
+     * REQ-VIZ-001-D-8 A-8: DEPT_ADMIN 부서 범위 검증을 포함한 위젯 수정.
+     *
+     * <p>requester 가 DEPT_ADMIN 이고 위젯 작성자(createdBy)의 organization 이 requester
+     * 의 organization 과 다르면 {@code WidgetDeptMismatchException} 발생.
+     * SUPER_ADMIN 은 부서 검사 우회.
+     */
+    WidgetResponse update(Long id, WidgetRequest req, Long requesterId, List<String> requesterRoles);
+
     WidgetResponse getById(Long id);
 
     List<WidgetResponse> list(String widgetType, String status, int page, int size);

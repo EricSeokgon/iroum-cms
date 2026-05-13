@@ -443,4 +443,88 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
         assertThat(jwtTokenProvider).isNotNull();
         assertThat(tokenBlacklistMapper).isNotNull();
     }
+
+    /**
+     * 조직 행을 적재하고 id 를 반환한다 (A-8 IT 픽스처용).
+     */
+    private long insertOrganization(String code) {
+        jdbcTemplate.update(
+                "INSERT INTO organizations (code, name, path, depth, is_active, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, 1, TRUE, NOW(), NOW())",
+                code, "A-8 부서 " + code, code);
+        Long id = jdbcTemplate.queryForObject(
+                "SELECT id FROM organizations WHERE code = ?", Long.class, code);
+        return id == null ? -1L : id;
+    }
+
+    /**
+     * 지정된 조직에 속한 테스트 사용자를 적재하고 user id 를 반환한다.
+     */
+    private long insertTestUserInOrg(String username, Long organizationId) {
+        jdbcTemplate.update(
+                "INSERT INTO users (username, password_hash, name, status, "
+                        + "email_hmac, email_key_version, organization_id, "
+                        + "password_changed_at, created_at, updated_at) "
+                        + "VALUES (?, 'test-hash', '테스트사용자', 'ACTIVE', "
+                        + "?, 1, ?, NOW(), NOW(), NOW())",
+                username, "dummy-hmac-" + username, organizationId);
+        Long id = jdbcTemplate.queryForObject(
+                "SELECT id FROM users WHERE username = ?", Long.class, username);
+        return id == null ? -1L : id;
+    }
+
+    /**
+     * A-8 (REQ-VIZ-001-D-8): DEPT_ADMIN 이 타 부서 소속 사용자가 만든 위젯을 PUT 으로 수정하면
+     * 403 WIDGET_DEPT_MISMATCH 가 반환된다.
+     *
+     * <p>본 IT 는 운영 ArgumentResolver 의존성과 무관하게 동작하지 않을 수 있으므로
+     * (DashboardWidgetController.update 가 @AuthenticationPrincipal Long userId 사용),
+     * 운영 fix 가 완료될 때까지 @Disabled 로 두고 컴파일만 검증한다.
+     */
+    @Test
+    @DisplayName("A-8: DEPT_ADMIN 이 타 부서 위젯 수정 시 403 WIDGET_DEPT_MISMATCH")
+    @Disabled("BLOCKED: @AuthenticationPrincipal Long userId 가 null 반환 — 운영 ArgumentResolver 보강 후 enable")
+    void widgetUpdate_returns403_whenDeptMismatch() throws Exception {
+        // 1) 두 부서(org A, org B) 와 각각의 사용자 시드
+        long orgAId = insertOrganization("A8_ORG_A_" + UUID.randomUUID().toString().substring(0, 8));
+        long orgBId = insertOrganization("A8_ORG_B_" + UUID.randomUUID().toString().substring(0, 8));
+        long deptAdminAId = insertTestUserInOrg("a8-deptA-" + UUID.randomUUID(), orgAId);
+        long creatorBId = insertTestUserInOrg("a8-userB-" + UUID.randomUUID(), orgBId);
+
+        // 2) 조직 B 소속 사용자가 만든 위젯을 직접 적재 (createdBy=creatorBId)
+        String code = "A8_W_" + UUID.randomUUID().toString().substring(0, 8);
+        DashboardWidget w = DashboardWidget.builder()
+                .code(code)
+                .name("A-8 IT 위젯")
+                .widgetType("BAR_CHART")
+                .dataSource("KPI_VALUE")
+                .dataSourceConfig("{\"kpi_id\":1}")
+                .defaultConfig("{}")
+                .availableDimensions(List.of("period"))
+                .requiredRoleCodes(List.of("VIEWER"))
+                .status("ACTIVE")
+                .createdBy(creatorBId)
+                .build();
+        widgetMapper.insert(w);
+        Long widgetId = w.getId();
+
+        // 3) DEPT_ADMIN (조직 A) 으로 PUT /widgets/{id} → 403 WIDGET_DEPT_MISMATCH
+        givenValidToken(deptAdminAId, Set.of("DEPT_ADMIN"), Collections.emptySet());
+
+        String updateBody = "{\"code\":\"" + code + "\",\"name\":\"수정 시도\","
+                + "\"widgetType\":\"BAR_CHART\","
+                + "\"dataSource\":\"KPI_VALUE\","
+                + "\"dataSourceConfig\":\"{\\\"kpi_id\\\":1}\","
+                + "\"defaultConfig\":\"{}\","
+                + "\"availableDimensions\":[\"period\"],"
+                + "\"requiredRoleCodes\":[\"VIEWER\"],"
+                + "\"status\":\"ACTIVE\"}";
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v1/dashboard/widgets/" + widgetId)
+                        .header("Authorization", "Bearer " + VALID_TOKEN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("WIDGET_DEPT_MISMATCH"));
+    }
 }

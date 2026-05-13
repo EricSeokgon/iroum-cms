@@ -9,6 +9,7 @@ import kr.co.ircp.cms.domain.dashboard.entity.KpiValueRow;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
+import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.ChartDatasetCacheMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.KpiValueMapper;
@@ -47,12 +48,13 @@ class DashboardWidgetServiceTest {
     @Mock private DashboardWidgetMapper widgetMapper;
     @Mock private ChartDatasetCacheMapper cacheMapper;
     @Mock private KpiValueMapper kpiValueMapper;
+    @Mock private UserMapper userMapper;
 
     private DashboardWidgetServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardWidgetServiceImpl(widgetMapper, cacheMapper, kpiValueMapper);
+        service = new DashboardWidgetServiceImpl(widgetMapper, cacheMapper, kpiValueMapper, userMapper);
     }
 
     private DashboardWidget kpiBarWidget() {

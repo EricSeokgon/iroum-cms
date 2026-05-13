@@ -1,5 +1,7 @@
 package kr.co.ircp.cms.domain.dashboard.service;
 
+import kr.co.ircp.cms.domain.auth.entity.User;
+import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.dashboard.dto.WidgetDataResponse;
 import kr.co.ircp.cms.domain.dashboard.dto.WidgetRequest;
 import kr.co.ircp.cms.domain.dashboard.dto.WidgetResponse;
@@ -9,6 +11,7 @@ import kr.co.ircp.cms.domain.dashboard.entity.KpiValueRow;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
+import kr.co.ircp.cms.domain.dashboard.exception.WidgetDeptMismatchException;
 import kr.co.ircp.cms.domain.dashboard.repository.ChartDatasetCacheMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.KpiValueMapper;
@@ -50,6 +53,7 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
     private final DashboardWidgetMapper widgetMapper;
     private final ChartDatasetCacheMapper cacheMapper;
     private final KpiValueMapper kpiValueMapper;
+    private final UserMapper userMapper;
 
     // ─── CRUD ────────────────────────────────────────────────────────────────
 
@@ -75,6 +79,42 @@ public class DashboardWidgetServiceImpl implements DashboardWidgetService {
         // REQ-VIZ-005-D-5: 위젯 정의 변경 시 캐시 즉시 만료
         cacheMapper.expireByWidgetIds(List.of(id));
         return WidgetResponse.from(patched);
+    }
+
+    /**
+     * REQ-VIZ-001-D-8 A-8: DEPT_ADMIN 부서 범위 검증을 포함한 위젯 수정.
+     *
+     * <p>검증 순서:
+     * <ol>
+     *   <li>SUPER_ADMIN 이면 부서 검사 우회.</li>
+     *   <li>DEPT_ADMIN 이면 위젯 작성자(createdBy) 의 organizationId 와 requester 의
+     *       organizationId 를 비교 — 둘 다 non-null 이고 다르면 WidgetDeptMismatchException.</li>
+     *   <li>그 외 역할은 부서 검사를 적용하지 않는다 (@PreAuthorize 에서 이미 차단됨).</li>
+     * </ol>
+     */
+    @Override
+    @Transactional
+    public WidgetResponse update(Long id, WidgetRequest req, Long requesterId, List<String> requesterRoles) {
+        List<String> roles = requesterRoles == null ? Collections.emptyList() : requesterRoles;
+        boolean isSuperAdmin = roles.contains("SUPER_ADMIN");
+        boolean isDeptAdmin = roles.contains("DEPT_ADMIN");
+
+        if (!isSuperAdmin && isDeptAdmin && requesterId != null) {
+            DashboardWidget existing = widgetMapper.findById(id)
+                    .orElseThrow(() -> new DashboardWidgetNotFoundException(id));
+            Long creatorId = existing.getCreatedBy();
+            if (creatorId != null) {
+                Long requesterOrg = userMapper.findById(requesterId)
+                        .map(User::getOrganizationId).orElse(null);
+                Long creatorOrg = userMapper.findById(creatorId)
+                        .map(User::getOrganizationId).orElse(null);
+                // 양쪽 org 가 명시되고 서로 다를 때만 차단 — null 인 경우 부서 제약 미적용.
+                if (requesterOrg != null && creatorOrg != null && !requesterOrg.equals(creatorOrg)) {
+                    throw new WidgetDeptMismatchException(id, requesterId);
+                }
+            }
+        }
+        return update(id, req);
     }
 
     @Override

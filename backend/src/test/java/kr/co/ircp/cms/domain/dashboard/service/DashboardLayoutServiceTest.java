@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayout;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayoutWidget;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper;
+import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,12 +40,13 @@ import static org.mockito.Mockito.when;
 class DashboardLayoutServiceTest {
 
     @Mock private DashboardLayoutMapper layoutMapper;
+    @Mock private DashboardWidgetMapper widgetMapper;
 
     private DashboardLayoutServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardLayoutServiceImpl(layoutMapper);
+        service = new DashboardLayoutServiceImpl(layoutMapper, widgetMapper);
     }
 
     private DashboardLayout sampleLayout(Long id, Long ownerId, String name) {
