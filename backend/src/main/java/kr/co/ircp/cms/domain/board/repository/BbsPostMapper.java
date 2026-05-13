@@ -13,7 +13,6 @@ import java.util.Optional;
  *
  * // @MX:ANCHOR: [AUTO] BbsPostMapper — 게시글 CRUD·검색 핵심 데이터 접근 계층
  * // @MX:REASON: PostService (fan_in >= 3: CRUD + 검색 + 조회수)
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 TSVECTOR 전문검색 쿼리 포함 XML 구현 필요
  */
 @Mapper
 public interface BbsPostMapper {

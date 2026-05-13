@@ -13,7 +13,6 @@ import java.util.Optional;
  *
  * // @MX:ANCHOR: [AUTO] BbsMasterMapper — 게시판 CRUD 핵심 데이터 접근 계층
  * // @MX:REASON: BbsMasterService, PostService, CommentService, AttachmentService 등 4개 이상의 서비스에서 참조
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현체 작성 필요
  */
 @Mapper
 public interface BbsMasterMapper {

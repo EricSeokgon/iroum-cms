@@ -11,7 +11,6 @@ import java.time.Instant;
  */
 // @MX:ANCHOR: [AUTO] BbsMaster — 게시판 정책의 루트 엔티티. 모든 게시글·댓글·첨부 로직의 정책 참조 원점
 // @MX:REASON: BbsMasterService, PostService, CommentService, AttachmentService 에서 fan_in >= 4로 참조
-// @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-BOARD-001-D)
 @Data
 @Builder
 public class BbsMaster {
