@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-MEDIA-001
-version: 0.4.0
-status: Implemented
+version: 0.5.0
+status: Tested
 created: 2026-04-29
-updated: 2026-05-06
+updated: 2026-05-13
 author: manager-spec
 priority: P0
 parent: SPEC-CMS-001 v0.4
@@ -19,7 +19,7 @@ issue_number: null
 | SPEC ID | SPEC-CMS-MEDIA-001 |
 | 제목 | 통합 미디어 라이브러리 |
 | 상위 SPEC | SPEC-CMS-001 (umbrella, v0.3 트리에 추가 예정) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P0 |
 | 작성자 | manager-spec |
 | 작성일 | 2026-04-29 |
@@ -712,6 +712,7 @@ v0.2+ 활성화 시 검토 항목:
 | v0.2 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-2/Q-3 적용 (사용자 결정 2026-04-29) — MinIO/S3 저장소 옵션을 v0.2+ 후속으로 미루고 1차는 LocalFileSystemStorage 단일 구현 확정 (Q-2). ClamAV AV 스캔을 v0.2+ 후속으로 미루고 1차는 매직넘버 + MIME + 확장자 화이트리스트 3중 방어로 대응 (Q-3, v0.2+ 도입 강력 권고). §3.1 1차 범위에서 AV 스캔 + MinIO/S3 옵션 제거. §3.2 비포함 항목으로 명시. §4.1 ERD job_type 코멘트에 v0.2+ AV_SCAN 후속 표기. §4.2.5 media_processing_job CHECK 제약을 ('WEBP_CONVERT','THUMBNAIL','EXIF_STRIP')로 강화 (AV_SCAN 제거). §5 REQ-MEDIA-002-D-4 v0.2+ NOTE + placeholder 동작 명시 + 매크로 위협 보완. §9 보안: 3중 방어 정책 명시, R-MEDIA-NOTE 추가. §11 저장소: LocalFileSystemStorage 단일 + MediaStorage 인터페이스 v0.2+ 호환. §12 위험: R-MEDIA-2 갱신, R-MEDIA-7 v0.2+ 명시, R-MEDIA-8 제거(AV 스캔 미도입), R-MEDIA-11 신규. v0.1 §1, §2, §4.1 ERD 본체, §4.2.1~4.2.4, §4.3, §4.4, §5 REQ-MEDIA-001/003/005-D, §6, §7, §8, §10 본체는 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 테이블 형식 Draft v0.4 → Implemented 일관화 (YAML frontmatter는 이미 Implemented). 구현 메모 섹션 추가. |
+| v0.5.1 | 2026-05-13 | MoAI orchestrator | IT 신설 — MediaIT.java 14 AC (§1 업로드, §3 검색, §4 인증·생명주기, §5 컬렉션). LocalFileSystemStorage tmpdir 오버라이드. 미구현 AC: AC-001-5.3(5GB), AC-004-1.1(SecurityConfig EDITOR 게이트 부재→@MX:TODO), AC-004-3.1~3.2(orphans 엔드포인트 미존재). Implemented → Tested. |
 
 ---
 
