@@ -8,7 +8,7 @@
 | 제목 | 통계·로그·시스템관리 상세 (Bundle D — Statistics, Logs, System Administration) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P0 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-002 (login_history 통계 집계 대상) |
@@ -1202,6 +1202,7 @@ Prometheus 알람 룰 정의 위치: `deploy/prometheus/rules/{api.yml, batch.ym
 | v0.2.1 | 2026-04-29 | MoAI orchestrator | 운영 결정 Q-7 적용 (사용자 결정 2026-04-29) — `v_notification_history` 뷰를 LEFT JOIN → INNER JOIN으로 갱신. §13.2 REQ-SYSTEM-008-D-3 본문을 "별도 view (notification_send.integration_log_id FK 기반 INNER JOIN)"로 변경하고 INNER JOIN 채택 사유(IntegrationLogInterceptor 적재 보증)·INAPP 자동 제외 로직 명시. §14.2 view DDL을 DROP+CREATE로 갱신: `notification_send` driving table → `integration_log` INNER JOIN → `users` LEFT JOIN(수신자 username 노출), filter `integration_type IN ('KAKAO_NOTI','MAIL_SEND')`. COMMENT ON VIEW에 Q-7 결정 명시. acceptance.md J-RFP §REQ-SYSTEM-008-D-3-2 신규 G/W/T 추가(view 정합성 — 100건 INNER JOIN 무결성). v0.2 본문 §13.1·§13.3·§13.4·§14의 다른 테이블·§15는 변경 없이 유지. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 부분 인프라 (audit_log, integration_log) 적용 상태. 본문은 변경 없이 헤더·변경 이력만 갱신. |
 | v0.5 | 2026-05-07 | manager-docs | 상태 Draft → Implemented (일괄 동기화). 구현 메모 섹션 추가. |
+| v0.6 | 2026-05-13 | MoAI orchestrator | IT 신설 (팀모드 병렬 3 에이전트). CodeSystemIT 5 AC(§D) + MaintenanceIT 5 AC(§E) + HealthStatsIT 5 AC(§F+§C+§B 일부) = 15 AC. GlobalExceptionHandler 미등록 예외(CodeGroupInUseException, CodeDuplicateException) @MX:NOTE 기록. compileTestJava PASS. 상태 Implemented → Tested. |
 
 ---
 
