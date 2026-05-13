@@ -23,9 +23,9 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V25 마이그레이션 총 24개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    // V25 (SPEC-CMS-SECURITY-PII-ROTATION-001) 추가로 24개.
-    private static final int EXPECTED_MIGRATION_COUNT = 24;
+    // @MX:NOTE: [AUTO] V1~V26 마이그레이션 총 25개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // V26 (email 평문 컬럼 DROP, SPEC-CMS-SECURITY-PII-001) 추가로 25개.
+    private static final int EXPECTED_MIGRATION_COUNT = 25;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -55,6 +55,6 @@ class MigrationOrderIT extends AbstractIntegrationTest {
         assertThat(versions).containsExactly(
                 "1", "2", "3", "4", "5", "6", "7", "8", "9", "10",
                 "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
-                "22", "23", "24", "25");
+                "22", "23", "24", "25", "26");
     }
 }

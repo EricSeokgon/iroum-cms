@@ -173,11 +173,13 @@ public interface UserMapper {
     boolean existsByUsername(@Param("username") String username);
 
     /**
-     * email 존재 여부 확인 (소프트 삭제 포함).
+     * email_hmac 존재 여부 확인 (소프트 삭제 포함).
      *
      * <p>중복 email 방지 (REQ-AUTH-006 409 응답).
+     * V26: email 평문 컬럼 DROP 이후 표준 중복 확인 경로.
+     * 호출자는 {@link kr.co.ircp.cms.domain.security.pii.EmailEncryptionService#computeHmac(String)} 결과를 전달해야 한다.
      */
-    boolean existsByEmail(@Param("email") String email);
+    boolean existsByEmailHmac(@Param("emailHmac") String emailHmac);
 
     /**
      * 계정 잠금 해제.
