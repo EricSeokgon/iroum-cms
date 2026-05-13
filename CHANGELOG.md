@@ -11,6 +11,138 @@
 
 ### Added
 
+- **AUTHZ-IT-REGRESSION-001 v0.6 Step 4 Implemented — controller unit test 11종 정정 (51 RED 100% 회복)**
+  - 11 controller unit test의 AC-COV-001-1 `인증 없이 접근 시 401` 시나리오 → `403 Forbidden` 정정
+  - 원인: @WebMvcTest + SecurityAutoConfiguration 제외 시 SecurityFilterChain 없음 → @PreAuthorize 거부 → 403
+  - 운영 full SecurityFilterChain의 AuthenticationEntryPoint(401)와 다름 (테스트 환경 한계)
+  - 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003 분리)
+  - 정정 파일 12개:
+    - PermissionChangeControllerTest, UserControllerTest, RoleControllerTest
+    - BbsMasterControllerTest, RetentionPolicyControllerTest, GovernanceStatsControllerTest
+    - DictionaryControllerTest, DataQualityControllerTest, RecoveryDrillControllerTest
+    - BatchExecutionLogControllerTest, DashboardControllerTest, AccessLogControllerTest
+  - REGRESSION-001 누적: ExpandIT 31 + Controller 11 = 51 RED → 0 (100% 회복)
+  - 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.6 Step 4 Implemented)
+
+- **AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented — AuthorizationMatrixExpandIT 87/0 GREEN (31 RED 100% 회복)**
+  - Phase A 응답 코드 28건 일괄 정정 (AUTH_FORBIDDEN → ACCESS_DENIED)
+  - Phase B1-B5 DTO body 정상화 23건 (Popup/Page/Template/Org/Block/Widget/Schedule/Drill/Board/Menu/Code/CodeGroup)
+  - assertAuthzPassed helper 추가 (ServletException 도메인 예외 처리)
+  - 운영 코드 변경 0건, IT 시나리오 정정만
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.5 Step 2 Implemented)
+
+- **PII-KMS-001 + PII-ROTATION-001 v0.2 — META 정책 사전 합의 + 결정 포인트 정밀화**
+  - PII-KMS-001: D1-D5 (KMS 공급자, 키 가져오기, 캐싱, Failover, IT 환경) + RUN 진입 절차 5단계
+  - PII-ROTATION-001: D1-D5 (회전 주기, 회전 방식, 신규 데이터 처리, 회전 트리거, 회전 실패 처리)
+  - 두 SPEC 모두 META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  - 본 세션 검증된 패턴 (helper, race condition 회피) 사전 참조
+  - 의존 SPEC 진입 순서 명확화: PII-KMS-001 → PII-ROTATION-001
+  - RUN 진입 전 사용자 결정 확정 필요 (AskUserQuestion)
+  - 정책 문서 갱신만, 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-PII-KMS-001 v0.2 + SPEC-CMS-SECURITY-PII-ROTATION-001 v0.2)
+
+- **AUTHZ-IT-EXPAND-004 SPEC v0.1 Planned — 잔여 26 endpoint → 100% IT 커버 (AUTHZ 트랙 종결)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004/spec.md` 신규
+  - AUTHZ-IT-EXPAND-003 v0.4 Implemented (88 endpoint, 79%) 완성 후 자연 연장
+  - 운영 controller @PreAuthorize 114건 vs IT baseline 88 → 잔여 26 endpoint 100% 커버
+  - REQ-AM-EXP4-001~005 + 5 AC + RUN Step 1~5 분해
+  - 5 결정 포인트 D1~D5 (IT 클래스 구조, 카테고리 분할, RUN 일괄 vs 분할, baseline 시점, 트랙 종결)
+  - 패턴 100% 재사용 (assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기, OR bypass, 분리 회귀, class-level @PreAuthorize)
+  - 예상 비용 1-2 세션, 운영 코드 변경 0건
+  - 본 SPEC 완성 시 AUTHZ 트랙 6단계 진화 종결:
+    Matrix → EXPAND-001/002/003/004 + AUTODETECT + CTRL + REGRESSION + META = 8 SPEC chain
+  - 6중 OWASP A01 검증 305 AC → ~380 AC (78 AC 추가)
+  - ArchUnit baseline 88 → 114+ endpoint (100% IT 매핑)
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004 v0.1 Planned)
+
+- **AUTHZ-IT-EXPAND-003 v0.4 Implemented — 8 도메인 106 AC GREEN + ArchUnit baseline 88 (79% IT 커버 달성)**
+  - AuthorizationMatrixExpand3IT.java ~1100줄 신규 (인프라 240 + Phase A 470 + Phase B 240 + Phase C 200)
+  - 8 도메인 35 endpoint × 3 시나리오 = 106 AC + smoke 1 = 107 tests / 0 failures
+    - §A.1 Organization 7 endpoint × 3 = 21 AC
+    - §A.2 User 5 endpoint × 3 = 15 AC
+    - §A.3 Code+CodeGroup 7 endpoint × 3 = 21 AC
+    - §A.4 MenuMaintenance 4 endpoint × 3 = 12 AC
+    - §A.5 Widget 2 endpoint × 3 = 6 AC
+    - §A.6 BannerI18n 2 endpoint × 3 = 6 AC
+    - §A.7 SearchPermission 3 endpoint × 3 = 9 AC (class-level @PreAuthorize 검증)
+    - §A.8 GovernanceStats 5 endpoint × 3 = 15 AC
+  - AuthorizationCoverageArchTest baseline 54 → 88 endpoint 갱신 (35 추가, GET /code-groups duplicate 1 제거)
+  - hasSize(88), javadoc 3 hardcoding 갱신, method name Baseline54 → Baseline88
+  - 분리 회귀 검증 (SETTING:READ vs WRITE, MAINT:READ vs WRITE, CODE:READ vs WRITE 등)
+  - OR bypass 검증 (hasAnyRole 시나리오)
+  - 클래스 레벨 @PreAuthorize 검증 (PermissionController, SynonymController, Governance 6 controller)
+  - 패턴 재사용 100%: assertAuthzPassed helper, DTO 정상 body, 응답 코드 분기 (AUTH_REQUIRED 401 / ACCESS_DENIED 403)
+  - 누적 IT 커버: 운영 114 endpoint 중 88 = 79%
+  - 6중 OWASP A01 회귀 검출 305 AC + 88 endpoint baseline + 31 어휘 100% 커버
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 충족
+  - 운영 코드 변경 0건 (SPEC §3.2 비범위 준수)
+  - 검증: ./gradlew test --tests "AuthorizationMatrixExpand3IT" → BUILD SUCCESSFUL
+  - 검증: ./gradlew test --tests "AuthorizationCoverageArchTest" → 4 tests / 0 failures
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 v0.4 Implemented 1차)
+
+- **AUTHZ-IT-EXPAND-003 SPEC v0.1 Planned — 운영 ~120 endpoint 전체 IT 커버 (AUTHZ 트랙 3차)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003/spec.md` 신규
+  - AUTHZ-IT-EXPAND-001 (29) + EXPAND-002 (19) = 누적 54 endpoint → 운영 실측 ~120 endpoint 미커버 ~66 갭
+  - AUTHZ-AUTODETECT-001 baseline (103 메소드 / 31 어휘) 활용
+  - REQ-AM-EXP3-001~005 + 6 AC + RUN Step 1~6 분해
+  - 결정 포인트 D1~D5 (IT 클래스 구조, endpoint 수집, 시나리오 자동화, baseline 갱신, Implementation 위임)
+  - 패턴 재사용: AUTHZ-IT-EXPAND-002 + REGRESSION-001 검증 패턴 100%
+    - assertAuthzPassed helper
+    - DTO 정상 body 정상화
+    - 응답 코드 분기 (AUTH_REQUIRED 401 / ACCESS_DENIED 403)
+    - @WebMvcTest 한계 명시
+  - META-IT-GREEN-MANDATORY-001 Sync checklist 4 항목 사전 합의
+  - 예상 비용 3-4 세션, 운영 코드 변경 0건 (IT 전용)
+  - 본 SPEC 완성 시 ArchUnit baseline 100% IT 매핑 + OWASP A01 완전 검출
+  (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 v0.1 Planned)
+
+- **PII-FOLLOWUP-004 v0.4 Implemented — Status 정상화 (AC-009-2가 PII-FOLLOWUP-005 v0.3에서 해결, 5/5 GREEN)**
+  - SPEC v0.3 Mostly Implemented → v0.4 Implemented (1차)
+  - AC-009-2 race condition은 본 SPEC v0.3에서 PII-FOLLOWUP-005로 분리되어 후속 해결됨
+  - PII-FOLLOWUP-005 v0.3 Option B (@DirtiesContext) 적용으로 5/5 GREEN 완성
+  - PII 트랙 5 AC 모두 GREEN (AC-009-2/3/4 + AC-FU-003-1/3)
+  - README SPEC 표: Mostly Implemented → Implemented (1차) 정상화
+  - 정책 문서 갱신만 — 운영 코드 변경 0건
+  (SPEC-CMS-SECURITY-PII-FOLLOWUP-004 v0.4 Implemented)
+
+- **META-IT-GREEN-MANDATORY-001 v0.3 Evidence 강화 — REGRESSION-001 AUTHZ 회귀 5 case 통합 (PII 5 + AUTHZ 5 = 10 evidence)**
+  - SPEC v0.2 Implemented → v0.3 Evidence 강화
+  - 추가 evidence 5 case (AUTHZ REGRESSION-001 회복 패턴):
+    - Case 6: 응답 코드 변경 (AUTH_FORBIDDEN → ACCESS_DENIED 28+17건)
+    - Case 7: @Valid validation 우선 (23+4 DTO body 정상화)
+    - Case 8: @WebMvcTest Security 한계 (11+종 controller test 정정)
+    - Case 9: 종합 회귀 검증 미실행 (MatrixIT 8 RED 추가 발견)
+    - Case 10: 운영 GlobalExceptionHandler 미커버 (assertAuthzPassed helper)
+  - REQ-PII-FU2-003 강화: 종합 회귀 검증 추가
+  - REQ-META-IT-002 확대: GlobalExceptionHandler 커버리지 명시
+  - REQ-META-IT-006 신설: 응답 코드 동기 (AUTH_REQUIRED 401 vs ACCESS_DENIED 403 분기)
+  - 본 정책 정식 적용 SPEC 3건: PII-FOLLOWUP-005, AUTHZ-IT-EXPAND-002, AUTHZ-IT-REGRESSION-001
+  - README §IT mandatory 정책 evidence 표 5 → 10건 확장
+  - 정책 문서 전용 — 운영 코드/IT 신설 0건
+  (SPEC-CMS-META-IT-GREEN-MANDATORY-001 v0.3 Evidence 강화)
+
+- **AUTHZ-IT-REGRESSION-001 SPEC v0.1 Planned — AUTHZ IT 51 RED 회귀 진단 분리 (운영 ACCESS_DENIED + @Valid validation 우선 + controller Security 차이)**
+  - `.moai/specs/SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001/spec.md` 신규
+  - PII-FOLLOWUP-005 v0.3 통합 실행 시 발견한 51 unit test/IT failed 회귀 분리 진단
+  - 본 세션 PR 변경 영향 0건 확정: AuthorizationMatrixExpandIT 단독 실행도 31 failed (기존 회귀)
+  - 회귀 패턴 3가지:
+    - 패턴 1: `expected 403 but 400` — @Valid @RequestBody/@RequestParam validation이 @PreAuthorize 전 실행
+    - 패턴 2: `AUTH_FORBIDDEN vs ACCESS_DENIED` — GlobalExceptionHandler AuthorizationDeniedException 핸들러 추가로 응답 코드 변경
+    - 패턴 3: controller unit test 11종 401/403 차이 — Security 구성 차이
+  - REQ-IRR-001~005 + 6 AC + RUN Step 1~5 분해
+  - AUTHZ-MATRIX-001 + AUTHZ-IT-EXPAND-001 Status 정정 (Implemented → Mostly Implemented)
+  - AUTHZ-IT-EXPAND-002 (본 세션 작성)는 회귀 없음 (100% GREEN)
+  - META-IT-GREEN-MANDATORY-001 첫 위반 사례 (단독 GREEN ↔ 통합 GREEN 불일치)
+  - P2 (운영 영향 0, SPEC ↔ 실제 GREEN 상태 불일치 해소)
+  (SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 v0.1 Planned)
+
+- **AUTHZ-IT-EXPAND-001 Status 정정 — Implemented → Mostly Implemented (v0.2 회귀, IT-REGRESSION-001 참조)**
+  - README SPEC 표 Status 갱신
+  - 운영 GlobalExceptionHandler `AuthorizationDeniedException` 핸들러 추가 (별도 commit) 시점 회귀 발견
+  - 운영 영향 0건 (응답 코드만 변경)
+
 - **PII-FOLLOWUP-005 v0.3 Implemented — Option B @DirtiesContext 적용 → 5/5 GREEN 완성, PII 트랙 전체 Implemented**
   - PiiAuditEnhanceIT 클래스 레벨 `@DirtiesContext(classMode = AFTER_EACH_TEST_METHOD)` 적용
   - SyncTaskExecutor + @Async + @Transactional(REQUIRES_NEW) 통합 race condition 완전 회피

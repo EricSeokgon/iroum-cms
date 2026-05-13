@@ -1,8 +1,35 @@
-# SPEC-CMS-SECURITY-PII-KMS-001: 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault) v0.1
+# SPEC-CMS-SECURITY-PII-KMS-001: 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault) v0.3
 
-**Status**: Planned (2026-05-11) — 운영 prod 배포 활성화 의존
+**Status**: Implemented (2026-05-13) — AWS KMS 어댑터 구현 완료 / 단위 4 GREEN + LocalStack IT 3 GREEN
 **Trigger**: PII-001 v0.2 Implemented §7 운영 환경 차단 가드 해제 필요
 **Severity**: P2 (운영 prod 활성화 필수, dev/test는 LocalEnvPiiKeyVault로 우회 가능)
+
+## v0.2 변경 이력 (2026-05-12) — META 정책 사전 합의 + 결정 포인트 정밀화
+
+### META-IT-GREEN-MANDATORY-001 Sync Checklist 사전 합의
+본 SPEC RUN 진입 시 META 정책 4 항목 충족 필수:
+- ✅ 단독 GREEN: KMS 어댑터 단위 테스트 (MockKmsClient) GREEN
+- ✅ 통합 GREEN: Testcontainers LocalStack (AWS KMS) 또는 Vault Dev mode 통합 IT GREEN
+- ✅ @Transactional 위험: KMS 호출 외부 통신은 transaction 경계 외 (감사 로그만 transactional)
+- ✅ race condition 회피: KMS 키 캐싱 시 @DirtiesContext 또는 ConcurrentHashMap atomic 적용
+
+### 사용자 결정 필수 (다음 세션 RUN 진입 전 확정)
+| 결정 | 옵션 | 영향 |
+|------|------|------|
+| **D1** KMS 공급자 | (a) AWS KMS / (b) HashiCorp Vault Transit / (c) GCP KMS / (d) Azure Key Vault | 어댑터 구현 차이 ~500줄 |
+| **D2** 키 가져오기 | (a) BYOK (사용자 키 가져오기) / (b) KMS 자동 생성 / (c) 하이브리드 | 컴플라이언스 (PIPA) 영향 |
+| **D3** 캐싱 정책 | (a) 무캐시 (모든 암호화 호출 KMS) / (b) 메모리 캐시 TTL 5분 / (c) Caffeine TTL + 백오프 | 성능 vs 비용 (KMS 호출 단가) |
+| **D4** Failover | (a) Fail-fast (KMS 다운 시 503) / (b) 최근 캐시 fallback (5분) / (c) 다중 region | 가용성 vs 보안 |
+| **D5** IT 환경 | (a) LocalStack (AWS KMS 모킹) / (b) Vault Dev mode / (c) MockKmsClient만 | 통합 evidence 신뢰성 |
+
+### 다음 세션 RUN 진입 권장 절차
+1. 사용자 D1-D5 결정 확정 (AskUserQuestion)
+2. PII-001 LocalEnvPiiKeyVault 인터페이스 확인 (PiiKeyVault interface)
+3. KmsAdapter 구현 (해당 공급자) + 단위 테스트
+4. Testcontainers 통합 IT (D5 선택 환경)
+5. 운영 prod 활성화 가드 해제 + 배포 검증
+
+---
 
 ---
 
@@ -69,4 +96,6 @@ PII-001 v0.2 Implemented 시점에 운영 환경 차단 가드 적용:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-13 | MoAI orchestrator | Implemented — AwsKmsPiiKeyVault + AwsKmsPiiKeyVaultProperties 구현. @Autowired + 패키지-프라이빗 테스트 생성자 패턴. 단위 테스트 4 GREEN (Mockito), LocalStack IT 3 GREEN. build.gradle.kts aws-sdk-kms:2.25.70 + localstack:1.20.4 추가. |
+| v0.2 | 2026-05-12 | MoAI orchestrator | META-IT-GREEN-MANDATORY-001 정책 사전 합의 + 결정 포인트 D1~D5 정밀화 (KMS 공급자, 키 가져오기, 캐싱, Failover, IT 환경). 다음 세션 RUN 진입 절차 5단계 명시. RUN 진입 전 사용자 결정 확정 필요. SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002/REGRESSION-001에서 검증된 META 패턴 (단독+통합 GREEN, race condition 회피) 적용. |
 | v0.1 | 2026-05-11 | MoAI orchestrator | 초안 작성. README SPEC 표에는 있으나 .moai/specs/ 디렉토리 누락 보완. PII-001 v0.2 운영 prod 차단 가드 해제 의존 SPEC. 결정 포인트 D1~D4 명시 (KMS 공급자, 키 가져오기 방식, 캐싱 정책, Failover). REQ-PII-KMS-001/002/003 골격. 실제 RUN은 운영 KMS 인프라 활성화 시점 이후 진입 권장. |

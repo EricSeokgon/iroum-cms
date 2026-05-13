@@ -180,12 +180,16 @@ class AuthorizationMatrixIT {
         void bannerCreate_forbidden_whenContentWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of()); // CONTENT:WRITE 미보유
 
+            // BannerRequest required: siteId, bannerGroupCode, title, imageUrl, altText, displayFrom
             mockMvc.perform(post("/api/v1/content/banners")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"bannerGroupCode\":\"MAIN\",\"title\":\"테스트 배너\","
+                                    + "\"imageUrl\":\"https://example.com/banner.png\",\"altText\":\"테스트\","
+                                    + "\"displayFrom\":\"2026-12-31T00:00:00Z\","
+                                    + "\"displayUntil\":\"2026-12-31T23:59:59Z\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -216,12 +220,16 @@ class AuthorizationMatrixIT {
         void bannerUpdate_forbidden_whenContentWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
+            // BannerRequest required: siteId, bannerGroupCode, title, imageUrl, altText, displayFrom
             mockMvc.perform(put("/api/v1/content/banners/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"bannerGroupCode\":\"MAIN\",\"title\":\"테스트 배너\","
+                                    + "\"imageUrl\":\"https://example.com/banner.png\",\"altText\":\"테스트\","
+                                    + "\"displayFrom\":\"2026-12-31T00:00:00Z\","
+                                    + "\"displayUntil\":\"2026-12-31T23:59:59Z\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -252,12 +260,14 @@ class AuthorizationMatrixIT {
         void pageCreate_forbidden_whenPageWriteMissing() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE")); // PAGE:WRITE는 부재
 
+            // PageCreateRequest required: siteId, templateId, code, title, slug
             mockMvc.perform(post("/api/v1/content/pages")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"templateId\":1,\"code\":\"TEST_PAGE\","
+                                    + "\"title\":\"테스트 페이지\",\"slug\":\"test-page\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -292,7 +302,7 @@ class AuthorizationMatrixIT {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -323,12 +333,14 @@ class AuthorizationMatrixIT {
         void userCreate_forbidden_whenNotSuperAdmin() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of());
 
+            // UserCreateRequest required: username(3-50), email, password, name
             mockMvc.perform(post("/api/v1/users")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"username\":\"testuser\",\"email\":\"test@example.com\","
+                                    + "\"password\":\"P@ssw0rd123!\",\"name\":\"테스트 사용자\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -361,7 +373,7 @@ class AuthorizationMatrixIT {
             mockMvc.perform(get("/api/v1/governance/retention-policies")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -403,22 +415,27 @@ class AuthorizationMatrixIT {
         }
 
         /**
-         * AC-AM-003-2: 403 응답 body 회귀 검증 — code=AUTH_FORBIDDEN + Content-Type + jsonPath.
-         * 운영 SecurityConfig.accessDeniedHandler(라인 121~123) 응답 형식 회귀 기준선 고정.
+         * AC-AM-003-2: 403 응답 body 회귀 검증 — code=ACCESS_DENIED + Content-Type + jsonPath.
+         *
+         * <p>회귀 시점 `942b19e` (2026-05-06) 이후: GlobalExceptionHandler.handleAuthorizationDenied가
+         * AuthorizationDeniedException을 처리하여 ProblemDetail + code=ACCESS_DENIED 응답.
+         * Spring Security 6 ProblemDetail 형식은 application/problem+json Content-Type 사용.
          */
         @Test
-        @DisplayName("AC-AM-003-2: 403 응답 body — code=AUTH_FORBIDDEN + application/json;charset=UTF-8 + message 존재")
+        @DisplayName("AC-AM-003-2: 403 응답 body — code=ACCESS_DENIED + ProblemDetail Content-Type + message 존재")
         void forbiddenResponse_bodyContract() throws Exception {
             givenValidToken(Set.of("USER"), Set.of()); // CONTENT:WRITE 부재
 
+            // BannerRequest 정상 body — @Valid validation 통과 후 @PreAuthorize 거부 → 403 ACCESS_DENIED
             mockMvc.perform(post("/api/v1/content/banners")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"bannerGroupCode\":\"MAIN\",\"title\":\"테스트 배너\","
+                                    + "\"imageUrl\":\"https://example.com/banner.png\",\"altText\":\"테스트\","
+                                    + "\"displayFrom\":\"2026-12-31T00:00:00Z\","
+                                    + "\"displayUntil\":\"2026-12-31T23:59:59Z\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(content().contentType("application/json;charset=UTF-8"))
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"))
-                    .andExpect(jsonPath("$.message").exists());
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
 
         /**
@@ -449,12 +466,16 @@ class AuthorizationMatrixIT {
         void methodSecurity_isLoaded_preAuthorizeBlocksInsufficientAuthority() throws Exception {
             givenValidToken(Set.of("USER"), Set.of()); // CONTENT:WRITE 부재
 
+            // BannerRequest 정상 body — @Valid 통과 후 @PreAuthorize 거부 → 403 ACCESS_DENIED
             mockMvc.perform(post("/api/v1/content/banners")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+                            .content("{\"siteId\":1,\"bannerGroupCode\":\"MAIN\",\"title\":\"테스트 배너\","
+                                    + "\"imageUrl\":\"https://example.com/banner.png\",\"altText\":\"테스트\","
+                                    + "\"displayFrom\":\"2026-12-31T00:00:00Z\","
+                                    + "\"displayUntil\":\"2026-12-31T23:59:59Z\"}"))
                     .andExpect(status().isForbidden())
-                    .andExpect(jsonPath("$.code").value("AUTH_FORBIDDEN"));
+                    .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }
     }
 

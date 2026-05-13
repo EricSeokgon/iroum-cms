@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  PiiKeyRotationMapper SQL 정의.
+  SPEC-CMS-SECURITY-PII-ROTATION-001 REQ-PII-ROT-001/002/003
+
+  설계 노트:
+    - findUsersWithOldKeyVersion: id 기반 cursor 페이징.
+      WHERE 조건이 회전 진행에 따라 동적으로 변하므로 OFFSET 페이징은 부적합.
+    - updateUserEmailPii: email_hmac 은 절대 갱신하지 않는다 (HMAC 키 분리).
+    - insertRotationLog: PostgreSQL RETURNING id 패턴으로 생성 PK 회수.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.security.pii.rotation.PiiKeyRotationMapper">
+
+    <!--
+      재암호화 대상 row 페이징 조회.
+      BYTEA 컬럼은 jdbcType="BINARY" 명시 (UserMapper.xml 의 PII 컬럼 매핑 정책과 동일).
+    -->
+    <resultMap id="userPiiRowMap" type="kr.co.ircp.cms.domain.security.pii.rotation.UserPiiRow">
+        <constructor>
+            <idArg   column="id"                javaType="_long"/>
+            <arg     column="email_encrypted"   javaType="_byte[]" jdbcType="BINARY"/>
+            <arg     column="email_iv"          javaType="_byte[]" jdbcType="BINARY"/>
+            <arg     column="email_tag"         javaType="_byte[]" jdbcType="BINARY"/>
+            <arg     column="email_key_version" javaType="_int"    jdbcType="SMALLINT"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findUsersWithOldKeyVersion" resultMap="userPiiRowMap">
+        SELECT id, email_encrypted, email_iv, email_tag, email_key_version
+        FROM users
+        WHERE email_key_version != #{activeVersion}
+          AND email_key_version IS NOT NULL
+          AND email_encrypted   IS NOT NULL
+          AND id &gt; #{lastId}
+        ORDER BY id
+        LIMIT #{limit}
+    </select>
+
+    <!--
+      재암호화된 4 컬럼 UPDATE. email_hmac 은 의도적으로 제외 (HMAC 키 불변).
+      updated_at 도 함께 갱신하여 운영 모니터링 용이성 확보.
+    -->
+    <update id="updateUserEmailPii">
+        UPDATE users
+        SET email_encrypted   = #{emailEncrypted,   jdbcType=BINARY},
+            email_iv          = #{emailIv,          jdbcType=BINARY},
+            email_tag         = #{emailTag,         jdbcType=BINARY},
+            email_key_version = #{emailKeyVersion,  jdbcType=SMALLINT},
+            updated_at        = NOW()
+        WHERE id = #{userId}
+    </update>
+
+    <!--
+      회전 시작 로그 INSERT — useGeneratedKeys 로 BIGSERIAL PK 를 holder.id 에 주입.
+      외부 호출자는 PiiKeyRotationMapper.insertRotationLog(int,int) default method 를 사용한다.
+    -->
+    <insert id="doInsertRotationLog"
+            parameterType="kr.co.ircp.cms.domain.security.pii.rotation.RotationLogInsert"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO pii_key_rotation_log (old_key_version, new_key_version, status)
+        VALUES (#{oldVersion}, #{newVersion}, 'IN_PROGRESS')
+    </insert>
+
+    <!-- 회전 종료 처리 (COMPLETED / FAILED). -->
+    <update id="completeRotationLog">
+        UPDATE pii_key_rotation_log
+        SET finished_at   = CURRENT_TIMESTAMP,
+            migrated_rows = #{migratedRows},
+            status        = #{status},
+            error_message = #{errorMessage}
+        WHERE id = #{logId}
+    </update>
+
+</mapper>

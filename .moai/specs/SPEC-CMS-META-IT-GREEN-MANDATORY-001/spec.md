@@ -1,7 +1,47 @@
-# SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.2
+# SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.3
 
-**Status**: Implemented (2026-05-12) — README §"IT user environment GREEN mandatory 정책" 신설 + Sync checklist 4 항목 명문화
-**Implementation commits**: 75da38a (v0.1 정책 초안), [본 commit] (v0.2 README §IT mandatory 정책 + Sync checklist)
+**Status**: Implemented (2026-05-12) — Evidence 강화 (PII 5건 + AUTHZ 회귀 6건 + Controller test 12건)
+**Implementation commits**: 75da38a (v0.1 정책 초안), 7c58647 (v0.2 README + Sync checklist), [본 commit] (v0.3 AUTHZ evidence 추가)
+
+## v0.3 변경 이력 (2026-05-12) — AUTHZ REGRESSION-001 evidence 통합
+
+### 추가 evidence (AUTHZ 회귀 5건)
+
+REGRESSION-001 RUN 시 발견된 추가 회귀 패턴이 META 정책의 추가 evidence로 명문화됨:
+
+| Case | SPEC | 위반 REQ | 해결 패턴 |
+|------|------|----------|----------|
+| 6 | REGRESSION-001 (응답 코드) | REQ-META-IT-002 (운영 변경 미동기) | jsonPath AUTH_FORBIDDEN → ACCESS_DENIED 28건+17건 일괄 정정 |
+| 7 | REGRESSION-001 (@Valid 우선) | REQ-META-IT-002 (validation 위험 미명시) | 23+4 DTO body 정상화 (각 endpoint required fields 충족) |
+| 8 | REGRESSION-001 (controller test 11+종) | REQ-META-IT-002 (@WebMvcTest Security 차이 미명시) | SecurityFilterChain 없음 → @PreAuthorize → 403 운영 동기 |
+| 9 | REGRESSION-001 v0.8 (MatrixIT 8 RED) | REQ-PII-FU2-003 (단독 GREEN, 종합 검증 미실행) | 종합 회귀 검증으로 8 RED 추가 발견 → 정정 (249/0 GREEN) |
+| 10 | REGRESSION-001 (service IllegalArgumentException) | REQ-META-IT-002 (운영 GlobalExceptionHandler 미커버 예외) | assertAuthzPassed helper 패턴 (ServletException + cause 허용) |
+
+### META 정책 강화 (REGRESSION-001 case 통합)
+
+**추가 HARD 규칙**:
+- **REQ-PII-FU2-003 강화**: 단독 GREEN + 통합 GREEN뿐 아니라 **종합 회귀 검증** (전체 트랙 일괄 실행) 시 0 failed 요구
+- **REQ-META-IT-002 확대**: @Transactional 외에도 **운영 GlobalExceptionHandler 커버리지** 명시 (도메인 RuntimeException 처리 여부)
+- **REQ-META-IT-006 신설** (응답 코드 동기): IT 시나리오의 jsonPath 응답 코드 검증 시 운영 SecurityConfig + GlobalExceptionHandler 양쪽 분기 명확화 (AUTH_REQUIRED 401 vs AUTH_FORBIDDEN/ACCESS_DENIED 403)
+
+### REGRESSION-001 회복 단계로 본 META 정책 validation
+
+| Phase | RED | 발견 시점 | 정정 패턴 |
+|-------|-----|----------|----------|
+| Phase A | 28 (응답 코드) | Step 2 시작 | jsonPath 일괄 변경 |
+| Phase B1-B5 | 23 (body 누락) | Step 2 Phase B | DTO 정상 JSON |
+| Step 4 | 12 (@WebMvcTest 한계) | Step 4 | @PreAuthorize 거부 → 403 동기 |
+| Step 6 v0.8 | 8 (MatrixIT) | 종합 회귀 검증 | Banner/Page/User body 정정 |
+| **합계** | **59 → 0** | **REGRESSION-001 100% 회복** | **운영 코드 변경 0건** |
+
+### META 정책 현재 적용 SPEC 목록
+
+본 정책은 다음 SPEC에서 정식 적용 사례를 가짐:
+- ✅ PII-FOLLOWUP-005 v0.3 (단독 GREEN + 통합 GREEN + @DirtiesContext race condition 회피)
+- ✅ AUTHZ-IT-EXPAND-002 v0.3 (단독 + 통합 양쪽 GREEN + assertAuthzPassed helper)
+- ✅ AUTHZ-IT-REGRESSION-001 v0.8 (Fully Implemented, 59 RED → 0 100% 회복, 종합 검증 evidence)
+
+---
 
 ## v0.2 변경 이력 (2026-05-12) — README 정책 섹션 신설 + Sync checklist 명문화
 
@@ -196,5 +236,6 @@ PII 트랙에서 5건의 false GREEN/race condition 패턴이 발견됨:
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.3 | 2026-05-12 | MoAI orchestrator | **Evidence 강화**. REGRESSION-001 RUN에서 발견한 추가 회귀 5 case (응답 코드 변경 28+17건, @Valid 우선 23+4건, @WebMvcTest 한계 11+종, MatrixIT 8건 종합 검증 미실행, service IllegalArgumentException helper) 통합. REQ-PII-FU2-003 강화 (종합 회귀 검증 추가), REQ-META-IT-002 확대 (GlobalExceptionHandler 커버리지), REQ-META-IT-006 신설 (응답 코드 동기). 본 정책 정식 적용 SPEC 3건 명시 (PII-FU-005 + AUTHZ-EXPAND-002 + REGRESSION-001). 정책 문서 전용, 운영 코드/IT 신설 0건. |
 | v0.2 | 2026-05-12 | MoAI orchestrator | **Implemented**. README §"IT user environment GREEN mandatory 정책 (META)" 신설 — HARD 정책 요약 4건 + Sync checklist 4 항목 표 + 적용 사례 5건 evidence 표 + SPEC 참조 링크. PII-FOLLOWUP-005가 본 정책의 첫 적용 사례 (단독 GREEN, 통합 race condition → Partially Diagnosed). 정책 문서 전용, 운영 코드/IT 신설 0건. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |
 | v0.1 | 2026-05-12 | MoAI orchestrator | 초안 작성. PII-FOLLOWUP-001~005 트랙에서 발견된 false GREEN/race condition 패턴 5건 evidence 기반 IT user environment GREEN mandatory 정책 명문화. REQ-PII-FU2-003 (단독+통합 양쪽 GREEN 필수) + REQ-META-IT-002 (@Transactional 위험 명시) + REQ-META-IT-003 (race condition 회피 패턴) + REQ-META-IT-004 (정책 문서 위치) + REQ-META-IT-005 (Sync 단계 검증 강화) 정의. 7 AC. 결정 포인트 D1~D4. RUN Step 1~4 분해. 정책 문서 전용, 운영 코드/IT 신설 0건. PII 트랙 5건 회고로 evidence 검증. 향후 SPEC RUN/Sync 단계 품질 게이트로 작동. |

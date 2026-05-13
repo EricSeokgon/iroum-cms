@@ -116,3 +116,16 @@ logging:
     org.springframework.security: INFO
     org.mybatis: INFO
     org.flywaydb: INFO
+
+# KMS 어댑터 설정 예시 (pii.keyvault.provider=aws-kms 활성화 시)
+# pii:
+#   keyvault:
+#     provider: aws-kms
+#     aws-kms:
+#       key-id: arn:aws:kms:ap-northeast-2:123456789:key/your-cmk-id
+#       region: ap-northeast-2
+#       active-version: 1
+#       endpoint-override: # LocalStack 사용 시: http://localhost:4566
+#       encrypted-keys:
+#         dek-v1: BASE64_KMS_ENCRYPTED_AES_KEY_V1
+#         hmac: BASE64_KMS_ENCRYPTED_HMAC_KEY

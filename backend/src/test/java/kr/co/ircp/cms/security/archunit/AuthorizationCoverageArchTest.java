@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>본 RUN Step 1에서는 baseline 검증 3건만 활성화한다 (REQ-AAD-001/002/004):
  * <ul>
- *   <li>AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline (120) 회귀 검증</li>
- *   <li>AC-AAD-001-2: IT @DisplayName 추출 endpoint set baseline (35) 회귀 검증</li>
- *   <li>AC-AAD-002-1: 35 endpoint baseline 정확 매칭 — 누락/추가 시 RED</li>
+ *   <li>AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline (103) 회귀 검증</li>
+ *   <li>AC-AAD-001-2: IT @DisplayName 추출 endpoint set baseline (110) 회귀 검증</li>
+ *   <li>AC-AAD-002-1: 110 endpoint baseline 정확 매칭 — 누락/추가 시 RED</li>
  * </ul>
  *
  * <p>Step 2에서 권한 어휘 변경 검출(REQ-AAD-003) 추가, Step 3에서 RED 시뮬레이션 검증.
@@ -42,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>baseline 갱신 절차:
  * 운영 신규 @PreAuthorize 추가 시 IT 시나리오를 추가하고 본 클래스의
- * {@link #baselineEndpoints()} + 카운트(120/35)를 동시 갱신한다. baseline 자체가 회귀 시그널이므로
+ * {@link #baselineEndpoints()} + 카운트(103/110)를 동시 갱신한다. baseline 자체가 회귀 시그널이므로
  * 자동 변경 없음 — 의도적 갱신만 허용.
  *
  * <p>RED 시뮬레이션 검증 절차 (REQ-AAD-005 — 회귀 검출 능력 보장):
@@ -50,7 +50,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li><b>운영 신규 @PreAuthorize 추가</b>: 운영 컨트롤러 신규 메소드에 어노테이션 1건 추가
  *       → AC-AAD-001-1 RED (카운트 103 → 104) + AssertionError 메시지에 신규 endpoint 명시</li>
  *   <li><b>IT 시나리오 1건 제거</b>: AuthorizationMatrixIT/ExpandIT의 @Test 메소드 1건 삭제
- *       → AC-AAD-001-2 RED (35 → 34) + AC-AAD-002-1 missingFromIt에 누락 endpoint 노출</li>
+ *       → AC-AAD-001-2 RED (110 → 109) + AC-AAD-002-1 missingFromIt에 누락 endpoint 노출</li>
  *   <li><b>운영 권한 어휘 변경</b>: 기존 hasAuthority('CONTENT:WRITE') → hasAuthority('NEW:VOCAB')
  *       → AC-AAD-003-1 RED (removedFromOps에 CONTENT:WRITE + addedInOps에 NEW:VOCAB 노출)</li>
  *   <li><b>baseline 갱신 누락</b>: 신규 endpoint 추가 후 baselineEndpoints() 갱신 안 함
@@ -130,34 +130,37 @@ class AuthorizationCoverageArchTest {
     // =================================================================================
 
     /**
-     * AC-AAD-001-2: IT 세 클래스의 @DisplayName에서 endpoint(METHOD + path) 추출 + baseline.
+     * AC-AAD-001-2: IT 네 클래스의 @DisplayName에서 endpoint(METHOD + path) 추출 + baseline.
      *
      * <p>AuthorizationMatrixIT(19 AC) + AuthorizationMatrixExpandIT(88 AC + smoke 1)
-     * + AuthorizationMatrixExpand2IT(57 AC + smoke 1)에서 @DisplayName 정규식으로 unique endpoint set 추출.
-     * baseline: 54 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19).
+     * + AuthorizationMatrixExpand2IT(57 AC + smoke 1) + AuthorizationMatrixExpand3IT(106 AC + smoke 1)
+     * + AuthorizationMatrixExpand4IT(~78 AC + smoke 1)에서 @DisplayName 정규식으로 unique endpoint set 추출.
+     * baseline: 110 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19
+     * + AUTHZ-IT-EXPAND-003 34 + AUTHZ-IT-EXPAND-004 22).
      */
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (54 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (110 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
         assertThat(itEndpoints)
                 .as("IT @DisplayName에서 추출된 unique endpoint(METHOD+path) 개수가 변경되었습니다. " +
-                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에서 시나리오 추가/제거가 발생했습니다. " +
-                        "본 baseline(54)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
+                        "AuthorizationMatrixExpand3IT 또는 AuthorizationMatrixExpand4IT에서 시나리오 추가/제거가 발생했습니다. " +
+                        "본 baseline(110)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(54);
+                .hasSize(110);
     }
 
     /**
-     * AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
+     * AC-AAD-002-1: 110 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED.
      *
-     * <p>baseline 54 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
+     * <p>baseline 110 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
      * 누락(missingFromIt) 또는 추가(extraInIt) 발생 시 RED + 어떤 endpoint가 변동되었는지 메시지 출력.
      */
     @Test
-    @DisplayName("AC-AAD-002-1: 54 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
-    void it_endpointSet_matchesBaseline54() {
+    @DisplayName("AC-AAD-002-1: 110 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    void it_endpointSet_matchesBaseline88() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
 
@@ -172,13 +175,14 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 54 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
-                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT 또는 AuthorizationMatrixExpand2IT에 해당 시나리오가 제거되었습니다. " +
+                .as("baseline 110 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                        "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
+                        "AuthorizationMatrixExpand3IT 또는 AuthorizationMatrixExpand4IT에 해당 시나리오가 제거되었습니다. " +
                         "회귀 검토 필요.", missingFromIt)
                 .isEmpty();
 
         assertThat(extraInIt)
-                .as("IT에는 있으나 baseline 54에 없는 신규 endpoint: %s. " +
+                .as("IT에는 있으나 baseline 110에 없는 신규 endpoint: %s. " +
                         "신규 시나리오 추가 시 본 ArchUnit baselineEndpoints() 메소드를 갱신하세요.", extraInIt)
                 .isEmpty();
     }
@@ -403,7 +407,8 @@ class AuthorizationCoverageArchTest {
     }
 
     /**
-     * baseline 35 endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29).
+     * baseline 110 endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19
+     * + AUTHZ-IT-EXPAND-003 34 + AUTHZ-IT-EXPAND-004 22).
      *
      * <p>운영 신규 @PreAuthorize 추가 시 IT 시나리오를 추가하고 본 baseline을 함께 갱신.
      * 자동 변경 없음 — 의도적 갱신만 허용 (회귀 시그널 보존).
@@ -482,7 +487,79 @@ class AuthorizationCoverageArchTest {
                 // §A.7 SystemOperation 3 (MAINT:READ/WRITE + LOG:READ)
                 "GET /api/v1/system/maintenance",
                 "POST /api/v1/system/maintenance",
-                "GET /api/v1/system/access-logs"
+                "GET /api/v1/system/access-logs",
+
+                // ─── AUTHZ-IT-EXPAND-003 35 endpoint (Phase A + B + C) ───────────
+                // §A.1 OrganizationDomain (7)
+                "GET /api/v1/organizations/tree",
+                "GET /api/v1/organizations",
+                "GET /api/v1/organizations/{id}",
+                "PUT /api/v1/organizations/{id}",
+                "DELETE /api/v1/organizations/{id}",
+                "GET /api/v1/organizations/{id}/history",
+                "POST /api/v1/organizations/users/{id}/organization",
+                // §A.2 UserDomain (5)
+                "GET /api/v1/users",
+                "GET /api/v1/users/{id}",
+                "PUT /api/v1/users/{id}",
+                "DELETE /api/v1/users/{id}",
+                "POST /api/v1/users/{id}/unlock",
+                // §A.3 CodeDomain (6, GET /code-groups는 EXPAND-001 §A.5에 이미 baseline 등록됨)
+                "GET /api/v1/system/codes/bulk",
+                "GET /api/v1/system/codes/{id}",
+                "DELETE /api/v1/system/codes/{id}",
+                "GET /api/v1/system/code-groups/{id}",
+                "PUT /api/v1/system/code-groups/{id}",
+                "DELETE /api/v1/system/code-groups/{id}",
+                // §A.4 MenuMaintenance (4)
+                "PATCH /api/v1/content/menus/{id}/move",
+                "PATCH /api/v1/content/menus/{id}/visibility",
+                "GET /api/v1/system/maintenance/{id}",
+                "POST /api/v1/system/maintenance/{id}/activate",
+                // §A.5 Widget (2)
+                "DELETE /api/v1/dashboard/widgets/{id}",
+                "POST /api/v1/dashboard/widgets/preview",
+                // §A.6 BannerI18n (2)
+                "DELETE /api/v1/content/banners/{id}",
+                "PUT /api/v1/content/i18n",
+                // §A.7 SearchPermission (3)
+                "GET /api/v1/permissions",
+                "GET /api/v1/search/synonyms",
+                "GET /api/v1/search/stats/queries",
+                // §A.8 GovernanceStats (5)
+                "GET /api/v1/governance/batch-logs",
+                "GET /api/v1/governance/dictionary",
+                "GET /api/v1/governance/stats/policies",
+                "GET /api/v1/system/stats/top-pages",
+                "POST /api/v1/system/stats/recompute",
+
+                // ─── AUTHZ-IT-EXPAND-004 22 endpoint (Phase A + B + C, Bbs/Publication/Faq/Qna/Survey + Block/Popup/Template + Role/Cache) ───
+                // §A.1 BoardDomain 15 (Bbs 1 + Publication 3 + Faq 4 + Qna 3 신규 + Survey 4)
+                // ※ GET /api/v1/qnas, POST /api/v1/qnas는 AUTHZ-IT-EXPAND-001 §A.4에 이미 등록되어 dedup됨
+                "DELETE /api/v1/boards/{id}",
+                "POST /api/v1/publications",
+                "PUT /api/v1/publications/{id}",
+                "DELETE /api/v1/publications/{id}",
+                "POST /api/v1/faqs",
+                "PUT /api/v1/faqs/reorder",
+                "PUT /api/v1/faqs/{id}",
+                "DELETE /api/v1/faqs/{id}",
+                "GET /api/v1/qnas/{id}",
+                "POST /api/v1/qnas/{id}/close",
+                "DELETE /api/v1/qnas/{id}",
+                "POST /api/v1/surveys",
+                "PUT /api/v1/surveys/{id}",
+                "DELETE /api/v1/surveys/{id}",
+                "GET /api/v1/surveys/{id}/results",
+                // §A.2 ContentDomain 5 (Block 2 + Popup 2 + Template 1, Page는 기존 baseline 100% 커버)
+                "DELETE /api/v1/content/pages/{id}/blocks/{id}",
+                "PATCH /api/v1/content/pages/{id}/blocks/order",
+                "PUT /api/v1/content/popups/{id}",
+                "DELETE /api/v1/content/popups/{id}",
+                "PATCH /api/v1/content/templates/{id}/status",
+                // §A.3 AuthSystemDomain 2 (Role list class-level + CacheAdmin stats)
+                "GET /api/v1/roles",
+                "GET /api/v1/dashboard/cache/stats"
         );
     }
 }

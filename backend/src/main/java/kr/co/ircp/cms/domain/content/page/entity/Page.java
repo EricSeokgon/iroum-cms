@@ -11,7 +11,6 @@ import java.time.Instant;
  *
  * // @MX:ANCHOR: [AUTO] Page — 페이지 콘텐츠의 루트 엔티티
  * // @MX:REASON: PageService, ContentBlockService, PageHistoryService에서 fan_in >= 3으로 참조
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 실제 구현 채움 (REQ-CONTENT-005-D)
  */
 @Data
 @Builder

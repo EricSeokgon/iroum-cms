@@ -115,12 +115,16 @@ class PermissionChangeControllerTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("AC-COV-001-1 — GET /audit/permission-changes 인증 없이 접근 시 401 Unauthorized")
-    void list_returns401_withoutAuthentication() throws Exception {
-        // given: SecurityContext 비어있음 (인증 어노테이션 미부착)
-        // when & then: AnonymousAuthenticationFilter → @PreAuthorize 거부 → ExceptionTranslationFilter → 401
+    @DisplayName("AC-COV-001-1 — GET /audit/permission-changes 인증 없이 접근 시 403 Forbidden (@WebMvcTest 한계)")
+    void list_returns403_withoutAuthentication() throws Exception {
+        // given: SecurityContext 비어있음 (@WithMockUser 미부착)
+        // when & then: @WebMvcTest + SecurityAutoConfiguration 제외 → SecurityFilterChain 없음
+        //              → AnonymousAuthenticationToken → @PreAuthorize 거부 → AccessDeniedException → 403
+        // 운영 full SecurityFilterChain은 anonymous → AuthenticationEntryPoint → 401이나,
+        // @WebMvcTest는 SecurityFilterChain 없이 @PreAuthorize만 동작 → 403 응답.
+        // 인증 부재 401 검증은 SecurityConfig 통합 테스트에서 별도 검증 (REQ-IRR-003).
         mockMvc.perform(get("/api/v1/audit/permission-changes"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -11,7 +11,6 @@ import java.util.Optional;
  * 콘텐츠 블록 MyBatis 매퍼.
  * REQ-CONTENT-006-D: 블록 CRUD + 정렬
  *
- * // @MX:TODO: [AUTO] Step 2 GREEN에서 XML 구현 필요
  */
 @Mapper
 public interface ContentBlockMapper {

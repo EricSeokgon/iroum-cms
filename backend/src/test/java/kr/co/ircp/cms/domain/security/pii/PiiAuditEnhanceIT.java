@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +79,9 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private PlatformTransactionManager txManager;
+
     // SPEC-CMS-SECURITY-PII-FOLLOWUP-002 옵션 B 적용 (2026-05-11):
     // @MockitoSpyBean PersonalDataAccessLogService 제거 — @Async + AOP CGLIB proxy 충돌 회피.
     // AC-FU-003-2 (recordBulk 실패 시뮬레이션)는 PersonalDataAccessLogServiceImplFallbackTest에 분리.
@@ -89,8 +94,14 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
     void insertTestUsers() {
         // SPEC-CMS-SECURITY-PII-FOLLOWUP-003 옵션 G: 매 테스트 시작 시 깨끗한 상태 보장
         // (@AfterEach + @BeforeEach 둘 다 TRUNCATE — JUnit 5 test 순서 불확정 + cleanup 누락 방지)
-        jdbcTemplate.update("TRUNCATE personal_data_access_log");
-        jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
+        // TRUNCATE + DELETE 를 단일 트랜잭션으로 묶음:
+        //   TRUNCATE 의 ACCESS EXCLUSIVE 잠금이 COMMIT 까지 유지되어
+        //   두 문 사이에 pda_log INSERT 가 끼어드는 것을 원천 차단한다 (FK 위반 방지)
+        new TransactionTemplate(txManager).execute(status -> {
+            jdbcTemplate.update("TRUNCATE personal_data_access_log");
+            jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
+            return null;
+        });
 
         // 5명 사용자 적재
         targetUserIds = List.of(
@@ -112,8 +123,14 @@ class PiiAuditEnhanceIT extends AbstractIntegrationTest {
      */
     @AfterEach
     void cleanupAuditData() {
-        jdbcTemplate.update("TRUNCATE personal_data_access_log");
-        jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
+        // TRUNCATE + DELETE 를 단일 트랜잭션으로 묶음:
+        //   TRUNCATE 의 ACCESS EXCLUSIVE 잠금이 COMMIT 까지 유지되어
+        //   두 문 사이에 pda_log INSERT 가 끼어드는 것을 원천 차단한다 (FK 위반 방지)
+        new TransactionTemplate(txManager).execute(status -> {
+            jdbcTemplate.update("TRUNCATE personal_data_access_log");
+            jdbcTemplate.update("DELETE FROM users WHERE username LIKE 'audit_it_%'");
+            return null;
+        });
     }
 
     // ──────────────────────────────────────────────────────────────────────────
