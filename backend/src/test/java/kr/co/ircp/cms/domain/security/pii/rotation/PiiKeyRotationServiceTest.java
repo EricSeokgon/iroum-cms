@@ -3,6 +3,8 @@ package kr.co.ircp.cms.domain.security.pii.rotation;
 import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
 import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import kr.co.ircp.cms.domain.security.pii.PiiKeyVault;
+import kr.co.ircp.cms.domain.security.pii.PiiKeyVaultException;
+import kr.co.ircp.cms.domain.security.pii.rotation.PiiKeyRotationService.RotationChunkResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,14 +74,15 @@ class PiiKeyRotationServiceTest {
     }
 
     @Test
-    @DisplayName("rotateChunk: 대상 row 가 없으면 0 을 반환하고 UPDATE 를 호출하지 않는다")
+    @DisplayName("rotateChunk: 대상 row 가 없으면 processed=0 을 반환하고 UPDATE 를 호출하지 않는다")
     void rotateChunk_whenNoRows_returnsZero() {
         when(rotationMapper.findUsersWithOldKeyVersion(NEW_VERSION, BATCH_SIZE, 0L))
                 .thenReturn(List.of());
 
-        int processed = service.rotateChunk(NEW_VERSION, 0L, BATCH_SIZE);
+        RotationChunkResult result = service.rotateChunk(NEW_VERSION, 0L, BATCH_SIZE);
 
-        assertThat(processed).isZero();
+        assertThat(result.processed()).isZero();
+        assertThat(result.skipped()).isZero();
         verify(emailEncryptionService, never()).decrypt(any());
         verify(emailEncryptionService, never()).encrypt(any());
         verify(rotationMapper, never()).updateUserEmailPii(anyLong(), any(), any(), any(), anyInt());
@@ -101,9 +104,11 @@ class PiiKeyRotationServiceTest {
         when(rotationMapper.updateUserEmailPii(eq(42L), any(), any(), any(), eq(NEW_VERSION)))
                 .thenReturn(1);
 
-        int processed = service.rotateChunk(NEW_VERSION, 0L, BATCH_SIZE);
+        RotationChunkResult result = service.rotateChunk(NEW_VERSION, 0L, BATCH_SIZE);
 
-        assertThat(processed).isEqualTo(1);
+        assertThat(result.processed()).isEqualTo(1);
+        assertThat(result.skipped()).isZero();
+        assertThat(result.maxId()).isEqualTo(42L);
         // decrypt 가 받은 EncryptedEmail 의 keyVersion 은 OLD_VERSION 이어야 한다
         ArgumentCaptor<EncryptedEmail> decryptCaptor = ArgumentCaptor.forClass(EncryptedEmail.class);
         verify(emailEncryptionService).decrypt(decryptCaptor.capture());
@@ -114,14 +119,41 @@ class PiiKeyRotationServiceTest {
     }
 
     @Test
+    @DisplayName("rotateChunk: 복호화 실패 row 는 건너뛰고 skipped 에 집계되며 maxId 는 전진한다")
+    void rotateChunk_whenDecryptionFails_skipsRow() {
+        UserPiiRow failRow    = new UserPiiRow(10L, dummyBytes(20), dummyBytes(12), dummyBytes(16), OLD_VERSION);
+        UserPiiRow successRow = new UserPiiRow(20L, dummyBytes(20), dummyBytes(12), dummyBytes(16), OLD_VERSION);
+        when(rotationMapper.findUsersWithOldKeyVersion(NEW_VERSION, BATCH_SIZE, 0L))
+                .thenReturn(List.of(failRow, successRow));
+
+        // id=10 은 복호화 실패, id=20 은 성공
+        when(emailEncryptionService.decrypt(any(EncryptedEmail.class)))
+                .thenThrow(new PiiKeyVaultException("tag mismatch"))
+                .thenReturn("user@example.com");
+        EncryptedEmail newEnc = new EncryptedEmail(dummyBytes(20), dummyBytes(12), dummyBytes(16), NEW_VERSION);
+        when(emailEncryptionService.encrypt("user@example.com")).thenReturn(newEnc);
+        when(rotationMapper.updateUserEmailPii(eq(20L), any(), any(), any(), eq(NEW_VERSION))).thenReturn(1);
+
+        RotationChunkResult result = service.rotateChunk(NEW_VERSION, 0L, BATCH_SIZE);
+
+        assertThat(result.processed()).isEqualTo(1);
+        assertThat(result.skipped()).isEqualTo(1);
+        assertThat(result.maxId()).isEqualTo(20L);
+        verify(rotationMapper, never()).updateUserEmailPii(eq(10L), any(), any(), any(), anyInt());
+        verify(rotationMapper, times(1)).updateUserEmailPii(eq(20L), any(), any(), any(), eq(NEW_VERSION));
+    }
+
+    @Test
     @DisplayName("rotatePendingAll: 1차 청크 N rows, 2차 청크 0 rows 로 정상 종료한다")
     void rotatePendingAll_processesAllChunks() {
-        // 1차 호출: 2 rows 반환
+        // 1차 호출 (lastId=0): 2 rows 반환 (maxId=2 → 커서 전진)
         UserPiiRow r1 = new UserPiiRow(1L, dummyBytes(20), dummyBytes(12), dummyBytes(16), OLD_VERSION);
         UserPiiRow r2 = new UserPiiRow(2L, dummyBytes(20), dummyBytes(12), dummyBytes(16), OLD_VERSION);
-        when(rotationMapper.findUsersWithOldKeyVersion(NEW_VERSION, BATCH_SIZE, 0L))
-                .thenReturn(List.of(r1, r2))   // 1차
-                .thenReturn(List.of());         // 2차 (종료)
+        when(rotationMapper.findUsersWithOldKeyVersion(eq(NEW_VERSION), eq(BATCH_SIZE), eq(0L)))
+                .thenReturn(List.of(r1, r2));
+        // 2차 호출 (lastId=2): 빈 청크 → 종료
+        when(rotationMapper.findUsersWithOldKeyVersion(eq(NEW_VERSION), eq(BATCH_SIZE), eq(2L)))
+                .thenReturn(List.of());
 
         when(emailEncryptionService.decrypt(any(EncryptedEmail.class))).thenReturn("user@example.com");
         EncryptedEmail newEnc = new EncryptedEmail(
@@ -134,9 +166,11 @@ class PiiKeyRotationServiceTest {
         int total = service.rotatePendingAll();
 
         assertThat(total).isEqualTo(2);
-        // findUsersWithOldKeyVersion 은 최소 2회 호출 (1차 데이터 + 2차 빈 청크 종료 신호)
-        verify(rotationMapper, times(2))
+        // 1차(lastId=0) + 2차(lastId=2) 각 1회씩
+        verify(rotationMapper, times(1))
                 .findUsersWithOldKeyVersion(NEW_VERSION, BATCH_SIZE, 0L);
+        verify(rotationMapper, times(1))
+                .findUsersWithOldKeyVersion(NEW_VERSION, BATCH_SIZE, 2L);
         verify(rotationMapper, times(2))
                 .updateUserEmailPii(anyLong(), any(), any(), any(), eq(NEW_VERSION));
     }
