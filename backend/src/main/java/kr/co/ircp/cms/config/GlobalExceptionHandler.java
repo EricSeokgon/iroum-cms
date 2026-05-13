@@ -40,6 +40,19 @@ import kr.co.ircp.cms.domain.board.exception.PublicationNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.SurveyNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.SurveyPeriodInvalidException;
+import kr.co.ircp.cms.domain.content.banner.exception.BannerAltTextMissingException;
+import kr.co.ircp.cms.domain.content.banner.exception.BannerPeriodInvalidException;
+import kr.co.ircp.cms.domain.content.menu.exception.MenuCircularReferenceException;
+import kr.co.ircp.cms.domain.content.menu.exception.MenuCodeDuplicateException;
+import kr.co.ircp.cms.domain.content.menu.exception.MenuDepthExceededException;
+import kr.co.ircp.cms.domain.content.page.exception.PageBlockTypeForbiddenException;
+import kr.co.ircp.cms.domain.content.page.exception.PageSlugInvalidException;
+import kr.co.ircp.cms.domain.content.page.exception.PageStatusTransitionException;
+import kr.co.ircp.cms.domain.content.popup.exception.PopupPeriodInvalidException;
+import kr.co.ircp.cms.domain.content.popup.exception.PopupTargetMissingException;
+import kr.co.ircp.cms.domain.content.site.exception.SiteMultiDisabledException;
+import kr.co.ircp.cms.domain.content.template.exception.TemplateInUseException;
+import kr.co.ircp.cms.domain.content.template.exception.TemplateMissingSlotException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.ExportAccessDeniedException;
@@ -924,6 +937,125 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Synonym Not Found");
         detail.setProperty("code", "SEARCH_SYNONYM_NOT_FOUND");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-004 Content Domain Exceptions ─────────────────────────────
+
+    /** 메뉴 깊이 초과 → 400. REQ-CONTENT-001-D-1 */
+    @ExceptionHandler(MenuDepthExceededException.class)
+    public ProblemDetail handleMenuDepthExceeded(MenuDepthExceededException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Menu Depth Exceeded");
+        detail.setProperty("code", "MENU_DEPTH_EXCEEDED");
+        return detail;
+    }
+
+    /** 메뉴 코드 중복 → 409. REQ-CONTENT-001-D-1 */
+    @ExceptionHandler(MenuCodeDuplicateException.class)
+    public ProblemDetail handleMenuCodeDuplicate(MenuCodeDuplicateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Menu Code Duplicate");
+        detail.setProperty("code", "MENU_CODE_DUPLICATE");
+        return detail;
+    }
+
+    /** 메뉴 순환 참조 → 400. REQ-CONTENT-001-D-4 */
+    @ExceptionHandler(MenuCircularReferenceException.class)
+    public ProblemDetail handleMenuCycle(MenuCircularReferenceException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Menu Cycle Detected");
+        detail.setProperty("code", "MENU_CYCLE_DETECTED");
+        return detail;
+    }
+
+    /** 페이지 slug 패턴 위반 → 400. REQ-CONTENT-005-D-1 */
+    @ExceptionHandler(PageSlugInvalidException.class)
+    public ProblemDetail handlePageSlugInvalid(PageSlugInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Page Slug Invalid");
+        detail.setProperty("code", "SLUG_INVALID_PATTERN");
+        return detail;
+    }
+
+    /** 페이지 상태 전이 위반 → 409. REQ-CONTENT-005-D */
+    @ExceptionHandler(PageStatusTransitionException.class)
+    public ProblemDetail handlePageStatusTransition(PageStatusTransitionException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Page Status Transition Invalid");
+        detail.setProperty("code", "PAGE_STATUS_TRANSITION_INVALID");
+        return detail;
+    }
+
+    /** HTML 블록 SYSADMIN 한정 → 403. REQ-CONTENT-006-D-1 */
+    @ExceptionHandler(PageBlockTypeForbiddenException.class)
+    public ProblemDetail handlePageBlockTypeForbidden(PageBlockTypeForbiddenException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Page Block Type Forbidden");
+        detail.setProperty("code", "BLOCK_HTML_REQUIRES_SYSADMIN");
+        return detail;
+    }
+
+    /** 팝업 노출 기간 역전 → 400. REQ-CONTENT-008-D-1 */
+    @ExceptionHandler(PopupPeriodInvalidException.class)
+    public ProblemDetail handlePopupPeriodInvalid(PopupPeriodInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Popup Period Invalid");
+        detail.setProperty("code", "POPUP_PERIOD_INVALID");
+        return detail;
+    }
+
+    /** 팝업 타겟 역할 누락 → 400. REQ-CONTENT-008-D-1 */
+    @ExceptionHandler(PopupTargetMissingException.class)
+    public ProblemDetail handlePopupTargetMissing(PopupTargetMissingException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Popup Target Missing");
+        detail.setProperty("code", "POPUP_TARGET_MISSING");
+        return detail;
+    }
+
+    /** 배너 alt_text 누락 → 400. REQ-CONTENT-009-D-1 (KWCAG 2.2 AA 1.1.1) */
+    @ExceptionHandler(BannerAltTextMissingException.class)
+    public ProblemDetail handleBannerAltMissing(BannerAltTextMissingException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Banner Alt Required");
+        detail.setProperty("code", "BANNER_ALT_REQUIRED");
+        return detail;
+    }
+
+    /** 배너 노출 기간 역전 → 400. REQ-CONTENT-009-D-1 */
+    @ExceptionHandler(BannerPeriodInvalidException.class)
+    public ProblemDetail handleBannerPeriodInvalid(BannerPeriodInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Banner Period Invalid");
+        detail.setProperty("code", "BANNER_PERIOD_INVALID");
+        return detail;
+    }
+
+    /** 멀티사이트 비활성화 상태에서 site 생성 시도 → 409. REQ-CONTENT-003-D-3 */
+    @ExceptionHandler(SiteMultiDisabledException.class)
+    public ProblemDetail handleSiteMultiDisabled(SiteMultiDisabledException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Site Multi Disabled");
+        detail.setProperty("code", "SITE_MULTI_DISABLED");
+        return detail;
+    }
+
+    /** 템플릿 필수 슬롯 누락 → 400. REQ-CONTENT-004-D-1 */
+    @ExceptionHandler(TemplateMissingSlotException.class)
+    public ProblemDetail handleTemplateMissingSlot(TemplateMissingSlotException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Template Content Slot Missing");
+        detail.setProperty("code", "TEMPLATE_CONTENT_SLOT_MISSING");
+        return detail;
+    }
+
+    /** 사용 중인 템플릿 비활성화 거부 → 409. REQ-CONTENT-004-D-3 */
+    @ExceptionHandler(TemplateInUseException.class)
+    public ProblemDetail handleTemplateInUse(TemplateInUseException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Template In Use");
+        detail.setProperty("code", "TEMPLATE_IN_USE");
         return detail;
     }
 }
