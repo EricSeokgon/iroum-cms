@@ -489,7 +489,7 @@ class AuthorizationCoverageArchTest {
                 "POST /api/v1/system/maintenance",
                 "GET /api/v1/system/access-logs",
 
-                // ─── AUTHZ-IT-EXPAND-003 35 endpoint (Phase A + B + C) ───────────
+                // ─── AUTHZ-IT-EXPAND-003 34 endpoint (Phase A + B + C) ───────────
                 // §A.1 OrganizationDomain (7)
                 "GET /api/v1/organizations/tree",
                 "GET /api/v1/organizations",
