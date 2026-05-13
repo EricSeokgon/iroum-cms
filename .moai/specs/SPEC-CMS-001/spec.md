@@ -7,9 +7,9 @@
 | SPEC ID | SPEC-CMS-001 |
 | 제목 | Public-Institution CMS — First Release Foundation |
 | 작성일 | 2026-04-29 |
-| 버전 | v0.4 (2026-04-29 Bundle A 완성 + 운영 결정 통합) |
+| 버전 | v0.5 (2026-05-14 Umbrella Tested 갱신) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented (1차 출시 완료) |
+| 상태 | Tested |
 | 우선순위 | P0 |
 | 분류 | Umbrella SPEC (후속 SPEC-CMS-002 ~ SPEC-CMS-010 + 옵션 트랙 분할) |
 | 참조 문서 | `.moai/project/product.md`, `.moai/project/structure.md`, `.moai/project/tech.md` |
@@ -655,6 +655,7 @@ SPEC-CMS-001 [umbrella v0.4]
 | v0.3.1 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-1/2/3 적용 (사용자 결정 2026-04-29): SMS 본인인증 채널 제거(이메일 OTP만 1차 유지 — Q-1), MinIO 저장소 옵션 제거(LocalFileSystemStorage 단일 — Q-2), ClamAV AV 스캔 제거(매직넘버·MIME·확장자 3중 방어 — Q-3). 모두 v0.4+ 후속 검토(MEDIA의 경우 v0.2+). 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.1 (REQ-AUTH-017-D 갱신·SmsProvider placeholder), SPEC-CMS-MEDIA-001 v0.2 (AV 스캔 NOTE·MinIO v0.2+·LocalFS 단일 확정). |
 | v0.3.2 | 2026-04-29 | MoAI orchestrator | 운영 단계 결정 Q-4/5/6/7 적용 (사용자 결정 2026-04-29). **Q-4** SYSADMIN→SUPER_ADMIN 단순 alias 정책: SPEC-CMS-002 v0.3.2에 `roles.aliased_to` 컬럼 추가 + REQ-AUTH-013-D-5 alias 해석 sub-REQ 신설 + V2.1 마이그레이션. **Q-5** 발간자료 압축 zip 7일 보존 + 매일 0시 정리 배치: SPEC-CMS-003 v0.2.1에 publication_zip_archive DDL 신규 + REQ-BOARD-012-D-4 본문 갱신 + REQ-BOARD-012-D-4-2 신설(PublicationZipExpireJob). **Q-6** 카카오 알림톡 발급 워크플로 운영 매뉴얼 분리: 신규 파일 docs/operations/kakao-template.md 작성 + SPEC-CMS-004 v0.2.1 REQ-CONTENT-011-D-4 본문에 매뉴얼 참조 + submit-for-review API 안내 메시지. **Q-7** notification_send.integration_log_id FK + view INNER JOIN: SPEC-CMS-004 v0.2.1 §14.2-1 notification_send 신규 테이블(logical FK) + SPEC-CMS-005 v0.2.1 §13.2 REQ-SYSTEM-008-D-3 본문 갱신 + §14.2 v_notification_history 뷰 INNER JOIN으로 갱신. 본 SPEC 자체 본문은 변경 없으며 child SPEC만 갱신: SPEC-CMS-002 v0.3.2, SPEC-CMS-003 v0.2.1, SPEC-CMS-004 v0.2.1, SPEC-CMS-005 v0.2.1. |
 | v0.4 | 2026-04-29 | MoAI orchestrator | Bundle A 완성 + 운영 결정 통합 (§20 신설), Spring Boot 3.5.9 갱신 (§20.4), Bundle B Step 1 RED + LoginHistory API 반영. §16.1 트리에 [구현 상태] 표기 추가. 9개 child SPEC 일괄 v0.4 헤더 갱신. |
+| v0.5 | 2026-05-14 | MoAI orchestrator | Umbrella SPEC 상태 Implemented → Tested 갱신. 모든 하위 SPEC(SPEC-CMS-002~010, SPEC-CMS-MEDIA-001) 및 보안 트랙 SPEC(PII, AUTHZ, TEST-INFRA, META) 전체 Tested 완료 확인. 구현 메모 갱신: 테스트 완료일, 참조 SPEC 목록, 보안 트랙 완료 현황 추가. |
 
 ---
 
@@ -728,12 +729,14 @@ SPEC-CMS-001 [umbrella v0.4]
 ## 구현 메모 (Implementation Notes)
 
 - **구현 완료일**: 2026-05-07
-- **상태 업데이트**: Draft → Implemented (1차 출시 완료) (일괄 동기화)
+- **테스트 완료일**: 2026-05-14
+- **상태 업데이트**: Draft → Implemented (2026-05-07) → Tested (2026-05-14, 모든 하위 SPEC Tested 확인 후 갱신)
 - **구현 범위**: Bundle A (인증·권한), Bundle B (게시판), Bundle C (콘텐츠·메뉴), Bundle D (시스템·통계), 안전경영(SPEC-006), 정책사업(SPEC-007), 대시보드(SPEC-008), 데이터 거버넌스(SPEC-009), 미디어 라이브러리(MEDIA-001) 모두 풀스택 구현
 - **테스트**: 백엔드 554 GREEN (governance 포함), 프론트엔드 vue-tsc 0 에러
-- **참조 SPEC**: SPEC-CMS-002~009, SPEC-CMS-MEDIA-001 (모두 Implemented)
+- **참조 SPEC**: SPEC-CMS-002~010, SPEC-CMS-MEDIA-001 (모두 Tested)
+- **보안 트랙 완료**: SPEC-CMS-SECURITY-PII-001/002/FOLLOWUP-001~005/MASKING-001/KMS-001/ROTATION-001, SPEC-CMS-SECURITY-AUTHZ-MATRIX-001/IT-EXPAND-001~004/AUTODETECT-001/REGRESSION-001/CTRL-AUTHZ-COVERAGE-001, SPEC-CMS-TEST-INFRA-RECONFIG-001, SPEC-CMS-META-IT-GREEN-MANDATORY-001 (모두 Tested)
 - **특이사항**:
-  - SPEC-CMS-010 (통합 검색) v0.1 Draft 작성 완료 (2026-05-07, PostgreSQL FTS 단일 스택 결정), RUN 단계는 후속 세션에서 진행
+  - SPEC-CMS-010 (통합 검색) v0.2 구현 완료 후 Tested 갱신
   - SPEC-CMS-AI-001 (AI/ML)은 별도 옵션 트랙으로 미착수
   - Testcontainers 통합 테스트 26개는 Docker 소켓 환경에서만 GREEN
-  - SPEC-CMS-003 v0.2 SFR-014 다중 게시판 모듈 (FAQ/QnA/발간자료/설문조사) 추가 풀스택 완료 (2026-05-07)
+  - SPEC-CMS-003 v0.2 SFR-014 다중 게시판 모듈 (FAQ/QnA/발간자료/설문조사) 추가 풀스택 완료
