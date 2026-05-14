@@ -55,7 +55,8 @@ const router = createRouter({
 function mountLoginView() {
   return mount(LoginView, {
     global: {
-      plugins: [createPinia(), router, i18n, ElementPlus],
+      // beforeEach에서 setActivePinia로 설정된 pinia를 재사용 — 새 인스턴스를 만들지 않음
+      plugins: [router, i18n, ElementPlus],
     },
   })
 }

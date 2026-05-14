@@ -80,14 +80,17 @@ function mountEditForm(user = sampleUser) {
 describe('UserFormView — create 모드', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('create 모드에서 사용자명 필드가 활성화됨', () => {
+  it('create 모드에서 사용자명 필드가 활성화됨', async () => {
     const wrapper = mountCreateForm()
+    await flushPromises()
     const usernameInput = wrapper.find('#form-username')
+    expect(usernameInput.exists()).toBe(true)
     expect(usernameInput.attributes('disabled')).toBeUndefined()
   })
 
-  it('비밀번호 힌트 텍스트 표시', () => {
+  it('비밀번호 힌트 텍스트 표시', async () => {
     const wrapper = mountCreateForm()
+    await flushPromises()
     expect(wrapper.text()).toContain('8자 이상')
   })
 
@@ -139,14 +142,17 @@ describe('UserFormView — create 모드', () => {
 describe('UserFormView — edit 모드', () => {
   beforeEach(() => vi.clearAllMocks())
 
-  it('edit 모드에서 사용자명 필드가 비활성화됨', () => {
+  it('edit 모드에서 사용자명 필드가 비활성화됨', async () => {
     const wrapper = mountEditForm()
+    await flushPromises()
     const usernameInput = wrapper.find('#form-username')
+    expect(usernameInput.exists()).toBe(true)
     expect(usernameInput.attributes('disabled')).toBeDefined()
   })
 
-  it('edit 모드에서 비밀번호 필드가 렌더링되지 않음', () => {
+  it('edit 모드에서 비밀번호 필드가 렌더링되지 않음', async () => {
     const wrapper = mountEditForm()
+    await flushPromises()
     const passwordInput = wrapper.find('#form-password')
     expect(passwordInput.exists()).toBe(false)
   })
@@ -161,6 +167,7 @@ describe('UserFormView — edit 모드', () => {
   it('edit 모드 submit 성공 시 saved 이벤트 emit', async () => {
     mockUpdate.mockResolvedValue({ data: { id: 1 } } as never)
     const wrapper = mountEditForm()
+    await flushPromises()
     wrapper.vm.form.email = 'updated@example.com'
     wrapper.vm.form.roleCodes = ['EDITOR']
     mockUpdate.mockResolvedValue({ data: { id: 1 } } as never)
@@ -172,8 +179,11 @@ describe('UserFormView — edit 모드', () => {
 
   it('취소 버튼 클릭 시 close 이벤트 emit', async () => {
     const wrapper = mountEditForm()
+    await flushPromises()
     const cancelBtn = wrapper.findAll('button').find(b => b.text() === '취소')
+    expect(cancelBtn).toBeDefined()
     await cancelBtn?.trigger('click')
+    await flushPromises()
     expect(wrapper.emitted('close')).toBeTruthy()
   })
 })

@@ -7,7 +7,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import ElementPlus from 'element-plus'
-import PermissionMatrixGrid from '../../../src/components/PermissionMatrixGrid.vue'
+import PermissionMatrixGrid from '@/components/PermissionMatrixGrid.vue'
 import type { PermissionSummary } from '@iroum/shared/types/api'
 
 const i18n = createI18n({

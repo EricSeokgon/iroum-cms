@@ -86,6 +86,7 @@ describe('MediaUploadDialog', () => {
     const wrapper = mount(MediaUploadDialog, {
       global: { plugins: [i18n, createTestingPinia()] },
     })
+    await flushPromises()
 
     // 취소 버튼 찾기
     const cancelBtn = wrapper.findAll('button').find((btn) =>

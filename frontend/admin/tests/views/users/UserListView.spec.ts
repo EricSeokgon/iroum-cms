@@ -140,8 +140,11 @@ describe('UserListView', () => {
     const wrapper = mountView()
     await flushPromises()
     // 디바운스된 검색어를 직접 변경하여 즉시 확인
+    // searchQuery 변경 후 디바운스 대기
     wrapper.vm.searchQuery = 'testuser'
-    wrapper.vm.debouncedSearch.value = 'testuser'
+    // 디바운스 우회: 직접 loadUsers 호출 전 wait
+    await new Promise((r) => setTimeout(r, 350))
+    await flushPromises()
     await wrapper.vm.loadUsers()
     expect(mockList).toHaveBeenCalledWith(expect.objectContaining({ search: 'testuser' }))
   })
@@ -163,7 +166,8 @@ describe('UserListView', () => {
     const unlockBtns = wrapper.findAll('[aria-label*="잠금 해제"]')
     // LOCKED 상태 사용자가 1명이므로 버튼 1개
     expect(unlockBtns).toHaveLength(1)
-    expect(unlockBtns[0].attributes('aria-label')).toContain('잠금사용자')
+    // aria-label은 username으로 구성됨 (잠금 해제 + username)
+    expect(unlockBtns[0].attributes('aria-label')).toContain('locked_user')
   })
 
   it('삭제 버튼 클릭 시 확인 다이얼로그 표시 후 삭제 API 호출', async () => {

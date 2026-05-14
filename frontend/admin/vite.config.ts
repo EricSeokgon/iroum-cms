@@ -33,6 +33,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/**/*.spec.ts'],
+    setupFiles: ['./tests/setup.ts'],
     coverage: {
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,vue}'],

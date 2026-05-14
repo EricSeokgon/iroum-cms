@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { createI18n } from 'vue-i18n'
 import { createRouter, createWebHistory } from 'vue-router'
@@ -68,8 +68,9 @@ describe('PostFormView', () => {
     mockCreatePost.mockResolvedValue({ data: { id: 10, bbsId: 1, title: 'T', authorUsername: 'a', viewCount: 0, likeCount: 0, status: 'PUBLISHED', isNotice: false, contentHtml: '', attachments: [], createdAt: '', updatedAt: '' } } as never)
   })
 
-  it('생성 모드에서 제목 입력 필드가 렌더링된다', () => {
+  it('생성 모드에서 제목 입력 필드가 렌더링된다', async () => {
     const wrapper = buildWrapper('create')
+    await flushPromises()
     expect(wrapper.find('#post-title').exists()).toBe(true)
   })
 

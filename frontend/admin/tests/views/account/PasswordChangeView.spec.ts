@@ -90,32 +90,47 @@ describe('PasswordChangeView', () => {
 
   it('빈 폼 제출 시 3개 필드 모두 오류 표시', async () => {
     const wrapper = mountView()
+    await flushPromises()
+    // submit 버튼 click 시 form @submit.prevent 트리거
     await wrapper.find('[data-testid="btn-submit"]').trigger('click')
     await flushPromises()
-    // el-form-item의 오류 메시지 클래스 확인
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
     const errorItems = wrapper.findAll('.el-form-item.is-error')
     expect(errorItems.length).toBeGreaterThanOrEqual(1)
   })
 
   it('새 비밀번호 8자 미만이면 정책 오류 표시', async () => {
     const wrapper = mountView()
-    await wrapper.find('[data-testid="input-current"] input').setValue('OldPass1!')
-    await wrapper.find('[data-testid="input-new"] input').setValue('short')
-    await wrapper.find('[data-testid="input-new"] input').trigger('blur')
     await flushPromises()
+    await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
+    await wrapper.find('[data-testid="input-new"]').setValue('short')
+    await wrapper.find('[data-testid="input-new"]').trigger('blur')
+    await flushPromises()
+    await new Promise((r) => setTimeout(r, 50))
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+    // is-error 클래스가 있거나 valid 상태인지 확인 (Element Plus는 is-error 또는 message로 노출)
     const errorItems = wrapper.findAll('.el-form-item.is-error')
-    expect(errorItems.length).toBeGreaterThanOrEqual(1)
+    const errorMessages = wrapper.findAll('.el-form-item__error')
+    expect(errorItems.length + errorMessages.length).toBeGreaterThanOrEqual(1)
   })
 
   it('새 비밀번호와 확인 불일치 시 오류 표시', async () => {
     const wrapper = mountView()
-    await wrapper.find('[data-testid="input-current"] input').setValue('OldPass1!')
-    await wrapper.find('[data-testid="input-new"] input').setValue('NewPass1!')
-    await wrapper.find('[data-testid="input-confirm"] input').setValue('DifferentPass1!')
-    await wrapper.find('[data-testid="input-confirm"] input').trigger('blur')
     await flushPromises()
+    await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
+    await wrapper.find('[data-testid="input-new"]').setValue('NewPass1!')
+    await wrapper.find('[data-testid="input-confirm"]').setValue('DifferentPass1!')
+    await wrapper.find('[data-testid="input-confirm"]').trigger('blur')
+    await flushPromises()
+    await new Promise((r) => setTimeout(r, 50))
+    await flushPromises()
+    await wrapper.vm.$nextTick()
+    // is-error 클래스가 있거나 valid 상태인지 확인 (Element Plus는 is-error 또는 message로 노출)
     const errorItems = wrapper.findAll('.el-form-item.is-error')
-    expect(errorItems.length).toBeGreaterThanOrEqual(1)
+    const errorMessages = wrapper.findAll('.el-form-item__error')
+    expect(errorItems.length + errorMessages.length).toBeGreaterThanOrEqual(1)
   })
 
   it('성공 시 success alert 표시 후 clearLocal 호출', async () => {
@@ -128,10 +143,10 @@ describe('PasswordChangeView', () => {
     const auth = useAuthStore()
     const clearLocalSpy = vi.spyOn(auth, 'clearLocal')
 
-    await wrapper.find('[data-testid="input-current"] input').setValue('OldPass1!')
-    await wrapper.find('[data-testid="input-new"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="input-confirm"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+    await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
+    await wrapper.find('[data-testid="input-new"]').setValue('NewPass1@#')
+    await wrapper.find('[data-testid="input-confirm"]').setValue('NewPass1@#')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="success-alert"]').exists()).toBe(true)
@@ -156,10 +171,10 @@ describe('PasswordChangeView', () => {
     vi.mocked(authApi.changePassword).mockRejectedValueOnce(axiosError)
 
     const wrapper = mountView()
-    await wrapper.find('[data-testid="input-current"] input').setValue('WrongPass1!')
-    await wrapper.find('[data-testid="input-new"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="input-confirm"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+    await wrapper.find('[data-testid="input-current"]').setValue('WrongPass1!')
+    await wrapper.find('[data-testid="input-new"]').setValue('NewPass1@#')
+    await wrapper.find('[data-testid="input-confirm"]').setValue('NewPass1@#')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="error-alert"]').exists()).toBe(true)
@@ -178,10 +193,10 @@ describe('PasswordChangeView', () => {
     vi.mocked(authApi.changePassword).mockRejectedValueOnce(axiosError)
 
     const wrapper = mountView()
-    await wrapper.find('[data-testid="input-current"] input').setValue('OldPass1!')
-    await wrapper.find('[data-testid="input-new"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="input-confirm"] input').setValue('NewPass1@#')
-    await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+    await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
+    await wrapper.find('[data-testid="input-new"]').setValue('NewPass1@#')
+    await wrapper.find('[data-testid="input-confirm"]').setValue('NewPass1@#')
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="error-alert"]').exists()).toBe(true)

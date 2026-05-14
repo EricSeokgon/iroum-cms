@@ -73,7 +73,8 @@ const i18n = createI18n({
 function mountForm(props: { mode: 'create' | 'edit'; roleCode?: string; isSystem?: boolean }) {
   return mount(RoleFormView, {
     props,
-    global: { plugins: [i18n, ElementPlus], stubs: { teleport: true } },
+    // teleport stub은 setup.ts 전역에서 비활성화됨 — el-dialog 콘텐츠가 렌더링되어야 함
+    global: { plugins: [i18n, ElementPlus] },
   })
 }
 
