@@ -7,6 +7,8 @@
 - 공공 SPA: Vue 3 + TypeScript (시민 공개 웹사이트)
 - 인프라: Docker Compose + nginx + GitHub Actions CI
 
+**v1.0.0** (2026-05-14) — 1차 출시 완료. 백엔드 SPEC-CMS-002~010 Tested + Admin SPA 272 테스트 + Public SPA 224 테스트.
+
 ---
 
 ## 디렉터리 구조
@@ -36,7 +38,7 @@ iroum-cms/
 │       ├── ci.yml            # 테스트 → 빌드 → Docker 이미지 검증
 │       └── lint.yml          # ESLint + Gradle 컴파일 검사
 └── .moai/
-    └── specs/                # SPEC 문서 (SPEC-CMS-001 ~ SPEC-CMS-008)
+    └── specs/                # SPEC 문서 (SPEC-CMS-001 ~ SPEC-CMS-010 + SECURITY 트랙)
 ```
 
 ---
@@ -161,6 +163,7 @@ cd backend
 cd frontend
 pnpm -F @iroum-cms/admin test   # 관리자 Vitest
 pnpm -F @iroum-cms/public test  # 공개 Vitest
+# 전체 결과: Admin 272/272 + Public 224/224 = 496 테스트 통과 (2026-05-14 기준)
 ```
 
 ---

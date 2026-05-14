@@ -9,6 +9,8 @@
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-14
+
 ### Tested — SPA 전체 테스트 완료 (2026-05-14)
 
 - **SPEC-CMS-ADMIN-TEST-001** Admin SPA 테스트 272/272 전체 통과 (v0.1.0 Draft → v0.2.0 Tested)
@@ -703,3 +705,6 @@
 | **SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-001** | 매트릭스 IT 5~7 → 22+ 컨트롤러 확장 |
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
+
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/EricSeokgon/iroum-cms/releases/tag/v1.0.0
