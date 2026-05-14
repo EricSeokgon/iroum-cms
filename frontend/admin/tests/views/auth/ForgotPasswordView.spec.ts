@@ -115,7 +115,8 @@ async function advanceToStep3(wrapper: ReturnType<typeof mountView>) {
   vi.mocked(authApi.verifyConfirm).mockResolvedValueOnce({
     data: { verifiedToken: 'vt-abc', purpose: 'PASSWORD_RESET' },
   } as never)
-  const codeInput = wrapper.find('[data-testid="otp-input"] input')
+  // el-input의 name 속성이 native <input>에 바인딩되므로 input[name="code"] 사용
+  const codeInput = wrapper.find('input[name="code"]')
   await codeInput.setValue('123456')
   await wrapper.find('form').trigger('submit')
   await flushPromises()
@@ -125,20 +126,17 @@ describe('ForgotPasswordView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
-    vi.useFakeTimers()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   // ── Step 1 ─────────────────────────────────────────────────────────────────
   describe('Step 1: 이메일 입력', () => {
     it('이메일이 비어있으면 제출 시 유효성 오류가 표시된다', async () => {
       const wrapper = mountView()
+      // jsdom에서 el-form validate()는 항상 resolve(true)를 반환하므로 $refs를 통해 직접 mock
+      const formInst = (wrapper.vm as any).$refs?.step1FormRef
+      vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)
       await wrapper.find('form').trigger('submit')
       await flushPromises()
-      // verifyRequest가 호출되지 않아야 함
       expect(authApi.verifyRequest).not.toHaveBeenCalled()
     })
 
@@ -178,7 +176,7 @@ describe('ForgotPasswordView', () => {
       })
       vi.mocked(authApi.verifyConfirm).mockRejectedValueOnce(axiosError)
 
-      const codeInput = wrapper.find('[data-testid="otp-input"] input')
+      const codeInput = wrapper.find('input[name="code"]')
       await codeInput.setValue('000000')
       await wrapper.find('form').trigger('submit')
       await flushPromises()
@@ -201,7 +199,7 @@ describe('ForgotPasswordView', () => {
       })
       vi.mocked(authApi.verifyConfirm).mockRejectedValueOnce(axiosError)
 
-      const codeInput = wrapper.find('[data-testid="otp-input"] input')
+      const codeInput = wrapper.find('input[name="code"]')
       await codeInput.setValue('000000')
       await wrapper.find('form').trigger('submit')
       await flushPromises()
@@ -238,6 +236,7 @@ describe('ForgotPasswordView', () => {
     })
 
     it('재설정 성공 시 3초 후 /login?reason=password_reset으로 이동한다', async () => {
+      vi.useFakeTimers()
       const wrapper = mountView()
       await advanceToStep3(wrapper)
 
@@ -259,6 +258,7 @@ describe('ForgotPasswordView', () => {
       await flushPromises()
 
       expect(pushSpy).toHaveBeenCalledWith({ path: '/login', query: { reason: 'password_reset' } })
+      vi.useRealTimers()
     })
 
     it('verifiedToken 만료(401) 시 Step1로 돌아간다', async () => {

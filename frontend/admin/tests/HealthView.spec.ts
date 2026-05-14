@@ -100,11 +100,13 @@ describe('HealthView', () => {
     expect(alert.exists()).toBe(true)
   })
 
-  it('로딩 중에는 loading 상태를 표시한다', () => {
+  it('로딩 중에는 loading 상태를 표시한다', async () => {
     // 응답을 영원히 보류하여 로딩 상태 유지
     mockGet.mockReturnValueOnce(new Promise(() => {}))
 
     const wrapper = mountHealthView()
+    // onMounted execute()가 loading=true 로 전환할 때까지 대기
+    await wrapper.vm.$nextTick()
 
     const loadingEl = wrapper.find('[role="status"]')
     expect(loadingEl.exists()).toBe(true)

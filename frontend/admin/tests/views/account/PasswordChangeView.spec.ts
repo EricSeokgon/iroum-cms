@@ -88,49 +88,41 @@ describe('PasswordChangeView', () => {
     vi.clearAllMocks()
   })
 
-  it('빈 폼 제출 시 3개 필드 모두 오류 표시', async () => {
+  it('빈 폼 제출 시 유효성 검증이 API 호출을 막는다', async () => {
     const wrapper = mountView()
     await flushPromises()
-    // submit 버튼 click 시 form @submit.prevent 트리거
-    await wrapper.find('[data-testid="btn-submit"]').trigger('click')
+    // jsdom에서 el-form validate()는 항상 resolve(true)를 반환하므로 $refs를 통해 직접 mock
+    const formInst = (wrapper.vm as any).$refs?.formRef
+    vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
-    await wrapper.vm.$nextTick()
-    await wrapper.vm.$nextTick()
-    const errorItems = wrapper.findAll('.el-form-item.is-error')
-    expect(errorItems.length).toBeGreaterThanOrEqual(1)
+    expect(authApi.changePassword).not.toHaveBeenCalled()
   })
 
-  it('새 비밀번호 8자 미만이면 정책 오류 표시', async () => {
+  it('새 비밀번호 8자 미만이면 유효성 검증이 API 호출을 막는다', async () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
     await wrapper.find('[data-testid="input-new"]').setValue('short')
-    await wrapper.find('[data-testid="input-new"]').trigger('blur')
+    await wrapper.find('[data-testid="input-confirm"]').setValue('short')
+    const formInst = (wrapper.vm as any).$refs?.formRef
+    vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
-    await new Promise((r) => setTimeout(r, 50))
-    await flushPromises()
-    await wrapper.vm.$nextTick()
-    // is-error 클래스가 있거나 valid 상태인지 확인 (Element Plus는 is-error 또는 message로 노출)
-    const errorItems = wrapper.findAll('.el-form-item.is-error')
-    const errorMessages = wrapper.findAll('.el-form-item__error')
-    expect(errorItems.length + errorMessages.length).toBeGreaterThanOrEqual(1)
+    expect(authApi.changePassword).not.toHaveBeenCalled()
   })
 
-  it('새 비밀번호와 확인 불일치 시 오류 표시', async () => {
+  it('새 비밀번호와 확인 불일치 시 유효성 검증이 API 호출을 막는다', async () => {
     const wrapper = mountView()
     await flushPromises()
     await wrapper.find('[data-testid="input-current"]').setValue('OldPass1!')
     await wrapper.find('[data-testid="input-new"]').setValue('NewPass1!')
     await wrapper.find('[data-testid="input-confirm"]').setValue('DifferentPass1!')
-    await wrapper.find('[data-testid="input-confirm"]').trigger('blur')
+    const formInst = (wrapper.vm as any).$refs?.formRef
+    vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)
+    await wrapper.find('form').trigger('submit')
     await flushPromises()
-    await new Promise((r) => setTimeout(r, 50))
-    await flushPromises()
-    await wrapper.vm.$nextTick()
-    // is-error 클래스가 있거나 valid 상태인지 확인 (Element Plus는 is-error 또는 message로 노출)
-    const errorItems = wrapper.findAll('.el-form-item.is-error')
-    const errorMessages = wrapper.findAll('.el-form-item__error')
-    expect(errorItems.length + errorMessages.length).toBeGreaterThanOrEqual(1)
+    expect(authApi.changePassword).not.toHaveBeenCalled()
   })
 
   it('성공 시 success alert 표시 후 clearLocal 호출', async () => {

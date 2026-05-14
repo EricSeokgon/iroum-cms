@@ -233,47 +233,47 @@ const rules: FormRules = {
 // @MX:WARN: [AUTO] handleSubmit — 409 DUPLICATE_ROLE_CODE 에러를 사용자 친화적으로 분기
 // @MX:REASON: 백엔드가 400/409 에러 코드로 중복 코드, 시스템 역할 보호 오류를 반환
 async function handleSubmit(): Promise<void> {
-  await formRef.value?.validate(async (valid) => {
-    if (!valid) return
-    submitting.value = true
-    submitError.value = ''
-    try {
-      if (props.mode === 'create') {
-        await rolesApi.create({
-          code: form.code,
-          name: form.name,
-          description: form.description || undefined,
-          permissionCodes: form.permissionCodes,
-        })
-        ElMessage.success(t('roles.success.created'))
-      } else {
-        if (!props.roleCode) return
-        await rolesApi.update(props.roleCode, {
-          name: form.name,
-          description: form.description || undefined,
-          permissionCodes: isSystemRole.value ? undefined : form.permissionCodes,
-        })
-        ElMessage.success(t('roles.success.updated'))
-      }
-      emit('saved')
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        const code = err.response?.data?.code ?? ''
-        if (code === 'DUPLICATE_ROLE_CODE') {
-          submitError.value = t('roles.error.duplicateCode')
-        } else if (code === 'INVALID_ROLE_CODE') {
-          submitError.value = t('roles.error.invalidCode')
-        } else if (code === 'SYSTEM_ROLE_PROTECTED') {
-          submitError.value = t('roles.error.systemRoleProtected')
-        } else {
-          submitError.value = t('common.error.unknown')
-        }
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) return
+
+  submitting.value = true
+  submitError.value = ''
+  try {
+    if (props.mode === 'create') {
+      await rolesApi.create({
+        code: form.code,
+        name: form.name,
+        description: form.description || undefined,
+        permissionCodes: form.permissionCodes,
+      })
+      ElMessage.success(t('roles.success.created'))
+    } else {
+      if (!props.roleCode) return
+      await rolesApi.update(props.roleCode, {
+        name: form.name,
+        description: form.description || undefined,
+        permissionCodes: isSystemRole.value ? undefined : form.permissionCodes,
+      })
+      ElMessage.success(t('roles.success.updated'))
+    }
+    emit('saved')
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const code = err.response?.data?.code ?? ''
+      if (code === 'DUPLICATE_ROLE_CODE') {
+        submitError.value = t('roles.error.duplicateCode')
+      } else if (code === 'INVALID_ROLE_CODE') {
+        submitError.value = t('roles.error.invalidCode')
+      } else if (code === 'SYSTEM_ROLE_PROTECTED') {
+        submitError.value = t('roles.error.systemRoleProtected')
       } else {
         submitError.value = t('common.error.unknown')
       }
-    } finally {
-      submitting.value = false
+    } else {
+      submitError.value = t('common.error.unknown')
     }
-  })
+  } finally {
+    submitting.value = false
+  }
 }
 </script>

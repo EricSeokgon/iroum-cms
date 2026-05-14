@@ -98,11 +98,12 @@ describe('RoleFormView', () => {
     await flushPromises()
     const codeInput = wrapper.find('#role-form-code')
     await codeInput.setValue('lowercase_code')
-    // 폼 제출 시도
+    // jsdom에서 el-form validate()는 항상 resolve(true)를 반환하므로 $refs를 통해 직접 mock
+    const formInst = (wrapper.vm as any).$refs?.formRef
+    vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)
     const submitBtn = wrapper.findAll('button').find((b) => b.text().includes('역할 추가'))
     await submitBtn?.trigger('click')
     await flushPromises()
-    // create API가 호출되지 않아야 함
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
