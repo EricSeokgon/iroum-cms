@@ -9,7 +9,24 @@
 
 ## [Unreleased]
 
-### Added
+### Added — SPEC-CMS-PUBLIC-001 시민 대상 공공 사이트 SPA
+
+- Vue 3.5 + TypeScript 5 + Vite 6 기반 시민용 공공 사이트 SPA (`frontend/public/`) 신규 구축
+- 25개 라우트 + 에러/유지보수 경로 (30개 전체) 구현; 3개 beforeEach 라우터 가드
+- API 클라이언트: axios 인터셉터 (403→forbidden, GET 5xx→server-error 자동 리다이렉트)
+- 공지·게시판·FAQ·Q&A 전체 화면 (NoticeListView, BoardPostListView, FaqView, QnaCreateView 등)
+- 정책 매칭·안전 가이드·발간자료 다운로드 화면 (zip blob + jobId 비동기 처리)
+- 검색 (6탭 + URL 동기화 + DOMPurify mark-only XSS 방어 + 최근 검색어 드롭다운)
+- 홈: Promise.allSettled 5개 섹션, per-section ErrorState (부분 실패 격리)
+- ECharts 5 통계 위젯 (BAR/LINE/PIE) + 스크린리더 테이블 폴백 (lazy-loaded)
+- 미디어 갤러리: 이미지 lazy load (`loading="lazy"`) + 비디오 모달 (el-dialog)
+- KWCAG 2.2 AA: jest-axe P0 게이트, skip nav, :focus-visible, .sr-only, aria-label 전면 적용
+- i18n: ko/en 이중 언어, vue-i18n 9, localStorage `public.locale`, 키 패리티 자동 검증
+- DOMPurify: 모든 v-html 영역 (공지 본문, 게시글 본문, 검색 스니펫) XSS 방어
+- urlSafety.ts: isSafeUrl() / extractDomain() 유틸 — http/https 화이트리스트 외 차단
+- 에러 페이지 전체 구현: NotFoundView, ForbiddenView, ServerErrorView, MaintenanceView (5분 폴링)
+- **테스트**: 47 파일, 224 테스트 (Vitest 2.1.8 + @vue/test-utils + jest-axe)
+- **TypeScript**: vue-tsc --noEmit 에러 0건
 
 - **SPEC-CMS-001 공공기관 CMS 플랫폼 1차 출시 완료 (2026-05-14)**
   - **Bundle A — 회원·권한·로그인** (SPEC-CMS-002, 003, 004)
