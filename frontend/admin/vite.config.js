@@ -31,6 +31,9 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         include: ['tests/**/*.spec.ts'],
+        // E2E Playwright 파일은 vitest 대상에서 제외 — playwright.config.ts에서 별도 실행
+        exclude: ['**/node_modules/**', 'tests/e2e/**'],
+        setupFiles: ['./tests/setup.ts'],
         coverage: {
             reporter: ['text', 'lcov'],
             include: ['src/**/*.{ts,vue}'],

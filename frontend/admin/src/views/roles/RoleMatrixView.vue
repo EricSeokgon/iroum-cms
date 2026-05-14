@@ -1,5 +1,5 @@
 <template>
-  <div class="role-matrix-page flex gap-4 h-full">
+  <div class="role-matrix-page flex gap-4 h-full" data-testid="role-matrix">
     <!-- ── 좌측: 역할 목록 (30%) ──────────────────────────────────────────────── -->
     <section
       class="w-80 flex-shrink-0 rounded-lg border border-gray-200 bg-white shadow-sm"

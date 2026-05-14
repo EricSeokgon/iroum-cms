@@ -1,5 +1,5 @@
 <template>
-  <section class="flex flex-col items-center justify-center py-24 text-center" aria-labelledby="not-found-heading">
+  <section class="flex flex-col items-center justify-center py-24 text-center" aria-labelledby="not-found-heading" data-testid="not-found">
     <p class="text-6xl font-bold text-primary-600" aria-hidden="true">404</p>
     <h1 id="not-found-heading" class="mt-4 text-2xl font-bold text-content-DEFAULT">
       {{ t('error.notFound.title') }}

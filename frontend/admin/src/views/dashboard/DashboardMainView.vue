@@ -1,6 +1,6 @@
 <template>
   <!-- 대시보드 + KPI 시각화 — SPEC-CMS-008 REQ-VIZ-002 ~ 005 -->
-  <div>
+  <div data-testid="dashboard-main">
     <div class="mb-4 flex items-center justify-between flex-wrap gap-3">
       <h2 class="text-xl font-semibold text-gray-800">대시보드</h2>
       <div class="flex flex-wrap items-center gap-2">

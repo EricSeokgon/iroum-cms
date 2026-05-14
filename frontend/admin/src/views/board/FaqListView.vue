@@ -72,6 +72,7 @@
       :empty-text="t('faq.empty')"
       :aria-label="t('faq.title')"
       class="w-full"
+      data-testid="notice-list-table"
     >
       <caption class="sr-only">{{ t('faq.title') }}</caption>
 

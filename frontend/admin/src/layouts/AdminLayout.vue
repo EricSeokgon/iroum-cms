@@ -7,7 +7,7 @@
     {{ t('a11y.skipNav') }}
   </a>
 
-  <el-container class="min-h-screen">
+  <el-container class="min-h-screen" data-testid="admin-layout">
     <!-- 사이드바 -->
     <el-aside
       width="220px"
@@ -245,6 +245,7 @@
           index=""
           @click.prevent="handleLogout"
           :aria-label="t('nav.logout')"
+          data-testid="btn-logout"
         >
           <el-icon><i-ep-switch-button /></el-icon>
           <span>{{ t('nav.logout') }}</span>

@@ -61,6 +61,7 @@
       :empty-text="t('users.empty')"
       :aria-label="t('users.title')"
       class="w-full"
+      data-testid="user-list-table"
       @sort-change="onSortChange"
     >
       <el-table-column
