@@ -1,10 +1,12 @@
 // SPEC-CMS-PUBLIC-001 §5.4 — authStore
 // 시민 사이트 선택적 인증: LocalStorage Bearer 토큰 (admin과 달리 HttpOnly cookie 미사용)
+// HIGH-10: 완전한 HttpOnly cookie 전환은 백엔드 세션 관리 변경 필요 (향후 과제)
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi, type PublicUser } from '@/api/authApi'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/api/client'
+import { secureGetToken, secureSetToken } from '@/utils/tokenSecurity'
 
 // @MX:ANCHOR: [AUTO] useAuthStore — router guard, LoginView, PublicHeader에서 참조
 // @MX:REASON: fan_in >= 3: router/index.ts, LoginView.vue, PublicHeader.vue에서 사용
@@ -17,21 +19,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => token.value !== null)
 
   function _persist(): void {
-    if (token.value) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, token.value)
-    } else {
-      localStorage.removeItem(ACCESS_TOKEN_KEY)
-    }
-    if (refreshToken.value) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken.value)
-    } else {
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-    }
+    // HIGH-10: secureSetToken 래퍼 사용 (iframe 임베드 감지, 향후 cookie 전환 단일 진입점)
+    secureSetToken(ACCESS_TOKEN_KEY, token.value)
+    secureSetToken(REFRESH_TOKEN_KEY, refreshToken.value)
   }
 
   function initFromStorage(): void {
-    token.value = localStorage.getItem(ACCESS_TOKEN_KEY)
-    refreshToken.value = localStorage.getItem(REFRESH_TOKEN_KEY)
+    // HIGH-10: secureGetToken 래퍼 사용
+    token.value = secureGetToken(ACCESS_TOKEN_KEY)
+    refreshToken.value = secureGetToken(REFRESH_TOKEN_KEY)
   }
 
   async function login(username: string, password: string): Promise<void> {

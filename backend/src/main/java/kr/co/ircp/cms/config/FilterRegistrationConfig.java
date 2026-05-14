@@ -3,6 +3,7 @@ package kr.co.ircp.cms.config;
 import kr.co.ircp.cms.common.log.MdcLoggingFilter;
 import kr.co.ircp.cms.domain.system.accesslog.filter.AccessLogFilter;
 import kr.co.ircp.cms.domain.system.maintenance.filter.MaintenanceFilter;
+import kr.co.ircp.cms.security.RateLimitFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,6 +50,21 @@ public class FilterRegistrationConfig {
         // 접속 로그는 Security 처리 전/후 상관없이 응답 시간을 측정해야 하므로 최우선
         reg.setOrder(10);
         reg.addUrlPatterns("/*");
+        return reg;
+    }
+
+    /**
+     * HIGH-7 — 로그인 / OTP / 비밀번호 재설정 brute-force 방어 Rate Limiter.
+     *
+     * <p>order=15 — AccessLogFilter(10) 직후, Security FilterChain(MAX_VALUE-5) 보다 먼저 실행.
+     * 한도 초과 요청은 인증 처리에 도달하기 전에 429 로 차단된다.
+     */
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(
+            RateLimitFilter filter) {
+        FilterRegistrationBean<RateLimitFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setOrder(15);
+        reg.addUrlPatterns("/api/v1/auth/*");
         return reg;
     }
 

@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.repository.BbsAttachmentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
+import kr.co.ircp.cms.domain.board.util.MimeTypeValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -53,6 +54,8 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final BbsPostMapper bbsPostMapper;
     private final BbsAttachmentMapper bbsAttachmentMapper;
     private final BoardAttachmentProperties attachmentProperties;
+    // HIGH-9 — 매직 바이트 검증기. Content-Type 헤더 위조 방어 (SPEC-CMS-SECURITY-HIGH-9).
+    private final MimeTypeValidator mimeTypeValidator;
 
     @Override
     public List<AttachmentSummary> listAttachments(Long postId) {
@@ -71,10 +74,18 @@ public class AttachmentServiceImpl implements AttachmentService {
             throw new AttachmentTooLargeException(sizeBytes / 1024, attachmentProperties.globalMaxSizeKb());
         }
 
-        // MIME 타입 검증
+        // MIME 타입 검증 — 1차: Content-Type 헤더 화이트리스트
         String mimeType = file.getContentType();
         if (mimeType == null || !attachmentProperties.allowedMimeTypes().contains(mimeType)) {
             throw new InvalidAttachmentTypeException(mimeType != null ? mimeType : "unknown");
+        }
+        // HIGH-9 — 2차: 매직 바이트 시그니처 검증. claimed MIME 과 실제 파일 시그니처가
+        // 다르면 InvalidAttachmentTypeException 으로 변환하여 동일한 422 응답을 유지한다.
+        try {
+            mimeTypeValidator.validate(file, mimeType);
+        } catch (MimeTypeValidator.MimeTypeMismatchException ex) {
+            throw new InvalidAttachmentTypeException(
+                    "claimed=" + ex.claimedMime() + " detected=" + ex.detectedMime());
         }
 
         // 체크섬 계산 (실제 바이트 읽기)

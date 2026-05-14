@@ -137,36 +137,19 @@
         </where>
     </select>
 
-    <!-- NULL_RATIO 측정: target_column이 NULL인 행 비율. -->
-    <select id="measureNullRatio" resultType="java.math.BigDecimal">
-        SELECT CASE WHEN COUNT(*) = 0 THEN 0
-                    ELSE (COUNT(*) FILTER (WHERE ${targetColumn} IS NULL))::numeric
-                         / COUNT(*)::numeric
-               END
-        FROM ${targetTable}
-    </select>
-
-    <!-- UNIQUE 측정: target_column 중복 그룹 수 (group by + having). -->
-    <select id="measureDuplicateGroups" resultType="int">
-        SELECT COUNT(*) FROM (
-            SELECT ${targetColumn}
-            FROM ${targetTable}
-            WHERE ${targetColumn} IS NOT NULL
-            GROUP BY ${targetColumn}
-            HAVING COUNT(*) > 1
-        ) AS dup_groups
-    </select>
-
     <!--
-        FRESHNESS 측정: 가장 최근 created_at 이후 경과 시간(시).
-        호출 측에서 적절한 timestamp 컬럼이 created_at임을 보장해야 한다.
-        테이블이 없거나 비었으면 NULL→9999로 처리.
+        보안 수정 (HIGH-5, SPEC-CMS-SECURITY-HIGH-5):
+        이전에 measureNullRatio / measureDuplicateGroups / measureFreshnessHours
+        세 개의 SELECT가 ${targetTable}, ${targetColumn} 문자열 보간을 사용하여
+        SQL 인젝션 가능성이 있었음.
+
+        실제 품질 측정 로직은 NullRatioChecker / UniqueChecker / FreshnessChecker
+        구현체가 SafeIdentifierValidator + JdbcTemplate 조합으로 처리하므로
+        본 매퍼의 measure* SQL은 사용되지 않는 죽은 코드였음.
+
+        - DataQualityMapper.java 인터페이스에서도 동일 메서드를 함께 제거.
+        - 향후 동적 식별자가 필요한 신규 측정 룰은 반드시 SafeIdentifierValidator
+          (영문/숫자/언더스코어 정규식 + information_schema 존재 검증) 게이트를
+          거친 뒤 JdbcTemplate 으로 호출해야 함.
     -->
-    <select id="measureFreshnessHours" resultType="java.math.BigDecimal">
-        SELECT COALESCE(
-            EXTRACT(EPOCH FROM (NOW() - MAX(created_at))) / 3600.0,
-            9999.0
-        )::numeric
-        FROM ${targetTable}
-    </select>
 </mapper>

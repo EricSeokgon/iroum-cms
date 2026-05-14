@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.repository.BbsAttachmentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
+import kr.co.ircp.cms.domain.board.util.MimeTypeValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,9 +63,37 @@ class AttachmentServiceTest {
 
     @BeforeEach
     void setUp() {
+        // HIGH-9 — 실제 MimeTypeValidator 인스턴스 주입 (외부 의존성 없음, stub 불필요)
         attachmentService = new AttachmentServiceImpl(
-                bbsMasterMapper, bbsPostMapper, bbsAttachmentMapper, TEST_PROPS
+                bbsMasterMapper, bbsPostMapper, bbsAttachmentMapper, TEST_PROPS,
+                new MimeTypeValidator()
         );
+    }
+
+    /**
+     * 유효한 JPEG 매직 바이트(FF D8 FF E0)로 시작하는 테스트 페이로드 생성.
+     * HIGH-9 매직 바이트 검증을 통과시키기 위함.
+     */
+    private static byte[] validJpegPayload(int totalSize) {
+        byte[] buf = new byte[Math.max(totalSize, 4)];
+        buf[0] = (byte) 0xFF;
+        buf[1] = (byte) 0xD8;
+        buf[2] = (byte) 0xFF;
+        buf[3] = (byte) 0xE0;
+        return buf;
+    }
+
+    /**
+     * 유효한 PDF 매직 바이트(%PDF-)로 시작하는 테스트 페이로드 생성.
+     */
+    private static byte[] validPdfPayload(int totalSize) {
+        byte[] buf = new byte[Math.max(totalSize, 5)];
+        buf[0] = 0x25;
+        buf[1] = 0x50;
+        buf[2] = 0x44;
+        buf[3] = 0x46;
+        buf[4] = 0x2D;
+        return buf;
     }
 
     private BbsAttachment stubAttachment(long id) {
@@ -99,8 +128,9 @@ class AttachmentServiceTest {
     @Test
     @DisplayName("첨부파일 업로드 — 허용 MIME 타입 JPEG 성공")
     void uploadAttachment_allowedMimeType_success() {
+        // HIGH-9 — 유효한 JPEG 매직 바이트로 시작해야 검증 통과
         MultipartFile file = new MockMultipartFile(
-                "file", "test.jpg", "image/jpeg", new byte[1024]
+                "file", "test.jpg", "image/jpeg", validJpegPayload(1024)
         );
 
         AttachmentSummary result = attachmentService.uploadAttachment(1L, file, 1L);

@@ -174,9 +174,9 @@ async function handleSubmit(): Promise<void> {
   try {
     await auth.login(form.username, form.password)
 
-    // 로그인 성공 → redirect query 또는 대시보드
+    // 로그인 성공 → redirect query 또는 대시보드 (HIGH-11: Open Redirect 방지)
     const redirect = route.query.redirect as string | undefined
-    router.push(redirect ?? '/dashboard')
+    router.push(sanitizeRedirect(redirect))
   } catch (err) {
     errorMessage.value = resolveErrorMessage(err)
     // 에러 포커스 이동 — KWCAG 3.3.1
@@ -184,6 +184,25 @@ async function handleSubmit(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+// ── 리다이렉트 URL 검증 — HIGH-11 Open Redirect 취약점 차단 ───────────────────
+// 외부 사이트(`http://evil.com`, `//evil.com`) 또는 protocol-relative URL 을
+// `?redirect=` 쿼리 파라미터로 주입하는 공격을 방지한다.
+// 안전한 상대 경로(`/dashboard`, `/users` 등)만 허용하고, 그 외는 모두 `/dashboard` 로 폴백.
+function sanitizeRedirect(redirect: string | undefined): string {
+  const fallback = '/dashboard'
+  if (!redirect || typeof redirect !== 'string') return fallback
+  const trimmed = redirect.trim()
+  if (trimmed.length === 0) return fallback
+  // 절대 URL 차단: http://, https:// 로 시작
+  const lower = trimmed.toLowerCase()
+  if (lower.startsWith('http://') || lower.startsWith('https://')) return fallback
+  // protocol-relative URL 차단: // 로 시작 (브라우저가 외부 호스트로 해석)
+  if (trimmed.startsWith('//')) return fallback
+  // 경로 기반 상대 URL 만 허용: `/` 로 시작해야 함
+  if (!trimmed.startsWith('/')) return fallback
+  return trimmed
 }
 
 // ── 에러 코드 → 메시지 변환 ──────────────────────────────────────────────────

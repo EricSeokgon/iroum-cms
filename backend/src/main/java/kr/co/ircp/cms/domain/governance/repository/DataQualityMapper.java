@@ -5,7 +5,6 @@ import kr.co.ircp.cms.domain.governance.entity.DataQualityRule;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,14 +43,10 @@ public interface DataQualityMapper {
 
     int countReportsFiltered(@Param("p") Map<String, Object> params);
 
-    /** NULL_RATIO 측정용 — 컬럼 NULL 비율 (0.0 ~ 1.0). */
-    BigDecimal measureNullRatio(@Param("targetTable") String targetTable,
-                                 @Param("targetColumn") String targetColumn);
-
-    /** UNIQUE 측정용 — 중복 그룹 수. */
-    Integer measureDuplicateGroups(@Param("targetTable") String targetTable,
-                                     @Param("targetColumn") String targetColumn);
-
-    /** FRESHNESS 측정용 — 마지막 created_at/updated_at 이후 경과 시간(시). NULL 시 9999. */
-    BigDecimal measureFreshnessHours(@Param("targetTable") String targetTable);
+    // 보안 수정 (HIGH-5, SPEC-CMS-SECURITY-HIGH-5):
+    // 이전 버전의 measureNullRatio / measureDuplicateGroups / measureFreshnessHours
+    // 세 메서드는 MyBatis ${} 보간을 사용해 SQL 인젝션 위험이 있었음.
+    // 실제 품질 측정은 governance/quality 패키지의 *Checker 구현체가
+    // SafeIdentifierValidator + JdbcTemplate 조합으로 안전하게 수행하므로
+    // 매퍼 측 measure* API 자체를 제거함 (XML / Java 동시 제거, BREAKING 사용처 없음).
 }
