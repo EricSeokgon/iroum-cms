@@ -9,6 +9,14 @@
 
 ## [Unreleased]
 
+### 추가됨 — E2E 테스트 인프라 구축 (SPEC-CMS-PUBLIC-E2E-001)
+
+- Public 시민 SPA(`frontend/public/`)에 Playwright 1.x E2E 테스트 도입
+- Chromium 기반 39개 E2E 시나리오: 홈/공지/FAQ/검색/정책매칭/에러페이지/KWCAG 2.2 AA
+- axe-core/playwright 활용 KWCAG 2.2 AA 접근성 자동 검증 (`a11y.spec.ts`)
+- CI 워크플로우에 `frontend-e2e` job 추가 (`needs: [frontend-test]`, playwright-report 아티팩트)
+- 백엔드 미기동 시 의존성 테스트 자동 스킵 처리 (`test.skip()` 패턴)
+
 ## [1.0.0] - 2026-05-14
 
 ### Tested — SPA 전체 테스트 완료 (2026-05-14)
