@@ -1,3 +1,4 @@
+// SPEC-CMS-PUBLIC-001 — 공공 SPA 부팅
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'

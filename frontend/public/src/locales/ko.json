@@ -2,15 +2,297 @@
   "app": {
     "title": "iroum-cms"
   },
+  "common": {
+    "comingSoon": "준비 중입니다",
+    "loading": "로딩 중...",
+    "retry": "다시 시도",
+    "goHome": "홈으로 이동",
+    "skipNav": "본문 바로가기",
+    "search": "검색",
+    "openMenu": "메뉴 열기",
+    "closeMenu": "메뉴 닫기",
+    "currentLocation": "현재 위치",
+    "mainMenu": "주메뉴",
+    "scrollTop": "맨 위로",
+    "pagination": "페이지네이션",
+    "empty": "검색 결과가 없습니다",
+    "emptyReset": "검색 조건 초기화",
+    "errorOccurred": "오류가 발생했습니다",
+    "back": "목록으로",
+    "submit": "등록",
+    "cancel": "취소",
+    "all": "전체",
+    "category": "카테고리",
+    "keyword": "검색어",
+    "viewCount": "조회",
+    "author": "작성자",
+    "createdAt": "작성일",
+    "attachments": "첨부파일",
+    "next": "다음 글",
+    "prev": "이전 글",
+    "loginRequired": "로그인이 필요합니다"
+  },
+  "notice": {
+    "list": "공지사항",
+    "pinned": "고정 공지",
+    "categoryAll": "전체 카테고리",
+    "searchPlaceholder": "제목 또는 내용 검색",
+    "searchSubmit": "검색"
+  },
+  "board": {
+    "title": "게시판",
+    "noContent": "게시글이 없습니다",
+    "writeButton": "글쓰기",
+    "searchPlaceholder": "제목 또는 내용 검색"
+  },
+  "faq": {
+    "title": "자주묻는질문",
+    "categoryAll": "전체",
+    "searchPlaceholder": "질문 검색",
+    "expand": "답변 펼치기",
+    "collapse": "답변 접기"
+  },
+  "qna": {
+    "title": "질의응답",
+    "create": "질의 작성",
+    "createButton": "질문하기",
+    "answered": "답변 완료",
+    "pending": "답변 대기",
+    "closed": "종료",
+    "privateLabel": "비공개",
+    "publicLabel": "공개",
+    "titleLabel": "제목",
+    "contentLabel": "내용",
+    "isPrivateLabel": "비공개로 작성",
+    "submit": "등록",
+    "answerSection": "답변",
+    "noAnswer": "아직 답변이 등록되지 않았습니다",
+    "titlePlaceholder": "제목을 입력하세요",
+    "contentPlaceholder": "문의 내용을 입력하세요 (10자 이상)",
+    "titleRequired": "제목을 입력해 주세요",
+    "contentRequired": "내용을 10자 이상 입력해 주세요"
+  },
+  "attachment": {
+    "permissionError": "권한이 없습니다",
+    "notReady": "파일 검사 중입니다",
+    "downloadError": "파일 다운로드 중 오류가 발생했습니다",
+    "fileSize": "파일 크기"
+  },
+  "policy": {
+    "list": "정책사업",
+    "match": "정책 매칭",
+    "subscription": "알림 구독",
+    "subscribe": "알림 구독",
+    "subscribeSuccess": "알림 구독이 완료되었습니다",
+    "subscribeError": "구독 처리 중 오류가 발생했습니다",
+    "industry": "업종",
+    "region": "지역",
+    "type": "유형",
+    "supportAmount": "지원 금액",
+    "deadline": "마감일",
+    "filterAll": "전체",
+    "regionAll": "전국",
+    "resetFilters": "필터 초기화",
+    "applyExternal": "신청하러 가기",
+    "applyUnsafe": "신청 링크 확인 중입니다",
+    "matchTitle": "맞춤 정책 추천",
+    "matchSubtitle": "사업 정보를 입력하시면 맞춤 정책을 추천해 드립니다",
+    "capitalAmount": "자본금 (원)",
+    "revenueAmount": "매출액 (원)",
+    "employeeCount": "직원수 (명)",
+    "matchSubmit": "추천받기",
+    "matchEmpty": "조건에 맞는 정책이 없습니다",
+    "matchScore": "적합도",
+    "description": "사업 설명",
+    "eligibility": "지원 자격",
+    "contact": "문의처"
+  },
+  "safety": {
+    "guidelines": "안전 가이드",
+    "incidents": "사고사례",
+    "industryCode": "업종",
+    "processCode": "공정",
+    "industryAll": "전체 업종",
+    "lastUpdated": "최종 수정",
+    "checklist": "안전 체크리스트",
+    "printGuide": "인쇄하기",
+    "occurredAt": "발생일",
+    "summary": "요약"
+  },
+  "publication": {
+    "list": "발간자료",
+    "year": "발간연도",
+    "yearAll": "전체 연도",
+    "documentType": "문서 유형",
+    "documentTypeAll": "전체 유형",
+    "category": "분류",
+    "categoryAll": "전체 분류",
+    "publicationYear": "발간연도",
+    "downloadCount": "다운로드",
+    "selectAttachments": "첨부 선택",
+    "downloadSelected": "선택 다운로드",
+    "downloadAsyncPending": "준비 중입니다. 완료 시 알림이 발송됩니다",
+    "downloadTooLarge": "500MB를 초과합니다",
+    "downloadError": "다운로드 중 오류가 발생했습니다",
+    "noAttachments": "첨부파일이 없습니다",
+    "selectAtLeastOne": "1개 이상의 첨부를 선택하세요"
+  },
   "home": {
     "title": "iroum-cms에 오신 것을 환영합니다",
-    "subtitle": "정보를 검색하고 서비스를 이용하세요."
+    "subtitle": "정보를 검색하고 서비스를 이용하세요.",
+    "hero": {
+      "tagline": "공공 정보와 정책, 안전 가이드를 한 곳에서",
+      "searchPlaceholder": "검색어를 입력하세요"
+    },
+    "sections": {
+      "latestNotices": "최신 공지",
+      "policyHighlights": "정책 하이라이트",
+      "quickLinks": "빠른 링크",
+      "stats": "공개 통계 한눈에",
+      "more": "더보기"
+    },
+    "quickLinks": {
+      "faq": "자주 묻는 질문",
+      "faqDesc": "자주 묻는 질문과 답변을 확인하세요",
+      "policyMatch": "정책 매칭",
+      "policyMatchDesc": "맞춤 정책을 추천받으세요",
+      "safety": "안전 가이드",
+      "safetyDesc": "안전 가이드와 체크리스트",
+      "qna": "Q&A",
+      "qnaDesc": "궁금한 점을 문의하세요"
+    }
+  },
+  "search": {
+    "title": "검색 결과",
+    "resultsFor": "{q} 검색 결과 ({count}건)",
+    "emptyTitle": "검색 결과가 없습니다",
+    "emptyTip": "다른 검색어로 시도하거나 검색 필터를 변경해 보세요.",
+    "history": "최근 검색어",
+    "historyClearAll": "전체 삭제",
+    "historyRemove": "{q} 검색어 삭제",
+    "typeAll": "전체",
+    "typePost": "공지·게시글",
+    "typeFaq": "FAQ",
+    "typeQna": "Q&A",
+    "typePolicy": "정책",
+    "typeSafety": "안전",
+    "typeBadge": {
+      "POST": "공지",
+      "FAQ": "FAQ",
+      "QNA": "Q&A",
+      "POLICY": "정책",
+      "SAFETY": "안전",
+      "ALL": "전체"
+    }
+  },
+  "stats": {
+    "title": "공개 통계",
+    "subtitle": "주요 지표를 차트로 확인하세요",
+    "dataTableToggle": "차트 데이터 보기",
+    "category": "구분",
+    "value": "값",
+    "noData": "데이터가 없습니다",
+    "dataTableLabel": "{title} 데이터 표"
+  },
+  "media": {
+    "title": "미디어 갤러리",
+    "subtitle": "사진과 영상 자료실",
+    "typeAll": "전체",
+    "typeImage": "이미지",
+    "typeVideo": "영상",
+    "typeDocument": "문서",
+    "openVideo": "{name} 영상 재생",
+    "closeVideo": "닫기",
+    "documentLink": "문서 보기",
+    "alt": "{name}"
+  },
+  "sitemap": {
+    "title": "사이트맵",
+    "description": "전체 메뉴 구조"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "toggle": "언어 변경"
+  },
+  "route": {
+    "home": "홈",
+    "about": "소개",
+    "notice": {
+      "list": "공지사항",
+      "detail": "공지 상세"
+    },
+    "board": {
+      "list": "게시판",
+      "detail": "게시글"
+    },
+    "faq": "자주묻는질문",
+    "qna": {
+      "list": "질의응답",
+      "create": "질의 작성",
+      "detail": "질의 상세",
+      "mine": "내 질의"
+    },
+    "publication": {
+      "list": "발간자료",
+      "detail": "발간자료 상세"
+    },
+    "policy": {
+      "list": "정책사업",
+      "detail": "정책 상세",
+      "match": "정책 매칭",
+      "subscription": "알림 구독"
+    },
+    "safety": {
+      "guidelines": "안전 가이드",
+      "guideline": "안전 가이드 상세",
+      "incidents": "사고사례"
+    },
+    "stats": "공개 통계",
+    "media": "미디어 갤러리",
+    "search": "검색 결과",
+    "sitemap": "사이트맵",
+    "login": "로그인",
+    "maintenance": "점검 안내",
+    "error": {
+      "forbidden": "권한 없음",
+      "serverError": "서버 오류",
+      "notFound": "페이지 없음"
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 iroum-cms. All rights reserved.",
+    "accessibility": "접근성 정책",
+    "privacy": "개인정보 처리방침",
+    "sitemap": "사이트맵"
+  },
+  "login": {
+    "title": "로그인"
+  },
+  "maintenance": {
+    "title": "점검 중입니다",
+    "message": "잠시 후 다시 이용해 주세요.",
+    "until": "예상 종료 시각"
   },
   "error": {
     "notFound": {
       "title": "페이지를 찾을 수 없습니다",
       "message": "요청하신 페이지가 존재하지 않습니다.",
+      "goHome": "홈으로 돌아가기",
+      "back": "이전 페이지",
+      "search": "통합 검색"
+    },
+    "forbidden": {
+      "title": "권한이 없습니다",
+      "message": "이 페이지에 접근할 권한이 없습니다.",
       "goHome": "홈으로 돌아가기"
+    },
+    "serverError": {
+      "title": "일시적인 오류가 발생했습니다",
+      "message": "잠시 후 다시 시도해 주세요.",
+      "retry": "다시 시도",
+      "goHome": "홈으로 돌아가기",
+      "retryPersistent": "지속적으로 실패합니다. 잠시 후 다시 시도해주세요."
     }
   }
 }

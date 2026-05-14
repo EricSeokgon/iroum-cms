@@ -10,5 +10,24 @@
   html {
     font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
     -webkit-font-smoothing: antialiased;
+    /* E-07: 200% 확대 시에도 가로 스크롤 방지 — 본문은 max-w-screen-xl 컨테이너 사용 */
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* 접근성: 시각 숨김(스크린리더만 노출) */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }

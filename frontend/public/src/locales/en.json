@@ -2,15 +2,297 @@
   "app": {
     "title": "iroum-cms"
   },
+  "common": {
+    "comingSoon": "Coming soon",
+    "loading": "Loading...",
+    "retry": "Retry",
+    "goHome": "Go to home",
+    "skipNav": "Skip to main content",
+    "search": "Search",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "currentLocation": "Current location",
+    "mainMenu": "Main menu",
+    "scrollTop": "Scroll to top",
+    "pagination": "Pagination",
+    "empty": "No results found",
+    "emptyReset": "Reset filters",
+    "errorOccurred": "An error occurred",
+    "back": "Back to list",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "all": "All",
+    "category": "Category",
+    "keyword": "Keyword",
+    "viewCount": "Views",
+    "author": "Author",
+    "createdAt": "Created at",
+    "attachments": "Attachments",
+    "next": "Next",
+    "prev": "Previous",
+    "loginRequired": "Login required"
+  },
+  "notice": {
+    "list": "Notices",
+    "pinned": "Pinned notices",
+    "categoryAll": "All categories",
+    "searchPlaceholder": "Search by title or content",
+    "searchSubmit": "Search"
+  },
+  "board": {
+    "title": "Board",
+    "noContent": "No posts available",
+    "writeButton": "Write",
+    "searchPlaceholder": "Search by title or content"
+  },
+  "faq": {
+    "title": "FAQ",
+    "categoryAll": "All",
+    "searchPlaceholder": "Search question",
+    "expand": "Expand answer",
+    "collapse": "Collapse answer"
+  },
+  "qna": {
+    "title": "Q&A",
+    "create": "Submit Q&A",
+    "createButton": "Ask question",
+    "answered": "Answered",
+    "pending": "Pending",
+    "closed": "Closed",
+    "privateLabel": "Private",
+    "publicLabel": "Public",
+    "titleLabel": "Title",
+    "contentLabel": "Content",
+    "isPrivateLabel": "Make this private",
+    "submit": "Submit",
+    "answerSection": "Answer",
+    "noAnswer": "No answer yet",
+    "titlePlaceholder": "Enter title",
+    "contentPlaceholder": "Enter your question (at least 10 characters)",
+    "titleRequired": "Please enter a title",
+    "contentRequired": "Content must be at least 10 characters"
+  },
+  "attachment": {
+    "permissionError": "Permission denied",
+    "notReady": "File is being scanned",
+    "downloadError": "An error occurred while downloading",
+    "fileSize": "File size"
+  },
+  "policy": {
+    "list": "Policies",
+    "match": "Policy Match",
+    "subscription": "Subscription",
+    "subscribe": "Subscribe",
+    "subscribeSuccess": "Subscription created successfully",
+    "subscribeError": "An error occurred while subscribing",
+    "industry": "Industry",
+    "region": "Region",
+    "type": "Type",
+    "supportAmount": "Support Amount",
+    "deadline": "Deadline",
+    "filterAll": "All",
+    "regionAll": "Nationwide",
+    "resetFilters": "Reset Filters",
+    "applyExternal": "Apply Externally",
+    "applyUnsafe": "Verifying apply link",
+    "matchTitle": "Personalized Policy Match",
+    "matchSubtitle": "Enter your business info to find matching policies",
+    "capitalAmount": "Capital (KRW)",
+    "revenueAmount": "Revenue (KRW)",
+    "employeeCount": "Employees",
+    "matchSubmit": "Find Matches",
+    "matchEmpty": "No matching policies found",
+    "matchScore": "Match Score",
+    "description": "Description",
+    "eligibility": "Eligibility",
+    "contact": "Contact"
+  },
+  "safety": {
+    "guidelines": "Safety Guidelines",
+    "incidents": "Incident Cases",
+    "industryCode": "Industry",
+    "processCode": "Process",
+    "industryAll": "All Industries",
+    "lastUpdated": "Last Updated",
+    "checklist": "Safety Checklist",
+    "printGuide": "Print",
+    "occurredAt": "Occurred",
+    "summary": "Summary"
+  },
+  "publication": {
+    "list": "Publications",
+    "year": "Year",
+    "yearAll": "All Years",
+    "documentType": "Document Type",
+    "documentTypeAll": "All Types",
+    "category": "Category",
+    "categoryAll": "All Categories",
+    "publicationYear": "Year",
+    "downloadCount": "Downloads",
+    "selectAttachments": "Select Attachments",
+    "downloadSelected": "Download Selected",
+    "downloadAsyncPending": "Preparing... You will be notified when ready",
+    "downloadTooLarge": "Exceeds 500MB limit",
+    "downloadError": "An error occurred while downloading",
+    "noAttachments": "No attachments",
+    "selectAtLeastOne": "Select at least one attachment"
+  },
   "home": {
     "title": "Welcome to iroum-cms",
-    "subtitle": "Search for information and use our services."
+    "subtitle": "Search for information and use our services.",
+    "hero": {
+      "tagline": "Public information, policies and safety guides in one place",
+      "searchPlaceholder": "Search..."
+    },
+    "sections": {
+      "latestNotices": "Latest Notices",
+      "policyHighlights": "Policy Highlights",
+      "quickLinks": "Quick Links",
+      "stats": "Public Statistics",
+      "more": "View more"
+    },
+    "quickLinks": {
+      "faq": "FAQ",
+      "faqDesc": "Browse frequently asked questions",
+      "policyMatch": "Policy Match",
+      "policyMatchDesc": "Find matching policies",
+      "safety": "Safety Guidelines",
+      "safetyDesc": "Safety guides and checklists",
+      "qna": "Q&A",
+      "qnaDesc": "Ask your questions"
+    }
+  },
+  "search": {
+    "title": "Search Results",
+    "resultsFor": "Results for {q} ({count})",
+    "emptyTitle": "No results found",
+    "emptyTip": "Try a different keyword or change your filters.",
+    "history": "Recent searches",
+    "historyClearAll": "Clear all",
+    "historyRemove": "Remove {q}",
+    "typeAll": "All",
+    "typePost": "Notices & Posts",
+    "typeFaq": "FAQ",
+    "typeQna": "Q&A",
+    "typePolicy": "Policies",
+    "typeSafety": "Safety",
+    "typeBadge": {
+      "POST": "Notice",
+      "FAQ": "FAQ",
+      "QNA": "Q&A",
+      "POLICY": "Policy",
+      "SAFETY": "Safety",
+      "ALL": "All"
+    }
+  },
+  "stats": {
+    "title": "Public Statistics",
+    "subtitle": "Key indicators in charts",
+    "dataTableToggle": "View chart data",
+    "category": "Category",
+    "value": "Value",
+    "noData": "No data available",
+    "dataTableLabel": "{title} data table"
+  },
+  "media": {
+    "title": "Media Gallery",
+    "subtitle": "Photo and video library",
+    "typeAll": "All",
+    "typeImage": "Images",
+    "typeVideo": "Videos",
+    "typeDocument": "Documents",
+    "openVideo": "Play {name}",
+    "closeVideo": "Close",
+    "documentLink": "View document",
+    "alt": "{name}"
+  },
+  "sitemap": {
+    "title": "Sitemap",
+    "description": "Full menu structure"
+  },
+  "locale": {
+    "ko": "한국어",
+    "en": "English",
+    "toggle": "Change language"
+  },
+  "route": {
+    "home": "Home",
+    "about": "About",
+    "notice": {
+      "list": "Notices",
+      "detail": "Notice"
+    },
+    "board": {
+      "list": "Board",
+      "detail": "Post"
+    },
+    "faq": "FAQ",
+    "qna": {
+      "list": "Q&A",
+      "create": "Submit Q&A",
+      "detail": "Q&A Detail",
+      "mine": "My Q&A"
+    },
+    "publication": {
+      "list": "Publications",
+      "detail": "Publication"
+    },
+    "policy": {
+      "list": "Policies",
+      "detail": "Policy",
+      "match": "Policy Match",
+      "subscription": "Subscription"
+    },
+    "safety": {
+      "guidelines": "Safety Guidelines",
+      "guideline": "Safety Guideline",
+      "incidents": "Incident Cases"
+    },
+    "stats": "Public Stats",
+    "media": "Media Gallery",
+    "search": "Search Results",
+    "sitemap": "Sitemap",
+    "login": "Login",
+    "maintenance": "Maintenance",
+    "error": {
+      "forbidden": "Forbidden",
+      "serverError": "Server Error",
+      "notFound": "Not Found"
+    }
+  },
+  "footer": {
+    "copyright": "© 2026 iroum-cms. All rights reserved.",
+    "accessibility": "Accessibility Policy",
+    "privacy": "Privacy Policy",
+    "sitemap": "Sitemap"
+  },
+  "login": {
+    "title": "Login"
+  },
+  "maintenance": {
+    "title": "Under Maintenance",
+    "message": "Please come back later.",
+    "until": "Estimated end time"
   },
   "error": {
     "notFound": {
       "title": "Page Not Found",
       "message": "The page you requested does not exist.",
+      "goHome": "Go to Home",
+      "back": "Previous page",
+      "search": "Search"
+    },
+    "forbidden": {
+      "title": "Forbidden",
+      "message": "You do not have permission to access this page.",
       "goHome": "Go to Home"
+    },
+    "serverError": {
+      "title": "Temporary Error",
+      "message": "Please try again later.",
+      "retry": "Retry",
+      "goHome": "Go to Home",
+      "retryPersistent": "Still failing. Please try again later."
     }
   }
 }
