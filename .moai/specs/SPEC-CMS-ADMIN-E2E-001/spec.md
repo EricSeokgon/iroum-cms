@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-ADMIN-E2E-001
-version: 0.1.0
-status: Draft
+version: 0.2.0
+status: Implemented
 created: 2026-05-14
 updated: 2026-05-14
 author: ircp
@@ -16,6 +16,7 @@ parent: SPEC-CMS-001
 
 | Version | Date       | Author | Change                                                                                                  |
 |---------|------------|--------|---------------------------------------------------------------------------------------------------------|
+| 0.2.0   | 2026-05-14 | ircp   | Implemented: Playwright 1.48 E2E 20/21 통과, CI 통합 완료                                               |
 | 0.1.0   | 2026-05-14 | ircp   | 초기 Draft 작성. Admin SPA(`frontend/admin/`)에 Playwright 1.x E2E 테스트 도입 — 12개 REQ, 10개 인수 시나리오. Pinia 런타임 메모리 기반 인증 특성을 반영한 `page.route()` 모킹 전략 채택. |
 
 ---

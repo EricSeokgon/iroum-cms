@@ -163,15 +163,20 @@ cd backend
 cd frontend
 pnpm -F @iroum-cms/admin test   # 관리자 Vitest
 pnpm -F @iroum-cms/public test  # 공개 Vitest
-# 단위 테스트: Admin 272/272 + Public 224/224 = 496 통과 | E2E: 39개 시나리오 (2026-05-14 기준)
+# 단위 테스트: Admin 272/272 + Public 224/224 = 496 통과 | E2E: Public 39 + Admin 20 = 59개 시나리오 (2026-05-14 기준)
 ```
 
 ```bash
-# E2E 테스트 (Playwright) — frontend/public/ 디렉토리에서
-pnpm run test:e2e           # Chromium E2E (개발 서버 자동 시작)
-pnpm run test:e2e:headed    # Headed 모드 (브라우저 창 표시)
-pnpm run test:e2e:ui        # Playwright UI 모드
-pnpm run test:e2e:report    # 마지막 테스트 보고서 열기
+# E2E 테스트 (Playwright) — Public SPA
+pnpm -F @iroum-cms/public run test:e2e           # Chromium E2E (개발 서버 자동 시작)
+pnpm -F @iroum-cms/public run test:e2e:headed    # Headed 모드 (브라우저 창 표시)
+pnpm -F @iroum-cms/public run test:e2e:ui        # Playwright UI 모드
+pnpm -F @iroum-cms/public run test:e2e:report    # 마지막 테스트 보고서 열기
+
+# Admin SPA E2E 테스트
+pnpm -F @iroum-cms/admin run test:e2e          # headless
+pnpm -F @iroum-cms/admin run test:e2e:ui       # Playwright UI
+pnpm -F @iroum-cms/admin run test:e2e:headed   # headed
 ```
 
 ---

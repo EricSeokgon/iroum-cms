@@ -9,6 +9,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Admin SPA Playwright E2E 테스트 도입 (SPEC-CMS-ADMIN-E2E-001)
+  - `@playwright/test` 1.48 + `@axe-core/playwright` 설치
+  - Mock JWT `page.route()` 전략으로 Pinia 런타임 인증 시뮬레이션
+  - 로그인/인증가드/대시보드/사용자/역할/공지/에러/KWCAG 2.2 AA (21개 시나리오, 20 pass)
+  - CI `frontend-e2e-admin` job 추가 (backend 미의존)
+
 ### 추가됨 — E2E 테스트 인프라 구축 (SPEC-CMS-PUBLIC-E2E-001)
 
 - Public 시민 SPA(`frontend/public/`)에 Playwright 1.x E2E 테스트 도입
