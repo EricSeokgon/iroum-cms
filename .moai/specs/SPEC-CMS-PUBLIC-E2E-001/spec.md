@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-PUBLIC-E2E-001
-version: 0.2.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-05-14
 updated: 2026-05-14
 author: ircp
@@ -16,6 +16,7 @@ issue_number: 0
 | Version | Date       | Author | Change                                                                                                  |
 |---------|------------|--------|---------------------------------------------------------------------------------------------------------|
 | 0.1.0   | 2026-05-14 | ircp   | 초기 Draft 작성. Public SPA(`frontend/public/`)에 Playwright 1.x E2E 테스트 도입 — 15개 REQ, 9개 인수 시나리오. |
+| 0.3.0   | 2026-05-14 | ircp   | Tested: 39개 시나리오 (36 pass, 3 skip-백엔드 미기동), axe-core KWCAG 2.2 AA 위반 없음.               |
 | 0.2.0   | 2026-05-14 | ircp   | Playwright E2E 39개 테스트 구현 완료 (36 pass, 3 skip-백엔드 미기동). 상태 Draft → Implemented. |
 
 ---
