@@ -1,0 +1,4 @@
+# Playwright (SPEC-CMS-PUBLIC-E2E-001)
+playwright-report/
+test-results/
+playwright/.cache/

@@ -126,6 +126,67 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────
+  # Public SPA E2E 테스트 (Playwright)
+  # SPEC-CMS-PUBLIC-E2E-001 — REQ-E2E-015
+  # @MX:NOTE: [AUTO] CI 통합 포인트. 백엔드 서비스 컨테이너 의존.
+  # TODO: SPEC-CMS-PUBLIC-E2E-001 Phase 1 —
+  #   백엔드 서비스 컨테이너 구성 필요 (localhost:8080)
+  #   현재는 Chromium 기반 정적 라우팅/접근성 테스트만 실행
+  #   백엔드 의존 spec 은 test.skip 으로 격리됨
+  # ──────────────────────────────────────────
+  frontend-e2e:
+    name: Frontend E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [frontend-test]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm 9
+        uses: pnpm/action-setup@v4
+        with:
+          version: "9.0.0"
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Install Playwright browsers
+        working-directory: frontend/public
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        working-directory: frontend/public
+        run: pnpm run test:e2e
+        env:
+          CI: true
+          E2E_BASE_URL: http://localhost:5174
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/public/playwright-report/
+          retention-days: 14
+
+      - name: Upload test results (JSON + traces)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: frontend/public/test-results/
+          retention-days: 14
+
+  # ──────────────────────────────────────────
   # Docker 이미지 빌드 검증
   # main 브랜치 push 시에만 실행
   # ──────────────────────────────────────────
