@@ -9,6 +9,15 @@
 
 ## [Unreleased]
 
+### Tested — SPA 전체 테스트 완료 (2026-05-14)
+
+- **SPEC-CMS-ADMIN-TEST-001** Admin SPA 테스트 272/272 전체 통과 (v0.1.0 Draft → v0.2.0 Tested)
+  - Vitest 셋업 복구, Element Plus jsdom 호환, 30+ View 단위 테스트 신규 작성
+  - jsdom `el-form.validate()` 제약 해결: `$refs` 목 패턴 (`vi.spyOn(formInst, 'validate').mockRejectedValueOnce(false)`)
+  - ForgotPasswordView OTP 셀렉터 수정 (`input[name="code"]`), `vi.useFakeTimers()` 범위 축소
+  - RoleFormView `handleSubmit` 콜백 → Promise 패턴 전환
+- **SPEC-CMS-PUBLIC-001** Public SPA 테스트 224/224 전체 통과 (v0.2.0 Implemented → v0.3.0 Tested)
+
 ### Added — SPEC-CMS-PUBLIC-001 시민 대상 공공 사이트 SPA
 
 - Vue 3.5 + TypeScript 5 + Vite 6 기반 시민용 공공 사이트 SPA (`frontend/public/`) 신규 구축

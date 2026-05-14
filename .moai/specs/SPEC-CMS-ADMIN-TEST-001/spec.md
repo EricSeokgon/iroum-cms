@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-ADMIN-TEST-001
-version: 0.1.0
-status: Draft
+version: 0.2.0
+status: Tested
 created: 2026-05-14
 updated: 2026-05-14
 author: ircp
@@ -13,6 +13,7 @@ parent: SPEC-CMS-001 v0.5
 
 ## HISTORY
 
+- 2026-05-14 (v0.2.0): Admin SPA 테스트 272/272 전체 통과 확인. jsdom 환경 `el-form.validate()` 제약 해결($refs 목 패턴 적용), ForgotPasswordView OTP 셀렉터 수정, RoleFormView Promise 패턴 전환. 상태 Draft → Tested 갱신.
 - 2026-05-14 (v0.1.0): 초안 작성. Vitest 셋업 부재로 인한 52개 실패 테스트 진단 및 30+ 미테스트 View 식별. 3단계 복구 계획 수립.
 
 ---

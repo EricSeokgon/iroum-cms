@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-PUBLIC-001
-version: 0.2.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-05-14
 updated: 2026-05-14
 author: manager-spec
@@ -678,4 +678,5 @@ Tailwind breakpoint 일관 사용:
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|-----------|
 | v0.1.0 | 2026-05-14 | manager-spec (MoAI) | 초안 작성. SPEC-CMS-001 §4.1 다중 SPA 아키텍처 두 번째 SPA(`frontend/public`) 시민 대상 공공 사이트 전체 화면·라우터·스토어·API 클라이언트·접근성 정책. 25개 라우트(P0 18개 + P1 5개 + 에러 2개). 9개 도메인 API 클라이언트 모듈(SPEC-CMS-002~010 + MEDIA-001 소비). PublicLayout 구조(헤더+브레드크럼+main+푸터+스킵내비+백투탑). 6개 Pinia 스토어(auth/menu/maintenance/search/locale/breadcrumb). KWCAG 2.2 AA P0 게이트(axe-core 0 critical + Lighthouse ≥ 95). i18n ko/en + 시스템 언어 감지. Tailwind 5종 breakpoint 반응형. SEO 1차 CSR + 동적 메타(후속 SSR). 보안 XSS 심층 방어 + JWT Bearer LocalStorage. 성능 LCP 2.5s + INP 200ms + 번들 300KB. 45개 인수 시나리오(A·B·C·D·E·F 6개 그룹). Phase 0~6 구현 계획. 위험 RP-01~10. 13개 비범위 명시. 신규 백엔드 API 정의 없음. |
+| v0.3.0 | 2026-05-14 | ircp | Public SPA 테스트 224/224 전체 통과 재확인. 상태 Implemented → Tested 갱신. |
 | v0.2.0 | 2026-05-14 | manager-tdd (MoAI) | Run phase 완료 — 45개 AC 전체 구현, 224 테스트 통과. Vue 3.5 + TypeScript 5 + Vite 6 + Pinia + Vue Router 4 + Element Plus 2.8.8 + Tailwind CSS 3.4.16 + vue-i18n 9 + ECharts 5 + DOMPurify + Vitest 2.1.8 + jest-axe. 135 파일, 15,160+ 라인. API 클라이언트 13종, Pinia 스토어 6종, 레이아웃 1종, 공통 컴포넌트 20종+, 뷰 30종, 유틸 1종, 라우터 30개 경로(beforeEach 가드 3개). 그룹 A~F 전 인수 기준 GREEN. vue-tsc --noEmit 에러 0건. 상태 Draft → Implemented. |
