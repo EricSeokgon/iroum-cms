@@ -10,6 +10,7 @@ import kr.co.ircp.cms.domain.board.dto.FaqUpdateRequest;
 import kr.co.ircp.cms.domain.board.entity.Faq;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.FaqMapper;
+import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class FaqServiceImpl implements FaqService {
 
     private final FaqMapper faqMapper;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Override
     public PageResponse<FaqSummary> listFaqs(String category, String keyword, int page, int size) {
@@ -63,11 +65,13 @@ public class FaqServiceImpl implements FaqService {
     @Override
     @Transactional
     public FaqDetail createFaq(FaqCreateRequest request, Long createdBy) {
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 답변 Jsoup sanitize 적용
+        String sanitizedAnswer = htmlSanitizer.sanitize(request.answerHtml());
         Faq faq = Faq.builder()
                 .categoryCode(request.categoryCode())
                 .question(request.question())
-                .answerHtml(request.answerHtml())
-                .answerText(stripHtml(request.answerHtml()))
+                .answerHtml(sanitizedAnswer)
+                .answerText(stripHtml(sanitizedAnswer))
                 .sortOrder(request.sortOrder())
                 .status("PUBLISHED")
                 .createdBy(createdBy)
@@ -87,8 +91,10 @@ public class FaqServiceImpl implements FaqService {
             existing.setQuestion(request.question());
         }
         if (request.answerHtml() != null) {
-            existing.setAnswerHtml(request.answerHtml());
-            existing.setAnswerText(stripHtml(request.answerHtml()));
+            // SPEC-CMS-SECURITY-XSS — 변경 시 RICH_TEXT 답변 Jsoup sanitize 적용
+            String sanitizedAnswer = htmlSanitizer.sanitize(request.answerHtml());
+            existing.setAnswerHtml(sanitizedAnswer);
+            existing.setAnswerText(stripHtml(sanitizedAnswer));
         }
         if (request.sortOrder() != null) {
             existing.setSortOrder(request.sortOrder());

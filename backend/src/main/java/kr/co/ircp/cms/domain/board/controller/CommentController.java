@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.board.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.CommentCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.CommentSummary;
 import kr.co.ircp.cms.domain.board.service.CommentService;
@@ -46,8 +47,9 @@ public class CommentController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @Valid @RequestBody CommentCreateRequest request,
-            @AuthenticationPrincipal Long authorId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long authorId = principal != null ? principal.userId() : null;
         CommentSummary created = commentService.createComment(postId, request, authorId);
         return ResponseEntity.created(
                 URI.create("/api/v1/boards/" + bbsMasterId + "/posts/" + postId + "/comments/" + created.id())
@@ -61,8 +63,9 @@ public class CommentController {
             @PathVariable Long postId,
             @PathVariable Long commentId,
             @RequestParam String content,
-            @AuthenticationPrincipal Long requesterId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(commentService.updateComment(commentId, content, requesterId));
     }
 
@@ -72,8 +75,9 @@ public class CommentController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @PathVariable Long commentId,
-            @AuthenticationPrincipal Long requesterId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         commentService.deleteComment(commentId, requesterId);
         return ResponseEntity.noContent().build();
     }

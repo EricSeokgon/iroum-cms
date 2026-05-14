@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.safety.controller;
 
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.safety.dto.CheckResultRequest;
 import kr.co.ircp.cms.domain.safety.dto.CheckResultResponse;
 import kr.co.ircp.cms.domain.safety.dto.ChecklistStatsResponse;
@@ -44,7 +45,8 @@ public class SafetyReportController {
     @PostMapping("/reports")
     public ResponseEntity<ReportDetail> generate(
             @RequestBody(required = false) ReportCreateRequest request,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         ReportDetail created = guidelineService.generateReport(companyId, request);
         return ResponseEntity.created(URI.create("/api/v1/safety/reports/" + created.uuid())).body(created);
     }
@@ -53,7 +55,8 @@ public class SafetyReportController {
     @GetMapping("/reports/{uuid}")
     public ResponseEntity<ReportDetail> getReport(
             @PathVariable UUID uuid,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(guidelineService.getReport(uuid, isAdmin(), companyId));
     }
 
@@ -61,7 +64,8 @@ public class SafetyReportController {
     @GetMapping("/reports/{uuid}/pdf")
     public ResponseEntity<String> getPdfPath(
             @PathVariable UUID uuid,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         String path = guidelineService.getReportPdfPath(uuid, isAdmin(), companyId);
         return ResponseEntity.ok().contentType(MediaType.TEXT_PLAIN)
                 .body(path == null ? "" : path);
@@ -70,9 +74,10 @@ public class SafetyReportController {
     /** GET /api/v1/safety/reports/me */
     @GetMapping("/reports/me")
     public ResponseEntity<PageResponse<ReportSummary>> myReports(
-            @AuthenticationPrincipal Long companyId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(guidelineService.listMyReports(companyId, page, size));
     }
 
@@ -90,7 +95,8 @@ public class SafetyReportController {
     @GetMapping("/reports/{uuid}/checklist")
     public ResponseEntity<List<CheckResultResponse>> checklist(
             @PathVariable UUID uuid,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(checklistService.getChecklistByReport(uuid, isAdmin(), companyId));
     }
 
@@ -100,7 +106,8 @@ public class SafetyReportController {
             @PathVariable UUID uuid,
             @PathVariable Long itemId,
             @Valid @RequestBody CheckResultRequest request,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(checklistService.upsertCheckResult(
                 uuid, itemId, request, companyId, isAdmin(), companyId));
     }

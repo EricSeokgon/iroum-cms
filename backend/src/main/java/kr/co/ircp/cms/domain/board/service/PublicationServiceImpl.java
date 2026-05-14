@@ -20,6 +20,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.PublicationCategoryMapper;
 import kr.co.ircp.cms.domain.board.repository.PublicationMetaMapper;
 import kr.co.ircp.cms.domain.board.repository.PublicationZipArchiveMapper;
+import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,6 +58,7 @@ public class PublicationServiceImpl implements PublicationService {
     private final PublicationZipArchiveMapper publicationZipArchiveMapper;
     private final BbsPostMapper bbsPostMapper;
     private final BbsMasterMapper bbsMasterMapper;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Override
     public PageResponse<PublicationSummary> listPublications(
@@ -88,7 +90,9 @@ public class PublicationServiceImpl implements PublicationService {
                 .orElseThrow(() -> new BbsMasterNotFoundException(0L));
 
         // 2) bbs_post INSERT (id 자동 생성)
-        String contentHtml = req.contentHtml() != null ? req.contentHtml() : "";
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 콘텐츠 Jsoup sanitize 적용
+        String rawHtml = req.contentHtml() != null ? req.contentHtml() : "";
+        String contentHtml = htmlSanitizer.sanitize(rawHtml);
         String contentText = req.contentText() != null ? req.contentText() : stripHtml(contentHtml);
         BbsPost post = BbsPost.builder()
                 .bbsId(master.getId())
@@ -120,14 +124,18 @@ public class PublicationServiceImpl implements PublicationService {
         // bbs_post 필드 업데이트 (title/contentHtml/contentText)
         boolean postChanged = req.title() != null || req.contentHtml() != null || req.contentText() != null;
         if (postChanged) {
+            // SPEC-CMS-SECURITY-XSS — 변경 시 RICH_TEXT 콘텐츠 Jsoup sanitize 적용
+            String sanitizedHtml = req.contentHtml() != null
+                    ? htmlSanitizer.sanitize(req.contentHtml())
+                    : existing.getContentHtml();
             BbsPost post = BbsPost.builder()
                     .id(existing.getPostId())
                     .bbsId(null)
                     .title(req.title() != null ? req.title() : existing.getTitle())
-                    .contentHtml(req.contentHtml() != null ? req.contentHtml() : existing.getContentHtml())
+                    .contentHtml(sanitizedHtml)
                     .contentText(req.contentText() != null
                             ? req.contentText()
-                            : (req.contentHtml() != null ? stripHtml(req.contentHtml()) : existing.getContentText()))
+                            : (req.contentHtml() != null ? stripHtml(sanitizedHtml) : existing.getContentText()))
                     .isNotice(false)
                     .isSecret(false)
                     .status(existing.getStatus())

@@ -149,7 +149,7 @@
 
     <!-- 미리보기 다이얼로그 -->
     <el-dialog v-model="previewOpen" title="템플릿 미리보기" width="900px">
-      <div v-loading="previewing" class="report-body prose max-w-none" v-html="previewHtml" />
+      <div v-loading="previewing" class="report-body prose max-w-none" v-html="sanitize(previewHtml)" />
     </el-dialog>
   </div>
 </template>
@@ -159,9 +159,11 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { useSafetyStore } from '@/stores/safetyStore'
+import { useSafeHtml } from '@/composables/useSafeHtml'
 import type { TemplateRequest, TemplateSummary, TemplateChecklistItem, RiskGrade } from '@/api/safety'
 
 const store = useSafetyStore()
+const { sanitize } = useSafeHtml()
 
 const dialogOpen = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')

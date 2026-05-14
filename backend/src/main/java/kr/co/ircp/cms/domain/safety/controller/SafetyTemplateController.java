@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.safety.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.safety.dto.ChecklistItemRequest;
 import kr.co.ircp.cms.domain.safety.dto.ChecklistItemResponse;
 import kr.co.ircp.cms.domain.safety.dto.PreviewRequest;
@@ -47,7 +48,8 @@ public class SafetyTemplateController {
     @PostMapping
     public ResponseEntity<TemplateResponse> create(
             @Valid @RequestBody TemplateRequest request,
-            @AuthenticationPrincipal Long createdBy) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long createdBy = principal != null ? principal.userId() : null;
         TemplateResponse created = templateService.createTemplate(request, createdBy);
         return ResponseEntity.created(URI.create("/api/v1/safety/admin/templates/" + created.id()))
                 .body(created);
@@ -57,7 +59,8 @@ public class SafetyTemplateController {
     public ResponseEntity<TemplateResponse> releaseNewVersion(
             @PathVariable Long id,
             @Valid @RequestBody TemplateRequest request,
-            @AuthenticationPrincipal Long createdBy) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long createdBy = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(templateService.releaseNewVersion(id, request, createdBy));
     }
 

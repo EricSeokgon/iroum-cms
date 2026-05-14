@@ -67,6 +67,8 @@ class PublicationServiceTest {
     private BbsMasterMapper bbsMasterMapper;
 
     private PublicationService service;
+    private final kr.co.ircp.cms.domain.board.util.HtmlSanitizer htmlSanitizer =
+            new kr.co.ircp.cms.domain.board.util.HtmlSanitizer();
 
     @BeforeEach
     void setUp() {
@@ -75,7 +77,8 @@ class PublicationServiceTest {
                 publicationCategoryMapper,
                 publicationZipArchiveMapper,
                 bbsPostMapper,
-                bbsMasterMapper
+                bbsMasterMapper,
+                htmlSanitizer
         );
     }
 

@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
+import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,11 +48,12 @@ class PostServiceTest {
     @Mock private BbsViewLogMapper bbsViewLogMapper;
 
     private PostService postService;
+    private final HtmlSanitizer htmlSanitizer = new HtmlSanitizer();
 
     @BeforeEach
     void setUp() {
         postService = new PostServiceImpl(
-                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper
+                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper, htmlSanitizer
         );
     }
 
@@ -61,7 +63,8 @@ class PostServiceTest {
     }
 
     private BbsPost stubPost(long id, long bbsId) {
-        return BbsPost.builder().id(id).bbsId(bbsId)
+        // authorId=1L 고정: 기본 케이스의 update/delete 요청자(1L)와 일치하도록 설정.
+        return BbsPost.builder().id(id).bbsId(bbsId).authorId(1L)
                 .title("제목").contentHtml("<p>내용</p>").contentText("내용")
                 .status("PUBLISHED").viewCount(0).commentCount(0).build();
     }

@@ -34,7 +34,7 @@
           <div
             v-if="store.currentReport?.html_content"
             class="report-body prose max-w-none"
-            v-html="store.currentReport.html_content"
+            v-html="sanitize(store.currentReport.html_content)"
           />
           <el-empty v-else description="보고서 내용이 없습니다" />
         </el-card>
@@ -114,11 +114,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Download } from '@element-plus/icons-vue'
 import { useSafetyStore } from '@/stores/safetyStore'
+import { useSafeHtml } from '@/composables/useSafeHtml'
 import type { CheckStatus, ChecklistItemResult } from '@/api/safety'
 
 const route = useRoute()
 const router = useRouter()
 const store = useSafetyStore()
+const { sanitize } = useSafeHtml()
 
 const reportUuid = computed(() => String(route.params.uuid))
 const downloading = ref(false)

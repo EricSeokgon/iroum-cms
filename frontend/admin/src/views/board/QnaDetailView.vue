@@ -47,7 +47,7 @@
         <!-- v-html 사용: 백엔드에서 OWASP Java HTML Sanitizer 로 정화 후 전달됨 -->
         <div
           class="prose max-w-none text-sm leading-relaxed text-gray-800"
-          v-html="qna.questionHtml"
+          v-html="sanitize(qna.questionHtml)"
         />
       </section>
 
@@ -68,7 +68,7 @@
         <!-- v-html 사용: 백엔드 sanitizer 로 정화된 안전한 HTML -->
         <div
           class="prose max-w-none text-sm leading-relaxed text-gray-800"
-          v-html="qna.answerHtml"
+          v-html="sanitize(qna.answerHtml)"
         />
       </section>
 
@@ -137,6 +137,9 @@ import {
   deleteQna,
   type QnaDetail,
 } from '@/api/qna'
+import { useSafeHtml } from '@/composables/useSafeHtml'
+
+const { sanitize } = useSafeHtml()
 
 interface Props {
   id: string

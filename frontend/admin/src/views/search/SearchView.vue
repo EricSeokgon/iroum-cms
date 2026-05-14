@@ -183,6 +183,9 @@ import {
   type DocResult,
   type PopularQuery,
 } from '@/api/search'
+import { useSafeHtml } from '@/composables/useSafeHtml'
+
+const { sanitize } = useSafeHtml()
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -349,9 +352,9 @@ function onResultClick(event: MouseEvent, item: DocResult, idx: number): void {
   }
 }
 
-// ── 하이라이트 렌더링 — 백엔드에서 sanitize된 <mark> 태그 ────────────────────
+// ── 하이라이트 렌더링 — DOMPurify 로 클라이언트측 2차 sanitize ────────────────
 function renderHighlight(html: string): string {
-  return html || ''
+  return sanitize(html || '')
 }
 
 // ── 날짜 포맷 ─────────────────────────────────────────────────────────────────

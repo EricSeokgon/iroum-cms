@@ -59,7 +59,7 @@
         <!-- v-html 사용: 백엔드에서 OWASP Java HTML Sanitizer 로 정화 후 전달됨 -->
         <div
           class="prose max-w-none text-sm leading-relaxed text-gray-800"
-          v-html="survey.descriptionHtml"
+          v-html="sanitize(survey.descriptionHtml)"
         />
       </section>
 
@@ -318,6 +318,9 @@ import {
   type SurveyQuestionRequest,
   type SurveyResultDto,
 } from '@/api/survey'
+import { useSafeHtml } from '@/composables/useSafeHtml'
+
+const { sanitize } = useSafeHtml()
 
 interface Props {
   id: string

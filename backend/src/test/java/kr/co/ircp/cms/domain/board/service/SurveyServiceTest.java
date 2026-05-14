@@ -65,6 +65,8 @@ class SurveyServiceTest {
     private SurveyAnswerMapper surveyAnswerMapper;
 
     private SurveyService service;
+    private final kr.co.ircp.cms.domain.board.util.HtmlSanitizer htmlSanitizer =
+            new kr.co.ircp.cms.domain.board.util.HtmlSanitizer();
 
     @BeforeEach
     void setUp() {
@@ -72,7 +74,8 @@ class SurveyServiceTest {
                 surveyMapper,
                 surveyQuestionMapper,
                 surveyResponseMapper,
-                surveyAnswerMapper
+                surveyAnswerMapper,
+                htmlSanitizer
         );
     }
 

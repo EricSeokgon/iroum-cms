@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.safety.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.safety.dto.MatchRequest;
 import kr.co.ircp.cms.domain.safety.dto.MatchResponse;
 import kr.co.ircp.cms.domain.safety.dto.ProfileResponse;
@@ -34,14 +35,16 @@ public class SafetyProfileController {
     @PostMapping("/profiles")
     public ResponseEntity<ProfileResponse> upsert(
             @Valid @RequestBody ProfileUpsertRequest request,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(profileService.upsertProfile(companyId, request));
     }
 
     /** GET /api/v1/safety/profiles/me */
     @GetMapping("/profiles/me")
     public ResponseEntity<ProfileResponse> getMyProfile(
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(profileService.getMyProfile(companyId));
     }
 
@@ -49,7 +52,8 @@ public class SafetyProfileController {
     @PostMapping("/match")
     public ResponseEntity<MatchResponse> match(
             @RequestBody(required = false) MatchRequest request,
-            @AuthenticationPrincipal Long companyId) {
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        Long companyId = principal != null ? principal.userId() : null;
         int topN = request == null ? 5 : request.topNOrDefault();
         return ResponseEntity.ok(matchingService.matchForCompany(companyId, topN));
     }

@@ -9,6 +9,7 @@ import kr.co.ircp.cms.domain.board.entity.Qna;
 import kr.co.ircp.cms.domain.board.entity.QnaStatus;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.QnaMapper;
+import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class QnaServiceImpl implements QnaService {
 
     private final QnaMapper qnaMapper;
     private final QnaNotificationService qnaNotificationService;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Override
     public PageResponse<QnaSummary> listQnas(
@@ -62,10 +64,12 @@ public class QnaServiceImpl implements QnaService {
     @Override
     @Transactional
     public QnaDetail createQna(QnaCreateRequest request, Long questionerId) {
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 질문 Jsoup sanitize 적용
+        String sanitizedQuestion = htmlSanitizer.sanitize(request.questionHtml());
         Qna qna = Qna.builder()
                 .title(request.title())
-                .questionHtml(request.questionHtml())
-                .questionText(stripHtml(request.questionHtml()))
+                .questionHtml(sanitizedQuestion)
+                .questionText(stripHtml(sanitizedQuestion))
                 .questionerId(questionerId)
                 .isPrivate(request.isPrivate())
                 .status(QnaStatus.PENDING.name())
@@ -82,8 +86,10 @@ public class QnaServiceImpl implements QnaService {
         if (QnaStatus.CLOSED.name().equals(existing.getStatus())) {
             throw new IllegalStateException("종료된 Q&A에는 답변을 등록할 수 없습니다.");
         }
-        String answerText = stripHtml(request.answerHtml());
-        qnaMapper.updateAnswer(id, request.answerHtml(), answerText, answererId);
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 답변 Jsoup sanitize 적용
+        String sanitizedAnswer = htmlSanitizer.sanitize(request.answerHtml());
+        String answerText = stripHtml(sanitizedAnswer);
+        qnaMapper.updateAnswer(id, sanitizedAnswer, answerText, answererId);
         // 답변 완료 후 알림 발송 (PENDING → ANSWERED 전환 시에만)
         // REQ-BOARD-014-D: INAPP/EMAIL 채널 알림 (멱등성·재시도·옵트아웃)
         if (QnaStatus.PENDING.name().equals(existing.getStatus())) {

@@ -181,12 +181,15 @@ class SafetyProfileControllerTest {
     // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
     // ──────────────────────────────────────────────────────────────
 
-    // ─── 헬퍼: principal로 Long(companyId) 직접 사용 ───────────────────────
+    // ─── 헬퍼: principal로 JwtPrincipal 사용 (SPEC-CMS-SECURITY-IDOR) ───────────────────────
 
     private org.springframework.security.authentication.UsernamePasswordAuthenticationToken companyAuth(
             Long companyId) {
+        kr.co.ircp.cms.domain.auth.security.JwtPrincipal principal =
+                new kr.co.ircp.cms.domain.auth.security.JwtPrincipal(
+                        companyId, "user-" + companyId, java.util.Set.of("USER"));
         return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                companyId, null,
+                principal, null,
                 List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER"))
         );
     }

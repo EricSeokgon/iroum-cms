@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.board.controller;
 
 import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.QnaAnswerRequest;
 import kr.co.ircp.cms.domain.board.dto.QnaCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.QnaDetail;
@@ -43,9 +44,10 @@ public class QnaController {
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             Authentication authentication
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         boolean isAdmin = isAdmin(authentication);
         return ResponseEntity.ok(qnaService.listQnas(status, isPrivate, keyword, page, size, requesterId, isAdmin));
     }
@@ -55,9 +57,10 @@ public class QnaController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<QnaDetail> getQna(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             Authentication authentication
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         boolean isAdmin = isAdmin(authentication);
         return ResponseEntity.ok(qnaService.getQna(id, requesterId, isAdmin));
     }
@@ -67,8 +70,9 @@ public class QnaController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<QnaDetail> createQna(
             @Valid @RequestBody QnaCreateRequest request,
-            @AuthenticationPrincipal Long questionerId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long questionerId = principal != null ? principal.userId() : null;
         QnaDetail created = qnaService.createQna(request, questionerId);
         return ResponseEntity.created(URI.create("/api/v1/qnas/" + created.id())).body(created);
     }
@@ -79,8 +83,9 @@ public class QnaController {
     public ResponseEntity<QnaDetail> answerQna(
             @PathVariable Long id,
             @Valid @RequestBody QnaAnswerRequest request,
-            @AuthenticationPrincipal Long answererId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long answererId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(qnaService.answerQna(id, request, answererId));
     }
 
@@ -89,9 +94,10 @@ public class QnaController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> closeQna(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             Authentication authentication
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         boolean isAdmin = isAdmin(authentication);
         qnaService.closeQna(id, requesterId, isAdmin);
         return ResponseEntity.noContent().build();
@@ -102,9 +108,10 @@ public class QnaController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteQna(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             Authentication authentication
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         boolean isAdmin = isAdmin(authentication);
         qnaService.deleteQna(id, requesterId, isAdmin);
         return ResponseEntity.noContent().build();

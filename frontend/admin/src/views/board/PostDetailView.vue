@@ -96,7 +96,7 @@
         <!-- @MX:REASON: contentHtml은 서버측 OWASP Sanitizer 처리 후 응답됨 (SPEC-CMS-003 §3.1) -->
         <div
           class="prose prose-sm max-w-none text-gray-800"
-          v-html="post.contentHtml"
+          v-html="sanitize(post.contentHtml)"
           role="article"
           :aria-label="t('board.posts.content')"
         />
@@ -124,8 +124,11 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft as ElIconArrowLeft } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
+import { useSafeHtml } from '@/composables/useSafeHtml'
 import PostCommentSection from '@/components/PostCommentSection.vue'
 import type { PostDetail, AttachmentSummary } from '@iroum/shared/types/api'
+
+const { sanitize } = useSafeHtml()
 
 interface Props {
   id: string

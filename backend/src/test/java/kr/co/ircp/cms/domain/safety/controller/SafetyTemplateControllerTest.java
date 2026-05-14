@@ -244,12 +244,15 @@ class SafetyTemplateControllerTest {
     // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
     // ──────────────────────────────────────────────────────────────
 
-    // ─── 헬퍼: principal로 Long(adminUserId) 직접 사용 ───────────────────────
+    // ─── 헬퍼: principal로 JwtPrincipal 사용 (SPEC-CMS-SECURITY-IDOR) ───────────────────────
 
     private org.springframework.security.authentication.UsernamePasswordAuthenticationToken adminAuth(
             Long adminUserId) {
+        kr.co.ircp.cms.domain.auth.security.JwtPrincipal principal =
+                new kr.co.ircp.cms.domain.auth.security.JwtPrincipal(
+                        adminUserId, "admin-" + adminUserId, java.util.Set.of("SUPER_ADMIN"));
         return new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
-                adminUserId, null,
+                principal, null,
                 List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_SUPER_ADMIN"))
         );
     }

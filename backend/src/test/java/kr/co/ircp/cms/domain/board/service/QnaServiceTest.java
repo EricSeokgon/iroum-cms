@@ -48,10 +48,12 @@ class QnaServiceTest {
     private QnaNotificationService qnaNotificationService;
 
     private QnaService qnaService;
+    private final kr.co.ircp.cms.domain.board.util.HtmlSanitizer htmlSanitizer =
+            new kr.co.ircp.cms.domain.board.util.HtmlSanitizer();
 
     @BeforeEach
     void setUp() {
-        qnaService = new QnaServiceImpl(qnaMapper, qnaNotificationService);
+        qnaService = new QnaServiceImpl(qnaMapper, qnaNotificationService, htmlSanitizer);
     }
 
     // 공통 스텁 빌더 — 기본 상태의 PENDING/공개 Q&A 생성

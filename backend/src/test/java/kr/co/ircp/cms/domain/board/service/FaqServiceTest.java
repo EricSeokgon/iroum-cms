@@ -47,10 +47,12 @@ class FaqServiceTest {
     private FaqMapper faqMapper;
 
     private FaqService faqService;
+    private final kr.co.ircp.cms.domain.board.util.HtmlSanitizer htmlSanitizer =
+            new kr.co.ircp.cms.domain.board.util.HtmlSanitizer();
 
     @BeforeEach
     void setUp() {
-        faqService = new FaqServiceImpl(faqMapper);
+        faqService = new FaqServiceImpl(faqMapper, htmlSanitizer);
     }
 
     // 공통 스텁 빌더 — 기본 상태의 PUBLISHED FAQ 생성

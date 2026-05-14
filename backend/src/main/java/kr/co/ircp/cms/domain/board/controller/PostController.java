@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.board.controller;
 
 import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
@@ -59,9 +60,10 @@ public class PostController {
     public ResponseEntity<PostDetail> getPost(
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
-            @AuthenticationPrincipal(expression = "userId") Long userId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             @RequestParam(required = false) String ipHash
     ) {
+        Long userId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(postService.getPost(postId, userId, ipHash));
     }
 
@@ -70,8 +72,9 @@ public class PostController {
     public ResponseEntity<PostDetail> createPost(
             @PathVariable Long bbsMasterId,
             @Valid @RequestBody PostCreateRequest request,
-            @AuthenticationPrincipal Long authorId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long authorId = principal != null ? principal.userId() : null;
         PostDetail created = postService.createPost(request, authorId);
         return ResponseEntity.created(
                 URI.create("/api/v1/boards/" + bbsMasterId + "/posts/" + created.id())
@@ -84,8 +87,9 @@ public class PostController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request,
-            @AuthenticationPrincipal Long editorId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long editorId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(postService.updatePost(postId, request, editorId));
     }
 
@@ -94,8 +98,9 @@ public class PostController {
     public ResponseEntity<Void> deletePost(
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
-            @AuthenticationPrincipal Long requesterId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         postService.deletePost(postId, requesterId);
         return ResponseEntity.noContent().build();
     }

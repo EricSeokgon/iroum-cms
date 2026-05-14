@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.search.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.search.dto.AutocompleteItem;
 import kr.co.ircp.cms.domain.search.dto.ClickRequest;
 import kr.co.ircp.cms.domain.search.dto.PopularQueryItem;
@@ -51,9 +52,10 @@ public class SearchController {
             @RequestParam(name = "page", required = false, defaultValue = "1") int page,
             @RequestParam(name = "size", required = false, defaultValue = "20") int size,
             @RequestParam(name = "locale", required = false, defaultValue = "ko") String locale,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             HttpServletRequest httpRequest
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         boolean isAdmin = currentUserHasRole("ADMIN");
         String sessionId = resolveSessionId(httpRequest);
         String ipHash = hashIp(httpRequest.getRemoteAddr());
@@ -83,9 +85,10 @@ public class SearchController {
     @PostMapping("/click")
     public ResponseEntity<Void> recordClick(
             @Valid @RequestBody ClickRequest req,
-            @AuthenticationPrincipal Long requesterId,
+            @AuthenticationPrincipal JwtPrincipal principal,
             HttpServletRequest httpRequest
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         String sessionId = resolveSessionId(httpRequest);
         searchService.recordClick(req.searchLogId(), req.docType(), req.docId(), req.rank(),
                 requesterId, sessionId);

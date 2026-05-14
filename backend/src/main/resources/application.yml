@@ -78,10 +78,11 @@ mybatis:
   type-handlers-package: kr.co.ircp.cms.domain.auth.repository.typehandler,kr.co.ircp.cms.domain.board.repository
 
 # iroum CMS JWT 설정 (SPEC-CMS-002 REQ-AUTH-001/002)
+# SPEC-CMS-SECURITY-JWT — 시크릿 기본값 제거: 환경변수 미설정 시 부팅 실패
 iroum:
   jwt:
-    # 운영 환경에서 반드시 JWT_SECRET 환경변수로 재정의 (최소 256비트)
-    secret: ${JWT_SECRET:changeme-256-bits-min-replace-in-prod-aaaaaaaaaaaaaaaaaaaaa}
+    # JWT_SECRET 환경변수 필수 (최소 256비트). 미설정 시 application context 부팅 실패.
+    secret: ${JWT_SECRET}
     access-token-ttl: PT15M
     refresh-token-ttl: P7D
     issuer: iroum-cms
@@ -104,8 +105,8 @@ iroum:
         - text/plain
       # 전역 최대 파일 크기 (KB) — 게시판별 maxAttachmentSizeKb로 추가 제한 가능
       global-max-size-kb: 51200
-      # HMAC-SHA256 서명 키 (운영: 환경변수 ATTACHMENT_HMAC_SECRET으로 반드시 재정의)
-      hmac-secret: ${ATTACHMENT_HMAC_SECRET:changeme-hmac-secret-replace-in-prod}
+      # HMAC-SHA256 서명 키 (필수: ATTACHMENT_HMAC_SECRET 환경변수 미설정 시 부팅 실패)
+      hmac-secret: ${ATTACHMENT_HMAC_SECRET}
       # 다운로드 URL TTL (초, 기본 900 = 15분)
       download-ttl-seconds: 900
 

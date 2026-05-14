@@ -17,6 +17,7 @@ import kr.co.ircp.cms.domain.board.repository.SurveyAnswerMapper;
 import kr.co.ircp.cms.domain.board.repository.SurveyMapper;
 import kr.co.ircp.cms.domain.board.repository.SurveyQuestionMapper;
 import kr.co.ircp.cms.domain.board.repository.SurveyResponseMapper;
+import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class SurveyServiceImpl implements SurveyService {
     private final SurveyQuestionMapper surveyQuestionMapper;
     private final SurveyResponseMapper surveyResponseMapper;
     private final SurveyAnswerMapper surveyAnswerMapper;
+    private final HtmlSanitizer htmlSanitizer;
 
     @Override
     public PageResponse<SurveySummary> listSurveys(String status, String keyword, int page, int size) {
@@ -70,10 +72,12 @@ public class SurveyServiceImpl implements SurveyService {
     @Transactional
     public SurveyDetail createSurvey(SurveyCreateRequest req, Long createdBy) {
         // 1) 설문 마스터 INSERT (id 자동 채번)
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 설명 Jsoup sanitize 적용
+        String sanitizedDescription = htmlSanitizer.sanitize(req.descriptionHtml());
         Survey survey = Survey.builder()
                 .title(req.title())
-                .descriptionHtml(req.descriptionHtml())
-                .descriptionText(req.descriptionText() != null ? req.descriptionText() : stripHtml(req.descriptionHtml()))
+                .descriptionHtml(sanitizedDescription)
+                .descriptionText(req.descriptionText() != null ? req.descriptionText() : stripHtml(sanitizedDescription))
                 .startAt(req.startAt())
                 .endAt(req.endAt())
                 .isAnonymous(req.isAnonymous())

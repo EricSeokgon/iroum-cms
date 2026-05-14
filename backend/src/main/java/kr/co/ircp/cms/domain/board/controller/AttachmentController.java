@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.board.controller;
 
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.AttachmentDownloadUrl;
 import kr.co.ircp.cms.domain.board.dto.AttachmentSummary;
 import kr.co.ircp.cms.domain.board.service.AttachmentService;
@@ -44,8 +45,9 @@ public class AttachmentController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal Long uploaderId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long uploaderId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(attachmentService.uploadAttachment(postId, file, uploaderId));
     }
 
@@ -58,8 +60,9 @@ public class AttachmentController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @PathVariable Long attachmentId,
-            @AuthenticationPrincipal Long requesterId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         return ResponseEntity.ok(attachmentService.generateDownloadUrl(attachmentId, requesterId));
     }
 
@@ -69,8 +72,9 @@ public class AttachmentController {
             @PathVariable Long bbsMasterId,
             @PathVariable Long postId,
             @PathVariable Long attachmentId,
-            @AuthenticationPrincipal Long requesterId
+            @AuthenticationPrincipal JwtPrincipal principal
     ) {
+        Long requesterId = principal != null ? principal.userId() : null;
         attachmentService.deleteAttachment(attachmentId, requesterId);
         return ResponseEntity.noContent().build();
     }

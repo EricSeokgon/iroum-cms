@@ -5,6 +5,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import kr.co.ircp.cms.config.JwtProperties;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import org.springframework.stereotype.Service;
@@ -38,14 +39,17 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     private final SecretKey signingKey;
 
     /**
-     * 기본 생성자 — 개발/테스트용 기본 JwtProperties 사용.
+     * 기본 생성자 — 단위 테스트 전용 기본 JwtProperties 사용.
      *
-     * <p>단위 테스트에서 {@code new JwtTokenProviderImpl()}로 사용 가능.
-     * 운영 환경에서는 스프링 DI를 통해 실제 {@link JwtProperties}가 주입된다.
+     * <p>SPEC-CMS-SECURITY-JWT — 운영 환경에서는 스프링 DI로 환경변수 기반 시크릿이 주입된다.
+     * 본 생성자는 단위 테스트 헬퍼 용도이며, 운영 빈 생성에는 사용되지 않는다.
+     *
+     * @deprecated 운영 코드에서 직접 호출 금지. 스프링 DI를 통한 {@link #JwtTokenProviderImpl(JwtProperties)} 사용 권장.
      */
-    public JwtTokenProviderImpl() {
+    @Deprecated
+    protected JwtTokenProviderImpl() {
         this(new JwtProperties(
-                "changeme-256-bits-min-replace-in-prod-aaaaaaaaaaaaaaaaaaaaa",
+                "test-only-jwt-secret-256-bits-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 Duration.ofMinutes(15),
                 Duration.ofDays(7),
                 "iroum-cms"
@@ -60,6 +64,22 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     public JwtTokenProviderImpl(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
         this.signingKey = buildSigningKey(jwtProperties.secret());
+    }
+
+    /**
+     * 부팅 시 시크릿 보안 검증.
+     *
+     * <p>SPEC-CMS-SECURITY-JWT — 운영 부팅 시 'changeme' 접두사 시크릿 차단.
+     * application-local.yml 등에서 의도적으로 dev-only 시크릿을 사용할 때를 위해
+     * "local-dev-only" 접두사는 허용.
+     */
+    @PostConstruct
+    void validateSecret() {
+        String secret = jwtProperties.secret();
+        if (secret == null || secret.startsWith("changeme")) {
+            throw new IllegalStateException(
+                    "JWT secret이 안전하지 않은 기본값입니다. JWT_SECRET 환경변수로 256비트 이상 보안 키를 주입하세요.");
+        }
     }
 
     // @MX:ANCHOR: [AUTO] generateAccessToken — Access Token 생성 계약 (fan_in >= 3: AuthService, 필터, 테스트)
