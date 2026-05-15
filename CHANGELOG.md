@@ -25,6 +25,30 @@
 - CI 워크플로우에 `frontend-e2e` job 추가 (`needs: [frontend-test]`, playwright-report 아티팩트)
 - 백엔드 미기동 시 의존성 테스트 자동 스킵 처리 (`test.skip()` 패턴)
 
+## [1.0.1] - 2026-05-15
+
+### Security
+
+- [CRITICAL] IDOR 취약점 수정: `@AuthenticationPrincipal` 타입 오류 → `JwtPrincipal` 교체 (8개 컨트롤러)
+- [CRITICAL] Stored XSS 수정: `RICH_TEXT` 저장 전 Jsoup sanitize 적용 (`HtmlSanitizer`, 5개 서비스)
+- [CRITICAL] JWT secret 하드코딩 기본값 제거: `changeme` 폴백 제거 + `@PostConstruct` 시작 시 유효성 검증
+- [CRITICAL] Admin SPA DOMPurify 적용: `v-html` 7곳 sanitize (`useSafeHtml.ts` 컴포저블)
+- [HIGH] MyBatis SQL Injection 제거: `${targetTable}` / `${targetColumn}` 취약 동적 쿼리 제거
+- [HIGH] 보안 헤더 추가: CSP, HSTS, X-Frame-Options, Referrer-Policy (`SecurityConfig`)
+- [HIGH] Rate Limiter 추가: IP 기반 로그인 / OTP 요청 제한 (`RateLimitFilter`)
+- [HIGH] 첨부파일 MIME magic byte 검증 추가 (`MimeTypeValidator`)
+- [HIGH] Admin open redirect 방지: `sanitizeRedirect()` 적용
+- [HIGH] Public SPA 토큰 보안 강화: `tokenSecurity.ts` + iframe 감지
+- [MEDIUM] 계정 열거 공격 방지: 단일 오류 메시지 + IP 기반 차단
+- [MEDIUM] Refresh Token `SameSite=Strict` 적용
+- [MEDIUM] JWT `audience` 클레임 추가 및 검증
+- [MEDIUM] 운영 로그레벨 `DEBUG` → `INFO` 변경
+- [LOW] `/actuator/info` 환경변수 노출 비활성화
+- [LOW] `/actuator/backupStatus` ADMIN 전용 제한
+- [LOW] actuator 메트릭 엔드포인트 인증 필요
+
+---
+
 ## [1.0.0] - 2026-05-14
 
 ### Tested — SPA 전체 테스트 완료 (2026-05-14)

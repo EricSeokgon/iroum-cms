@@ -7,6 +7,8 @@
 - 공공 SPA: Vue 3 + TypeScript (시민 공개 웹사이트)
 - 인프라: Docker Compose + nginx + GitHub Actions CI
 
+**v1.0.1** (2026-05-15) — OWASP Top 10 2021 기반 보안 감사 완료. CRITICAL 4건 / HIGH 6건 / MEDIUM 4건 / LOW 3건 총 17건 수정.
+
 **v1.0.0** (2026-05-14) — 1차 출시 완료. 백엔드 SPEC-CMS-002~010 Tested + Admin SPA 272 테스트 + Public SPA 224 테스트.
 
 ---
@@ -418,6 +420,43 @@ AUTHZ 트랙 (REGRESSION-001 회귀 회복):
 | 10 | REGRESSION-001 (도메인 예외) | REQ-META-IT-002 (GlobalExceptionHandler 미커버) | assertAuthzPassed helper (ServletException + cause) |
 
 자세한 명세: `.moai/specs/SPEC-CMS-META-IT-GREEN-MANDATORY-001/spec.md`
+
+---
+
+## 보안 (Security)
+
+**v1.0.1 — OWASP Top 10 2021 기반 보안 감사 완료 (2026-05-15)**
+
+### 감사 범위
+
+OWASP Top 10 2021 전 항목에 대해 백엔드(Spring Boot 3.2) 및 프론트엔드(Vue 3 Admin / Public SPA)를 대상으로 감사를 수행하였으며, 발견된 취약점 17건을 모두 수정하였습니다.
+
+### 주요 보안 기능
+
+| 항목 | 구현 내용 |
+|------|---------|
+| 인증 (JWT) | HS256 서명, `@PostConstruct` secret 검증, audience 클레임, 하드코딩 폴백 없음 |
+| XSS 방어 (서버) | `RICH_TEXT` 저장 전 Jsoup sanitize (`HtmlSanitizer`, 화이트리스트 태그 제한) |
+| XSS 방어 (클라이언트) | DOMPurify v3 — Admin SPA `v-html` 7곳 일괄 적용 (`useSafeHtml.ts`) |
+| SQL Injection 방어 | MyBatis 동적 쿼리 `${}` 변수 전면 제거, `#{}` 바인딩 전용 |
+| 보안 헤더 | CSP, HSTS (`max-age=31536000`), X-Frame-Options, Referrer-Policy (`SecurityConfig`) |
+| Rate Limiting | IP 기반 로그인 / OTP 요청 제한 (`RateLimitFilter`) |
+| MIME 검증 | 첨부파일 업로드 magic byte 검증 (`MimeTypeValidator`), 확장자 위조 차단 |
+| Open Redirect 방지 | Admin SPA `sanitizeRedirect()` — 화이트리스트 도메인 외 차단 |
+| 계정 열거 방지 | 존재/미존재 단일 오류 메시지 + IP 기반 차단 |
+| 쿠키 보안 | Refresh Token `SameSite=Strict; HttpOnly; Secure` |
+| Actuator 접근 제한 | `/actuator/info` 환경변수 노출 비활성화, `/actuator/backupStatus` ADMIN 전용 |
+
+### 수정 취약점 요약
+
+| 심각도 | 건수 | 주요 항목 |
+|--------|------|---------|
+| CRITICAL | 4 | IDOR, Stored XSS, JWT secret 하드코딩, Admin DOMPurify 미적용 |
+| HIGH | 6 | SQL Injection, 보안 헤더 누락, Rate Limiter 미적용, MIME 미검증, Open Redirect, 토큰 보안 |
+| MEDIUM | 4 | 계정 열거, SameSite 쿠키, JWT audience, 운영 로그레벨 |
+| LOW | 3 | Actuator 접근 제어 (info, backupStatus, metrics) |
+
+상세 변경 이력: [CHANGELOG.md](CHANGELOG.md#103---2026-05-15)
 
 ---
 
