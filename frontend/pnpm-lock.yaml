@@ -19,6 +19,9 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.15.2
+      dompurify:
+        specifier: ^3.1.6
+        version: 3.4.3
       echarts:
         specifier: ^5.5.1
         version: 5.6.0
@@ -50,6 +53,9 @@ importers:
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.60.0
+      '@types/dompurify':
+        specifier: ^3.0.5
+        version: 3.2.0
       '@vitejs/plugin-vue':
         specifier: ^5.2.1
         version: 5.2.4(vite@6.4.2(@types/node@25.7.0)(jiti@1.21.7))(vue@3.5.33(typescript@5.9.3))

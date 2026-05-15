@@ -64,6 +64,14 @@ const ALLOWED_ATTR = [
 const FORBID_TAGS = ['script', 'iframe', 'object', 'embed', 'form']
 const FORBID_ATTR = ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur']
 
+// SUG-2: target="_blank" 링크에 rel="noopener noreferrer" 강제 — reverse tabnapping 방어
+// 모듈 로드 시 1회 등록. DOMPurify hook 은 전역 누적되지 않도록 addHook 은 최상위에서만 호출.
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node instanceof HTMLAnchorElement && node.getAttribute('target') === '_blank') {
+    node.setAttribute('rel', 'noopener noreferrer')
+  }
+})
+
 export function useSafeHtml() {
   function sanitize(html: string | null | undefined): string {
     if (!html) return ''
