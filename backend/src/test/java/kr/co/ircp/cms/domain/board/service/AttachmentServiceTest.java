@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.repository.BbsAttachmentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
+import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.MimeTypeValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -66,7 +67,7 @@ class AttachmentServiceTest {
         // HIGH-9 — 실제 MimeTypeValidator 인스턴스 주입 (외부 의존성 없음, stub 불필요)
         attachmentService = new AttachmentServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsAttachmentMapper, TEST_PROPS,
-                new MimeTypeValidator()
+                new MimeTypeValidator(), new AuthorizationGuard()
         );
     }
 

@@ -10,6 +10,7 @@ import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.BbsCommentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
+import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper);
+        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper, new AuthorizationGuard());
     }
 
     private BbsPost stubPost(long id, long bbsId) {

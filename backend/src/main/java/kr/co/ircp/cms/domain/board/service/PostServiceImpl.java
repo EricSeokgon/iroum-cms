@@ -16,17 +16,14 @@ import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
+import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +43,7 @@ public class PostServiceImpl implements PostService {
     private final BbsPostHistoryMapper bbsPostHistoryMapper;
     private final BbsViewLogMapper bbsViewLogMapper;
     private final HtmlSanitizer htmlSanitizer;
+    private final AuthorizationGuard authorizationGuard;
 
     @Override
     public PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size) {
@@ -149,7 +147,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new PostNotFoundException(id));
 
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 수정 허용
-        ensureOwnerOrAdmin(existing.getAuthorId(), editorId, "게시글 수정 권한이 없습니다.");
+        authorizationGuard.ensureOwnerOrAdmin(existing.getAuthorId(), editorId, "게시글 수정 권한이 없습니다.");
 
         // 수정 이력 보존
         int nextVersion = bbsPostHistoryMapper.nextVersionByPostId(id);
@@ -198,45 +196,11 @@ public class PostServiceImpl implements PostService {
         BbsPost existing = bbsPostMapper.findById(id)
                 .orElseThrow(() -> new PostNotFoundException(id));
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 삭제 허용
-        ensureOwnerOrAdmin(existing.getAuthorId(), requesterId, "게시글 삭제 권한이 없습니다.");
+        authorizationGuard.ensureOwnerOrAdmin(existing.getAuthorId(), requesterId, "게시글 삭제 권한이 없습니다.");
         bbsPostMapper.deleteById(id);
     }
 
     // ─── 헬퍼 ────────────────────────────────────────────────────────────────
-
-    /**
-     * 소유권 또는 관리자 권한 검증.
-     *
-     * <p>SPEC-CMS-SECURITY-IDOR — 본인 또는 ADMIN/SUPER_ADMIN/CONTENT_ADMIN 권한 보유자만 허용.
-     * 작성자 ID가 null인 레거시 데이터는 관리자만 수정/삭제 가능.
-     *
-     * @param ownerId      리소스 소유자 ID (nullable)
-     * @param requesterId  요청자 ID (nullable)
-     * @param denyMessage  AccessDeniedException 메시지
-     */
-    private void ensureOwnerOrAdmin(Long ownerId, Long requesterId, String denyMessage) {
-        if (requesterId != null && Objects.equals(ownerId, requesterId)) {
-            return;
-        }
-        if (currentUserIsAdmin()) {
-            return;
-        }
-        throw new AccessDeniedException(denyMessage);
-    }
-
-    /** SecurityContext에서 ADMIN/SUPER_ADMIN/CONTENT_ADMIN 권한 여부 확인. */
-    private boolean currentUserIsAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getAuthorities() == null) {
-            return false;
-        }
-        return auth.getAuthorities().stream().anyMatch(a -> {
-            String role = a.getAuthority();
-            return "ROLE_ADMIN".equals(role)
-                    || "ROLE_SUPER_ADMIN".equals(role)
-                    || "ROLE_CONTENT_ADMIN".equals(role);
-        });
-    }
 
     private PostSummary toSummary(BbsPost p) {
         return new PostSummary(

@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
+import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,7 +54,8 @@ class PostServiceTest {
     @BeforeEach
     void setUp() {
         postService = new PostServiceImpl(
-                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper, htmlSanitizer
+                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper, htmlSanitizer,
+                new AuthorizationGuard()
         );
     }
 

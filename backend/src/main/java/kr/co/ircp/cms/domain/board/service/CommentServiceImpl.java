@@ -11,10 +11,8 @@ import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.BbsCommentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
+import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -40,6 +37,7 @@ public class CommentServiceImpl implements CommentService {
     private final BbsMasterMapper bbsMasterMapper;
     private final BbsPostMapper bbsPostMapper;
     private final BbsCommentMapper bbsCommentMapper;
+    private final AuthorizationGuard authorizationGuard;
 
     @Override
     public List<CommentSummary> listComments(Long postId) {
@@ -79,7 +77,7 @@ public class CommentServiceImpl implements CommentService {
         BbsComment comment = bbsCommentMapper.findById(commentId)
                 .orElseThrow(() -> new CommentNotFoundException(commentId));
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 수정 허용
-        ensureOwnerOrAdmin(comment.getAuthorId(), requesterId, "댓글 수정 권한이 없습니다.");
+        authorizationGuard.ensureOwnerOrAdmin(comment.getAuthorId(), requesterId, "댓글 수정 권한이 없습니다.");
         comment.setContent(content);
         bbsCommentMapper.update(comment);
         return toSummary(comment, Collections.emptyList());
@@ -91,40 +89,11 @@ public class CommentServiceImpl implements CommentService {
         BbsComment comment = bbsCommentMapper.findById(commentId)
                 .orElseThrow(() -> new CommentNotFoundException(commentId));
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 삭제 허용
-        ensureOwnerOrAdmin(comment.getAuthorId(), requesterId, "댓글 삭제 권한이 없습니다.");
+        authorizationGuard.ensureOwnerOrAdmin(comment.getAuthorId(), requesterId, "댓글 삭제 권한이 없습니다.");
         bbsCommentMapper.deleteById(commentId);
     }
 
     // ─── 헬퍼 ────────────────────────────────────────────────────────────────
-
-    /**
-     * 소유권 또는 관리자 권한 검증.
-     *
-     * <p>SPEC-CMS-SECURITY-IDOR — 본인 또는 ADMIN/SUPER_ADMIN/CONTENT_ADMIN 권한 보유자만 허용.
-     */
-    private void ensureOwnerOrAdmin(Long ownerId, Long requesterId, String denyMessage) {
-        if (requesterId != null && Objects.equals(ownerId, requesterId)) {
-            return;
-        }
-        if (currentUserIsAdmin()) {
-            return;
-        }
-        throw new AccessDeniedException(denyMessage);
-    }
-
-    /** SecurityContext에서 ADMIN/SUPER_ADMIN/CONTENT_ADMIN 권한 여부 확인. */
-    private boolean currentUserIsAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || auth.getAuthorities() == null) {
-            return false;
-        }
-        return auth.getAuthorities().stream().anyMatch(a -> {
-            String role = a.getAuthority();
-            return "ROLE_ADMIN".equals(role)
-                    || "ROLE_SUPER_ADMIN".equals(role)
-                    || "ROLE_CONTENT_ADMIN".equals(role);
-        });
-    }
 
     /** 평면 목록을 1단계 트리로 조립. */
     private List<CommentSummary> buildTree(List<BbsComment> flat) {
