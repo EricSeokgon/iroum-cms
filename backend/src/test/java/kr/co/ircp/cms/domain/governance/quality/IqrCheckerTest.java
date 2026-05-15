@@ -29,13 +29,14 @@ import static org.mockito.Mockito.when;
 class IqrCheckerTest {
 
     @Mock private SafeIdentifierValidator validator;
+    @Mock private DataQualityTableAllowlist allowlist;
     @Mock private JdbcTemplate jdbc;
 
     private IqrChecker checker;
 
     @BeforeEach
     void setUp() {
-        checker = new IqrChecker(validator);
+        checker = new IqrChecker(validator, allowlist);
     }
 
     private DataQualityRule rule(BigDecimal threshold) {

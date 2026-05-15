@@ -30,7 +30,8 @@ import java.util.Set;
  * 먼저 호출한 뒤 {@link SafeIdentifierValidator} 로 information_schema 검증을 수행.
  */
 // @MX:ANCHOR: [AUTO] DataQualityTableAllowlist — 품질 측정 SQL 인젝션 2차 방어선
-// @MX:REASON: 외부 입력 식별자가 직접 SQL 본문에 들어가는 모든 신규 측정 코드는 본 게이트 통과 필수
+// @MX:REASON: 5개 QualityChecker(NullRatio/Range/IQR/Unique/Freshness)가 check() 진입 시 ensureAllowed() 호출
+//             — 허용목록 미등록 테이블 또는 전역 차단 컬럼 접근을 IllegalArgumentException으로 차단
 // @MX:SPEC: SPEC-CMS-SECURITY-HIGH-5
 @Component
 public class DataQualityTableAllowlist {

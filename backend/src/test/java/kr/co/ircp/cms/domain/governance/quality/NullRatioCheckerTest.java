@@ -28,13 +28,14 @@ import static org.mockito.Mockito.when;
 class NullRatioCheckerTest {
 
     @Mock private SafeIdentifierValidator validator;
+    @Mock private DataQualityTableAllowlist allowlist;
     @Mock private JdbcTemplate jdbc;
 
     private NullRatioChecker checker;
 
     @BeforeEach
     void setUp() {
-        checker = new NullRatioChecker(validator);
+        checker = new NullRatioChecker(validator, allowlist);
     }
 
     private DataQualityRule rule(BigDecimal threshold) {

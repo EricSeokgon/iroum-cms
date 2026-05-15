@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 public class RangeChecker implements QualityChecker {
 
     private final SafeIdentifierValidator validator;
+    private final DataQualityTableAllowlist allowlist;
 
     @Override
     public String supportedType() {
@@ -29,6 +30,7 @@ public class RangeChecker implements QualityChecker {
     @Override
     public QualityCheckResult check(DataQualityRule rule, JdbcTemplate jdbc) {
         try {
+            allowlist.ensureAllowed(rule.getTargetTable(), rule.getTargetColumn());
             validator.validateTable(rule.getTargetTable());
             validator.validateColumn(rule.getTargetTable(), rule.getTargetColumn());
 

@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 public class FreshnessChecker implements QualityChecker {
 
     private final SafeIdentifierValidator validator;
+    private final DataQualityTableAllowlist allowlist;
 
     @Override
     public String supportedType() {
@@ -29,6 +30,8 @@ public class FreshnessChecker implements QualityChecker {
     @Override
     public QualityCheckResult check(DataQualityRule rule, JdbcTemplate jdbc) {
         try {
+            // FRESHNESS는 컬럼 측정 없이 테이블 전체 대상 — 컬럼 인수는 null
+            allowlist.ensureAllowed(rule.getTargetTable(), null);
             validator.validateTable(rule.getTargetTable());
 
             // created_at 컬럼이 없는 테이블은 9999로 처리 (위반)

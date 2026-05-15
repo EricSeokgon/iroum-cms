@@ -29,13 +29,14 @@ import static org.mockito.Mockito.when;
 class UniqueCheckerTest {
 
     @Mock private SafeIdentifierValidator validator;
+    @Mock private DataQualityTableAllowlist allowlist;
     @Mock private JdbcTemplate jdbc;
 
     private UniqueChecker checker;
 
     @BeforeEach
     void setUp() {
-        checker = new UniqueChecker(validator);
+        checker = new UniqueChecker(validator, allowlist);
     }
 
     private DataQualityRule rule() {

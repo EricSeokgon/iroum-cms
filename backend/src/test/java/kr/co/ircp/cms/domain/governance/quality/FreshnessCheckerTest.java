@@ -28,13 +28,14 @@ import static org.mockito.Mockito.when;
 class FreshnessCheckerTest {
 
     @Mock private SafeIdentifierValidator validator;
+    @Mock private DataQualityTableAllowlist allowlist;
     @Mock private JdbcTemplate jdbc;
 
     private FreshnessChecker checker;
 
     @BeforeEach
     void setUp() {
-        checker = new FreshnessChecker(validator);
+        checker = new FreshnessChecker(validator, allowlist);
     }
 
     private DataQualityRule rule(BigDecimal threshold) {

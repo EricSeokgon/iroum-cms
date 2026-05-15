@@ -28,13 +28,14 @@ import static org.mockito.Mockito.when;
 class RangeCheckerTest {
 
     @Mock private SafeIdentifierValidator validator;
+    @Mock private DataQualityTableAllowlist allowlist;
     @Mock private JdbcTemplate jdbc;
 
     private RangeChecker checker;
 
     @BeforeEach
     void setUp() {
-        checker = new RangeChecker(validator);
+        checker = new RangeChecker(validator, allowlist);
     }
 
     private DataQualityRule.DataQualityRuleBuilder baseRule() {
