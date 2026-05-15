@@ -80,6 +80,10 @@ import kr.co.ircp.cms.domain.search.exception.SearchLogNotFoundException;
 import kr.co.ircp.cms.domain.search.exception.SearchQueryTooLongException;
 import kr.co.ircp.cms.domain.search.exception.SynonymNotFoundException;
 import kr.co.ircp.cms.domain.search.exception.SynonymSelfException;
+import kr.co.ircp.cms.domain.system.code.exception.CodeDuplicateException;
+import kr.co.ircp.cms.domain.system.code.exception.CodeGroupInUseException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -940,6 +944,39 @@ public class GlobalExceptionHandler {
         return detail;
     }
 
+    // ─── DB 무결성 제약 위반 공통 핸들러 ─────────────────────────────────────────
+
+    /**
+     * DB Unique 제약 위반 → 409 Conflict.
+     *
+     * <p>uk_dashboard_owner_name, uk_code_group_code 등 UNIQUE 인덱스 위반 시.
+     * DuplicateKeyException 은 DataIntegrityViolationException 의 하위 클래스이므로
+     * Spring 이 더 구체적인 이 핸들러를 우선 선택한다.
+     */
+    @ExceptionHandler(DuplicateKeyException.class)
+    public ProblemDetail handleDuplicateKey(DuplicateKeyException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "이미 존재하는 값입니다.");
+        detail.setTitle("Duplicate Key");
+        detail.setProperty("code", "DUPLICATE_KEY");
+        return detail;
+    }
+
+    /**
+     * DB 참조 무결성 위반 (FK RESTRICT 등) → 409 Conflict.
+     *
+     * <p>자식 레코드가 존재하는 부모 삭제 시도, NOT NULL 위반 외
+     * DuplicateKeyException 으로 처리되지 않는 제약 위반을 처리한다.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ProblemDetail handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "데이터 무결성 제약 위반입니다.");
+        detail.setTitle("Data Integrity Violation");
+        detail.setProperty("code", "DATA_INTEGRITY_VIOLATION");
+        return detail;
+    }
+
     // ─── SPEC-CMS-004 Content Domain Exceptions ─────────────────────────────
 
     /** 메뉴 깊이 초과 → 400. REQ-CONTENT-001-D-1 */
@@ -1056,6 +1093,26 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         detail.setTitle("Template In Use");
         detail.setProperty("code", "TEMPLATE_IN_USE");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-005 System Domain Exceptions ──────────────────────────────
+
+    /** (groupCode, code) UNIQUE 위반 → 409. REQ-SYSTEM-004-D-2 */
+    @ExceptionHandler(CodeDuplicateException.class)
+    public ProblemDetail handleCodeDuplicate(CodeDuplicateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Code Duplicate");
+        detail.setProperty("code", "CODE_DUPLICATE");
+        return detail;
+    }
+
+    /** 사용 중인 코드 그룹 삭제 거부 → 409. REQ-SYSTEM-004-D-1 */
+    @ExceptionHandler(CodeGroupInUseException.class)
+    public ProblemDetail handleCodeGroupInUse(CodeGroupInUseException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Code Group In Use");
+        detail.setProperty("code", "CODE_GROUP_IN_USE");
         return detail;
     }
 }

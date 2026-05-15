@@ -141,7 +141,7 @@ class DashboardLayoutIT extends AbstractIntegrationTest {
     /** widgetId, instanceId, position 으로 LayoutWidgetEntry JSON 문자열 생성. */
     private String entry(Long widgetId, String instanceId, String position, int sortOrder) {
         return "{\"widgetId\":" + widgetId + ",\"instanceId\":\"" + instanceId + "\","
-                + "\"position\":\"" + position.replace("\"", "\\\"") + "\","
+                + "\"position\":\"" + position + "\","
                 + "\"configOverride\":\"{}\",\"sortOrder\":" + sortOrder + "}";
     }
 
