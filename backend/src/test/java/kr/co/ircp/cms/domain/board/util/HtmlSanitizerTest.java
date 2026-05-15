@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>SPEC-CMS-SECURITY-XSS — Stored XSS 방어 동작을 검증한다.
  * Safelist 정책에 따라 script/iframe/on* 이벤트 핸들러는 제거되어야 하며,
- * 디자인 시스템 호환을 위해 class/style 속성은 유지된다.
+ * class 속성은 유지되고 style 속성은 CSS injection 방어를 위해 제거된다.
  */
 @DisplayName("HtmlSanitizer — Stored XSS 방어 동작 검증")
 class HtmlSanitizerTest {
@@ -82,14 +82,14 @@ class HtmlSanitizerTest {
     }
 
     @Test
-    @DisplayName("sanitize — class/style 속성은 디자인 시스템 호환을 위해 유지된다")
-    void sanitize_preservesClassAndStyle() {
+    @DisplayName("sanitize — class 속성은 유지되고 style 속성은 CSS injection 방어로 제거된다")
+    void sanitize_preservesClassRemovesStyle() {
         String input = "<p class=\"intro\" style=\"color: red;\">스타일 본문</p>";
         String result = sanitizer.sanitize(input);
         assertThat(result).contains("class=\"intro\"");
-        // style 속성도 유지되어야 함
-        assertThat(result).contains("style");
-        assertThat(result).contains("color");
+        // style 속성은 CSS injection 벡터로 판정, 제거되어야 함
+        assertThat(result).doesNotContain("style=");
+        assertThat(result).doesNotContain("color: red");
     }
 
     @Test

@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -94,6 +95,10 @@ public class SecurityConfig {
                 .referrerPolicy(rp -> rp.policy(
                         ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .contentSecurityPolicy(csp -> csp.policyDirectives(contentSecurityPolicy))
+                // WARN-2 수정: Permissions-Policy — 민감 브라우저 API 비활성화
+                .addHeaderWriter(new StaticHeadersWriter(
+                        "Permissions-Policy",
+                        "camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self)"))
             )
             // Stateless 세션 (JWT 사용)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
