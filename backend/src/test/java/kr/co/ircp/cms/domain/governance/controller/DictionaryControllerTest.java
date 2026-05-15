@@ -19,6 +19,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withRole;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -135,7 +138,6 @@ class DictionaryControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("PUT /dictionary/{id} — 수정 200 OK")
     void update_returnsOk() throws Exception {
         // given
@@ -145,10 +147,11 @@ class DictionaryControllerTest {
         when(service.update(any(DataDictionary.class), any()))
                 .thenReturn(sampleEntry(50L, "user", "email"));
 
-        // when & then
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환 — JwtPrincipal 인증 토큰 주입
         mockMvc.perform(put("/api/v1/governance/dictionary/50")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withRole("ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(50));
     }

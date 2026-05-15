@@ -15,8 +15,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withAuthority;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -66,7 +68,6 @@ class ExportControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:WRITE"})
     @DisplayName("POST /dashboard/export — 동기 완료 시 200 OK + body")
     void create_completed_returnsOk() throws Exception {
         ExportRequest req = new ExportRequest("CSV", "{\"dashboard_id\":1}", false);
@@ -75,7 +76,8 @@ class ExportControllerTest {
 
         mockMvc.perform(post("/api/v1/dashboard/export")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:WRITE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -83,7 +85,6 @@ class ExportControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:WRITE"})
     @DisplayName("POST /dashboard/export — 비동기 PROCESSING 시 202 Accepted")
     void create_processing_returnsAccepted() throws Exception {
         ExportRequest req = new ExportRequest("EXCEL", "{\"dashboard_id\":1}", true);
@@ -92,14 +93,14 @@ class ExportControllerTest {
 
         mockMvc.perform(post("/api/v1/dashboard/export")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:WRITE"))))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(11))
                 .andExpect(jsonPath("$.status").value("PROCESSING"));
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:WRITE"})
     @DisplayName("POST /dashboard/export — exportType 누락 시 400 Bad Request")
     void create_missingExportType_returns400() throws Exception {
         // exportType(@NotBlank) + scope(@NotNull) 누락
@@ -107,17 +108,18 @@ class ExportControllerTest {
 
         mockMvc.perform(post("/api/v1/dashboard/export")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                        .content(invalidJson)
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:WRITE"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:READ"})
     @DisplayName("GET /dashboard/export/{id}/status — 진행 상태 조회 200 OK")
     void status_returnsOkWithStatus() throws Exception {
         when(service.getStatus(eq(7L), any())).thenReturn(sample(7L, "EXCEL", "COMPLETED"));
 
-        mockMvc.perform(get("/api/v1/dashboard/export/7/status"))
+        mockMvc.perform(get("/api/v1/dashboard/export/7/status")
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(7))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -125,7 +127,6 @@ class ExportControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:READ"})
     @DisplayName("GET /dashboard/export — 본인 이력 목록 200 OK")
     void history_returnsOkWithHistory() throws Exception {
         when(service.listHistory(any(), eq("COMPLETED"))).thenReturn(List.of(
@@ -133,7 +134,9 @@ class ExportControllerTest {
                 sample(2L, "EXCEL", "COMPLETED")
         ));
 
-        mockMvc.perform(get("/api/v1/dashboard/export").param("status", "COMPLETED"))
+        mockMvc.perform(get("/api/v1/dashboard/export")
+                        .param("status", "COMPLETED")
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(1))
@@ -141,7 +144,6 @@ class ExportControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:READ"})
     @DisplayName("GET /dashboard/export/{id}/download — CSV 다운로드 200 + UTF-8 BOM")
     void download_csv_returnsOkWithBom() throws Exception {
         ExportHistory history = ExportHistory.builder()
@@ -153,7 +155,8 @@ class ExportControllerTest {
         when(service.verifyDownload(eq(50L), any(), anyBoolean(), any())).thenReturn(history);
 
         mockMvc.perform(get("/api/v1/dashboard/export/50/download")
-                        .param("sig", "abc123"))
+                        .param("sig", "abc123")
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type",
                         org.hamcrest.Matchers.containsString("text/csv")))
@@ -164,7 +167,6 @@ class ExportControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:EXPORT:READ"})
     @DisplayName("GET /dashboard/export/{id}/download — EXCEL 다운로드 200 + 올바른 Content-Type")
     void download_excel_returnsOkWithExcelContentType() throws Exception {
         ExportHistory history = ExportHistory.builder()
@@ -176,7 +178,8 @@ class ExportControllerTest {
         when(service.verifyDownload(eq(51L), any(), anyBoolean(), any())).thenReturn(history);
 
         mockMvc.perform(get("/api/v1/dashboard/export/51/download")
-                        .param("sig", "xyz"))
+                        .param("sig", "xyz")
+                        .with(jwtAuth(withAuthority("DASHBOARD:EXPORT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type",
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

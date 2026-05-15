@@ -18,6 +18,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withRole;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -113,7 +116,6 @@ class DashboardWidgetControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
     @DisplayName("POST /dashboard/widgets — 위젯 생성 200 OK (SUPER_ADMIN)")
     void create_returnsOkWithWidget() throws Exception {
         WidgetRequest req = new WidgetRequest(
@@ -124,9 +126,11 @@ class DashboardWidgetControllerTest {
         when(service.create(any(WidgetRequest.class), any()))
                 .thenReturn(sampleWidget(20L, "NEW_WIDGET", "BAR_CHART"));
 
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환을 위해 JwtPrincipal 인증 토큰 주입
         mockMvc.perform(post("/api/v1/dashboard/widgets")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withRole("SUPER_ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(20))
                 .andExpect(jsonPath("$.code").value("NEW_WIDGET"));
@@ -147,7 +151,6 @@ class DashboardWidgetControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"DEPT_ADMIN"})
     @DisplayName("PUT /dashboard/widgets/{id} — 위젯 수정 200 OK (DEPT_ADMIN)")
     void update_returnsOkWithUpdatedWidget() throws Exception {
         WidgetRequest req = new WidgetRequest(
@@ -155,12 +158,16 @@ class DashboardWidgetControllerTest {
                 "LINE_CHART", "KPI_CACHE", "{}", "{}",
                 List.of("period"), List.of("DEPT_ADMIN"), "ACTIVE"
         );
-        when(service.update(eq(5L), any(WidgetRequest.class)))
+        // 운영 컨트롤러는 4-arg update(id, req, userId, roles) 오버로드를 호출하므로
+        // 동일 시그니처로 stubbing 한다.
+        when(service.update(eq(5L), any(WidgetRequest.class), any(), anyList()))
                 .thenReturn(sampleWidget(5L, "UPDATED", "LINE_CHART"));
 
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환을 위해 JwtPrincipal 인증 토큰 주입
         mockMvc.perform(put("/api/v1/dashboard/widgets/5")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withRole("DEPT_ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.code").value("UPDATED"));

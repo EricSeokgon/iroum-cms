@@ -22,6 +22,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withRole;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -102,7 +105,6 @@ class RetentionPolicyControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("POST /retention-policies — 생성 201 Created + Location 헤더 + 응답 ID")
     void create_returnsCreatedWithBody() throws Exception {
         // given
@@ -112,10 +114,11 @@ class RetentionPolicyControllerTest {
         RetentionPolicy created = samplePolicy(10L, "audit_log");
         when(service.create(any(RetentionPolicy.class))).thenReturn(created);
 
-        // when & then
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환 — JwtPrincipal 인증 토큰 주입
         mockMvc.perform(post("/api/v1/governance/retention-policies")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withRole("ADMIN"))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.targetTable").value("audit_log"));
@@ -136,7 +139,6 @@ class RetentionPolicyControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("PUT /retention-policies/{id} — 수정 200 OK + 응답 body")
     void update_returnsOkWithUpdatedPolicy() throws Exception {
         // given
@@ -152,10 +154,11 @@ class RetentionPolicyControllerTest {
                 .build();
         when(service.update(any(RetentionPolicy.class))).thenReturn(updated);
 
-        // when & then
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환 — JwtPrincipal 인증 토큰 주입
         mockMvc.perform(put("/api/v1/governance/retention-policies/5")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withRole("ADMIN"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.retentionMonths").value(60));

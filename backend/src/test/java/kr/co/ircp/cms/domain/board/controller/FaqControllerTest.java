@@ -146,7 +146,6 @@ class FaqControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN")
     @DisplayName("POST /api/v1/faqs — ADMIN 인증 시 201 Created + 등록된 FAQ 반환")
     void create_validRequest_returns201_whenAdmin() throws Exception {
         // given
@@ -156,10 +155,15 @@ class FaqControllerTest {
                 "<p>회원가입 페이지 안내</p>", 1
         );
 
+        // @AuthenticationPrincipal(expression="userId") SpEL 호환 — JwtPrincipal 사용
+        JwtPrincipal adminPrincipal = new JwtPrincipal(99L, "admin", Set.of("ADMIN"));
+
         // when & then
         mockMvc.perform(post("/api/v1/faqs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(adminPrincipal))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(7));
     }
@@ -215,17 +219,22 @@ class FaqControllerTest {
     // ─── 인증/인가 거부 시나리오 (REQ-BOARD-007 보안 가드) ─────────────────────
 
     @Test
-    @DisplayName("POST /api/v1/faqs — 미인증 시 403 Forbidden (익명 인증 토큰 → AccessDeniedException)")
+    @DisplayName("POST /api/v1/faqs — 권한 없는 사용자 인증 시 403 Forbidden (AccessDeniedException)")
     void create_rejectsUnauthenticated() throws Exception {
-        // AnonymousAuthenticationFilter 가 익명 Authentication 을 부여하므로
-        // @PreAuthorize 거부 시 AccessDeniedException → HTTP 403 으로 응답된다.
+        // 익명 사용자 케이스는 IT 레이어(@SpringBootTest, JWT 필터 동작)에서 검증한다.
+        // 슬라이스에서는 @AuthenticationPrincipal(expression="userId") SpEL 평가가
+        // 인자 해석 단계에서 먼저 실행되므로 익명(String) 주체로 ServletException 이 발생한다.
+        // 따라서 슬라이스에서는 "권한 없는 인증 사용자" 시나리오로 403 응답을 검증한다.
+        JwtPrincipal anonymousLikePrincipal = new JwtPrincipal(0L, "guest", Set.of("GUEST"));
         FaqCreateRequest req = new FaqCreateRequest(
                 "GENERAL", "익명 시도", "<p>본문</p>", 1
         );
         String body = objectMapper.writeValueAsString(req);
         mockMvc.perform(post("/api/v1/faqs")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+                        .content(body)
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(anonymousLikePrincipal))))
                 .andExpect(status().isForbidden());
     }
 

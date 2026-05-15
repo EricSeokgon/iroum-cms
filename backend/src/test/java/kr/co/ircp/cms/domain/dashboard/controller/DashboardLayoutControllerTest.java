@@ -14,8 +14,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withAuthority;
 
 import java.time.Instant;
 import java.util.List;
@@ -62,7 +64,6 @@ class DashboardLayoutControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:READ"})
     @DisplayName("GET /dashboard/layouts — 사용자 레이아웃 목록 200 OK")
     void list_returnsOkWithLayouts() throws Exception {
         when(service.listForUser(any(), anyList())).thenReturn(List.of(
@@ -70,7 +71,9 @@ class DashboardLayoutControllerTest {
                 sample(2L, "공유 레이아웃", false)
         ));
 
-        mockMvc.perform(get("/api/v1/dashboard/layouts").param("roles", "DEPT_ADMIN"))
+        mockMvc.perform(get("/api/v1/dashboard/layouts")
+                        .param("roles", "DEPT_ADMIN")
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].name").value("내 레이아웃"))
@@ -78,19 +81,21 @@ class DashboardLayoutControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:READ"})
     @DisplayName("GET /dashboard/layouts/{id} — 단건 조회 200 OK")
     void get_returnsOkWithLayout() throws Exception {
-        when(service.getById(eq(7L))).thenReturn(sample(7L, "테스트 레이아웃", false));
+        // 운영 컨트롤러는 service.getByIdForUser(id, resolveRoles()) 를 호출하므로
+        // 동일 메소드를 stubbing 해야 한다.
+        when(service.getByIdForUser(eq(7L), anyList()))
+                .thenReturn(sample(7L, "테스트 레이아웃", false));
 
-        mockMvc.perform(get("/api/v1/dashboard/layouts/7"))
+        mockMvc.perform(get("/api/v1/dashboard/layouts/7")
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:READ"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(7))
                 .andExpect(jsonPath("$.name").value("테스트 레이아웃"));
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("POST /dashboard/layouts — 레이아웃 생성 200 OK + body")
     void create_returnsOkWithLayout() throws Exception {
         LayoutRequest req = new LayoutRequest("새 레이아웃", "설명", "{\"cols\":12}",
@@ -100,14 +105,14 @@ class DashboardLayoutControllerTest {
 
         mockMvc.perform(post("/api/v1/dashboard/layouts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.name").value("새 레이아웃"));
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("POST /dashboard/layouts — name 필수 누락 시 400 Bad Request")
     void create_missingName_returns400() throws Exception {
         // name(@NotBlank) 누락
@@ -115,12 +120,12 @@ class DashboardLayoutControllerTest {
 
         mockMvc.perform(post("/api/v1/dashboard/layouts")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                        .content(invalidJson)
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("PUT /dashboard/layouts/{id} — 레이아웃 수정 200 OK")
     void update_returnsOkWithUpdatedLayout() throws Exception {
         LayoutRequest req = new LayoutRequest("수정된 이름", "수정 설명", null, null, null);
@@ -129,39 +134,40 @@ class DashboardLayoutControllerTest {
 
         mockMvc.perform(put("/api/v1/dashboard/layouts/5")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
+                        .content(objectMapper.writeValueAsString(req))
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(5))
                 .andExpect(jsonPath("$.name").value("수정된 이름"));
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("DELETE /dashboard/layouts/{id} — 레이아웃 삭제 204 No Content")
     void delete_returnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/dashboard/layouts/3"))
+        mockMvc.perform(delete("/api/v1/dashboard/layouts/3")
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isNoContent());
 
         verify(service).delete(eq(3L), any());
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("POST /dashboard/layouts/{id}/clone — 레이아웃 deep-copy 200 OK")
     void clone_returnsOkWithClonedLayout() throws Exception {
         when(service.clone(eq(7L), any())).thenReturn(sample(99L, "복제본", false));
 
-        mockMvc.perform(post("/api/v1/dashboard/layouts/7/clone"))
+        mockMvc.perform(post("/api/v1/dashboard/layouts/7/clone")
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(99))
                 .andExpect(jsonPath("$.name").value("복제본"));
     }
 
     @Test
-    @WithMockUser(authorities = {"DASHBOARD:LAYOUT:WRITE"})
     @DisplayName("PUT /dashboard/layouts/{id}/default — 기본 레이아웃 지정 204 No Content")
     void setDefault_returnsNoContent() throws Exception {
-        mockMvc.perform(put("/api/v1/dashboard/layouts/4/default"))
+        mockMvc.perform(put("/api/v1/dashboard/layouts/4/default")
+                        .with(jwtAuth(withAuthority("DASHBOARD:LAYOUT:WRITE"))))
                 .andExpect(status().isNoContent());
 
         verify(service).setDefault(eq(4L), any());
