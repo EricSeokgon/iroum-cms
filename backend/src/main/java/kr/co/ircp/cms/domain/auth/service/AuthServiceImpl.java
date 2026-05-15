@@ -33,7 +33,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * AuthService 구현체 (Step 2 GREEN).
@@ -60,6 +63,31 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationService verificationService;
     private final EmailService emailService;
     private final EmailEncryptionService emailEncryptionService;
+
+    // SPEC-CMS-SECURITY-MEDIUM-13 — IP 기반 로그인 실패 추적.
+    // 동일 IP가 서로 다른 계정에 대해 시도하는 enumeration/brute-force를 방어한다.
+    // ConcurrentHashMap + AtomicInteger 인메모리 카운터로 RateLimitFilter와 동일한 단순 패턴 사용.
+    // 단일 인스턴스 한계는 RateLimitFilter와 동일 — 분산 환경에서는 Redis로 격상 필요.
+    /** 10분 윈도우 내 IP당 누적 실패 횟수. */
+    private static final int IP_FAIL_THRESHOLD = 20;
+    /** IP 블록 윈도우 (밀리초). 10분. */
+    private static final long IP_BLOCK_WINDOW_MS = 10L * 60L * 1000L;
+    /** 메모리 폭증 방지 상한 — 카운터 맵 키 수 초과 시 전체 reset. */
+    private static final int IP_FAIL_MAX_KEYS = 50_000;
+    /** key = IP, value = [실패횟수, 윈도우 시작 시각(epochMillis)]. */
+    private final Map<String, IpFailWindow> ipFailCounters = new ConcurrentHashMap<>();
+
+    /**
+     * IP별 실패 카운트와 윈도우 시작 시각을 함께 보관하는 슬라이딩 윈도우 단위.
+     */
+    private static final class IpFailWindow {
+        final AtomicInteger count = new AtomicInteger();
+        volatile long windowStartMs;
+
+        IpFailWindow(long nowMs) {
+            this.windowStartMs = nowMs;
+        }
+    }
 
     public AuthServiceImpl(
             UserMapper userMapper,
@@ -99,9 +127,29 @@ public class AuthServiceImpl implements AuthService {
     public LoginOutcome login(LoginRequest req, String ipAddress, String userAgent) {
         Instant now = Instant.now();
 
+        // 0. SPEC-CMS-SECURITY-MEDIUM-13 — IP 기반 차단 우선 검사.
+        // 동일 IP가 여러 계정을 시도하는 enumeration/brute-force를 방어한다.
+        // DB 조회 이전에 차단하여 비용·타이밍 누설을 최소화한다.
+        if (isIpBlocked(ipAddress, now)) {
+            // 응답 본문에는 차단 사실을 노출하지 않고 일반 자격증명 오류로 통일.
+            // 서버 로그(loginHistory)에만 IP_BLOCKED 사유를 기록한다.
+            loginHistoryMapper.insert(LoginHistory.builder()
+                    .username(req.username())
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .success(false)
+                    .failureReason("IP_BLOCKED")
+                    .createdAt(now)
+                    .build());
+            throw new InvalidCredentialsException();
+        }
+
         // 1. 사용자 조회 — 미존재 시 실패 이력 기록 후 예외
+        // SPEC-CMS-SECURITY-MEDIUM-13 — enumeration 방지: 사용자 존재/미존재 모두 동일하게
+        // InvalidCredentialsException("AUTH_INVALID_CREDENTIALS") 단일 응답으로 반환한다.
         User user = userMapper.findByUsername(req.username()).orElse(null);
         if (user == null) {
+            recordIpFailure(ipAddress, now);
             loginHistoryMapper.insert(LoginHistory.builder()
                     .username(req.username())
                     .ipAddress(ipAddress)
@@ -144,6 +192,9 @@ public class AuthServiceImpl implements AuthService {
             if (newFailCount >= 5) {
                 userMapper.lockAccount(req.username(), now.plusSeconds(30 * 60));
             }
+
+            // SPEC-CMS-SECURITY-MEDIUM-13 — IP 기반 누적 실패 기록.
+            recordIpFailure(ipAddress, now);
 
             loginHistoryMapper.insert(LoginHistory.builder()
                     .userId(user.getId())
@@ -416,5 +467,53 @@ public class AuthServiceImpl implements AuthService {
      */
     private String sha256Hex(String input) {
         return HashUtil.sha256Hex(input);
+    }
+
+    /**
+     * SPEC-CMS-SECURITY-MEDIUM-13 — IP 기반 로그인 실패 누적 기록.
+     *
+     * <p>10분 슬라이딩 윈도우 내에서 동일 IP의 실패 횟수를 누적한다.
+     * 윈도우가 만료되면 카운트를 초기화한다. 메모리 보호를 위해 키 상한 초과 시 전체 reset.
+     */
+    private void recordIpFailure(String ipAddress, Instant now) {
+        if (ipAddress == null || ipAddress.isBlank()) {
+            return;
+        }
+        long nowMs = now.toEpochMilli();
+
+        // 메모리 보호: 키 수 폭증 시 강제 reset.
+        if (ipFailCounters.size() > IP_FAIL_MAX_KEYS) {
+            ipFailCounters.clear();
+        }
+
+        IpFailWindow window = ipFailCounters.computeIfAbsent(ipAddress, k -> new IpFailWindow(nowMs));
+        // 윈도우 만료 시 카운트 초기화 (단순 슬라이딩 — 정확성보다 메모리 안정성 우선).
+        if (nowMs - window.windowStartMs > IP_BLOCK_WINDOW_MS) {
+            window.windowStartMs = nowMs;
+            window.count.set(0);
+        }
+        window.count.incrementAndGet();
+    }
+
+    /**
+     * SPEC-CMS-SECURITY-MEDIUM-13 — IP가 현재 차단 상태인지 검사.
+     *
+     * <p>10분 내 누적 실패 횟수가 임계치(20회) 이상이면 차단으로 판정한다.
+     * 차단된 IP는 사용자 enumeration의 발신지로 간주되어 DB 조회 이전에 거부된다.
+     */
+    private boolean isIpBlocked(String ipAddress, Instant now) {
+        if (ipAddress == null || ipAddress.isBlank()) {
+            return false;
+        }
+        IpFailWindow window = ipFailCounters.get(ipAddress);
+        if (window == null) {
+            return false;
+        }
+        long nowMs = now.toEpochMilli();
+        // 윈도우 만료된 경우 차단 해제 — 다음 실패 기록 시 자연스럽게 초기화된다.
+        if (nowMs - window.windowStartMs > IP_BLOCK_WINDOW_MS) {
+            return false;
+        }
+        return window.count.get() >= IP_FAIL_THRESHOLD;
     }
 }

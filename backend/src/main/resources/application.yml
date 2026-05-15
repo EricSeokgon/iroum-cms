@@ -42,8 +42,10 @@ management:
     backupStatus:
       enabled: true
   info:
+    # SPEC-CMS-SECURITY-LOW-17 — 환경 변수(시스템 메타데이터) 노출 방지.
+    # /actuator/info 응답에 env 정보가 포함되지 않도록 비활성화. 로컬 디버깅 시에만 application-local.yml 에서 재정의.
     env:
-      enabled: true
+      enabled: false
 
 info:
   app:
@@ -113,7 +115,9 @@ iroum:
 logging:
   level:
     root: INFO
-    kr.co.ircp.cms: DEBUG
+    # SPEC-CMS-SECURITY-MEDIUM-16 — 운영환경에서 DEBUG 로그 비활성 — PII 누설 방지.
+    # 로컬 개발 시 application-local.yml 에서 DEBUG 로 재정의된다.
+    kr.co.ircp.cms: INFO
     org.springframework.security: INFO
     org.mybatis: INFO
     org.flywaydb: INFO

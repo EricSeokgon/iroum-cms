@@ -35,6 +35,14 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     // @MX:REASON: HS256 최소 256비트(32바이트) 미충족 시 jjwt가 WeakKeyException 발생
     private static final int MIN_SECRET_BYTES = 32;
 
+    /**
+     * SPEC-CMS-SECURITY-MEDIUM-15 — JWT audience(`aud`) 고정 값.
+     *
+     * <p>토큰 발급/검증 시 동일 값을 강제하여 서로 다른 서비스(예: 외부 OAuth IdP) 에서
+     * 발급된 토큰을 본 CMS API가 수락하지 못하도록 격리한다.
+     */
+    private static final String JWT_AUDIENCE = "iroum-cms";
+
     private final JwtProperties jwtProperties;
     private final SecretKey signingKey;
 
@@ -89,8 +97,10 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
         Instant now = Instant.now();
         Instant exp = now.plus(jwtProperties.accessTokenTtl());
 
+        // SPEC-CMS-SECURITY-MEDIUM-15 — `aud=iroum-cms` 클레임 포함.
         return Jwts.builder()
                 .subject(username)
+                .audience().add(JWT_AUDIENCE).and()
                 .claim("uid", userId)
                 .claim("roles", roles)
                 .claim("permissions", permissions != null ? permissions : Set.of())
@@ -106,8 +116,10 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
         Instant now = Instant.now();
         Instant exp = now.plus(jwtProperties.refreshTokenTtl());
 
+        // SPEC-CMS-SECURITY-MEDIUM-15 — `aud=iroum-cms` 클레임 포함.
         return Jwts.builder()
                 .subject(String.valueOf(userId))
+                .audience().add(JWT_AUDIENCE).and()
                 .issuer(jwtProperties.issuer())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
@@ -118,9 +130,12 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     @Override
     public Optional<JwtClaims> validateAccessToken(String token) {
         try {
+            // SPEC-CMS-SECURITY-MEDIUM-15 — `aud=iroum-cms` 강제 검증.
+            // requireAudience 는 토큰의 aud 클레임에 지정 값이 포함되지 않으면 예외 발생.
             Claims claims = Jwts.parser()
                     .verifyWith(signingKey)
                     .requireIssuer(jwtProperties.issuer())
+                    .requireAudience(JWT_AUDIENCE)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
@@ -154,9 +169,11 @@ public class JwtTokenProviderImpl implements JwtTokenProvider {
     @Override
     public Optional<Long> extractUserId(String refreshToken) {
         try {
+            // SPEC-CMS-SECURITY-MEDIUM-15 — Refresh Token 도 동일하게 audience 강제 검증.
             Claims claims = Jwts.parser()
                     .verifyWith(signingKey)
                     .requireIssuer(jwtProperties.issuer())
+                    .requireAudience(JWT_AUDIENCE)
                     .build()
                     .parseSignedClaims(refreshToken)
                     .getPayload();

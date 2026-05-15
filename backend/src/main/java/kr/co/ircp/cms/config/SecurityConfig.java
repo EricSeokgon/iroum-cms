@@ -75,7 +75,12 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtFilter) throws Exception {
 
         http
-            // Stateless REST API — CSRF 비활성화
+            // SPEC-CMS-SECURITY-MEDIUM-14 — Stateless JWT API 의 CSRF 비활성화 + 보상 통제.
+            // <p>JWT Access Token 은 Authorization 헤더(Bearer)로 전송되므로 본질적으로 CSRF 안전하다.
+            //    Refresh Token 은 쿠키로 운반되지만 AuthController#buildRefreshCookie 에서
+            //    HttpOnly + Secure + SameSite=Strict 속성을 강제하여 CSRF 공격을 차단한다.
+            //    또한 CORS 정책에서 명시적 Origin 만 허용(HIGH-6)하여 cross-site 요청을 봉쇄한다.
+            //    따라서 CSRF 필터의 동기화 토큰은 불필요하다.
             .csrf(AbstractHttpConfigurer::disable)
             // CORS 설정 — HIGH-6: 명시적 Origin 만 허용
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -94,6 +99,13 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // 요청별 접근 제어
             .authorizeHttpRequests(auth -> auth
+                // SPEC-CMS-SECURITY-LOW-17/18/19 — Actuator 엔드포인트 권한 분리.
+                // health 만 PUBLIC 으로 노출하고, 그 외 모든 actuator 경로는 ADMIN 권한 필요.
+                // info(LOW-17): 환경 정보 노출 방지 (management.info.env.enabled=false 와 함께)
+                // backupStatus(LOW-18): 백업 상태 정보는 운영 민감 정보로 ADMIN 전용
+                // metrics/prometheus/loggers(LOW-19): 내부 메트릭/로거 정보 ADMIN 전용
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(
                     "/api/v1/health/**",
                     "/api/v1/auth/login",
@@ -106,10 +118,7 @@ public class SecurityConfig {
                     "/api/v1/auth/password/reset-confirm",
                     "/v3/api-docs/**",
                     "/swagger-ui/**",
-                    "/swagger-ui.html",
-                    "/actuator/health",
-                    "/actuator/info",
-                    "/actuator/backupStatus"
+                    "/swagger-ui.html"
                 ).permitAll()
                 // REQ-BOARD-001~003: 게시판·게시글·댓글 목록·상세 공개 조회 허용
                 .requestMatchers(
