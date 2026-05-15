@@ -10,20 +10,26 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
- * IP 기반 단순 Rate Limiter (HIGH-7 보안 보강).
+ * IP 기반 Rate Limiter — 키당 독립 윈도우 + 신뢰 프록시 XFF 검증 (HIGH-7, WARN-3).
  *
  * <p>SPEC-CMS-SECURITY-HIGH-7 — 로그인 / OTP / 비밀번호 재설정 엔드포인트 brute-force 방어.
  *
- * <p>Bucket4j / Resilience4j 의존성 추가 없이 ConcurrentHashMap + AtomicInteger 로
- * 60초 슬라이딩 윈도우(reset 기반) 카운터를 유지한다.
+ * <p>각 IP+경로 키가 독립 {@link WindowCounter}를 유지하므로 전역 리셋 기반
+ * 고정 윈도우의 경계 취약점(경계 직전+직후 2×한도 요청)을 제거한다.
+ *
+ * <p>X-Forwarded-For 헤더는 신뢰 프록시(RFC-1918 사설 대역 또는
+ * {@code iroum.security.ratelimit.trusted-proxies} 설정값)에서 수신된 요청에서만 사용한다.
+ * 신뢰하지 않는 공인 IP 에서 온 XFF 는 무시되어 IP 위장 차단 우회 공격을 방어한다.
  *
  * <p>경로별 분당 한도(기본):
  * <ul>
@@ -34,13 +40,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>POST /api/v1/auth/password/reset-confirm —  5회/분</li>
  * </ul>
  *
- * <p>한도 초과 시 HTTP 429 Too Many Requests JSON 응답을 반환한다.
- *
  * <p>한계(설계 의도):
  * <ul>
  *   <li>단일 인스턴스 메모리 기반 — 다중 인스턴스 운영 시 Redis/Bucket4j 분산
  *       카운터로 격상 필요(SPEC TODO).</li>
- *   <li>X-Forwarded-For 첫번째 토큰을 클라이언트 IP로 사용 — 프록시 신뢰 환경 가정.</li>
  * </ul>
  */
 // @MX:ANCHOR: [AUTO] RateLimitFilter — 인증 계열 5개 엔드포인트 공통 brute-force 게이트
@@ -52,10 +55,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    /** 카운터 윈도우(초). */
     private static final long WINDOW_SECONDS = 60L;
-
-    /** 메모리 폭증 방지 상한 — 카운터 맵 키 수 초과 시 전체 reset 한 번 추가 수행. */
     private static final int MAX_TRACKED_KEYS = 100_000;
 
     @Value("${iroum.security.ratelimit.enabled:true}")
@@ -70,34 +70,55 @@ public class RateLimitFilter extends OncePerRequestFilter {
     @Value("${iroum.security.ratelimit.password-reset-per-minute:5}")
     private int passwordResetPerMinute;
 
-    /** key = method+":"+path+"|"+ip → 현재 윈도우 카운트. */
-    private final Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
+    /**
+     * 신뢰 프록시 IP 목록 (콤마 구분).
+     * {@code PRIVATE} 토큰 포함 시 RFC-1918 사설 대역 전체를 신뢰한다(기본값).
+     * X-Forwarded-For 헤더는 이 목록에 속한 remoteAddr 에서만 신뢰된다.
+     */
+    @Value("${iroum.security.ratelimit.trusted-proxies:127.0.0.1,::1,PRIVATE}")
+    private String trustedProxiesConfig;
 
-    private final ScheduledExecutorService resetExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "rate-limit-reset");
+    /** key = method+":"+path+"|"+ip → 키당 독립 윈도우 카운터. */
+    private final Map<String, WindowCounter> counters = new ConcurrentHashMap<>();
+
+    private Set<String> trustedProxyExact = Set.of();
+    private boolean trustPrivateRanges = true; // @PostConstruct 미실행 환경(테스트)의 기본값
+
+    private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "rate-limit-cleanup");
         t.setDaemon(true);
         return t;
     });
 
-    /**
-     * Spring 빈 초기화 후 1분 주기 카운터 reset 스케줄 등록.
-     */
     @jakarta.annotation.PostConstruct
-    void scheduleReset() {
-        resetExecutor.scheduleAtFixedRate(this::resetCounters,
-                WINDOW_SECONDS, WINDOW_SECONDS, TimeUnit.SECONDS);
+    void init() {
+        parseTrustedProxies();
+        // 만료 키 정리 — 전역 clear 대신 stale 항목만 제거
+        cleanupExecutor.scheduleAtFixedRate(this::cleanupStaleCounters,
+                WINDOW_SECONDS * 2, WINDOW_SECONDS * 2, TimeUnit.SECONDS);
     }
 
-    /**
-     * 빈 소멸 시 스케줄러 정상 종료.
-     */
     @jakarta.annotation.PreDestroy
     void shutdown() {
-        resetExecutor.shutdownNow();
+        cleanupExecutor.shutdownNow();
     }
 
-    private void resetCounters() {
-        // 단순 clear — 윈도우 경계 정확도보다 메모리 안정성 우선.
+    private void parseTrustedProxies() {
+        Set<String> tokens = Arrays.stream(trustedProxiesConfig.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toCollection(java.util.HashSet::new));
+        trustPrivateRanges = tokens.remove("PRIVATE");
+        trustedProxyExact = Set.copyOf(tokens);
+    }
+
+    /** 만료된 카운터 키만 제거한다. 전역 clear 와 달리 활성 윈도우를 보존한다. */
+    void cleanupStaleCounters() {
+        counters.entrySet().removeIf(e -> e.getValue().isStale(WINDOW_SECONDS));
+    }
+
+    /** 테스트 및 강제 초기화용 — 모든 카운터를 즉시 제거한다. */
+    void resetCounters() {
         counters.clear();
     }
 
@@ -112,21 +133,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         int limit = limitFor(request);
         if (limit <= 0) {
-            // 보호 대상 경로 아님 — 그대로 통과
             chain.doFilter(request, response);
             return;
         }
 
-        // 메모리 보호: 키 수가 폭증한 경우 강제 reset
         if (counters.size() > MAX_TRACKED_KEYS) {
-            log.warn("Rate-limit counter map exceeded {} keys — forced reset.", MAX_TRACKED_KEYS);
-            counters.clear();
+            log.warn("Rate-limit counter map exceeded {} keys — forced cleanup.", MAX_TRACKED_KEYS);
+            cleanupStaleCounters();
         }
 
         String clientIp = extractIp(request);
         String key = request.getMethod() + ":" + request.getRequestURI() + "|" + clientIp;
-        AtomicInteger counter = counters.computeIfAbsent(key, k -> new AtomicInteger());
-        int current = counter.incrementAndGet();
+        WindowCounter counter = counters.computeIfAbsent(key, k -> new WindowCounter());
+        int current = counter.incrementAndGet(WINDOW_SECONDS);
 
         if (current > limit) {
             log.warn("Rate-limit exceeded: ip={} path={} count={} limit={}",
@@ -146,42 +165,74 @@ public class RateLimitFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    /**
-     * 요청 path / method 에 매칭되는 분당 허용 횟수 반환.
-     *
-     * @return 양수 = 적용 한도, 0 이하 = 미적용
-     */
     private int limitFor(HttpServletRequest request) {
-        if (!"POST".equalsIgnoreCase(request.getMethod())) {
-            return 0;
-        }
+        if (!"POST".equalsIgnoreCase(request.getMethod())) return 0;
         String path = request.getRequestURI();
-        if (path == null) {
-            return 0;
-        }
-        if (path.equals("/api/v1/auth/login")) {
-            return loginPerMinute;
-        }
+        if (path == null) return 0;
+        if (path.equals("/api/v1/auth/login")) return loginPerMinute;
         if (path.equals("/api/v1/auth/verify/request")
-                || path.equals("/api/v1/auth/verify/confirm")) {
-            return otpPerMinute;
-        }
+                || path.equals("/api/v1/auth/verify/confirm")) return otpPerMinute;
         if (path.equals("/api/v1/auth/password/reset-request")
-                || path.equals("/api/v1/auth/password/reset-confirm")) {
-            return passwordResetPerMinute;
-        }
+                || path.equals("/api/v1/auth/password/reset-confirm")) return passwordResetPerMinute;
         return 0;
     }
 
     /**
-     * 클라이언트 IP 추출 — X-Forwarded-For 첫 토큰 우선.
+     * 클라이언트 IP 추출.
+     * X-Forwarded-For 헤더는 신뢰 프록시({@link #isTrustedProxy})에서만 사용한다.
+     * 신뢰하지 않는 외부 IP 에서 온 XFF 헤더는 무시하여 IP 위장 차단 우회를 방어한다.
      */
     private String extractIp(HttpServletRequest req) {
+        String remoteAddr = req.getRemoteAddr();
         String xff = req.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
+        if (xff != null && !xff.isBlank() && isTrustedProxy(remoteAddr)) {
             return xff.split(",")[0].trim();
         }
-        String ra = req.getRemoteAddr();
-        return ra != null ? ra : "unknown";
+        return remoteAddr != null ? remoteAddr : "unknown";
+    }
+
+    /**
+     * remoteAddr 가 신뢰 프록시인지 검사한다.
+     * {@code PRIVATE} 설정 시 RFC-1918 사설 대역 전체(127.x, 10.x, 172.16-31.x, 192.168.x)를 신뢰한다.
+     */
+    boolean isTrustedProxy(String addr) {
+        if (addr == null) return false;
+        if (trustedProxyExact.contains(addr)) return true;
+        if (!trustPrivateRanges) return false;
+        if (addr.startsWith("127.") || addr.equals("::1")) return true;
+        if (addr.startsWith("10.") || addr.startsWith("192.168.")) return true;
+        if (addr.startsWith("172.")) {
+            try {
+                int second = Integer.parseInt(addr.split("\\.")[1]);
+                return second >= 16 && second <= 31;
+            } catch (Exception ignored) { return false; }
+        }
+        return false;
+    }
+
+    /**
+     * 키당 독립 고정 윈도우 카운터.
+     *
+     * <p>전역 reset 이 아닌 첫 요청 시점 기준으로 60초 윈도우를 유지한다.
+     * 전역 리셋 경계(t=0, t=60)에서 2×한도 공격이 가능하던 취약점을 제거한다.
+     */
+    static final class WindowCounter {
+        private long windowStart = 0L;
+        private int count = 0;
+
+        /** 현재 윈도우 카운트를 증가하고 반환한다. 윈도우 만료 시 새 윈도우를 시작한다. */
+        synchronized int incrementAndGet(long windowSeconds) {
+            long now = System.currentTimeMillis();
+            if (now - windowStart >= windowSeconds * 1_000L) {
+                windowStart = now;
+                count = 0;
+            }
+            return ++count;
+        }
+
+        /** 마지막 활동 이후 2×윈도우가 지난 경우 정리 대상으로 판정한다. */
+        synchronized boolean isStale(long windowSeconds) {
+            return System.currentTimeMillis() - windowStart >= 2L * windowSeconds * 1_000L;
+        }
     }
 }

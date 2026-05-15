@@ -13,7 +13,6 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
@@ -21,7 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
- * RateLimitFilter 단위 테스트 (SPEC-CMS-SECURITY-HIGH-7).
+ * RateLimitFilter 단위 테스트 (SPEC-CMS-SECURITY-HIGH-7, WARN-3).
  *
  * <p>실제 Spring 컨텍스트 없이 ReflectionTestUtils 로 {@code @Value} 필드를 직접
  * 주입하고, MockHttpServletRequest/Response 로 필터 분기 시나리오를 검증한다.
@@ -32,6 +31,7 @@ import static org.mockito.Mockito.verify;
  *   <li>보호 대상 외 경로 (GET / 비-인증 POST) — 즉시 통과</li>
  *   <li>한도 미만 / 경계 / 초과 시나리오</li>
  *   <li>IP 별 독립 카운터, X-Forwarded-For 우선순위</li>
+ *   <li>신뢰 프록시 검증 — 외부(공인) IP XFF 위장 방어</li>
  *   <li>윈도우 리셋 후 재허용</li>
  *   <li>로그인 / OTP / 비밀번호 재설정 5개 엔드포인트별 한도 적용</li>
  * </ul>
@@ -77,8 +77,8 @@ class RateLimitFilterTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, AtomicInteger> internalCounters() {
-        return (Map<String, AtomicInteger>) ReflectionTestUtils.getField(filter, "counters");
+    private Map<String, ?> internalCounters() {
+        return (Map<String, ?>) ReflectionTestUtils.getField(filter, "counters");
     }
 
     /** 윈도우 리셋 시뮬레이션 — 운영의 1분 스케줄러 대신 사용. */
@@ -276,6 +276,32 @@ class RateLimitFilterTest {
             MockHttpServletResponse res = new MockHttpServletResponse();
             filter.doFilterInternal(blocked, res, chain);
             assertThat(res.getStatus()).isEqualTo(429);
+        }
+
+        @Test
+        @DisplayName("신뢰하지 않는 공인 IP 에서 온 X-Forwarded-For 는 무시한다 — IP 위장 차단 우회 방어")
+        void untrustedProxy_xffIsIgnored_preventsIpSpoofing() throws Exception {
+            // 공인 IP(신뢰 프록시 아님)가 XFF 로 다른 IP 위장 시도
+            // → 카운터는 remoteAddr(공인 IP) 기준으로 증가해야 함
+            String publicProxyIp = "203.0.113.99"; // IANA 문서용 공인 IP
+            String spoofedIp = "1.2.3.4";
+
+            for (int i = 0; i < LOGIN_LIMIT; i++) {
+                MockHttpServletRequest req = loginPost(publicProxyIp);
+                req.addHeader("X-Forwarded-For", spoofedIp);
+                filter.doFilterInternal(req, new MockHttpServletResponse(), chain);
+            }
+            // publicProxyIp 기준 한도 초과 → 429
+            MockHttpServletRequest blocked = loginPost(publicProxyIp);
+            blocked.addHeader("X-Forwarded-For", spoofedIp);
+            MockHttpServletResponse resBlocked = new MockHttpServletResponse();
+            filter.doFilterInternal(blocked, resBlocked, chain);
+            assertThat(resBlocked.getStatus()).isEqualTo(429);
+
+            // spoofedIp 직접 요청은 카운터 독립 — 차단되지 않음
+            MockHttpServletResponse resDirect = new MockHttpServletResponse();
+            filter.doFilterInternal(loginPost(spoofedIp), resDirect, chain);
+            assertThat(resDirect.getStatus()).isEqualTo(200);
         }
     }
 
