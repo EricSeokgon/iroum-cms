@@ -152,6 +152,7 @@ public class MediaServiceImpl implements MediaService {
         }
 
         MediaAsset asset = MediaAsset.builder()
+                .uuid(UUID.fromString(uuid))
                 .type(mediaType)
                 .originalFilename(file.getOriginalFilename())
                 .storedPath(storedPath)

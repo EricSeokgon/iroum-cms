@@ -5,6 +5,7 @@ import kr.co.ircp.cms.domain.board.dto.CommentSummary;
 import kr.co.ircp.cms.domain.board.entity.BbsComment;
 import kr.co.ircp.cms.domain.board.entity.BbsMaster;
 import kr.co.ircp.cms.domain.board.entity.BbsPost;
+import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.BoardCommentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
@@ -52,8 +53,8 @@ public class CommentServiceImpl implements CommentService {
                 .orElseThrow(() -> new PostNotFoundException(postId));
 
         BbsMaster master = bbsMasterMapper.findById(post.getBbsId())
-                .orElse(null);
-        if (master != null && !master.isUseComment()) {
+                .orElseThrow(() -> new BbsMasterNotFoundException(post.getBbsId()));
+        if (!master.isUseComment()) {
             throw new BoardCommentDisabledException(master.getCode());
         }
 

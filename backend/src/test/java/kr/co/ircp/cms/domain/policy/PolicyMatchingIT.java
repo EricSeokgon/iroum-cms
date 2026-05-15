@@ -247,7 +247,7 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
             long templateId = insertNotificationTemplate();
             String body = """
                     {
-                      "dispatchType": "SCHEDULED",
+                      "dispatchType": "ANNOUNCEMENT",
                       "scheduledAt": "2026-12-01T09:00:00Z",
                       "channels": ["EMAIL"],
                       "templateId": %d,
@@ -288,7 +288,7 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
             String body = """
                     {
                       "entries": [
-                        {"channel": "EMAIL", "category": "POLICY", "optedIn": true}
+                        {"channel": "EMAIL", "category": "POLICY_MATCH", "optedIn": true}
                       ]
                     }
                     """;
@@ -323,8 +323,8 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
             long programId = insertPolicyProgram();
             String body = """
                     {
-                      "source": "EMAIL",
-                      "action": "CLICK"
+                      "source": "DIRECT",
+                      "action": "VIEW"
                     }
                     """;
 
@@ -417,7 +417,7 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
     private long createDispatchSchedule(long templateId) throws Exception {
         String body = """
                 {
-                  "dispatchType": "SCHEDULED",
+                  "dispatchType": "ANNOUNCEMENT",
                   "scheduledAt": "2026-12-01T09:00:00Z",
                   "channels": ["EMAIL"],
                   "templateId": %d,

@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.content.popup.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -15,6 +17,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Popup {
 
     private Long id;

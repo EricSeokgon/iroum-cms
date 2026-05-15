@@ -100,8 +100,8 @@ public class PublicationServiceImpl implements PublicationService {
                 .contentHtml(contentHtml)
                 .contentText(contentText)
                 .authorId(authorId)
-                .isNotice(false)
-                .isSecret(false)
+                .notice(false)
+                .secret(false)
                 .status("PUBLISHED")
                 .build();
         bbsPostMapper.insert(post);
@@ -136,8 +136,8 @@ public class PublicationServiceImpl implements PublicationService {
                     .contentText(req.contentText() != null
                             ? req.contentText()
                             : (req.contentHtml() != null ? stripHtml(sanitizedHtml) : existing.getContentText()))
-                    .isNotice(false)
-                    .isSecret(false)
+                    .notice(false)
+                    .secret(false)
                     .status(existing.getStatus())
                     .build();
             bbsPostMapper.update(post);

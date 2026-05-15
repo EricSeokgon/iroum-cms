@@ -10,8 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -85,7 +86,11 @@ public class DictionaryController {
     public ResponseEntity<DictionaryResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody DictionaryRequest req,
-            @AuthenticationPrincipal(expression = "userId") Long userId) {
+            Authentication authentication) {
+        Long userId = null;
+        if (authentication != null && authentication.getPrincipal() instanceof JwtPrincipal jp) {
+            userId = jp.userId();
+        }
         DataDictionary updated = DataDictionary.builder()
                 .id(id)
                 .tableName(req.tableName())

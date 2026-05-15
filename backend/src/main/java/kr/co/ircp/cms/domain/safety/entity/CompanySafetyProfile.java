@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.safety.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -12,6 +14,8 @@ import java.time.Instant;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CompanySafetyProfile {
     private Long id;
     private Long companyId;

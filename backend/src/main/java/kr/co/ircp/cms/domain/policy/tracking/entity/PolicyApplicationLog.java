@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.policy.tracking.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -12,6 +14,8 @@ import java.time.Instant;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class PolicyApplicationLog {
     private Long id;
     private Long userId;

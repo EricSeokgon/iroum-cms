@@ -18,10 +18,10 @@
         <result property="categoryCode" column="category_code"/>
         <result property="authorId" column="author_id"/>
         <result property="authorName" column="author_name"/>
-        <result property="isNotice" column="is_notice"/>
+        <result property="notice" column="is_notice"/>
         <result property="noticeFrom" column="notice_from"/>
         <result property="noticeUntil" column="notice_until"/>
-        <result property="isSecret" column="is_secret"/>
+        <result property="secret" column="is_secret"/>
         <result property="viewCount" column="view_count"/>
         <result property="likeCount" column="like_count"/>
         <result property="commentCount" column="comment_count"/>
@@ -34,14 +34,22 @@
     </resultMap>
 
     <select id="findByBbsMasterIdPaged" resultMap="bbsPostResultMap">
-        SELECT * FROM bbs_post
+        SELECT id, bbs_id, title, content_html, content_text, category_code,
+               author_id, author_name, is_notice, notice_from, notice_until, is_secret,
+               view_count, like_count, comment_count, attachment_count,
+               status, published_at, created_at, updated_at, deleted_at
+        FROM bbs_post
         WHERE bbs_id = #{bbsMasterId} AND deleted_at IS NULL
         ORDER BY is_notice DESC, id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
     <select id="searchByKeywordPaged" resultMap="bbsPostResultMap">
-        SELECT * FROM bbs_post
+        SELECT id, bbs_id, title, content_html, content_text, category_code,
+               author_id, author_name, is_notice, notice_from, notice_until, is_secret,
+               view_count, like_count, comment_count, attachment_count,
+               status, published_at, created_at, updated_at, deleted_at
+        FROM bbs_post
         WHERE bbs_id = #{bbsMasterId}
           AND deleted_at IS NULL
           AND search_vector @@ plainto_tsquery('simple', #{keyword})
@@ -61,7 +69,11 @@
     </select>
 
     <select id="findById" resultMap="bbsPostResultMap">
-        SELECT * FROM bbs_post WHERE id = #{id} AND deleted_at IS NULL
+        SELECT id, bbs_id, title, content_html, content_text, category_code,
+               author_id, author_name, is_notice, notice_from, notice_until, is_secret,
+               view_count, like_count, comment_count, attachment_count,
+               status, published_at, created_at, updated_at, deleted_at
+        FROM bbs_post WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
@@ -70,7 +82,7 @@
             is_notice, notice_from, notice_until, is_secret, status)
         VALUES (#{bbsId}, #{title}, #{contentHtml}, #{contentText},
             #{authorId}, #{authorName},
-            #{isNotice}, #{noticeFrom}, #{noticeUntil}, #{isSecret}, #{status})
+            #{notice}, #{noticeFrom}, #{noticeUntil}, #{secret}, #{status})
     </insert>
 
     <update id="update">
@@ -78,10 +90,10 @@
             title = #{title},
             content_html = #{contentHtml},
             content_text = #{contentText},
-            is_notice = #{isNotice},
+            is_notice = #{notice},
             notice_from = #{noticeFrom},
             notice_until = #{noticeUntil},
-            is_secret = #{isSecret},
+            is_secret = #{secret},
             status = #{status},
             updated_at = NOW()
         WHERE id = #{id} AND deleted_at IS NULL

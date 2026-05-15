@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
 import java.util.Set;
@@ -55,6 +56,9 @@ class PersonalDataAccessLogServiceImplFallbackTest {
     @Mock
     private PersonalDataAccessLogMapper mapper;
 
+    @Mock
+    private PlatformTransactionManager txManager;
+
     private MeterRegistry meterRegistry;
     private PersonalDataAccessLogServiceImpl service;
 
@@ -62,7 +66,7 @@ class PersonalDataAccessLogServiceImplFallbackTest {
     void setUp() {
         // SimpleMeterRegistry — Micrometer counter 카운트 검증용 (Spring context 불필요)
         meterRegistry = new SimpleMeterRegistry();
-        service = new PersonalDataAccessLogServiceImpl(mapper, meterRegistry);
+        service = new PersonalDataAccessLogServiceImpl(mapper, meterRegistry, txManager);
     }
 
     /**
@@ -91,14 +95,14 @@ class PersonalDataAccessLogServiceImplFallbackTest {
                 .as("recordBulk는 mapper INSERT 실패 시 예외를 호출자에게 전파하지 않아야 함")
                 .doesNotThrowAnyException();
 
-        // then: mapper.insert는 최소 1회 호출 시도 (첫 row에서 예외 발생)
-        verify(mapper, times(1)).insert(org.mockito.ArgumentMatchers.any());
+        // then: try-catch가 루프 안에 있으므로 5건 모두 시도됨 (각 실패는 독립적으로 처리)
+        verify(mapper, times(5)).insert(org.mockito.ArgumentMatchers.any());
 
-        // then: Micrometer counter pii.audit.log.failure.count 1 증가
+        // then: Micrometer counter pii.audit.log.failure.count 5 증가 (각 row 실패마다 1씩)
         long counterAfter = (long) meterRegistry.counter("pii.audit.log.failure.count").count();
         assertThat(counterAfter - counterBefore)
-                .as("audit INSERT 실패 시 pii.audit.log.failure.count가 1 증가해야 함 (REQ-PII-EMAIL-009)")
-                .isEqualTo(1L);
+                .as("5건 모두 INSERT 실패 시 pii.audit.log.failure.count가 5 증가해야 함 (REQ-PII-EMAIL-009)")
+                .isEqualTo(5L);
     }
 
     /**

@@ -8,6 +8,9 @@ import kr.co.ircp.cms.domain.content.page.dto.PageScheduleRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageUpdateRequest;
 import kr.co.ircp.cms.domain.content.page.entity.Page;
 import kr.co.ircp.cms.domain.content.page.entity.PageHistory;
+import kr.co.ircp.cms.domain.content.page.exception.PageHistoryVersionNotFoundException;
+import kr.co.ircp.cms.domain.content.page.exception.PageNotFoundException;
+import kr.co.ircp.cms.domain.content.page.exception.PageSlugDuplicateException;
 import kr.co.ircp.cms.domain.content.page.exception.PageSlugInvalidException;
 import kr.co.ircp.cms.domain.content.page.exception.PageStatusTransitionException;
 import kr.co.ircp.cms.domain.content.page.mapper.ContentBlockMapper;
@@ -60,12 +63,12 @@ public class PageServiceImpl implements PageService {
 
         // slug 유일성 검증
         if (pageMapper.existsBySiteIdAndSlug(request.siteId(), request.slug())) {
-            throw new IllegalArgumentException("이미 존재하는 slug입니다. slug=" + request.slug());
+            throw new PageSlugDuplicateException(request.slug());
         }
 
         // code 유일성 검증
         if (pageMapper.existsBySiteIdAndCode(request.siteId(), request.code())) {
-            throw new IllegalArgumentException("이미 존재하는 코드입니다. code=" + request.code());
+            throw new PageSlugDuplicateException(request.code());
         }
 
         Page page = Page.builder()
@@ -215,7 +218,7 @@ public class PageServiceImpl implements PageService {
         Page page = pageMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
         PageHistory historySnapshot = pageHistoryMapper.findByPageIdAndVersion(id, version)
-                .orElseThrow(() -> new IllegalArgumentException("해당 버전의 이력이 없습니다. version=" + version));
+                .orElseThrow(() -> new PageHistoryVersionNotFoundException(version));
 
         // snapshot 기반 복원 (간단히 status만 DRAFT로 강제, 실제 필드 복원은 snapshot JSON 파싱 필요)
         page.setStatus("DRAFT");
@@ -245,10 +248,11 @@ public class PageServiceImpl implements PageService {
     @Cacheable(value = "pageBySlug", key = "#siteId + ':' + #slug")
     public PageResponse getPublishedPageBySlug(Long siteId, String slug) {
         Page page = pageMapper.findBySiteIdAndSlug(siteId, slug)
-                .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. slug=" + slug));
+                .orElseThrow(() -> new PageNotFoundException(slug));
 
+        // 비공개 상태 페이지는 시민에게 404로 처리 (정보 은닉)
         if (!"PUBLISHED".equals(page.getStatus())) {
-            throw new PageStatusTransitionException(page.getStatus(), "PUBLIC_VIEW");
+            throw new PageNotFoundException(slug);
         }
 
         return PageResponse.from(page);

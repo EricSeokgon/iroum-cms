@@ -78,7 +78,9 @@ public class SafetyTemplateServiceImpl implements SafetyTemplateService {
         templateMapper.archivePublishedByCode(existing.getCode());
 
         String nextVersion = bumpMinor(existing.getVersion());
+        // code 컬럼에 UNIQUE 제약 — 동일 레코드를 버전 업 후 PUBLISHED로 업데이트
         SafetyGuidelineTemplate next = SafetyGuidelineTemplate.builder()
+                .id(id)
                 .code(existing.getCode())
                 .name(request.name() != null ? request.name() : existing.getName())
                 .description(request.description() != null ? request.description() : existing.getDescription())
@@ -96,7 +98,7 @@ public class SafetyTemplateServiceImpl implements SafetyTemplateService {
                 .version(nextVersion)
                 .createdBy(createdBy)
                 .build();
-        templateMapper.insert(next);
+        templateMapper.update(next);
         return toResponse(next);
     }
 

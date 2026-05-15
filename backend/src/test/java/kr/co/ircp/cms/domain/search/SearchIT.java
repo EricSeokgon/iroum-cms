@@ -107,7 +107,7 @@ class SearchIT extends AbstractIntegrationTest {
                             .param("domain", "invalid_xyz")
                             .param("locale", "ko"))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("SEARCH_DOMAIN_INVALID"));
+                    .andExpect(jsonPath("$.code").value("SEARCH_DOMAIN_INVALID"));
         }
 
         @Test
@@ -205,7 +205,7 @@ class SearchIT extends AbstractIntegrationTest {
                             .param("prefix", longPrefix)
                             .param("locale", "ko"))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("SEARCH_QUERY_TOO_LONG"));
+                    .andExpect(jsonPath("$.code").value("SEARCH_QUERY_TOO_LONG"));
         }
 
         @Test
@@ -264,7 +264,7 @@ class SearchIT extends AbstractIntegrationTest {
                             .param("period", "DAILY")
                             .param("locale", "zh"))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("SEARCH_LOCALE_UNSUPPORTED"));
+                    .andExpect(jsonPath("$.code").value("SEARCH_LOCALE_UNSUPPORTED"));
         }
 
         @Test
@@ -313,7 +313,7 @@ class SearchIT extends AbstractIntegrationTest {
                             .content("{\"searchLogId\":" + logId +
                                      ",\"docType\":\"board\",\"docId\":100,\"rank\":1}"))
                     .andExpect(status().isGone())
-                    .andExpect(jsonPath("$.errorCode").value("SEARCH_CLICK_WINDOW_EXPIRED"));
+                    .andExpect(jsonPath("$.code").value("SEARCH_CLICK_WINDOW_EXPIRED"));
         }
 
         @Test
@@ -432,21 +432,35 @@ class SearchIT extends AbstractIntegrationTest {
         return id == null ? -1L : id;
     }
 
-    private void insertPost(String code, String title, boolean visible, long createdBy) {
-        // bbs 테이블에 삽입. board_type=NOTICE, search_vector는 trigger가 채움
+    private long getOrCreateBbsMaster(String type) {
+        // ON CONFLICT를 이용해 type별 단일 bbs_master 재사용
+        String masterCode = "SEARCH_IT_" + type;
         jdbcTemplate.update(
-                "INSERT INTO bbs_post (code, title, content, board_type, is_secret, " +
-                "status, created_by, created_at, updated_at) " +
-                "VALUES (?, ?, '', 'NOTICE', false, 'PUBLISHED', ?, NOW(), NOW())",
-                code, title, createdBy);
+                "INSERT INTO bbs_master (code, name, type, status, created_at, updated_at) " +
+                "VALUES (?, ?, ?, 'ACTIVE', NOW(), NOW()) " +
+                "ON CONFLICT (code) DO NOTHING",
+                masterCode, "SearchIT " + type, type);
+        Long id = jdbcTemplate.queryForObject(
+                "SELECT id FROM bbs_master WHERE code = ?", Long.class, masterCode);
+        return id == null ? -1L : id;
+    }
+
+    private void insertPost(String code, String title, boolean visible, long createdBy) {
+        long bbsId = getOrCreateBbsMaster("NORMAL");
+        jdbcTemplate.update(
+                "INSERT INTO bbs_post (bbs_id, title, content_html, content_text, is_secret, " +
+                "status, author_id, author_name, created_at, updated_at) " +
+                "VALUES (?, ?, '', ?, false, 'PUBLISHED', ?, 'TestUser', NOW(), NOW())",
+                bbsId, title, title, createdBy);
     }
 
     private void insertSecretPost(String code, String title, long createdBy) {
+        long bbsId = getOrCreateBbsMaster("QNA");
         jdbcTemplate.update(
-                "INSERT INTO bbs_post (code, title, content, board_type, is_secret, " +
-                "status, created_by, created_at, updated_at) " +
-                "VALUES (?, ?, '', 'QNA', true, 'PUBLISHED', ?, NOW(), NOW())",
-                code, title, createdBy);
+                "INSERT INTO bbs_post (bbs_id, title, content_html, content_text, is_secret, " +
+                "status, author_id, author_name, created_at, updated_at) " +
+                "VALUES (?, ?, '', ?, true, 'PUBLISHED', ?, 'TestUser', NOW(), NOW())",
+                bbsId, title, title, createdBy);
     }
 
     private void insertPopularCache(String query, String periodType, String locale,

@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.board.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -11,6 +13,8 @@ import java.time.LocalDate;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SurveyAnswer {
 
     private Long id;

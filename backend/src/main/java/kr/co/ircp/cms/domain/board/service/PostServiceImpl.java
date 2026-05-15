@@ -120,10 +120,10 @@ public class PostServiceImpl implements PostService {
                 .contentHtml(sanitizedHtml)
                 .contentText(request.contentText() != null ? request.contentText() : stripHtml(sanitizedHtml))
                 .authorId(authorId)
-                .isNotice(request.isNotice())
+                .notice(request.isNotice())
                 .noticeFrom(request.noticeFrom())
                 .noticeUntil(request.noticeUntil())
-                .isSecret(request.isSecret())
+                .secret(request.isSecret())
                 .status("PUBLISHED")
                 .build();
         bbsPostMapper.insert(post);

@@ -61,4 +61,11 @@
     <update id="touchLastUsedAt">
         UPDATE saved_view SET last_used_at = NOW() WHERE id = #{id}
     </update>
+
+    <select id="countByOwnerAndName" resultType="int">
+        SELECT COUNT(*) FROM saved_view
+        WHERE owner_id = #{ownerId}
+          AND name = #{name}
+          AND dashboard_id IS NOT DISTINCT FROM #{dashboardId}
+    </select>
 </mapper>

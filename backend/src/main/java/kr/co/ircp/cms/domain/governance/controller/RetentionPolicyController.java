@@ -12,8 +12,9 @@ import kr.co.ircp.cms.domain.governance.entity.RetentionPolicy;
 import kr.co.ircp.cms.domain.governance.service.RetentionPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -59,7 +60,8 @@ public class RetentionPolicyController {
     @PostMapping
     public ResponseEntity<RetentionPolicyResponse> create(
             @Valid @RequestBody RetentionPolicyRequest req,
-            @AuthenticationPrincipal(expression = "userId") Long userId) {
+            Authentication authentication) {
+        Long userId = extractUserId(authentication);
         RetentionPolicy entity = build(req, null, userId);
         RetentionPolicy created = service.create(entity);
         return ResponseEntity.created(URI.create("/api/v1/governance/retention-policies/" + created.getId()))
@@ -70,7 +72,8 @@ public class RetentionPolicyController {
     public ResponseEntity<RetentionPolicyResponse> update(
             @PathVariable Long id,
             @Valid @RequestBody RetentionPolicyRequest req,
-            @AuthenticationPrincipal(expression = "userId") Long userId) {
+            Authentication authentication) {
+        Long userId = extractUserId(authentication);
         RetentionPolicy entity = build(req, id, userId);
         RetentionPolicy updated = service.update(entity);
         return ResponseEntity.ok(RetentionPolicyResponse.from(updated));
@@ -105,6 +108,13 @@ public class RetentionPolicyController {
             case "integration_log"          -> integrationJob.run();
             default -> throw new IllegalArgumentException("Unsupported retention target: " + targetTable);
         };
+    }
+
+    private static Long extractUserId(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof JwtPrincipal jp) {
+            return jp.userId();
+        }
+        return null;
     }
 
     private static RetentionPolicy build(RetentionPolicyRequest r, Long id, Long userId) {

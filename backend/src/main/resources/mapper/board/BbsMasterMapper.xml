@@ -14,7 +14,7 @@
         <result property="code" column="code"/>
         <result property="name" column="name"/>
         <result property="description" column="description"/>
-        <result property="type" column="type" typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="type" column="type"/>
         <result property="useComment" column="use_comment"/>
         <result property="useAttachment" column="use_attachment"/>
         <result property="maxAttachmentCount" column="max_attachment_count"/>
@@ -28,6 +28,7 @@
         <result property="metadata" column="metadata"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
     </resultMap>
 
     <!-- Step 2 GREEN에서 SQL 구현 -->

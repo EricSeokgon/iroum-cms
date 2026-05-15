@@ -156,6 +156,31 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/v1/surveys/*/responses"
                 ).permitAll()
+                // REQ-CONTENT-005-D: 시민용 slug 기반 페이지 공개 조회
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/content/pages/by-slug/**"
+                ).permitAll()
+                // REQ-CONTENT-005: 메뉴 트리 공개 조회
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/content/menus/**"
+                ).permitAll()
+                // REQ-CONTENT-008-D: 팝업 공개 조회 (active)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/content/popups/**"
+                ).permitAll()
+                // REQ-CONTENT-009-D: 배너 공개 조회
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/content/banners/**"
+                ).permitAll()
+                // REQ-CONTENT-009-D: 배너 클릭 (익명)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/content/banners/*/click"
+                ).permitAll()
                 // SPEC-CMS-010 REQ-SEARCH-001/005/006/008: 통합 검색·자동완성·인기·클릭 PUBLIC
                 // 단, /api/v1/search/synonyms 는 ADMIN 전용(@PreAuthorize 로 별도 통제)
                 .requestMatchers(

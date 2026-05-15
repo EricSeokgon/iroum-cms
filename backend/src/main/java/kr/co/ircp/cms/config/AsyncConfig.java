@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.annotation.EnableRetry;
@@ -25,6 +26,7 @@ public class AsyncConfig {
     // @MX:WARN: [AUTO] auditExecutor — CallerRunsPolicy 사용. 큐 포화 시 호출 스레드가 직접 실행
     // @MX:REASON: 큐(500) 포화 + max(8) 달성 시 비즈니스 스레드에서 audit 로직이 실행되어 응답 지연 발생 가능
     @Bean(name = "auditExecutor")
+    @ConditionalOnMissingBean(name = "auditExecutor")
     public Executor auditExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(2);

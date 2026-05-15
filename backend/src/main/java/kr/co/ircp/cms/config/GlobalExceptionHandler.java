@@ -46,6 +46,9 @@ import kr.co.ircp.cms.domain.content.menu.exception.MenuCircularReferenceExcepti
 import kr.co.ircp.cms.domain.content.menu.exception.MenuCodeDuplicateException;
 import kr.co.ircp.cms.domain.content.menu.exception.MenuDepthExceededException;
 import kr.co.ircp.cms.domain.content.page.exception.PageBlockTypeForbiddenException;
+import kr.co.ircp.cms.domain.content.page.exception.PageHistoryVersionNotFoundException;
+import kr.co.ircp.cms.domain.content.page.exception.PageNotFoundException;
+import kr.co.ircp.cms.domain.content.page.exception.PageSlugDuplicateException;
 import kr.co.ircp.cms.domain.content.page.exception.PageSlugInvalidException;
 import kr.co.ircp.cms.domain.content.page.exception.PageStatusTransitionException;
 import kr.co.ircp.cms.domain.content.popup.exception.PopupPeriodInvalidException;
@@ -1113,6 +1116,44 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
         detail.setTitle("Code Group In Use");
         detail.setProperty("code", "CODE_GROUP_IN_USE");
+        return detail;
+    }
+
+    // ─── Content Page Domain Exceptions ─────────────────────────────────────
+
+    /** 페이지 없음 또는 비공개 상태 → 404. REQ-CONTENT-005-D */
+    @ExceptionHandler(PageNotFoundException.class)
+    public ProblemDetail handlePageNotFound(PageNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Page Not Found");
+        detail.setProperty("code", "PAGE_NOT_FOUND");
+        return detail;
+    }
+
+    /** 동일 (siteId, slug) 중복 → 409. REQ-CONTENT-005-D-1 */
+    @ExceptionHandler(PageSlugDuplicateException.class)
+    public ProblemDetail handlePageSlugDuplicate(PageSlugDuplicateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Slug Duplicate");
+        detail.setProperty("code", "SLUG_DUPLICATE");
+        return detail;
+    }
+
+    /** 요청한 버전의 페이지 이력 없음 → 404. REQ-CONTENT-005-D-6 */
+    @ExceptionHandler(PageHistoryVersionNotFoundException.class)
+    public ProblemDetail handlePageHistoryVersionNotFound(PageHistoryVersionNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Page History Version Not Found");
+        detail.setProperty("code", "PAGE_HISTORY_NOT_FOUND");
+        return detail;
+    }
+
+    /** 미처리 IllegalArgumentException → 400 (비즈니스 로직 검증 실패 fallback). */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Bad Request");
+        detail.setProperty("code", "INVALID_ARGUMENT");
         return detail;
     }
 }

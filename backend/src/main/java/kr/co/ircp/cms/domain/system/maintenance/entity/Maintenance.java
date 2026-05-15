@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.system.maintenance.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Getter;
 
 import java.time.Instant;
@@ -13,6 +15,8 @@ import java.time.Instant;
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Maintenance {
 
     private Long id;

@@ -145,10 +145,12 @@ public class SearchServiceImpl implements SearchService {
         Map<String, Long> facets = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
             String snippet = sanitizeHighlight((String) row.get("snippet"));
+            String rawTitle = (String) row.get("title");
+            String title = rawTitle == null ? null : Jsoup.clean(rawTitle, Safelist.none());
             DocResult doc = new DocResult(
                     (String) row.get("doc_type"),
                     asLong(row.get("doc_id")),
-                    (String) row.get("title"),
+                    title,
                     snippet,
                     asDouble(row.get("rank")),
                     (String) row.get("domain"),

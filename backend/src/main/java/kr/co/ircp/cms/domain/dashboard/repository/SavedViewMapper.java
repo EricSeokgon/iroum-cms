@@ -28,4 +28,10 @@ public interface SavedViewMapper {
     );
 
     int touchLastUsedAt(@Param("id") Long id);
+
+    int countByOwnerAndName(
+            @Param("ownerId") Long ownerId,
+            @Param("dashboardId") Long dashboardId,
+            @Param("name") String name
+    );
 }

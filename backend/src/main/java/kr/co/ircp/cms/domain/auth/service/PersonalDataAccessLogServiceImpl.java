@@ -6,13 +6,15 @@ import kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry;
 import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessLog;
 import kr.co.ircp.cms.domain.auth.entity.PersonalDataAccessPurpose;
 import kr.co.ircp.cms.domain.auth.repository.PersonalDataAccessLogMapper;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -28,7 +30,6 @@ import java.util.Set;
 // @MX:WARN: [AUTO] PersonalDataAccessLogServiceImpl.record — @Async 비동기; SecurityContext는 전파되지 않을 수 있음
 // @MX:REASON: @Async(auditExecutor)는 별도 스레드 풀에서 실행되므로 SecurityContext 공유 불가. 모든 필요 값(viewerId, role, MDC)을 호출 시점에 추출해 파라미터로 전달해야 한다.
 @Service
-@RequiredArgsConstructor
 public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogService {
 
     private static final Logger log = LoggerFactory.getLogger(PersonalDataAccessLogServiceImpl.class);
@@ -39,6 +40,19 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
 
     private final PersonalDataAccessLogMapper mapper;
     private final MeterRegistry meterRegistry;
+    // SyncTaskExecutor(IT)로 동기 실행될 때 readOnly=true 외부 트랜잭션 내 INSERT 실패 방지
+    // @Async 비동기 실행 시에도 REQUIRES_NEW는 안전하게 독립 트랜잭션 생성
+    private final TransactionTemplate requiresNewTx;
+
+    public PersonalDataAccessLogServiceImpl(PersonalDataAccessLogMapper mapper,
+                                            MeterRegistry meterRegistry,
+                                            PlatformTransactionManager txManager) {
+        this.mapper = mapper;
+        this.meterRegistry = meterRegistry;
+        TransactionTemplate tt = new TransactionTemplate(txManager);
+        tt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.requiresNewTx = tt;
+    }
 
     /**
      * 개인정보 접근 로그 비동기 적재.
@@ -51,24 +65,29 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
     @Async("auditExecutor")
     public void record(long viewerId, String viewerRole, long targetUserId,
                        Set<String> accessedFields, PersonalDataAccessPurpose purpose) {
+        // MDC 값 추출 (호출 시점 스레드에서 이미 설정된 값)
+        String ipAddress = MDC.get("ipAddress");
+        String userAgent = MDC.get("userAgent");
+        String traceId   = MDC.get("traceId");
+
+        PersonalDataAccessLog logEntry = PersonalDataAccessLog.builder()
+                .viewerId(viewerId)
+                .viewerRole(viewerRole)
+                .targetUserId(targetUserId)
+                .accessedFields(new ArrayList<>(accessedFields))
+                .purpose(purpose.name())
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .traceId(traceId)
+                .build();
+
         try {
-            // MDC 값 추출 (호출 시점 스레드에서 이미 설정된 값)
-            String ipAddress = MDC.get("ipAddress");
-            String userAgent = MDC.get("userAgent");
-            String traceId   = MDC.get("traceId");
-
-            PersonalDataAccessLog logEntry = PersonalDataAccessLog.builder()
-                    .viewerId(viewerId)
-                    .viewerRole(viewerRole)
-                    .targetUserId(targetUserId)
-                    .accessedFields(new ArrayList<>(accessedFields))
-                    .purpose(purpose.name())
-                    .ipAddress(ipAddress)
-                    .userAgent(userAgent)
-                    .traceId(traceId)
-                    .build();
-
-            mapper.insert(logEntry);
+            // REQUIRES_NEW: SyncTaskExecutor IT 환경에서 외부 readOnly=true 트랜잭션이 있을 때
+            // 독립 트랜잭션으로 INSERT를 커밋하기 위해 사용
+            requiresNewTx.execute(status -> {
+                mapper.insert(logEntry);
+                return null;
+            });
         } catch (Exception e) {
             log.error("개인정보 접근 로그 적재 실패 (non-blocking, REQ-AUTH-018)", e);
         }
@@ -90,27 +109,31 @@ public class PersonalDataAccessLogServiceImpl implements PersonalDataAccessLogSe
         if (targetUserIds == null || targetUserIds.isEmpty()) {
             return;
         }
-        try {
-            String ipAddress = MDC.get("ipAddress");
-            String userAgent = MDC.get("userAgent");
-            String traceId   = MDC.get("traceId");
+        String ipAddress = MDC.get("ipAddress");
+        String userAgent = MDC.get("userAgent");
+        String traceId   = MDC.get("traceId");
 
-            for (Long targetUserId : targetUserIds) {
-                PersonalDataAccessLog logEntry = PersonalDataAccessLog.builder()
-                        .viewerId(viewerId)
-                        .viewerRole(viewerRole)
-                        .targetUserId(targetUserId)
-                        .accessedFields(new ArrayList<>(accessedFields))
-                        .purpose(purpose.name())
-                        .ipAddress(ipAddress)
-                        .userAgent(userAgent)
-                        .traceId(traceId)
-                        .build();
-                mapper.insert(logEntry);
+        for (Long targetUserId : targetUserIds) {
+            PersonalDataAccessLog logEntry = PersonalDataAccessLog.builder()
+                    .viewerId(viewerId)
+                    .viewerRole(viewerRole)
+                    .targetUserId(targetUserId)
+                    .accessedFields(new ArrayList<>(accessedFields))
+                    .purpose(purpose.name())
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .traceId(traceId)
+                    .build();
+            try {
+                // 각 INSERT를 독립 트랜잭션으로 처리: 하나 실패해도 나머지 계속 진행
+                requiresNewTx.execute(status -> {
+                    mapper.insert(logEntry);
+                    return null;
+                });
+            } catch (Exception e) {
+                log.error("PII audit log INSERT failed (bulk, non-blocking, target={})", targetUserId, e);
+                meterRegistry.counter("pii.audit.log.failure.count").increment();
             }
-        } catch (Exception e) {
-            log.error("PII audit log INSERT failed (bulk, non-blocking, REQ-PII-EMAIL-009)", e);
-            meterRegistry.counter("pii.audit.log.failure.count").increment();
         }
     }
 

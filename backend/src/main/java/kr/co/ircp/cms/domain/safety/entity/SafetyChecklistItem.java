@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.safety.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 /**
@@ -9,6 +11,8 @@ import lombok.Data;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SafetyChecklistItem {
     private Long id;
     private Long templateId;

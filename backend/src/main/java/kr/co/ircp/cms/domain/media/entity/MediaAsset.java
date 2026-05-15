@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.media.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -16,6 +18,8 @@ import java.util.UUID;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MediaAsset {
 
     private Long id;

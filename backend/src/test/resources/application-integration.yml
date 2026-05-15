@@ -15,6 +15,11 @@ spring:
     host: localhost
     port: 25
 
+management:
+  health:
+    mail:
+      enabled: false
+
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
@@ -34,3 +39,6 @@ logging:
     org.testcontainers: INFO
     org.flywaydb: INFO
     org.springframework.test: WARN
+    kr.co.ircp.cms.domain.board.repository: DEBUG
+    org.mybatis: DEBUG
+    org.apache.ibatis: DEBUG

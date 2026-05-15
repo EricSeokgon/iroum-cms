@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.policy.matching.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -13,6 +15,8 @@ import java.util.List;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CompanyMatchInput {
     private Long id;
     private Long companyId;

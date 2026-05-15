@@ -40,11 +40,12 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO media_asset (
-            type, original_filename, stored_path, public_url, mime_type, size_bytes,
+            uuid, type, original_filename, stored_path, public_url, mime_type, size_bytes,
             checksum_sha256, width, height, duration_sec, exif_stripped, webp_path,
             thumbnail_paths, alt_text, description, tags, copyright_holder, license_type,
             usage_restriction, uploaded_by, uploaded_from_ip_hash, status
         ) VALUES (
+            #{uuid,typeHandler=kr.co.ircp.cms.domain.auth.repository.typehandler.UuidTypeHandler},
             #{type}, #{originalFilename}, #{storedPath}, #{publicUrl}, #{mimeType}, #{sizeBytes},
             #{checksumSha256}, #{width}, #{height}, #{durationSec}, #{exifStripped}, #{webpPath},
             #{thumbnailPathsJson}::jsonb, #{altText}, #{description},

@@ -2,6 +2,8 @@ package kr.co.ircp.cms.domain.search.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.search.dto.AutocompleteItem;
 import kr.co.ircp.cms.domain.search.dto.ClickRequest;
@@ -16,6 +18,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,6 +44,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/search")
 @RequiredArgsConstructor
+@Validated
 public class SearchController {
 
     private final SearchService searchService;
@@ -50,7 +54,7 @@ public class SearchController {
             @RequestParam(name = "q", required = false, defaultValue = "") String q,
             @RequestParam(name = "domain", required = false) String domain,
             @RequestParam(name = "page", required = false, defaultValue = "1") int page,
-            @RequestParam(name = "size", required = false, defaultValue = "20") int size,
+            @RequestParam(name = "size", required = false, defaultValue = "20") @Min(1) @Max(50) int size,
             @RequestParam(name = "locale", required = false, defaultValue = "ko") String locale,
             @AuthenticationPrincipal JwtPrincipal principal,
             HttpServletRequest httpRequest

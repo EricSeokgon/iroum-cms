@@ -168,15 +168,13 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
         }
 
         /**
-         * A-2: 동일 code 중복 등록 → PG UNIQUE 위반.
+         * A-2: 동일 code 중복 등록 → 409 Conflict.
          *
-         * <p>acceptance.md 는 409 WIDGET_CODE_DUPLICATE 를 기대하나 운영에는 전용 핸들러가 없어
-         * {@link org.springframework.dao.DuplicateKeyException} 이 ServletException 으로 래핑돼
-         * MockMvc 에서 throw 된다. 운영 동기 GREEN 처리 — DuplicateKeyException 이 발생하면
-         * UNIQUE 제약이 정상 동작함을 의미. 추후 핸들러 추가 시 409 응답으로 갱신 권장.
+         * <p>GlobalExceptionHandler 가 DuplicateKeyException 을 409 로 처리하므로
+         * MockMvc 는 예외를 던지지 않고 409 응답을 반환한다.
          */
         @Test
-        @DisplayName("A-2: 위젯 코드 중복 — DuplicateKeyException 발생 검증 (운영 동기, WIDGET_CODE_DUPLICATE 핸들러 추가 권장)")
+        @DisplayName("A-2: 위젯 코드 중복 — 409 Conflict (PG UNIQUE 위반)")
         void widgetCreate_failsOnDuplicateCode() throws Exception {
             givenValidToken(testUserId, Set.of("SUPER_ADMIN"), Set.of());
 
@@ -188,51 +186,31 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
                             .content(widgetCreateBody(dupCode, "LINE_CHART")))
                     .andExpect(status().isOk());
 
-            // 2차 등록 실패 — ServletException 으로 wrapped 된 DuplicateKeyException 이 throw 됨
-            try {
-                mockMvc.perform(post("/api/v1/dashboard/widgets")
-                        .header("Authorization", "Bearer " + VALID_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(widgetCreateBody(dupCode, "LINE_CHART")));
-                throw new AssertionError("중복 코드 등록은 예외가 발생해야 합니다");
-            } catch (Exception ex) {
-                // ServletException → DuplicateKeyException 체인 검증
-                Throwable root = ex;
-                while (root.getCause() != null) root = root.getCause();
-                String msg = root.getMessage() == null ? "" : root.getMessage();
-                assertThat(msg)
-                        .as("PG UNIQUE 위반 메시지가 포함돼야 함")
-                        .containsAnyOf("duplicate key", "dashboard_widget_code_key");
-            }
+            // 2차 등록 실패 — GlobalExceptionHandler 가 DuplicateKeyException → 409 반환
+            mockMvc.perform(post("/api/v1/dashboard/widgets")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(widgetCreateBody(dupCode, "LINE_CHART")))
+                    .andExpect(status().isConflict());
         }
 
         /**
-         * A-3: 미지원 widget_type → 운영 동기 (DB CHECK 위반).
+         * A-3: 미지원 widget_type → 409 Conflict (DB CHECK 위반).
          *
-         * <p>acceptance.md 는 400 WIDGET_TYPE_NOT_SUPPORTED + 지원 9 타입 목록을 기대하나
-         * 운영에는 전용 검증 로직이 없어 DB CHECK 제약 위반이 ServletException 으로 래핑된다.
-         * 운영 동기 GREEN 처리 — CHECK 위반 발생을 검증.
+         * <p>GlobalExceptionHandler 가 DataIntegrityViolationException 을 409 로 처리하므로
+         * MockMvc 는 예외를 던지지 않고 409 응답을 반환한다.
          */
         @Test
-        @DisplayName("A-3: 미지원 widget_type — DataIntegrityViolationException 발생 검증 (운영 동기, 컨트롤러 검증 추가 권장)")
+        @DisplayName("A-3: 미지원 widget_type — 409 Conflict (PG CHECK 제약 위반)")
         void widgetCreate_failsOnUnsupportedType() throws Exception {
             givenValidToken(testUserId, Set.of("SUPER_ADMIN"), Set.of());
 
             String code = "UNSUPP_" + UUID.randomUUID().toString().substring(0, 8);
-            try {
-                mockMvc.perform(post("/api/v1/dashboard/widgets")
-                        .header("Authorization", "Bearer " + VALID_TOKEN)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(widgetCreateBody(code, "SCATTER_3D")));
-                throw new AssertionError("미지원 widget_type 등록은 예외가 발생해야 합니다");
-            } catch (Exception ex) {
-                Throwable root = ex;
-                while (root.getCause() != null) root = root.getCause();
-                String msg = root.getMessage() == null ? "" : root.getMessage();
-                assertThat(msg)
-                        .as("PG CHECK 제약 위반 메시지가 포함돼야 함")
-                        .containsAnyOf("dashboard_widget_widget_type_check", "check constraint");
-            }
+            mockMvc.perform(post("/api/v1/dashboard/widgets")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(widgetCreateBody(code, "SCATTER_3D")))
+                    .andExpect(status().isConflict());
         }
 
         /**
@@ -448,11 +426,12 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
      */
     private long insertOrganization(String code) {
         jdbcTemplate.update(
-                "INSERT INTO organizations (code, name, path, depth, is_active, created_at, updated_at) "
-                        + "VALUES (?, ?, ?, 1, TRUE, NOW(), NOW())",
-                code, "A-8 부서 " + code, code);
+                "INSERT INTO organization (code, name, path, depth, status, created_at, updated_at) "
+                        + "VALUES (?, ?, '/', 1, 'ACTIVE', NOW(), NOW()) "
+                        + "ON CONFLICT (code) DO NOTHING",
+                code, "A-8 부서 " + code);
         Long id = jdbcTemplate.queryForObject(
-                "SELECT id FROM organizations WHERE code = ?", Long.class, code);
+                "SELECT id FROM organization WHERE code = ?", Long.class, code);
         return id == null ? -1L : id;
     }
 

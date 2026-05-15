@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.content.page.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -14,6 +16,8 @@ import java.time.Instant;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Page {
 
     private Long id;

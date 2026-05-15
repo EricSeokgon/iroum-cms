@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.audit.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 import org.apache.ibatis.type.Alias;
 
@@ -15,6 +17,8 @@ import java.time.Instant;
 @Alias("AuditLogEntity")
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuditLog {
 
     private Long id;

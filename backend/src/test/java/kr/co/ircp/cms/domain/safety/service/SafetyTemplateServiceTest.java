@@ -108,7 +108,8 @@ class SafetyTemplateServiceTest {
         assertThat(newVersion.version()).isEqualTo("v1.1");
         assertThat(newVersion.status()).isEqualTo("PUBLISHED");
         verify(templateMapper).archivePublishedByCode("T001");
-        verify(templateMapper, times(1)).insert(any());
+        // code UNIQUE 제약으로 신규 INSERT 불가 — 기존 레코드를 버전업하여 update
+        verify(templateMapper, times(1)).update(any());
     }
 
     @Test

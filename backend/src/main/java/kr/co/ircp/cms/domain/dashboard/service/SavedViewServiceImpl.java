@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.dashboard.entity.SavedView;
 import kr.co.ircp.cms.domain.dashboard.exception.SavedViewNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.repository.SavedViewMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,9 @@ public class SavedViewServiceImpl implements SavedViewService {
     @Override
     @Transactional
     public SavedViewResponse create(Long ownerId, SavedViewRequest req) {
+        if (viewMapper.countByOwnerAndName(ownerId, req.dashboardId(), req.name()) > 0) {
+            throw new DuplicateKeyException("저장된 뷰 이름 중복: owner=" + ownerId + ", name=" + req.name());
+        }
         SavedView v = SavedView.builder()
                 .ownerId(ownerId)
                 .dashboardId(req.dashboardId())

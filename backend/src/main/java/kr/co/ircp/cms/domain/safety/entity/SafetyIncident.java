@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.safety.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -11,6 +13,8 @@ import java.time.Instant;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SafetyIncident {
     private Long id;
     private String sourceType;        // DISASTER_WHITE_BOOK / KOSHA_OPENAPI / MOEL_STAT / MANUAL

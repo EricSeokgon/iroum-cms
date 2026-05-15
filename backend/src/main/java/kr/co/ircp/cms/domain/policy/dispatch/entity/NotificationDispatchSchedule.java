@@ -1,6 +1,8 @@
 package kr.co.ircp.cms.domain.policy.dispatch.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
@@ -13,6 +15,8 @@ import java.util.UUID;
  */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationDispatchSchedule {
     private Long id;
     private UUID scheduleUuid;

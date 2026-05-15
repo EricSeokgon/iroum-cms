@@ -153,7 +153,7 @@ class StatsServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).visits()).isEqualTo(100);
+        assertThat(result.get(0).getVisits()).isEqualTo(100);
     }
 
     @Test
@@ -185,8 +185,8 @@ class StatsServiceTest {
 
         // then
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).pageUrl()).isEqualTo("/index");
-        assertThat(result.get(0).rank()).isEqualTo(1);
+        assertThat(result.get(0).getPageUrl()).isEqualTo("/index");
+        assertThat(result.get(0).getRank()).isEqualTo(1);
     }
 
     @Test

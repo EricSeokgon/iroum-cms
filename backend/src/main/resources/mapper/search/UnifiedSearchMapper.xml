@@ -52,11 +52,11 @@
         JOIN bbs_master bm ON bm.id = bp.bbs_id
         WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
           AND bp.deleted_at IS NULL
-          AND COALESCE(bm.board_type, '') &lt;&gt; 'PUBLICATION'
+          AND COALESCE(bm.type, '') &lt;&gt; 'PUBLICATION'
           AND (#{isAdmin} = true OR bp.is_secret = false OR bp.author_id = #{requesterId})
     </sql>
 
-    <!-- publication 도메인 (bbs_post WHERE bbs_master.board_type='PUBLICATION') -->
+    <!-- publication 도메인 (bbs_post WHERE bbs_master.type='PUBLICATION') -->
     <sql id="publicationSearchSql">
         SELECT
             'publication'                                AS doc_type,
@@ -72,7 +72,7 @@
         JOIN bbs_master bm ON bm.id = bp.bbs_id
         WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
           AND bp.deleted_at IS NULL
-          AND bm.board_type = 'PUBLICATION'
+          AND bm.type = 'PUBLICATION'
     </sql>
 
     <!-- content 도메인 (page) — tsv_ko/tsv_en 미존재, title ILIKE fallback -->
@@ -199,7 +199,7 @@
                     JOIN bbs_master bm ON bm.id = bp.bbs_id
                     WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
                       AND bp.deleted_at IS NULL
-                      AND COALESCE(bm.board_type, '') &lt;&gt; 'PUBLICATION'
+                      AND COALESCE(bm.type, '') &lt;&gt; 'PUBLICATION'
                       AND (#{isAdmin} = true OR bp.is_secret = false OR bp.author_id = #{requesterId})
                 </if>
                 <if test="domain == 'ALL' or domain == 'publication'">
@@ -208,7 +208,7 @@
                     JOIN bbs_master bm ON bm.id = bp.bbs_id
                     WHERE bp.search_vector @@ websearch_to_tsquery('simple', #{query})
                       AND bp.deleted_at IS NULL
-                      AND bm.board_type = 'PUBLICATION'
+                      AND bm.type = 'PUBLICATION'
                 </if>
                 <if test="domain == 'ALL' or domain == 'content'">
                     UNION ALL

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.Instant;
 import java.util.List;
@@ -40,13 +41,16 @@ class PersonalDataAccessLogServiceTest {
     @Mock
     private PersonalDataAccessLogMapper mapper;
 
+    @Mock
+    private PlatformTransactionManager txManager;
+
     private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     private PersonalDataAccessLogService service;
 
     @BeforeEach
     void setUp() {
-        service = new PersonalDataAccessLogServiceImpl(mapper, meterRegistry);
+        service = new PersonalDataAccessLogServiceImpl(mapper, meterRegistry, txManager);
     }
 
     // ──────────────────────────────────────────────────────────────
