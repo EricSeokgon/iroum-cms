@@ -4,6 +4,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,16 +72,58 @@ class MimeTypeValidatorTest {
     }
 
     @Test
-    @DisplayName("valid ZIP 시그니처(PK..)와 OOXML claim(DOCX) — 통과")
-    void validate_zipBytes_matchesOoxmlClaim() {
-        byte[] zipHeader = {0x50, 0x4B, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00};
+    @DisplayName("valid OOXML ZIP([Content_Types].xml 포함)와 DOCX claim — 통과")
+    void validate_zipBytes_matchesOoxmlClaim() throws Exception {
+        byte[] ooxmlBytes = buildMinimalOoxmlZip();
         MockMultipartFile file = new MockMultipartFile(
                 "file", "doc.docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                zipHeader);
+                ooxmlBytes);
 
         assertThatNoException().isThrownBy(() -> validator.validate(file,
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"));
+    }
+
+    @Test
+    @DisplayName("ZIP 시그니처지만 [Content_Types].xml 없는 DOCX claim — 거부")
+    void validate_zipBytesWithDocxClaim_butNotOoxml_throws() throws Exception {
+        // [Content_Types].xml 없는 단순 ZIP
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry("something.txt"));
+            zos.write("content".getBytes());
+            zos.closeEntry();
+        }
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "fake.docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                baos.toByteArray());
+
+        assertThatThrownBy(() -> validator.validate(file,
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .isInstanceOf(MimeTypeValidator.MimeTypeMismatchException.class)
+                .satisfies(e -> {
+                    MimeTypeValidator.MimeTypeMismatchException ex =
+                            (MimeTypeValidator.MimeTypeMismatchException) e;
+                    assertThat(ex.detectedMime()).isEqualTo("zip-without-ooxml-structure");
+                });
+    }
+
+    @Test
+    @DisplayName("text/html claim + ASCII 텍스트 바이트 — 거부 (XSS 벡터 차단)")
+    void validate_htmlClaim_throws() {
+        byte[] htmlBytes = "<!DOCTYPE html><html><body>Hello</body></html>".getBytes();
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "page.html", "text/html", htmlBytes);
+
+        assertThatThrownBy(() -> validator.validate(file, "text/html"))
+                .isInstanceOf(MimeTypeValidator.MimeTypeMismatchException.class)
+                .satisfies(e -> {
+                    MimeTypeValidator.MimeTypeMismatchException ex =
+                            (MimeTypeValidator.MimeTypeMismatchException) e;
+                    assertThat(ex.claimedMime()).isEqualTo("text/html");
+                });
     }
 
     @Test
@@ -203,5 +249,18 @@ class MimeTypeValidatorTest {
                 "file", "weird", "application/octet-stream", unknown);
 
         assertThat(validator.detect(file)).isEqualTo("application/octet-stream");
+    }
+
+    // ─── 헬퍼 ─────────────────────────────────────────────────────────────
+
+    /** 최소한의 유효한 OOXML ZIP — [Content_Types].xml 엔트리 포함. */
+    private static byte[] buildMinimalOoxmlZip() throws Exception {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            zos.putNextEntry(new ZipEntry("[Content_Types].xml"));
+            zos.write("<?xml version=\"1.0\"?><Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"/>".getBytes());
+            zos.closeEntry();
+        }
+        return baos.toByteArray();
     }
 }

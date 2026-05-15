@@ -9,6 +9,8 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 /**
  * 매직 바이트 기반 MIME 타입 검증기 (HIGH-9 보안 보강).
@@ -55,13 +57,22 @@ public class MimeTypeValidator {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     );
 
-    /** 텍스트 계열 — 매직 바이트 없이 통과(휴리스틱 검증). */
+    /** 텍스트 계열 — 매직 바이트 없이 통과(휴리스틱 검증). text/html 은 XSS 벡터이므로 의도적으로 제외. */
     private static final Set<String> TEXT_BASED_MIMES = Set.of(
             "text/plain",
             "text/csv",
-            "application/json",
-            "text/html"
+            "application/json"
     );
+
+    /** OOXML MIME — ZIP 시그니처 외 [Content_Types].xml 내부 구조 검증 대상. */
+    private static final Set<String> OOXML_MIMES = Set.of(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    );
+
+    /** OOXML ZIP 내부 스캔 최대 엔트리 수 — 폭탄 ZIP 방어. */
+    private static final int MAX_OOXML_ZIP_SCAN_ENTRIES = 10;
 
     /**
      * MultipartFile 첫 {@value #MAGIC_HEADER_BYTES} 바이트를 읽어 claimed MIME 과 일치하는지 검증.
@@ -90,6 +101,11 @@ public class MimeTypeValidator {
 
         // ZIP 컨테이너 OOXML 등은 detected가 application/zip 이면 통과
         if (ZIP_BASED_MIMES.contains(normalizedClaim) && "application/zip".equals(detected)) {
+            // OOXML(DOCX/XLSX/PPTX)은 ZIP 시그니처 외 [Content_Types].xml 내부 구조 추가 검증
+            if (OOXML_MIMES.contains(normalizedClaim) && !hasOoxmlContentTypes(file)) {
+                log.warn("OOXML structure check failed — fileName={}", file.getOriginalFilename());
+                throw new MimeTypeMismatchException(normalizedClaim, "zip-without-ooxml-structure");
+            }
             return;
         }
 
@@ -113,6 +129,28 @@ public class MimeTypeValidator {
     }
 
     // ─── 내부 헬퍼 ───────────────────────────────────────────────────────────
+
+    /**
+     * ZIP 내부에서 {@code [Content_Types].xml} 엔트리 존재 여부를 확인한다.
+     * 유효한 OOXML 패키지는 반드시 이 파일을 포함한다(ECMA-376 §13.2.2).
+     * 폭탄 ZIP 방어를 위해 {@value #MAX_OOXML_ZIP_SCAN_ENTRIES}개 엔트리까지만 스캔한다.
+     */
+    private boolean hasOoxmlContentTypes(MultipartFile file) {
+        try (ZipInputStream zis = new ZipInputStream(file.getInputStream())) {
+            ZipEntry entry;
+            int scanned = 0;
+            while ((entry = zis.getNextEntry()) != null && scanned < MAX_OOXML_ZIP_SCAN_ENTRIES) {
+                if ("[Content_Types].xml".equals(entry.getName())) {
+                    return true;
+                }
+                zis.closeEntry();
+                scanned++;
+            }
+        } catch (IOException e) {
+            log.debug("OOXML structure check IO error: {}", e.getMessage());
+        }
+        return false;
+    }
 
     private byte[] readHeader(MultipartFile file) {
         byte[] header = new byte[MAGIC_HEADER_BYTES];
