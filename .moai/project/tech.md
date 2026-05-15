@@ -14,6 +14,7 @@
 | 어플리케이션 프레임워크 | Spring Framework | 6.x | egovframe 5.0이 Spring 6 기반, Jakarta EE 9+ 네임스페이스 |
 | 부트 레이어 | Spring Boot | 3.5.x (latest stable patch) | 자동 구성, 내장 Tomcat, Spring 6 대응 버전 |
 | 보안 | Spring Security | 6.x | Spring 6 네이티브, JWT + Refresh Token 필터 체인 구성 |
+| HTML Sanitizer | jsoup | 1.17.2 | OWASP XSS 방어 — RICH_TEXT 서버사이드 Sanitize, Jsoup Safelist.relaxed() 기반 |
 | ORM | MyBatis | 3.5.x | egovframe 공통컴포넌트 SQL Mapper 표준 준수, XML 기반 쿼리 |
 | 데이터베이스 | PostgreSQL | 16 | JSONB, 고성능, 오픈소스, 공공기관 도입 사례 다수 |
 | WAS | Tomcat (내장) | 10.x | Jakarta EE 9+ 서블릿 6.0 지원, Spring Boot 내장 |
@@ -42,6 +43,7 @@
 | API 클라이언트 | Axios | 1.x | HTTP 인터셉터 기반 토큰 갱신, OpenAPI 생성 클라이언트와 통합 |
 | 테스트 (단위) | Vitest + Vue Test Utils | latest | Vite와 동일 설정, 빠른 단위·컴포넌트 테스트 |
 | 테스트 (E2E) | Playwright | 1.x | 크로스 브라우저, 접근성 검사 통합, CI 친화적 |
+| XSS 방어 | DOMPurify | ^3.1.6 | v-html 렌더링 시 클라이언트사이드 XSS 방어, Admin SPA useSafeHtml composable |
 
 ---
 
@@ -266,6 +268,7 @@ Stage 2 (runtime): nginx:alpine — dist/ 정적 파일 serve
 | HikariCP | Spring Boot 내장 |
 | springdoc-openapi-starter-webmvc-ui | 2.8.17 |
 | jjwt (JWT) | 0.12.7 |
+| jsoup | 1.17.2 |
 | JaCoCo | 0.8.13 |
 | JUnit 5 | Spring Boot 내장 |
 | Mockito | Spring Boot 내장 |
@@ -284,6 +287,8 @@ Stage 2 (runtime): nginx:alpine — dist/ 정적 파일 serve
 | Vitest | 1.x |
 | Vue Test Utils | 2.x |
 | Playwright | 1.x |
+| DOMPurify | ^3.1.6 |
+| @types/dompurify | ^3.0.5 |
 | Docker | 24+ |
 | nginx | alpine (latest stable) |
 
@@ -323,6 +328,6 @@ Stage 2 (runtime): nginx:alpine — dist/ 정적 파일 serve
 
 ---
 
-_문서 버전: v0.2 (Spring Boot 3.5.9 업그레이드 — 2026-04-29)_
+_문서 버전: v0.3 (OWASP 보안 감사 — jsoup 1.17.2 + DOMPurify ^3.1.6 추가 — 2026-05-15)_
 _작성일: 2026-04-29_
 _스택 변경 시: 이 문서 §9 버전 표와 structure.md §6 동시 업데이트 필요_
