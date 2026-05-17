@@ -520,7 +520,7 @@ SPEC-CMS-001 [umbrella v0.4]
 ├─ 홍익인간 CMS gap 신규 P0
 │  └─ SPEC-CMS-MEDIA-001 통합 미디어 라이브러리 [v0.4 — SPEC 작성됨, 구현 대기]
 └─ 옵션 트랙
-   ├─ SPEC-CMS-AI-001 AI/ML + Milvus [SPEC 미작성, 별도 130일]
+   ├─ SPEC-CMS-AI-001 AI/ML + Milvus [v0.1 Draft — 2026-05-18, SPEC 작성됨, RUN 대기]
    └─ SPEC-CMS-MIG-001 [DEPRECATED — 자체 프로젝트로 확정]
 ```
 
