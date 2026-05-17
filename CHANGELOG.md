@@ -9,6 +9,10 @@
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-05-18
+
 ### Added
 
 - Admin SPA Playwright E2E 테스트 도입 (SPEC-CMS-ADMIN-E2E-001)
@@ -16,14 +20,28 @@
   - Mock JWT `page.route()` 전략으로 Pinia 런타임 인증 시뮬레이션
   - 로그인/인증가드/대시보드/사용자/역할/공지/에러/KWCAG 2.2 AA (21개 시나리오, 20 pass)
   - CI `frontend-e2e-admin` job 추가 (backend 미의존)
+- Public 시민 SPA E2E 테스트 도입 (SPEC-CMS-PUBLIC-E2E-001)
+  - Chromium 기반 39개 E2E 시나리오: 홈/공지/FAQ/검색/정책매칭/에러페이지/KWCAG 2.2 AA
+  - axe-core/playwright 활용 KWCAG 2.2 AA 접근성 자동 검증 (`a11y.spec.ts`)
+  - CI 워크플로우에 `frontend-e2e` job 추가 (`needs: [frontend-test]`, playwright-report 아티팩트)
+  - 백엔드 미기동 시 의존성 테스트 자동 스킵 처리 (`test.skip()` 패턴)
 
-### 추가됨 — E2E 테스트 인프라 구축 (SPEC-CMS-PUBLIC-E2E-001)
+### Fixed
 
-- Public 시민 SPA(`frontend/public/`)에 Playwright 1.x E2E 테스트 도입
-- Chromium 기반 39개 E2E 시나리오: 홈/공지/FAQ/검색/정책매칭/에러페이지/KWCAG 2.2 AA
-- axe-core/playwright 활용 KWCAG 2.2 AA 접근성 자동 검증 (`a11y.spec.ts`)
-- CI 워크플로우에 `frontend-e2e` job 추가 (`needs: [frontend-test]`, playwright-report 아티팩트)
-- 백엔드 미기동 시 의존성 테스트 자동 스킵 처리 (`test.skip()` 패턴)
+- `PiiAuditEnhanceIT` 비동기 race condition 해소: `AsyncConfig.auditExecutor()`에 `@ConditionalOnMissingBean` 추가 — 테스트 컨텍스트의 `SyncTaskExecutor`가 올바르게 우선 적용됨
+- `SafetyTemplateServiceTest.releaseNewVersion_bumpsMinorAndArchivesPrevious` 수정: `safety_guideline_template.code` UNIQUE 제약 상 `INSERT`가 아닌 `UPDATE` 검증으로 교정
+- `DashboardLayoutIT` JSON 이중 이스케이프 제거 — `MockMvc` ResultMatcher 경로에서 `\\."` → `\"` 정규화
+- `GlobalExceptionHandler` 도메인 예외 누락 등록 수정 — `AccessDeniedException` / `EntityNotFoundException` 핸들러 추가
+
+### Changed
+
+- `RateLimitFilter` 보강: 키당 독립 슬라이딩 윈도우 + 신뢰 프록시 XFF 헤더 검증 (WARN-3 대응)
+- `MimeTypeValidator` OOXML 구조 검증 + `text/html` XSS 차단 추가 (WARN-4 대응)
+- `target="_blank"` 링크 전체 `rel="noopener noreferrer"` 강제 (SUG-2 reverse tabnapping 방어)
+- `ensureOwnerOrAdmin` 3중 복제 코드 → `AuthorizationGuard` 공용 유틸로 통합 (SUG-1 리팩터링)
+- DB 스키마 문서 완전 재생성 — V1~V26 마이그레이션 분석 반영 (`schema.md` / `erd.mmd` / `migrations.md`)
+
+---
 
 ## [1.0.1] - 2026-05-15
 
