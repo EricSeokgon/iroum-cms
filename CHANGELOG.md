@@ -11,6 +11,27 @@
 
 ---
 
+## [1.5.0] - 2026-05-18
+
+### Changed
+
+- **DB 문서 V27~V33 전면 갱신** (`.moai/project/db/`)
+  - `schema.md`: manifest_hash `v26` → `v33`, pgvector 확장 추가, `bbs_master` soft-delete 컬럼 반영, `policy_program` 임베딩 컬럼(embed_vector/embedded_at/embed_model_version) 반영, AI 도메인 6개 테이블 신규 섹션 추가
+  - `migrations.md`: 최종 적용 V26 → V33, V27~V33 Applied Migrations 행 추가, Rollback Notes·Security Migration Notes 갱신
+  - `erd.mmd`: last generated 2026-05-18로 갱신, ~37 엔티티 AI 도메인 포함, `bbs_master` soft-delete 마커 추가, `policy_program` pgvector 컬럼 추가, AI 도메인 6개 엔티티 블록 추가, AI 관계 라인 추가
+
+### Added (DB 마이그레이션 문서화)
+
+- **V27** `bbs_master` soft-delete: `deleted_at TIMESTAMPTZ` + `idx_bbs_master_active` 부분 인덱스
+- **V28** `ai_prediction_log`: 예측 결과 비동기 로그 (GROWTH_STAGE/RISK_SCORE/SIMULATION), PII 제외 입력 특징 JSONB
+- **V29** `ai_simulation_session`: 비회원 시뮬레이션 세션, `client_ip_hash` SHA-256 전용, TTL 24h
+- **V30** `ai_model_metric`: RMSE·정확도·지연시간 집계, `drift_detected` 불리언, UNIQUE upsert 제약
+- **V31** `ai_retrain_queue`: QUEUED→ACKNOWLEDGED→IN_PROGRESS→DONE→CANCELED 상태 흐름
+- **V32** `ai_policy_recommendation_log`: session_ref SHA-256 해시, company_profile PII 화이트리스트(5개 필드)
+- **V33** pgvector 확장(`CREATE EXTENSION IF NOT EXISTS vector`) + `policy_program.embed_vector vector(384)` + IVFFlat cosine 인덱스(lists=100) + `ai_rag_query_log`
+
+---
+
 ## [1.4.0] - 2026-05-18
 
 ### Added
@@ -856,7 +877,8 @@
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
 
-[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.1.0...v1.2.0
