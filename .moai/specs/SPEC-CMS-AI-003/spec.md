@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-AI-003
-version: v0.2
-status: Implemented
+version: v0.3
+status: Tested
 created: 2026-05-18
-updated: 2026-05-18
+updated: 2026-05-19
 author: manager-spec (MoAI)
 priority: P1 (옵션 트랙)
 issue_number: 0
@@ -408,4 +408,5 @@ ASSUMPTIONS I'M MAKING:
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|-----------|
 | v0.1 | 2026-05-18 | manager-spec (MoAI) | 신규 작성 (Draft) — RAG 질의응답 SPEC. AI-001/AI-002 인프라·패턴 재사용, pgvector 1차 결정, 단일 V33 마이그레이션, EARS 21개 요구사항 |
+| v0.3 | 2026-05-19 | MoAI orchestrator | Implemented → Tested 전환. sync 커밋 f2186d1 (CHANGELOG v1.3.0) 기반. 단위 10 + IT 12(AC-RAG-001~009) + 프론트 7 GREEN 유지 확인. |
 | v0.2 | 2026-05-18 | manager-tdd (MoAI) | 구현 완료 (Implemented) — TDD RED→GREEN→REFACTOR. 단위 10 + IT 12(AC-RAG-001~009) + 프론트 7 GREEN. AbstractIntegrationTest 컨테이너를 pgvector/pgvector:pg16으로 격상(기존 IT 14클래스 41테스트 회귀 없음). queryRef 상관키·cache_hit 컬럼 추가(단일 V33 유지) |

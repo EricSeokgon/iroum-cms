@@ -8,7 +8,7 @@
 | 제목 | AI 정책 매칭 — 시맨틱 추천·개인화 랭킹·하이브리드 검색·추천 설명·피드백 루프 |
 | 작성일 | 2026-05-18 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-AI-001 (AI/ML 인프라 — MlServiceClient·AiPredictionLogService·CircuitBreaker·Caffeine·OpenAPI 계약·Vue 모니터링 패턴), SPEC-CMS-007 (규칙 기반 정책 매칭 — PolicyMatchingService 결과 입력) |
@@ -369,4 +369,5 @@ AI-001 OpenAPI 계약 문서 `docs/ai-ml-service-openapi.yaml`에 다음 엔드�
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|-----------|
+| v0.2 | 2026-05-19 | MoAI orchestrator | Implemented → Tested 전환. 구현 커밋 5489cc2 (AI 정책 매칭 구현) + sync 커밋 e6592d1 (CHANGELOG v1.2.0). 단위 테스트 PolicyMatchServiceTest/PolicyMatchAdminControllerIT/PolicyMatchControllerIT GREEN 확인. |
 | v0.1 | 2026-05-18 | manager-spec | 초안 작성. SPEC-CMS-001 §15.2 SFR-007(AI 정책 매칭, 규칙 기반 SPEC-CMS-007과 별개 AI 트랙)을 상세화. 6개 축(시맨틱 검색 REQ-PM-001~004, 개인화 REQ-PM-005~006, 하이브리드 REQ-PM-007~009, 추천 설명 REQ-PM-010~011, 피드백 루프 REQ-PM-012~014, 품질 모니터링 REQ-PM-015~017) 정의. 신규 1개 테이블(ai_policy_recommendation_log) DDL 단일 마이그레이션 V32. 3개 REST 엔드포인트(추천/피드백/관리자 지표) + Python ML `POST /ml/v1/policy-match` OpenAPI 계약 추가. SPEC-CMS-AI-001 인프라(MlServiceClient/MockMlServiceClient/AiPredictionLogService/aiLogExecutor/IpHashUtil/CacheConfig/RiskThresholdProperties/Resilience4j ml-service/OpenAPI 계약/Vue 모니터링 패턴) 전면 재사용 명시. SPEC-CMS-007 PolicyMatchingService를 읽기 전용 하이브리드 입력으로 사용(수정 금지). 16개 수용 기준(AC-PM-001~016)은 MockMlServiceClient 기반으로 ML 모델 부재 시 검증 가능. Exclusions 섹션 명시(ML 모델 학습 코드/SPEC-CMS-007 수정/AI-001 인프라 재작성/신규 인증/벡터 DB/다중 마이그레이션 금지). |

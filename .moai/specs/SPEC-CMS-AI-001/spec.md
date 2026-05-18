@@ -8,7 +8,7 @@
 | 제목 | AI/ML 기능 — 성장단계 예측·가상 시뮬레이션·경영위험 예측·알고리즘 품질 모니터링 |
 | 작성일 | 2026-05-18 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Implemented |
+| 상태 | Tested |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-009 (데이터 거버넌스 — 데이터 파이프라인, batch_execution_log, data_quality_rule) |
@@ -515,10 +515,16 @@ sequenceDiagram
 
 | 버전 | 일자 | 작성자 | 변경 내용 |
 |------|------|--------|----------|
+| v0.2 | 2026-05-19 | MoAI orchestrator | Implemented → Tested 전환. 구현 커밋 646c4d7 (AI/ML 기능 구현) + sync 커밋 da9ce45 (CHANGELOG v1.1.0). 단위 테스트 AiControllerTest/AiModelMetricJobTest/AiModelMetricServiceTest/AiPrediction*/AiSimulation*/AiRetrainQueue* GREEN 확인. |
 | v0.1 | 2026-05-18 | manager-spec | 초안 작성. SPEC-CMS-001 §15.2 SFR-002/003/004/012, §16 옵션 트랙을 상세화. 4개 축(성장단계 예측 REQ-AI-001~004, 가상 시뮬레이션 REQ-SIM-001~005, 경영위험 예측 REQ-AI-005~007, 알고리즘 품질 모니터링 REQ-MON-001~005) 정의. 4개 신규 테이블 DDL(ai_prediction_log, ai_simulation_session, ai_model_metric, ai_retrain_queue). 16개 REST 엔드포인트. Spring Boot(Gateway) ↔ Python ML(FastAPI) OpenAPI 3.1 계약 명시. SPEC-CMS-009 데이터 거버넌스(batch_execution_log/retention_policy/배치 공통 패턴)를 입력으로 사용하며 재정의하지 않음. 1차 비범위에 ML 모델 훈련 코드, Milvus 클러스터, RAG(SPEC-CMS-AI-003), 정책 매칭 AI(SPEC-CMS-AI-002), 실시간 스트리밍 학습, 딥러닝(GPU) 명시. 수용 기준은 MockMlServiceClient 기반으로 ML 모델 부재 시에도 검증 가능하도록 설계. |
 
 ---
 
 ## 구현 메모 (Implementation Notes)
 
-- (RUN 단계에서 채워질 섹션 — 구현 완료일, 구현 범위, 테스트 결과, 참조 커밋, 특이사항)
+- 구현 완료: 2026-05-18 (커밋 646c4d7)
+- Sync 완료: 2026-05-18 (커밋 da9ce45, CHANGELOG v1.1.0)
+- Tested 전환: 2026-05-19
+- 구현 범위: 성장단계 예측(REQ-AI-001~004), 가상 시뮬레이션(REQ-SIM-001~005), 경영위험 예측(REQ-AI-005~007), 알고리즘 품질 모니터링(REQ-MON-001~005)
+- 테스트: AiControllerTest, AiModelMetricJobTest, AiModelMetricServiceTest 등 단위 테스트 GREEN
+- 특이사항: MockMlServiceClient 기반 검증, ML 모델 부재 시에도 Spring Boot 레이어 독립 검증 가능
