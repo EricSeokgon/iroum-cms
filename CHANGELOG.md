@@ -11,6 +11,34 @@
 
 ---
 
+## [1.2.0] - 2026-05-18
+
+### Added
+
+- AI 정책 매칭 — 하이브리드 추천·피드백 루프·품질 모니터링 (SPEC-CMS-AI-002) — 옵션 트랙 P1 완전 구현
+  - **하이브리드 정책 추천** (`POST /api/v1/ai/policy-match`): SPEC-CMS-007 규칙 점수(0~100) + Python ML 시맨틱 점수(0~1) 가중 결합 (`hybrid = 0.4·ruleNorm + 0.6·semantic`), Top-K 랭킹·추천 설명 포함
+  - **ML 장애 폴백**: Resilience4j ml-service CircuitBreaker OPEN 시 503 미반환, 규칙 단독 랭킹 + `degraded=true` 플래그로 서비스 연속성 보장
+  - **추천 캐싱**: Caffeine policyMatchCache (TTL 기본 30분, 설정 가능) — 동일 세션·프로필·쿼리 재요청 시 ML 호출 없이 즉시 응답
+  - **피드백 수집** (`POST /api/v1/ai/policy-match/feedback`): CLICKED·APPLIED·DISMISSED 이벤트 비동기 적재 — CTR·전환율 산출 기반
+  - **추천 이벤트 비동기 로그**: `@Async("aiLogExecutor")` 기반, 응답 반환 후 비차단 적재
+  - **DB 마이그레이션 V32**: `ai_policy_recommendation_log` — VIEWED/CLICKED/APPLIED/DISMISSED 혼재 단일 테이블, session_ref SHA-256 해시·company_profile JSONB PII 제외 화이트리스트
+  - **관리자 모니터링** (`GET /api/v1/admin/ai/policy-match/metrics`, ROLE=ADMIN 전용): 일별 CTR·전환율·추천 커버리지 집계 차트
+  - **OpenAPI 3.1 계약** (`docs/ai-ml-service-openapi.yaml`): `POST /ml/v1/policy-match` 엔드포인트 스키마 추가
+  - **Vue 3 어드민 대시보드**: `PolicyMatchMetrics.vue` — CTR·전환율·커버리지 시계열 차트 + i18n(ko/en)
+  - **시민 SPA 업데이트** (`PolicyMatchView.vue`): AI 하이브리드 점수 랭킹·추천 사유 표시, 클릭/신청/닫기 피드백 버튼
+
+### Fixed
+
+- `SimulationServiceImpl` 다중 생성자 `@Autowired` 누락 수정 — `@SpringBootTest` 컨텍스트 로딩 오류 해소 (AI-001 기존 버그)
+
+### Security
+
+- `session_ref` 평문 미저장 — SHA-256 해시만 `ai_policy_recommendation_log`에 보관
+- ML 서비스 입력에서 PII(대표자명·주민·법인 식별정보) 완전 제외 — `ksic_code`·`employee_count`·`growth_stage`·`region_code`·`annual_revenue` 화이트리스트만 전송
+- 관리자 모니터링 API `@PreAuthorize("hasRole('ADMIN')")` 적용
+
+---
+
 ## [1.1.0] - 2026-05-18
 
 ### Added
