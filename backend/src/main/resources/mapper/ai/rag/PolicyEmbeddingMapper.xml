@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-003 — pgvector cosine similarity 검색 (읽기 전용) -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.rag.repository.PolicyEmbeddingRepository">
+
+    <!--
+      REQ-RAG-003: 질문 임베딩 벡터와의 cosine similarity 상위 limit개 활성 정책.
+      pgvector: (a <=> b) = cosine distance(0~2). similarity = 1 - distance(0~1).
+      embed_vector IS NULL(미생성) 정책은 제외 → 빈 결과 시 호출부가 FTS 폴백(AC-RAG-008).
+      content: program_name + description_html(태그 제거는 서비스에서 sanitize)
+    -->
+    <select id="searchByCosine" resultType="java.util.Map">
+        SELECT
+            id,
+            program_name                                            AS title,
+            COALESCE(description_html, program_name)                 AS content,
+            1 - (embed_vector &lt;=&gt; CAST(#{vectorLiteral} AS vector)) AS score
+        FROM policy_program
+        WHERE status = 'ACTIVE'
+          AND embed_vector IS NOT NULL
+          AND (application_end IS NULL OR application_end >= now())
+        ORDER BY embed_vector &lt;=&gt; CAST(#{vectorLiteral} AS vector) ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

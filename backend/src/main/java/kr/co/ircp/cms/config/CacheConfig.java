@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import kr.co.ircp.cms.domain.ai.rag.config.RagProperties;
 import kr.co.ircp.cms.domain.policy.aimatch.config.PolicyMatchProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -34,7 +35,8 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
 
     @Bean
-    public CacheManager cacheManager(PolicyMatchProperties policyMatchProperties) {
+    public CacheManager cacheManager(PolicyMatchProperties policyMatchProperties,
+                                     RagProperties ragProperties) {
         SimpleCacheManager manager = new SimpleCacheManager();
 
         CaffeineCache menuTree = build("menuTree",
@@ -70,8 +72,16 @@ public class CacheConfig {
                         .expireAfterWrite(policyMatchProperties.getCacheTtlMinutes(), TimeUnit.MINUTES)
                         .maximumSize(2000));
 
+        // SPEC-CMS-AI-003 REQ-RAG-011/012: RAG 질의 응답 캐시 (질문 해시 키)
+        // @MX:NOTE: [AUTO] ragQueryCache — TTL 15분·degraded 응답 캐시 제외 정책 (REQ-RAG-012)
+        // @MX:SPEC: SPEC-CMS-AI-003
+        CaffeineCache ragQueryCache = build("ragQueryCache",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(ragProperties.getCacheTtlMinutes(), TimeUnit.MINUTES)
+                        .maximumSize(ragProperties.getCacheMaxSize()));
+
         manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
-                codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache));
+                codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache, ragQueryCache));
         return manager;
     }
 
