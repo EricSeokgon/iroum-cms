@@ -105,7 +105,14 @@
     "matchScore": "Match Score",
     "description": "Description",
     "eligibility": "Eligibility",
-    "contact": "Contact"
+    "contact": "Contact",
+    "policyId": "Policy",
+    "hybridScore": "AI Match",
+    "ruleScore": "Rule Score",
+    "semanticScore": "Semantic Score",
+    "whyRecommended": "Why recommended",
+    "applyAction": "Apply",
+    "aiDegraded": "AI inference is temporarily unavailable; showing rule-based recommendations"
   },
   "safety": {
     "guidelines": "Safety Guidelines",

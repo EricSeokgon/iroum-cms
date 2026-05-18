@@ -4,6 +4,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageRequest;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlHealthResponse;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchRequest;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchResponse;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
@@ -42,6 +44,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     private final RestTemplate growthStageRt;
     private final RestTemplate riskScoreRt;
     private final RestTemplate simulationRt;
+    private final RestTemplate policyMatchRt;
     private final RestTemplate healthRt;
 
     public MlServiceClientImpl(
@@ -50,11 +53,13 @@ public class MlServiceClientImpl implements MlServiceClient {
             @Value("${ml.service.timeout.growth-stage-ms:3000}") long growthStageMs,
             @Value("${ml.service.timeout.risk-score-ms:500}") long riskScoreMs,
             @Value("${ml.service.timeout.simulation-ms:3000}") long simulationMs,
+            @Value("${ml.service.timeout.policy-match-ms:3000}") long policyMatchMs,
             @Value("${ml.service.timeout.health-ms:1000}") long healthMs) {
         this.baseUrl = baseUrl;
         this.growthStageRt = rt(builder, growthStageMs);
         this.riskScoreRt = rt(builder, riskScoreMs);
         this.simulationRt = rt(builder, simulationMs);
+        this.policyMatchRt = rt(builder, policyMatchMs);
         this.healthRt = rt(builder, healthMs);
     }
 
@@ -99,6 +104,17 @@ public class MlServiceClientImpl implements MlServiceClient {
     }
 
     @Override
+    @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackPolicyMatch")
+    public MlPolicyMatchResponse policyMatch(MlPolicyMatchRequest request) {
+        try {
+            return policyMatchRt.postForObject(
+                    baseUrl + "/ml/v1/policy-match", request, MlPolicyMatchResponse.class);
+        } catch (RestClientException e) {
+            throw new MlServiceException("policy-match failed", e);
+        }
+    }
+
+    @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackHealth")
     public MlHealthResponse health() {
         try {
@@ -129,6 +145,12 @@ public class MlServiceClientImpl implements MlServiceClient {
     private SimulationResponse fallbackSimulation(SimulationRequest request, Throwable t) {
         log.warn("ml-service simulation fallback: {}", t.getMessage());
         throw new MlServiceException("ml-service unavailable (simulation fallback)", t);
+    }
+
+    @SuppressWarnings("unused")
+    private MlPolicyMatchResponse fallbackPolicyMatch(MlPolicyMatchRequest request, Throwable t) {
+        log.warn("ml-service policy-match fallback: {}", t.getMessage());
+        throw new MlServiceException("ml-service unavailable (policy-match fallback)", t);
     }
 
     @SuppressWarnings("unused")

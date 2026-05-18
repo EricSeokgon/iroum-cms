@@ -193,6 +193,13 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/v1/search/click"
                 ).permitAll()
+                // SPEC-CMS-AI-002 REQ-PM-001/012 — 하이브리드 정책 추천·피드백 공개 API
+                // (비회원 허용, 회원이면 인증 컨텍스트 활용. AI-001 비회원 화이트리스트 패턴)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/ai/policy-match",
+                    "/api/v1/ai/policy-match/feedback"
+                ).permitAll()
                 // SPEC-CMS-AI-001 — AI 운영자 API는 ADMIN 전용(defense-in-depth, @PreAuthorize와 이중화)
                 .requestMatchers("/api/v1/admin/ai/**").hasRole("ADMIN")
                 // SPEC-CMS-AI-001 — AI 예측/시뮬레이션은 인증 사용자 전용

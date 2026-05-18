@@ -8,7 +8,7 @@
 | 제목 | AI 정책 매칭 — 시맨틱 추천·개인화 랭킹·하이브리드 검색·추천 설명·피드백 루프 |
 | 작성일 | 2026-05-18 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Approved |
+| 상태 | Implemented |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-AI-001 (AI/ML 인프라 — MlServiceClient·AiPredictionLogService·CircuitBreaker·Caffeine·OpenAPI 계약·Vue 모니터링 패턴), SPEC-CMS-007 (규칙 기반 정책 매칭 — PolicyMatchingService 결과 입력) |

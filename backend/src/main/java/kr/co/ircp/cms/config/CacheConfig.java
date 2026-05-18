@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.config;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import kr.co.ircp.cms.domain.policy.aimatch.config.PolicyMatchProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -33,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
 
     @Bean
-    public CacheManager cacheManager() {
+    public CacheManager cacheManager(PolicyMatchProperties policyMatchProperties) {
         SimpleCacheManager manager = new SimpleCacheManager();
 
         CaffeineCache menuTree = build("menuTree",
@@ -63,8 +64,14 @@ public class CacheConfig {
         CaffeineCache aiGrowthStage = build("aiGrowthStage",
                 Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000));
 
+        // SPEC-CMS-AI-002 REQ-PM-003: 하이브리드 추천 결과 캐시 (TTL PolicyMatchProperties, max 2000)
+        CaffeineCache policyMatchCache = build("policyMatchCache",
+                Caffeine.newBuilder()
+                        .expireAfterWrite(policyMatchProperties.getCacheTtlMinutes(), TimeUnit.MINUTES)
+                        .maximumSize(2000));
+
         manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
-                codes, codeGroups, dashboard, aiGrowthStage));
+                codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache));
         return manager;
     }
 

@@ -3,6 +3,8 @@ package kr.co.ircp.cms.infra.ml;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageRequest;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlHealthResponse;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchRequest;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchResponse;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
@@ -25,6 +27,15 @@ public interface MlServiceClient {
     RiskScoreResponse predictRiskScore(RiskScoreRequest request);
 
     SimulationResponse predictSimulation(SimulationRequest request);
+
+    /**
+     * 정책 후보 풀에 대한 시맨틱 매칭 점수 산출 (SPEC-CMS-AI-002).
+     *
+     * <p>요청에는 PII가 포함되지 않는다(ksic_code/employee_count/growth_stage/region_code/annual_revenue).
+     * 호출 실패·타임아웃·CircuitBreaker OPEN 시 {@link MlServiceException}을 던져
+     * 호출부의 규칙 단독 폴백으로 위임한다(REQ-PM-009).
+     */
+    MlPolicyMatchResponse policyMatch(MlPolicyMatchRequest request);
 
     MlHealthResponse health();
 }

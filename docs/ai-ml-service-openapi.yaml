@@ -49,6 +49,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SimulationResponse'
+  /ml/v1/policy-match:
+    post:
+      summary: Semantic Policy Match (SPEC-CMS-AI-002)
+      description: >-
+        기업 프로필(+선택 자연어 질의)과 후보 정책 ID 풀에 대해 정책별 시맨틱
+        유사도 점수(0~1)와 매칭 근거를 반환한다. company_profile에는 PII를 포함하지
+        않는다(ksic_code/employee_count/growth_stage/region_code/annual_revenue 한정).
+        Spring Boot가 SPEC-CMS-007 활성 정책 풀에서 candidate_policy_ids를 추출하여 전달한다.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PolicyMatchRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyMatchResponse'
   /ml/v1/health:
     get:
       summary: ML Service Health Check
@@ -121,6 +141,43 @@ components:
                 type: object
                 additionalProperties: {type: number, format: double}
         modelVersion: {type: string}
+    PolicyMatchRequest:
+      type: object
+      required: [company_profile, candidate_policy_ids, top_k]
+      properties:
+        company_profile:
+          type: object
+          description: PII 제외 — ksic_code/employee_count/growth_stage/region_code/annual_revenue 한정
+          properties:
+            ksic_code: {type: string}
+            employee_count: {type: integer}
+            growth_stage: {type: string}
+            region_code: {type: string}
+            annual_revenue: {type: integer, format: int64}
+        query_text: {type: string, nullable: true, maxLength: 500}
+        candidate_policy_ids:
+          type: array
+          items: {type: integer, format: int64}
+        top_k: {type: integer, minimum: 1, maximum: 50}
+    PolicyMatchResponse:
+      type: object
+      properties:
+        matches:
+          type: array
+          items:
+            type: object
+            properties:
+              policy_id: {type: integer, format: int64}
+              semantic_score: {type: number, format: double, minimum: 0, maximum: 1}
+              explanation:
+                type: object
+                properties:
+                  matched_terms:
+                    type: array
+                    items: {type: string}
+                  rationale: {type: string}
+        model_name: {type: string}
+        model_version: {type: string}
     MlHealthResponse:
       type: object
       properties:

@@ -28,6 +28,7 @@ import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
 import kr.co.ircp.cms.domain.ai.exception.AiPredictionNotFoundException;
 import kr.co.ircp.cms.domain.ai.exception.AiRateLimitExceededException;
 import kr.co.ircp.cms.domain.ai.exception.AiSimulationNotFoundException;
+import kr.co.ircp.cms.domain.policy.aimatch.exception.AiFeedbackInvalidException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentDownloadDeniedException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentTooLargeException;
@@ -1190,6 +1191,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
         detail.setTitle("AI Rate Limit Exceeded");
         detail.setProperty("code", AiRateLimitExceededException.CODE);
+        return detail;
+    }
+
+    /**
+     * 추천 피드백 무결성 위반 → HTTP 400 Bad Request.
+     *
+     * <p>SPEC-CMS-AI-002 REQ-PM-013 — interaction_type=VIEWED 또는 policy_id 누락.
+     * DB chk_aprl_feedback 제약과 일관된다.
+     */
+    @ExceptionHandler(AiFeedbackInvalidException.class)
+    public ProblemDetail handleAiFeedbackInvalid(AiFeedbackInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("AI Feedback Invalid");
+        detail.setProperty("code", AiFeedbackInvalidException.CODE);
         return detail;
     }
 

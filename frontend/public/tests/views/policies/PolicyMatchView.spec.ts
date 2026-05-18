@@ -8,12 +8,17 @@ import { createI18n } from 'vue-i18n'
 import koMessages from '@/locales/ko.json'
 import enMessages from '@/locales/en.json'
 
-const matchMock = vi.fn()
+// SPEC-CMS-AI-002 — PolicyMatchView가 AI 하이브리드 추천(aiMatch) + 피드백(sendFeedback)을
+// 사용하도록 강화됨. C-03 익명 매칭 invariant(401 무리다이렉트·route meta)는 그대로 유지.
+const aiMatchMock = vi.fn()
+const sendFeedbackMock = vi.fn()
 vi.mock('@/api/policyApi', () => ({
   policyApi: {
     list: vi.fn(),
     detail: vi.fn(),
-    match: (...args: unknown[]) => matchMock(...args),
+    match: vi.fn(),
+    aiMatch: (...args: unknown[]) => aiMatchMock(...args),
+    sendFeedback: (...args: unknown[]) => sendFeedbackMock(...args),
   },
 }))
 
@@ -44,70 +49,149 @@ async function mountView() {
   return { wrapper, router }
 }
 
-describe('PolicyMatchView — C-03 익명 매칭 가능', () => {
+describe('PolicyMatchView — C-03 익명 매칭 + SPEC-CMS-AI-002 하이브리드', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
-    matchMock.mockReset()
+    aiMatchMock.mockReset()
+    sendFeedbackMock.mockReset()
+    sendFeedbackMock.mockResolvedValue(undefined)
     localStorage.clear()
   })
 
-  it('폼 제출 → policyApi.match 호출 + TOP-10 결과 렌더링', async () => {
-    matchMock.mockResolvedValue([
-      {
-        policyId: 1,
-        score: 0.92,
-        reason: '업종 일치',
-        policy: { id: 1, title: '정책1', industry: 'IT', region: '서울', type: '자금지원' },
-      },
-      {
-        policyId: 2,
-        score: 0.85,
-        reason: '지역 일치',
-        policy: { id: 2, title: '정책2', industry: 'IT', region: '서울', type: '컨설팅' },
-      },
-    ])
+  it('폼 제출 → policyApi.aiMatch 호출(화이트리스트 프로필) + 하이브리드 점수 배지 렌더링', async () => {
+    aiMatchMock.mockResolvedValue({
+      degraded: false,
+      items: [
+        {
+          policyId: 1,
+          hybridScore: 0.92,
+          ruleScore: 0.8,
+          semanticScore: 0.98,
+          explanation: {
+            ruleBreakdown: { industry: 30 },
+            matchedTerms: ['IT'],
+            rationale: '업종 시맨틱 매칭',
+            semanticAvailable: true,
+          },
+        },
+        {
+          policyId: 2,
+          hybridScore: 0.85,
+          ruleScore: 0.7,
+          semanticScore: 0.95,
+          explanation: {
+            ruleBreakdown: { region: 20 },
+            matchedTerms: ['서울'],
+            rationale: '지역 시맨틱 매칭',
+            semanticAvailable: true,
+          },
+        },
+      ],
+    })
     const { wrapper } = await mountView()
 
     await wrapper.find('[data-testid="match-industry-input"]').setValue('IT')
-    await wrapper.find('[data-testid="match-capital-input"]').setValue(50000000)
     await wrapper.find('[data-testid="match-revenue-input"]').setValue(100000000)
     await wrapper.find('[data-testid="match-employees-input"]').setValue(5)
     await wrapper.find('[data-testid="match-region-input"]').setValue('서울')
     await wrapper.find('form[data-testid="policy-match-form"]').trigger('submit')
     await flushPromises()
 
-    expect(matchMock).toHaveBeenCalledWith({
-      industry: 'IT',
-      capitalAmount: 50000000,
-      revenueAmount: 100000000,
-      employeeCount: 5,
-      region: '서울',
+    // AC-PM: companyProfile은 화이트리스트 키만 (PII 제외)
+    expect(aiMatchMock).toHaveBeenCalledWith({
+      companyProfile: {
+        ksic_code: 'IT',
+        employee_count: 5,
+        region_code: '서울',
+        annual_revenue: 100000000,
+      },
+      topK: 10,
     })
 
-    const results = wrapper.find('[data-testid="policy-match-results"]')
-    expect(results.exists()).toBe(true)
-    expect(wrapper.findAll('[data-testid="policy-card"]').length).toBe(2)
+    expect(wrapper.find('[data-testid="policy-match-results"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="hybrid-badge-1"]').text()).toContain('92.0%')
+    expect(wrapper.find('[data-testid="hybrid-badge-2"]').text()).toContain('85.0%')
   })
 
-  it('401 응답 시에도 /login 으로 리다이렉트되지 않는다 (익명 가능)', async () => {
-    // 익명 호출의 401 은 client 인터셉터에서 reject 만 발생. View 는 빈 결과로 처리.
+  it('AC-PM-013: 정책 클릭 시 CLICKED, 신청 시 APPLIED 피드백 전송', async () => {
+    aiMatchMock.mockResolvedValue({
+      degraded: false,
+      items: [
+        {
+          policyId: 7,
+          hybridScore: 0.7,
+          ruleScore: 0.5,
+          semanticScore: 0.8,
+          explanation: {
+            ruleBreakdown: {},
+            matchedTerms: [],
+            rationale: 'r',
+            semanticAvailable: true,
+          },
+        },
+      ],
+    })
+    const { wrapper } = await mountView()
+    await wrapper.find('[data-testid="match-industry-input"]').setValue('IT')
+    await wrapper.find('form[data-testid="policy-match-form"]').trigger('submit')
+    await flushPromises()
+
+    await wrapper.find('[data-testid="policy-link-7"]').trigger('click')
+    await flushPromises()
+    expect(sendFeedbackMock).toHaveBeenCalledWith(
+      expect.objectContaining({ interactionType: 'CLICKED', policyId: 7 }),
+    )
+
+    await wrapper.find('[data-testid="apply-btn-7"]').trigger('click')
+    await flushPromises()
+    expect(sendFeedbackMock).toHaveBeenCalledWith(
+      expect.objectContaining({ interactionType: 'APPLIED', policyId: 7 }),
+    )
+  })
+
+  it('AC-PM-009: degraded=true면 폴백 배너를 표시한다', async () => {
+    aiMatchMock.mockResolvedValue({
+      degraded: true,
+      items: [
+        {
+          policyId: 3,
+          hybridScore: 0.6,
+          ruleScore: 0.6,
+          semanticScore: 0,
+          explanation: {
+            ruleBreakdown: { industry: 30 },
+            matchedTerms: [],
+            rationale: '규칙 기반',
+            semanticAvailable: false,
+          },
+        },
+      ],
+    })
+    const { wrapper } = await mountView()
+    await wrapper.find('[data-testid="match-industry-input"]').setValue('IT')
+    await wrapper.find('form[data-testid="policy-match-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="ai-degraded-banner"]').exists()).toBe(true)
+  })
+
+  it('401 응답 시에도 /login 으로 리다이렉트되지 않는다 (익명 가능, C-03 유지)', async () => {
     const axiosError = {
       isAxiosError: true,
       response: { status: 401, data: { code: 'UNAUTHORIZED' } },
     }
-    matchMock.mockRejectedValue(axiosError)
+    aiMatchMock.mockRejectedValue(axiosError)
     const { wrapper, router } = await mountView()
 
     await wrapper.find('[data-testid="match-industry-input"]').setValue('IT')
     await wrapper.find('form[data-testid="policy-match-form"]').trigger('submit')
     await flushPromises()
 
-    // /login 으로 이동하지 않음 — 여전히 policy-match
     expect(router.currentRoute.value.name).toBe('policy-match')
   })
 
   it('결과가 빈 배열이면 matchEmpty 메시지', async () => {
-    matchMock.mockResolvedValue([])
+    aiMatchMock.mockResolvedValue({ degraded: false, items: [] })
     const { wrapper } = await mountView()
     await wrapper.find('[data-testid="match-industry-input"]').setValue('농업')
     await wrapper.find('form[data-testid="policy-match-form"]').trigger('submit')

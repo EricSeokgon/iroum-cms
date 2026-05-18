@@ -136,6 +136,24 @@
         "acknowledge": "Acknowledge",
         "done": "Done"
       }
+    },
+    "policyMatch": {
+      "title": "AI Recommendation Quality",
+      "loadError": "Failed to load recommendation metrics",
+      "filter": {
+        "period": "Period",
+        "range": "Range",
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "metric": {
+        "ctr": "Click-Through Rate (CTR)",
+        "ctrDetail": "Clicked sessions {c} / Viewed sessions {v}",
+        "conversion": "Conversion Rate",
+        "conversionDetail": "Applied sessions {a} / Viewed sessions {v}",
+        "coverage": "Recommendation Coverage",
+        "coverageHint": "Recommended policies / Active policies"
+      }
     }
   },
   "system": {

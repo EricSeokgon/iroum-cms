@@ -3,6 +3,10 @@ package kr.co.ircp.cms.infra.ml;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageRequest;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlHealthResponse;
+import kr.co.ircp.cms.infra.ml.dto.MlMatchExplanation;
+import kr.co.ircp.cms.infra.ml.dto.MlMatchItem;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchRequest;
+import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchResponse;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
@@ -10,6 +14,7 @@ import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 테스트 전용 ML 서비스 클라이언트 스텁.
@@ -27,9 +32,30 @@ public class MockMlServiceClient implements MlServiceClient {
 
     private volatile boolean timeout = false;
 
+    /** policyMatch 호출 횟수 (캐시 hit 검증용 — AC-PM-003). */
+    private final AtomicInteger policyMatchCalls = new AtomicInteger(0);
+
+    /** 후보별 고정 시맨틱 점수. null이면 결정적 기본 점수(0.5) 사용. */
+    private volatile Map<Long, Double> fixedSemanticScores;
+
     /** 타임아웃 시뮬레이션 토글 (타임아웃 폴백 경로 검증용). */
     public void simulateTimeout(boolean enabled) {
         this.timeout = enabled;
+    }
+
+    /** policyMatch 호출 횟수 반환 (캐시 미스 시 1, 캐시 hit 시 추가 호출 없음). */
+    public int policyMatchCallCount() {
+        return policyMatchCalls.get();
+    }
+
+    /** 호출 카운터 초기화. */
+    public void resetPolicyMatchCallCount() {
+        policyMatchCalls.set(0);
+    }
+
+    /** 후보 정책 ID → 시맨틱 점수 고정 (하이브리드 점수 계산 검증용 — AC-PM-006). */
+    public void setFixedSemanticScores(Map<Long, Double> scores) {
+        this.fixedSemanticScores = scores;
     }
 
     @Override
@@ -66,6 +92,30 @@ public class MockMlServiceClient implements MlServiceClient {
                         new SimulationResponse.ProjectionPoint(
                                 baseYear + 3, "GROWTH", Map.of("GROWTH", 0.6, "EXPANSION", 0.4))),
                 "mock-sim-1.0.0");
+    }
+
+    @Override
+    public MlPolicyMatchResponse policyMatch(MlPolicyMatchRequest request) {
+        policyMatchCalls.incrementAndGet();
+        guardTimeout();
+        List<Long> candidates = request.candidatePolicyIds() == null
+                ? List.of() : request.candidatePolicyIds();
+        List<MlMatchItem> matches = candidates.stream()
+                .map(id -> new MlMatchItem(
+                        id,
+                        semanticScoreFor(id),
+                        new MlMatchExplanation(
+                                List.of("ksic", "growth-stage"),
+                                "프로필 특성과 정책 대상 요건의 시맨틱 유사도 기반 매칭")))
+                .toList();
+        return new MlPolicyMatchResponse(matches, "mock-policy-match", "1.0.0");
+    }
+
+    private double semanticScoreFor(Long policyId) {
+        if (fixedSemanticScores != null && fixedSemanticScores.containsKey(policyId)) {
+            return fixedSemanticScores.get(policyId);
+        }
+        return 0.5;
     }
 
     @Override

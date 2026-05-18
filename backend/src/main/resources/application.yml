@@ -121,6 +121,7 @@ ml:
       growth-stage-ms: 3000
       risk-score-ms: 500
       simulation-ms: 3000
+      policy-match-ms: 3000
       health-ms: 1000
 
 ai:
@@ -137,6 +138,13 @@ ai:
       orange: 0.75
   rate-limit:
     simulation-per-hour: 30
+  # SPEC-CMS-AI-002 — 하이브리드 정책 매칭 (캐시 TTL·가중치·Top-K 경계)
+  policy-match:
+    cache-ttl-minutes: 30
+    w-rule: 0.4
+    w-semantic: 0.6
+    top-k-default: 10
+    top-k-max: 50
 
 resilience4j:
   circuitbreaker:

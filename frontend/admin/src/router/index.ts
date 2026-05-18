@@ -479,6 +479,13 @@ const router = createRouter({
           component: () => import('@/views/ai/RetrainQueue.vue'),
           meta: { title: '재학습 큐', permissions: ['ADMIN'] },
         },
+        // SPEC-CMS-AI-002 — AI 정책 추천 품질 모니터링
+        {
+          path: 'ai/policy-match-metrics',
+          name: 'ai-policy-match-metrics',
+          component: () => import('@/views/ai/PolicyMatchMetrics.vue'),
+          meta: { title: 'AI 추천 품질 지표', permissions: ['ADMIN'] },
+        },
       ],
     },
 

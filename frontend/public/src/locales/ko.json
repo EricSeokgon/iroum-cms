@@ -105,7 +105,14 @@
     "matchScore": "적합도",
     "description": "사업 설명",
     "eligibility": "지원 자격",
-    "contact": "문의처"
+    "contact": "문의처",
+    "policyId": "정책",
+    "hybridScore": "AI 적합도",
+    "ruleScore": "규칙 점수",
+    "semanticScore": "시맨틱 점수",
+    "whyRecommended": "추천 이유 보기",
+    "applyAction": "신청하기",
+    "aiDegraded": "AI 추론이 일시적으로 불가하여 규칙 기반 추천을 제공합니다"
   },
   "safety": {
     "guidelines": "안전 가이드",

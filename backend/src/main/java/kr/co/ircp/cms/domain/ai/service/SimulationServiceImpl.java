@@ -15,6 +15,7 @@ import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
 import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +48,11 @@ public class SimulationServiceImpl implements SimulationService {
 
     /**
      * 운영 빈 생성자 — rate-limit과 PDF 생성기를 주입한다.
+     *
+     * <p>{@code @Autowired} — 본 클래스는 생성자 2개(운영/테스트 편의)를 가지므로
+     * Spring이 주입 대상 생성자를 결정하도록 명시한다(다중 생성자 모호성 해소).
      */
+    @Autowired
     public SimulationServiceImpl(AiSimulationSessionMapper sessionMapper,
                                  MlServiceClient mlServiceClient,
                                  AiPredictionLogService aiPredictionLogService,

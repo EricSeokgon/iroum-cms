@@ -136,6 +136,24 @@
         "acknowledge": "승인",
         "done": "완료"
       }
+    },
+    "policyMatch": {
+      "title": "AI 추천 품질 지표",
+      "loadError": "추천 품질 지표를 불러오지 못했습니다",
+      "filter": {
+        "period": "집계 단위",
+        "range": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "metric": {
+        "ctr": "클릭률 (CTR)",
+        "ctrDetail": "클릭 세션 {c} / 노출 세션 {v}",
+        "conversion": "신청 전환율",
+        "conversionDetail": "신청 세션 {a} / 노출 세션 {v}",
+        "coverage": "추천 커버리지",
+        "coverageHint": "추천 등장 정책 / 활성 정책 총수"
+      }
     }
   },
   "system": {
