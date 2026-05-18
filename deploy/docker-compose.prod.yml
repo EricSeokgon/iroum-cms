@@ -70,10 +70,13 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ACCESS_LOG_IP_SALT: ${ACCESS_LOG_IP_SALT}
       AES_KEY: ${AES_KEY}
-      ML_SERVICE_URL: ${ML_SERVICE_URL}
+      # ML 추론 서비스 (내부 네트워크). .env 미지정 시 컨테이너명 기본값 사용
+      ML_SERVICE_URL: ${ML_SERVICE_URL:-http://ml-service:8000}
       JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
     depends_on:
       postgres:
+        condition: service_healthy
+      ml-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
@@ -85,6 +88,31 @@ services:
       - iroum-net
     restart: unless-stopped
     # 외부 포트 미노출 (nginx 경유)
+
+  # ──────────────────────────────────────────
+  # ML Service — Python FastAPI 추론 서비스
+  # 규칙 기반 예측 + sentence-transformers 임베딩
+  # SPEC-CMS-ML-SERVICE-001
+  # ──────────────────────────────────────────
+  ml-service:
+    build:
+      context: ../ml-service
+      dockerfile: Dockerfile
+    image: iroum-cms-ml-service:latest
+    container_name: iroum-ml-service
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -fsS http://localhost:8000/ml/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    networks:
+      - iroum-net
+    restart: unless-stopped
+    # 외부 포트 미노출 (내부 네트워크만 접근)
 
   # ──────────────────────────────────────────
   # Admin SPA — Vue 3 관리자 백오피스
