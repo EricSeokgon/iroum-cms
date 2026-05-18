@@ -69,6 +69,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PolicyMatchResponse'
+  /ml/v1/embed:
+    post:
+      summary: Sentence Embedding (SPEC-CMS-AI-003)
+      description: >-
+        질문 텍스트를 384차원 임베딩 벡터로 변환한다. 페이로드에는 질문
+        텍스트(text)만 포함되며 company_id/회원ID/세션 평문 등 PII는 절대
+        포함하지 않는다(AC-RAG-005).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbedRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbedResponse'
+  /ml/v1/rag:
+    post:
+      summary: Retrieval-Augmented Generation (SPEC-CMS-AI-003)
+      description: >-
+        질문과 검색된 상위 K개 정책 컨텍스트로 생성형 답변을 반환한다.
+        페이로드에는 질문(question)과 정책 컨텍스트(contexts)만 포함되며
+        사용자 식별정보는 포함하지 않는다(AC-RAG-005).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RagRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RagResponse'
   /ml/v1/health:
     get:
       summary: ML Service Health Check
@@ -185,3 +223,41 @@ components:
         loadedModels:
           type: array
           items: {type: string}
+    EmbedRequest:
+      type: object
+      required: [text]
+      properties:
+        text: {type: string, description: '정규화된 질문 텍스트 (PII 미포함)'}
+    EmbedResponse:
+      type: object
+      properties:
+        vector:
+          type: array
+          minItems: 384
+          maxItems: 384
+          items: {type: number, format: float}
+    RagRequest:
+      type: object
+      required: [question, contexts]
+      properties:
+        question: {type: string, description: '정규화된 질문 텍스트 (PII 미포함)'}
+        contexts:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: integer, format: int64}
+              title: {type: string}
+              content: {type: string}
+    RagResponse:
+      type: object
+      properties:
+        answer: {type: string}
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              id: {type: integer, format: int64}
+              relevance: {type: number, format: double, minimum: 0, maximum: 1}
+        quality_score: {type: integer, minimum: 0, maximum: 100, nullable: true}

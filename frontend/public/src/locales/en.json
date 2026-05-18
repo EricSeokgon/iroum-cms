@@ -114,6 +114,24 @@
     "applyAction": "Apply",
     "aiDegraded": "AI inference is temporarily unavailable; showing rule-based recommendations"
   },
+  "rag": {
+    "title": "Policy AI Q&A",
+    "subtitle": "Ask about policies in natural language. AI finds relevant policies and answers",
+    "questionLabel": "Question",
+    "questionPlaceholder": "e.g. Tell me about youth startup support policies",
+    "submit": "Ask",
+    "answerTitle": "Answer",
+    "sourcesTitle": "Source Policies",
+    "relevance": "Relevance",
+    "empty": "No related policies found",
+    "error": "Failed to get an answer. Please try again later",
+    "degraded": "Simplified search results. AI-generated answer is temporarily unavailable; showing keyword search results",
+    "helpful": "Helpful",
+    "unhelpful": "Not helpful",
+    "feedbackThanks": "Thank you for your feedback",
+    "questionRequired": "Please enter a question",
+    "questionTooLong": "Question must not exceed 1000 characters"
+  },
   "safety": {
     "guidelines": "Safety Guidelines",
     "incidents": "Incident Cases",
@@ -248,6 +266,7 @@
       "list": "Policies",
       "detail": "Policy",
       "match": "Policy Match",
+      "rag": "Policy AI Q&A",
       "subscription": "Subscription"
     },
     "safety": {

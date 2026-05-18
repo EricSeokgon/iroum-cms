@@ -154,6 +154,27 @@
         "coverage": "추천 커버리지",
         "coverageHint": "추천 등장 정책 / 활성 정책 총수"
       }
+    },
+    "rag": {
+      "title": "RAG 질의응답 품질 지표",
+      "loadError": "RAG 품질 지표를 불러오지 못했습니다",
+      "filter": {
+        "range": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "metric": {
+        "satisfaction": "만족도",
+        "satisfactionHint": "HELPFUL / 전체 피드백",
+        "cacheHit": "캐시 히트율",
+        "cacheHitHint": "캐시 응답 / 전체 질의",
+        "latency": "평균 응답시간",
+        "latencyUnit": "ms",
+        "degraded": "폴백 비율",
+        "degradedHint": "ML 장애 폴백 / 전체 질의",
+        "total": "전체 질의 수"
+      },
+      "timeSeries": "일자별 질의 추이"
     }
   },
   "system": {

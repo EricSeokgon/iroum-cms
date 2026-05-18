@@ -154,6 +154,27 @@
         "coverage": "Recommendation Coverage",
         "coverageHint": "Recommended policies / Active policies"
       }
+    },
+    "rag": {
+      "title": "RAG Q&A Quality",
+      "loadError": "Failed to load RAG metrics",
+      "filter": {
+        "range": "Range",
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "metric": {
+        "satisfaction": "Satisfaction",
+        "satisfactionHint": "HELPFUL / total feedback",
+        "cacheHit": "Cache Hit Rate",
+        "cacheHitHint": "Cached / total queries",
+        "latency": "Avg Latency",
+        "latencyUnit": "ms",
+        "degraded": "Fallback Rate",
+        "degradedHint": "ML fallback / total queries",
+        "total": "Total Queries"
+      },
+      "timeSeries": "Daily query trend"
     }
   },
   "system": {

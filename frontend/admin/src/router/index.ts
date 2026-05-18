@@ -486,6 +486,13 @@ const router = createRouter({
           component: () => import('@/views/ai/PolicyMatchMetrics.vue'),
           meta: { title: 'AI 추천 품질 지표', permissions: ['ADMIN'] },
         },
+        // SPEC-CMS-AI-003 — RAG 질의응답 품질 모니터링
+        {
+          path: 'ai/rag-metrics',
+          name: 'ai-rag-metrics',
+          component: () => import('@/views/ai/RagMetrics.vue'),
+          meta: { title: 'RAG 품질 지표', permissions: ['ADMIN'] },
+        },
       ],
     },
 
