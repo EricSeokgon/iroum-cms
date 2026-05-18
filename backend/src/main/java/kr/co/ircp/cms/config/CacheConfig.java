@@ -59,8 +59,12 @@ public class CacheConfig {
         CaffeineCache dashboard = build("dashboard",
                 Caffeine.newBuilder().expireAfterWrite(60, TimeUnit.SECONDS).maximumSize(10));
 
+        // SPEC-CMS-AI-001: 성장단계 예측 캐시 (TTL 1시간, max 1000)
+        CaffeineCache aiGrowthStage = build("aiGrowthStage",
+                Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1000));
+
         manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
-                codes, codeGroups, dashboard));
+                codes, codeGroups, dashboard, aiGrowthStage));
         return manager;
     }
 

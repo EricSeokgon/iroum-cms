@@ -112,6 +112,46 @@ iroum:
       # 다운로드 URL TTL (초, 기본 900 = 15분)
       download-ttl-seconds: 900
 
+# ─── SPEC-CMS-AI-001 — ML 추론 서비스 + AI 설정 ─────────────────────────────
+# ML 서비스는 내부망 전용 (외부 노출 금지)
+ml:
+  service:
+    base-url: ${ML_SERVICE_URL:http://localhost:8000}
+    timeout:
+      growth-stage-ms: 3000
+      risk-score-ms: 500
+      simulation-ms: 3000
+      health-ms: 1000
+
+ai:
+  cache:
+    growth-stage-ttl-hours: 1
+  async:
+    core-pool-size: 2
+    max-pool-size: 4
+    queue-capacity: 500
+  risk:
+    thresholds:
+      green: 0.25
+      yellow: 0.50
+      orange: 0.75
+  rate-limit:
+    simulation-per-hour: 30
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      ml-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 50
+
 logging:
   level:
     root: INFO

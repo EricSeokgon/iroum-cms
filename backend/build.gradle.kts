@@ -140,6 +140,15 @@ dependencies {
     implementation("org.apache.poi:poi:5.2.5")
     implementation("org.apache.poi:poi-ooxml:5.2.5")
 
+    // ─── Resilience4j Circuit Breaker (SPEC-CMS-AI-001) ──────────────────────
+    // ML 추론 서비스 호출 보호: @CircuitBreaker(name="ml-service") + 폴백
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
+    implementation("io.github.resilience4j:resilience4j-circuitbreaker:2.2.0")
+
+    // ─── OpenPDF (SPEC-CMS-AI-001) ───────────────────────────────────────────
+    // 시뮬레이션 결과 PDF 리포트 생성 (Step 2+ 사용)
+    implementation("com.github.librepdf:openpdf:1.3.39")
+
     // ─── AWS SDK v2 KMS (SPEC-CMS-SECURITY-PII-KMS-001) ──────────────────────
     // AwsKmsPiiKeyVault — KMS 기반 DEK/HMAC 키 복호화 어댑터
     implementation("software.amazon.awssdk:kms:2.25.70")

@@ -54,7 +54,89 @@
     "searchUnified": "Search",
     "searchSynonyms": "Synonyms",
     "searchAnalytics": "Search Analytics",
-    "synonyms": "Synonym Management"
+    "synonyms": "Synonym Management",
+    "ai": "AI Model Ops",
+    "aiDashboard": "AI Model Dashboard",
+    "aiDriftAlerts": "Drift Alerts",
+    "aiRetrainQueue": "Retrain Queue"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "AI Model Dashboard",
+      "empty": "No metrics found",
+      "loadError": "Failed to load metrics",
+      "driftBadge": "{n} drift(s)",
+      "health": {
+        "status": "Model Status",
+        "loadedModels": "Loaded Models"
+      },
+      "filter": {
+        "modelName": "Model Name",
+        "type": "Prediction Type",
+        "period": "Period",
+        "all": "All",
+        "search": "Search",
+        "reset": "Reset"
+      },
+      "field": {
+        "modelName": "Model Name",
+        "predictionType": "Prediction Type",
+        "period": "Aggregate Period",
+        "accuracy": "Accuracy",
+        "latencyP95": "Latency P95",
+        "sampleCount": "Samples",
+        "drift": "Drift"
+      },
+      "drift": {
+        "detected": "Detected",
+        "normal": "Normal"
+      }
+    },
+    "driftAlerts": {
+      "title": "Drift Alerts",
+      "empty": "No drift detected currently",
+      "loadError": "Failed to load drift alerts",
+      "requestRetrain": "Request Retrain",
+      "retrainError": "Failed to request retrain",
+      "retrainSuccessTitle": "Retrain Requested",
+      "retrainSuccess": "Retrain for {model} has been queued",
+      "field": {
+        "predictionType": "Prediction Type",
+        "period": "Period",
+        "accuracy": "Accuracy",
+        "rmse": "RMSE"
+      },
+      "dialog": {
+        "title": "Confirm Retrain Request",
+        "confirm": "Request retrain for model {model}?",
+        "cancel": "Cancel",
+        "ok": "Request"
+      }
+    },
+    "retrainQueue": {
+      "title": "Retrain Queue",
+      "empty": "Retrain queue is empty",
+      "loadError": "Failed to load retrain queue",
+      "updateError": "Failed to update status",
+      "updateSuccess": "Status updated",
+      "manual": {
+        "modelName": "Model Name",
+        "submit": "Request Manual Retrain",
+        "success": "Manual retrain has been queued",
+        "error": "Failed to request manual retrain"
+      },
+      "field": {
+        "modelName": "Model Name",
+        "triggerReason": "Trigger Reason",
+        "status": "Status",
+        "requestedAt": "Requested At",
+        "actions": "Actions"
+      },
+      "action": {
+        "acknowledge": "Acknowledge",
+        "done": "Done"
+      }
+    }
   },
   "system": {
     "dashboard": {

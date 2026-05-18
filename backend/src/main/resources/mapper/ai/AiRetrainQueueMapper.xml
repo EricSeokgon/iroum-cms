@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-001 — AI 재학습 큐 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.mapper.AiRetrainQueueMapper">
+
+    <resultMap id="retrainQueueResultMap" type="kr.co.ircp.cms.domain.ai.model.AiRetrainQueue">
+        <id property="id" column="id"/>
+        <result property="modelName" column="model_name"/>
+        <result property="triggerReason" column="trigger_reason"/>
+        <result property="triggerDetail" column="trigger_detail"/>
+        <result property="status" column="status"/>
+        <result property="requestedBy" column="requested_by"/>
+        <result property="requestedAt" column="requested_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_retrain_queue (model_name, trigger_reason, trigger_detail,
+            status, requested_by)
+        VALUES (#{modelName}, #{triggerReason},
+            <choose><when test="triggerDetail != null">#{triggerDetail}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            COALESCE(#{status}, 'QUEUED'), #{requestedBy})
+    </insert>
+
+    <select id="findById" resultMap="retrainQueueResultMap">
+        SELECT * FROM ai_retrain_queue WHERE id = #{id}
+    </select>
+
+    <select id="findQueued" resultMap="retrainQueueResultMap">
+        SELECT * FROM ai_retrain_queue
+        WHERE status = 'QUEUED'
+        ORDER BY requested_at ASC, id ASC
+    </select>
+
+    <update id="updateStatus">
+        UPDATE ai_retrain_queue SET status = #{status}, updated_at = now()
+        WHERE id = #{id}
+    </update>
+</mapper>

@@ -237,6 +237,27 @@
           </el-menu-item>
         </el-sub-menu>
 
+        <!-- AI 모델 운영 그룹 (SPEC-CMS-AI-001) — ADMIN 전용 -->
+        <el-sub-menu
+          v-if="hasPermission(auth, 'ROLE:READ')"
+          index="ai"
+          :aria-label="t('nav.ai')"
+        >
+          <template #title>
+            <el-icon><i-ep-cpu /></el-icon>
+            <span>{{ t('nav.ai') }}</span>
+          </template>
+          <el-menu-item index="/ai/dashboard">
+            <span>{{ t('nav.aiDashboard') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/ai/drift-alerts">
+            <span>{{ t('nav.aiDriftAlerts') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/ai/retrain-queue">
+            <span>{{ t('nav.aiRetrainQueue') }}</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <!-- 구분선 -->
         <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
 

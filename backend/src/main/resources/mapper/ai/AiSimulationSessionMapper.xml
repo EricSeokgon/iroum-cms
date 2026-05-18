@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-001 — AI 시뮬레이션 세션 매퍼 (UUID PK) -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.mapper.AiSimulationSessionMapper">
+
+    <resultMap id="sessionResultMap" type="kr.co.ircp.cms.domain.ai.model.AiSimulationSession">
+        <id property="id" column="id"/>
+        <result property="ksicCode" column="ksic_code"/>
+        <result property="capitalAmount" column="capital_amount"/>
+        <result property="foundingYear" column="founding_year"/>
+        <result property="revenueAmount" column="revenue_amount"/>
+        <result property="projectionResult" column="projection_result"/>
+        <result property="pdfStatus" column="pdf_status"/>
+        <result property="clientIpHash" column="client_ip_hash"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="expiresAt" column="expires_at"/>
+    </resultMap>
+
+    <!-- id는 DB gen_random_uuid() DEFAULT 생성, RETURNING id 를 generated key로 회수 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_simulation_session (ksic_code, capital_amount, founding_year,
+            revenue_amount, projection_result, pdf_status, client_ip_hash)
+        VALUES (#{ksicCode}, #{capitalAmount}, #{foundingYear}, #{revenueAmount},
+            <choose><when test="projectionResult != null">#{projectionResult}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            COALESCE(#{pdfStatus}, 'NONE'), #{clientIpHash})
+    </insert>
+
+    <select id="findById" resultMap="sessionResultMap">
+        SELECT * FROM ai_simulation_session WHERE id = #{id}
+    </select>
+
+    <update id="updatePdfStatus">
+        UPDATE ai_simulation_session SET pdf_status = #{pdfStatus} WHERE id = #{id}
+    </update>
+
+    <select id="countByIpHashSince" resultType="long">
+        SELECT COUNT(*) FROM ai_simulation_session
+        WHERE client_ip_hash = #{clientIpHash}
+          AND created_at >= #{since}
+    </select>
+</mapper>

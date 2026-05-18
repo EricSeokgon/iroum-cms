@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,6 +71,27 @@ public class AsyncConfig {
         executor.setQueueCapacity(1000);
         executor.setThreadNamePrefix("search-log-");
         // 큐 포화 시 조용히 폐기 (검색 응답 영향 방지)
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.initialize();
+        return executor;
+    }
+
+    /**
+     * AI 예측 로그 비동기 적재 전용 실행기.
+     * SPEC-CMS-AI-001 — AiPredictionLogService#logAsync → AiPredictionLogMapper.insert.
+     * ML 응답 경로(예측 결과 반환)에 로그 적재 지연/실패가 영향을 주지 않도록 분리.
+     * 큐 포화 시 DiscardPolicy로 로그 유실 허용(예측 응답 우선).
+     */
+    @Bean(name = "aiLogExecutor")
+    public Executor aiLogExecutor(
+            @Value("${ai.async.core-pool-size:2}") int corePoolSize,
+            @Value("${ai.async.max-pool-size:4}") int maxPoolSize,
+            @Value("${ai.async.queue-capacity:500}") int queueCapacity) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+        executor.setThreadNamePrefix("ai-log-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
         executor.initialize();
         return executor;

@@ -460,6 +460,25 @@ const router = createRouter({
           path: 'synonyms',
           redirect: '/search/synonyms',
         },
+        // ── AI 모델 운영 라우트 (SPEC-CMS-AI-001) ──────────────────────────
+        {
+          path: 'ai/dashboard',
+          name: 'ai-dashboard',
+          component: () => import('@/views/ai/ModelDashboard.vue'),
+          meta: { title: 'AI 모델 대시보드', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'ai/drift-alerts',
+          name: 'ai-drift-alerts',
+          component: () => import('@/views/ai/DriftAlerts.vue'),
+          meta: { title: '드리프트 알림', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'ai/retrain-queue',
+          name: 'ai-retrain-queue',
+          component: () => import('@/views/ai/RetrainQueue.vue'),
+          meta: { title: '재학습 큐', permissions: ['ADMIN'] },
+        },
       ],
     },
 

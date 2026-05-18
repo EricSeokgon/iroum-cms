@@ -1,0 +1,130 @@
+openapi: '3.1.0'
+info:
+  title: AI/ML Inference Service API
+  version: '1.0.0'
+  description: Internal Python FastAPI ML inference service contract (Spring Boot → ML service)
+paths:
+  /ml/v1/growth-stage:
+    post:
+      summary: Growth Stage Prediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GrowthStageRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrowthStageResponse'
+  /ml/v1/risk-score:
+    post:
+      summary: Business Risk Score Prediction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskScoreRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskScoreResponse'
+  /ml/v1/simulation:
+    post:
+      summary: Business Simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SimulationRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResponse'
+  /ml/v1/health:
+    get:
+      summary: ML Service Health Check
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MlHealthResponse'
+components:
+  schemas:
+    GrowthStageRequest:
+      type: object
+      required: [ksicCode, capitalAmount, foundingYear]
+      properties:
+        ksicCode: {type: string, maxLength: 5}
+        capitalAmount: {type: integer, format: int64}
+        foundingYear: {type: integer}
+        revenueAmount: {type: integer, format: int64}
+    GrowthStageResponse:
+      type: object
+      properties:
+        stage: {type: string, enum: [SEED, STARTUP, GROWTH, EXPANSION, MATURITY]}
+        entryProbabilities:
+          type: object
+          additionalProperties: {type: number, format: double}
+        confidence: {type: number, format: double}
+        modelVersion: {type: string}
+    RiskScoreRequest:
+      type: object
+      required: [ksicCode, capitalAmount, foundingYear]
+      properties:
+        ksicCode: {type: string}
+        capitalAmount: {type: integer, format: int64}
+        foundingYear: {type: integer}
+        revenueAmount: {type: integer, format: int64}
+    RiskScoreResponse:
+      type: object
+      properties:
+        defaultProbability: {type: number, format: double}
+        riskGrade: {type: string, enum: [GREEN, YELLOW, ORANGE, RED]}
+        topFactors:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            properties:
+              name: {type: string}
+              contribution: {type: number, format: double}
+        modelVersion: {type: string}
+    SimulationRequest:
+      type: object
+      required: [ksicCode, capitalAmount, foundingYear]
+      properties:
+        ksicCode: {type: string}
+        capitalAmount: {type: integer, format: int64}
+        foundingYear: {type: integer}
+        revenueAmount: {type: integer, format: int64}
+    SimulationResponse:
+      type: object
+      properties:
+        projection:
+          type: array
+          items:
+            type: object
+            properties:
+              year: {type: integer}
+              stage: {type: string}
+              entryProbabilities:
+                type: object
+                additionalProperties: {type: number, format: double}
+        modelVersion: {type: string}
+    MlHealthResponse:
+      type: object
+      properties:
+        status: {type: string}
+        loadedModels:
+          type: array
+          items: {type: string}

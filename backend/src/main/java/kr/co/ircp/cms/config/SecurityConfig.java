@@ -193,6 +193,10 @@ public class SecurityConfig {
                     org.springframework.http.HttpMethod.POST,
                     "/api/v1/search/click"
                 ).permitAll()
+                // SPEC-CMS-AI-001 — AI 운영자 API는 ADMIN 전용(defense-in-depth, @PreAuthorize와 이중화)
+                .requestMatchers("/api/v1/admin/ai/**").hasRole("ADMIN")
+                // SPEC-CMS-AI-001 — AI 예측/시뮬레이션은 인증 사용자 전용
+                .requestMatchers("/api/v1/ai/**").authenticated()
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입
