@@ -11,6 +11,26 @@
 
 ---
 
+## [1.4.0] - 2026-05-18
+
+### Added
+
+- GitHub Actions CD 워크플로 (`.github/workflows/cd.yml`): `main` push → CI 완료 후 운영 서버 SSH 자동 배포
+  - `appleboy/ssh-action` 기반 `docker compose` 롤링 업데이트
+  - concurrency guard (`deploy-production`) — 동시 배포 방지
+  - 헬스 체크 60초 폴링 (DEPLOY_HEALTH_URL Secret 선택)
+  - Slack 배포 알림 (SLACK_WEBHOOK_URL Secret 선택)
+- `deploy/README.md`: GitHub Secrets 등록 방법 + 운영 서버 사전 준비 절차 추가
+
+### Fixed
+
+- `deploy/docker-compose.yml`, `deploy/docker-compose.prod.yml`: `postgres:16-alpine` → `pgvector/pgvector:pg16` (SPEC-CMS-AI-003 RAG pgvector 확장 지원)
+- `.github/workflows/ci.yml`: CI postgres 서비스 이미지 동일 적용
+- `deploy/.env.example`: `ML_SERVICE_URL` 환경변수 추가 (Python ML 서비스 내부망 URL, 외부 노출 금지)
+- `deploy/docker-compose.prod.yml`: 백엔드 서비스에 `ML_SERVICE_URL` 주입
+
+---
+
 ## [1.3.0] - 2026-05-18
 
 ### Added
@@ -836,5 +856,11 @@
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
 
-[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.0.2...v1.1.0
+[1.0.2]: https://github.com/EricSeokgon/iroum-cms/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/EricSeokgon/iroum-cms/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/EricSeokgon/iroum-cms/releases/tag/v1.0.0
