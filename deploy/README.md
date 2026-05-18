@@ -183,13 +183,52 @@ docker system prune -f
 docker system prune -f --filter "until=24h"
 ```
 
+## GitHub Actions CD — 자동 배포 설정
+
+`main` 브랜치에 push 되면 CI 통과 후 자동으로 운영 서버에 배포됩니다 (`.github/workflows/cd.yml`).
+
+### 필수 GitHub Secrets 등록
+
+`Settings → Secrets and variables → Actions → New repository secret`에서 아래 항목을 등록합니다.
+
+| Secret | 필수 | 설명 | 예시 |
+|--------|------|------|------|
+| `DEPLOY_SSH_KEY` | ✓ | 운영 서버 SSH 개인키 | `cat ~/.ssh/id_ed25519` |
+| `DEPLOY_HOST` | ✓ | 운영 서버 IP 또는 도메인 | `10.0.0.10` |
+| `DEPLOY_USER` | ✓ | SSH 접속 유저 | `deploy` |
+| `DEPLOY_PATH` | ✓ | 배포 경로 | `/opt/iroum-cms` |
+| `DEPLOY_HEALTH_URL` | 선택 | 헬스 체크 URL (외부 접근 가능한 경우) | `http://10.0.0.10` |
+| `SLACK_WEBHOOK_URL` | 선택 | 배포 알림 Slack Webhook | `https://hooks.slack.com/...` |
+
+### 운영 서버 사전 준비
+
+```bash
+# 1. 배포 유저 생성 및 authorized_keys 등록
+sudo adduser --disabled-password deploy
+sudo mkdir -p /home/deploy/.ssh
+sudo echo "<GitHub Actions 공개키>" >> /home/deploy/.ssh/authorized_keys
+
+# 2. 배포 경로 생성 및 권한 부여
+sudo git clone https://github.com/EricSeokgon/iroum-cms.git /opt/iroum-cms
+sudo chown -R deploy:deploy /opt/iroum-cms
+
+# 3. 환경변수 파일 생성 (최초 1회, 이후 자동 유지)
+cp /opt/iroum-cms/deploy/.env.example /opt/iroum-cms/deploy/.env
+vi /opt/iroum-cms/deploy/.env  # 모든 CHANGE_ME 항목 교체
+
+# 4. deploy 유저에게 Docker 권한 부여
+sudo usermod -aG docker deploy
+```
+
 ## 보안 체크리스트
 
 - [ ] `deploy/.env` Git 미포함 확인 (`.gitignore` 검토)
 - [ ] `JWT_SECRET` 256bit 이상 랜덤 키 사용 확인
 - [ ] `DB_PASSWORD` 복잡한 비밀번호 사용 확인
+- [ ] `ML_SERVICE_URL` 내부망 IP 사용 확인 (외부 노출 금지 — SPEC-CMS-AI-001)
 - [ ] nginx `ADMIN_IP_WHITELIST` CIDR을 실제 모니터링 서버 IP로 제한
 - [ ] `/actuator/prometheus` 외부망 접근 차단 확인 (`curl -I http://your-domain/actuator/prometheus` → 403)
 - [ ] HTTPS 인증서 설정 (Let's Encrypt 또는 사설 CA)
 - [ ] `Strict-Transport-Security` 헤더 활성화 (nginx conf 주석 해제)
 - [ ] 정기 이미지 업데이트 (취약점 패치)
+- [ ] GitHub Actions `DEPLOY_SSH_KEY` Secret 등록 확인
