@@ -1,11 +1,15 @@
 package kr.co.ircp.cms.infra.ml;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import kr.co.ircp.cms.infra.ml.dto.EmbedRequest;
+import kr.co.ircp.cms.infra.ml.dto.EmbedResponse;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageRequest;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlHealthResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchRequest;
 import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchResponse;
+import kr.co.ircp.cms.infra.ml.dto.RagRequest;
+import kr.co.ircp.cms.infra.ml.dto.RagResponse;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
@@ -45,6 +49,8 @@ public class MlServiceClientImpl implements MlServiceClient {
     private final RestTemplate riskScoreRt;
     private final RestTemplate simulationRt;
     private final RestTemplate policyMatchRt;
+    private final RestTemplate embedRt;
+    private final RestTemplate ragRt;
     private final RestTemplate healthRt;
 
     public MlServiceClientImpl(
@@ -54,12 +60,16 @@ public class MlServiceClientImpl implements MlServiceClient {
             @Value("${ml.service.timeout.risk-score-ms:500}") long riskScoreMs,
             @Value("${ml.service.timeout.simulation-ms:3000}") long simulationMs,
             @Value("${ml.service.timeout.policy-match-ms:3000}") long policyMatchMs,
+            @Value("${ml.service.timeout.embed-ms:1500}") long embedMs,
+            @Value("${ml.service.timeout.rag-ms:5000}") long ragMs,
             @Value("${ml.service.timeout.health-ms:1000}") long healthMs) {
         this.baseUrl = baseUrl;
         this.growthStageRt = rt(builder, growthStageMs);
         this.riskScoreRt = rt(builder, riskScoreMs);
         this.simulationRt = rt(builder, simulationMs);
         this.policyMatchRt = rt(builder, policyMatchMs);
+        this.embedRt = rt(builder, embedMs);
+        this.ragRt = rt(builder, ragMs);
         this.healthRt = rt(builder, healthMs);
     }
 
@@ -115,6 +125,28 @@ public class MlServiceClientImpl implements MlServiceClient {
     }
 
     @Override
+    @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackEmbed")
+    public EmbedResponse embed(EmbedRequest request) {
+        try {
+            return embedRt.postForObject(
+                    baseUrl + "/ml/v1/embed", request, EmbedResponse.class);
+        } catch (RestClientException e) {
+            throw new MlServiceException("embed failed", e);
+        }
+    }
+
+    @Override
+    @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackRag")
+    public RagResponse rag(RagRequest request) {
+        try {
+            return ragRt.postForObject(
+                    baseUrl + "/ml/v1/rag", request, RagResponse.class);
+        } catch (RestClientException e) {
+            throw new MlServiceException("rag generation failed", e);
+        }
+    }
+
+    @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackHealth")
     public MlHealthResponse health() {
         try {
@@ -151,6 +183,18 @@ public class MlServiceClientImpl implements MlServiceClient {
     private MlPolicyMatchResponse fallbackPolicyMatch(MlPolicyMatchRequest request, Throwable t) {
         log.warn("ml-service policy-match fallback: {}", t.getMessage());
         throw new MlServiceException("ml-service unavailable (policy-match fallback)", t);
+    }
+
+    @SuppressWarnings("unused")
+    private EmbedResponse fallbackEmbed(EmbedRequest request, Throwable t) {
+        log.warn("ml-service embed fallback: {}", t.getMessage());
+        throw new MlServiceException("ml-service unavailable (embed fallback)", t);
+    }
+
+    @SuppressWarnings("unused")
+    private RagResponse fallbackRag(RagRequest request, Throwable t) {
+        log.warn("ml-service rag fallback: {}", t.getMessage());
+        throw new MlServiceException("ml-service unavailable (rag fallback)", t);
     }
 
     @SuppressWarnings("unused")

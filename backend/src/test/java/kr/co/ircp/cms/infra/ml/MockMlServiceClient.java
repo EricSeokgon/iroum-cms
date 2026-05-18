@@ -1,5 +1,7 @@
 package kr.co.ircp.cms.infra.ml;
 
+import kr.co.ircp.cms.infra.ml.dto.EmbedRequest;
+import kr.co.ircp.cms.infra.ml.dto.EmbedResponse;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageRequest;
 import kr.co.ircp.cms.infra.ml.dto.GrowthStageResponse;
 import kr.co.ircp.cms.infra.ml.dto.MlHealthResponse;
@@ -7,6 +9,9 @@ import kr.co.ircp.cms.infra.ml.dto.MlMatchExplanation;
 import kr.co.ircp.cms.infra.ml.dto.MlMatchItem;
 import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchRequest;
 import kr.co.ircp.cms.infra.ml.dto.MlPolicyMatchResponse;
+import kr.co.ircp.cms.infra.ml.dto.RagContextItem;
+import kr.co.ircp.cms.infra.ml.dto.RagRequest;
+import kr.co.ircp.cms.infra.ml.dto.RagResponse;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
@@ -34,6 +39,37 @@ public class MockMlServiceClient implements MlServiceClient {
 
     /** policyMatch 호출 횟수 (캐시 hit 검증용 — AC-PM-003). */
     private final AtomicInteger policyMatchCalls = new AtomicInteger(0);
+
+    /** embed 호출 횟수 (캐시 hit 검증용 — AC-RAG-003). */
+    private final AtomicInteger embedCalls = new AtomicInteger(0);
+
+    /** rag 호출 횟수 (캐시 hit 검증용 — AC-RAG-003). */
+    private final AtomicInteger ragCalls = new AtomicInteger(0);
+
+    /** embed 단계만 실패 시뮬레이션 (AC-RAG-007 — 임베딩 실패 → FTS 폴백). */
+    private volatile boolean embedFails = false;
+
+    /** embed 단계만 강제 실패하도록 토글한다(rag/FTS는 정상). */
+    public void simulateEmbedFailure(boolean enabled) {
+        this.embedFails = enabled;
+    }
+
+    /** embed 호출 횟수 (캐시 미스 시 1, 캐시 hit 시 추가 호출 없음). */
+    public int embedCallCount() {
+        return embedCalls.get();
+    }
+
+    /** rag 호출 횟수. */
+    public int ragCallCount() {
+        return ragCalls.get();
+    }
+
+    /** RAG 관련 호출 카운터·실패 토글 초기화. */
+    public void resetRagCounters() {
+        embedCalls.set(0);
+        ragCalls.set(0);
+        embedFails = false;
+    }
 
     /** 후보별 고정 시맨틱 점수. null이면 결정적 기본 점수(0.5) 사용. */
     private volatile Map<Long, Double> fixedSemanticScores;
@@ -116,6 +152,44 @@ public class MockMlServiceClient implements MlServiceClient {
             return fixedSemanticScores.get(policyId);
         }
         return 0.5;
+    }
+
+    @Override
+    public EmbedResponse embed(EmbedRequest request) {
+        embedCalls.incrementAndGet();
+        if (embedFails) {
+            throw new MlServiceException("ml-service embed failure (simulated)");
+        }
+        guardTimeout();
+        // 결정적 384차원 벡터 — 텍스트 해시 기반 (테스트 재현성).
+        int seed = request == null || request.text() == null ? 0 : request.text().hashCode();
+        List<Float> vector = new java.util.ArrayList<>(384);
+        for (int i = 0; i < 384; i++) {
+            vector.add((float) (((seed + i) % 100) / 100.0));
+        }
+        return new EmbedResponse(vector);
+    }
+
+    @Override
+    public RagResponse rag(RagRequest request) {
+        ragCalls.incrementAndGet();
+        guardTimeout();
+        List<RagContextItem> contexts = request == null || request.contexts() == null
+                ? List.of() : request.contexts();
+        if (contexts.isEmpty()) {
+            // 빈 컨텍스트 → 환각 금지 안내 (AC-RAG-008).
+            return new RagResponse("관련 정책을 찾지 못했습니다.", List.of(), null);
+        }
+        StringBuilder answer = new StringBuilder("질문에 대한 관련 정책 안내: ");
+        List<RagResponse.Source> sources = new java.util.ArrayList<>();
+        int rank = contexts.size();
+        for (RagContextItem ctx : contexts) {
+            answer.append('[').append(ctx.title()).append("] ");
+            // 상위 컨텍스트일수록 높은 관련도 (결정적).
+            sources.add(new RagResponse.Source(ctx.id(), rank / (double) contexts.size()));
+            rank--;
+        }
+        return new RagResponse(answer.toString().trim(), sources, 88);
     }
 
     @Override
