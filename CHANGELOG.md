@@ -11,6 +11,78 @@
 
 ---
 
+## [1.3.0] - 2026-05-18
+
+### Added
+
+- RAG 질의응답 — 자연어 질문 기반 정책 검색·생성형 답변 (SPEC-CMS-AI-003) — 옵션 트랙 P1 완전 구현
+  - **RAG 질의응답** (`POST /api/v1/ai/rag/query`): 자연어 질문 → embed(384차원) → pgvector cosine 유사도 검색 → FTS 하이브리드 재랭킹 → LLM 생성형 답변, `degraded=true` 폴백 지원
+  - **pgvector 코사인 검색**: PostgreSQL `vector(384)`, IVFFlat 인덱스(lists=100, probes=10), `policy_program` 임베딩 컬럼 3개(`name_embedding`, `summary_embedding`, `combined_embedding`)
+  - **CircuitBreaker 폴백**: Resilience4j ml-service OPEN 시 FTS 단독 검색으로 자동 폴백 — 503 미반환, 200 + `degraded=true` 반환
+  - **RAG 쿼리 캐시**: Caffeine ragQueryCache (TTL 15분) — 동일 질문 SHA-256 해시 기반 캐시 키, degraded 응답 미캐싱
+  - **질의 로그 비동기 적재**: `@Async("aiLogExecutor")` — query_ref·cache_hit·latency_ms·degraded 플래그 기록
+  - **사용자 피드백** (`POST /api/v1/ai/rag/feedback`): HELPFUL/NOT_HELPFUL/INCORRECT 피드백 비동기 적재
+  - **DB 마이그레이션 V33**: pgvector 확장 활성화 + `policy_program` 임베딩 컬럼 3개 + IVFFlat 인덱스 + `ai_rag_query_log` 테이블
+  - **관리자 모니터링** (`GET /api/v1/admin/ai/rag/metrics`, ROLE=ADMIN 전용): 만족도 비율·캐시 히트율·평균 응답시간·degraded 비율 시계열 집계
+  - **OpenAPI 3.1 계약** (`docs/ai-ml-service-openapi.yaml`): `POST /ml/v1/embed`, `POST /ml/v1/rag` 엔드포인트 추가
+  - **Vue 3 SPA**: `PolicyRagView.vue` (질문 입력·답변·출처·피드백) + `RagMetrics.vue` (어드민 대시보드) + i18n(ko/en)
+  - **AbstractIntegrationTest 컨테이너**: `postgres:16-alpine` → `pgvector/pgvector:pg16` (pgvector 확장 공식 지원 이미지)
+
+### Security
+
+- `session_ref` 평문 미저장 — SHA-256 해시만 `ai_rag_query_log`에 보관
+- `question_hash` 평문 미저장 — SHA-256 해시만 보관, LLM 입력에서 PII 제외
+- ML 서비스 내부망 한정 접근 — Spring Boot → ML 호출은 사설 네트워크 전용
+- 관리자 메트릭 API `@PreAuthorize("hasRole('ADMIN')")` + audit_log AOP 자동 감사 로그
+
+---
+
+## [1.2.0] - 2026-05-18
+
+### Added
+
+- AI 정책 매칭 — 하이브리드 추천·피드백 루프·품질 모니터링 (SPEC-CMS-AI-002) — 옵션 트랙 P1 완전 구현
+  - **하이브리드 정책 추천** (`POST /api/v1/ai/policy-match`): SPEC-CMS-007 규칙 점수(0~100) + Python ML 시맨틱 점수(0~1) 가중 결합 (`hybrid = 0.4·ruleNorm + 0.6·semantic`), Top-K 랭킹·추천 설명 포함
+  - **ML 장애 폴백**: Resilience4j ml-service CircuitBreaker OPEN 시 503 미반환, 규칙 단독 랭킹 + `degraded=true` 플래그로 서비스 연속성 보장
+  - **추천 캐싱**: Caffeine policyMatchCache (TTL 기본 30분, 설정 가능) — 동일 세션·프로필·쿼리 재요청 시 ML 호출 없이 즉시 응답
+  - **피드백 수집** (`POST /api/v1/ai/policy-match/feedback`): CLICKED·APPLIED·DISMISSED 이벤트 비동기 적재 — CTR·전환율 산출 기반
+  - **추천 이벤트 비동기 로그**: `@Async("aiLogExecutor")` 기반, 응답 반환 후 비차단 적재
+  - **DB 마이그레이션 V32**: `ai_policy_recommendation_log` — VIEWED/CLICKED/APPLIED/DISMISSED 혼재 단일 테이블, session_ref SHA-256 해시·company_profile JSONB PII 제외 화이트리스트
+  - **관리자 모니터링** (`GET /api/v1/admin/ai/policy-match/metrics`, ROLE=ADMIN 전용): 일별 CTR·전환율·추천 커버리지 집계 차트
+  - **OpenAPI 3.1 계약** (`docs/ai-ml-service-openapi.yaml`): `POST /ml/v1/policy-match` 엔드포인트 스키마 추가
+  - **Vue 3 어드민 대시보드**: `PolicyMatchMetrics.vue` — CTR·전환율·커버리지 시계열 차트 + i18n(ko/en)
+  - **시민 SPA 업데이트** (`PolicyMatchView.vue`): AI 하이브리드 점수 랭킹·추천 사유 표시, 클릭/신청/닫기 피드백 버튼
+
+### Fixed
+
+- `SimulationServiceImpl` 다중 생성자 `@Autowired` 누락 수정 — `@SpringBootTest` 컨텍스트 로딩 오류 해소 (AI-001 기존 버그)
+
+### Security
+
+- `session_ref` 평문 미저장 — SHA-256 해시만 `ai_policy_recommendation_log`에 보관
+- ML 서비스 입력에서 PII(대표자명·주민·법인 식별정보) 완전 제외 — `ksic_code`·`employee_count`·`growth_stage`·`region_code`·`annual_revenue` 화이트리스트만 전송
+- 관리자 모니터링 API `@PreAuthorize("hasRole('ADMIN')")` 적용
+
+---
+
+## [1.1.0] - 2026-05-18
+
+### Added
+
+- AI/ML 기능 도입 (SPEC-CMS-AI-001) — 옵션 트랙 P1 완전 구현
+  - **성장단계 예측** (`GET /api/v1/ai/growth-stage`): Python ML 서비스 위임, Caffeine 캐시 TTL 1h, Resilience4j CircuitBreaker 적용
+  - **가상 시뮬레이션** (`POST /api/v1/ai/simulation/start`): UUID 세션, PDF 보고서 생성(OpenPDF), 24시간 만료
+  - **경영위험 예측** (`GET /api/v1/ai/risk-score`): GREEN/YELLOW/ORANGE/RED 4등급, 설명 API (`GET /risk-score/explain/{predictionId}`)
+  - **알고리즘 품질 모니터링** 어드민 대시보드: 모델 메트릭·드리프트 경보·재학습 큐 관리 (10개 ADMIN 전용 엔드포인트)
+  - DB 마이그레이션 V28–V31: `ai_prediction_log`, `ai_simulation_session`, `ai_model_metric`, `ai_retrain_queue`
+  - 일일 배치(`AiModelMetricJob`) cron 02:15 — 정확도 < 0.70 또는 nRMSE > 0.20 시 드리프트 감지 + 재학습 큐 자동 등록
+  - IP 평문 미저장 — SHA-256 해시만 보관(`IpHashUtil`), PII 전송 차단
+  - OpenAPI 3.1 계약 문서 (`docs/ai-ml-service-openapi.yaml`)
+  - Vue 3 어드민 대시보드: `ModelDashboard.vue`, `DriftAlerts.vue`, `RetrainQueue.vue` + i18n(ko/en)
+  - `MlServiceClient` 인터페이스 + MockMlServiceClient (테스트 전용) — ML 부재 시 Spring Boot 독립 검증 가능
+
+---
+
 ## [1.0.2] - 2026-05-18
 
 ### Added

@@ -25,6 +25,10 @@ import kr.co.ircp.cms.domain.auth.exception.SystemRoleProtectedException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
+import kr.co.ircp.cms.domain.ai.exception.AiPredictionNotFoundException;
+import kr.co.ircp.cms.domain.ai.exception.AiRateLimitExceededException;
+import kr.co.ircp.cms.domain.ai.exception.AiSimulationNotFoundException;
+import kr.co.ircp.cms.domain.policy.aimatch.exception.AiFeedbackInvalidException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentDownloadDeniedException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.AttachmentTooLargeException;
@@ -1145,6 +1149,63 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Page History Version Not Found");
         detail.setProperty("code", "PAGE_HISTORY_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * AI 시뮬레이션 세션 미존재/만료 → HTTP 404 Not Found.
+     *
+     * <p>SPEC-CMS-AI-001 — sessionId 미존재 또는 expires_at &lt; now().
+     */
+    @ExceptionHandler(AiSimulationNotFoundException.class)
+    public ProblemDetail handleAiSimulationNotFound(AiSimulationNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("AI Simulation Not Found");
+        detail.setProperty("code", AiSimulationNotFoundException.CODE);
+        return detail;
+    }
+
+    /**
+     * AI 예측 로그 미존재 → HTTP 404 Not Found.
+     *
+     * <p>SPEC-CMS-AI-001 — risk-score explain 대상 예측 ID가 없는 경우.
+     */
+    @ExceptionHandler(AiPredictionNotFoundException.class)
+    public ProblemDetail handleAiPredictionNotFound(AiPredictionNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("AI Prediction Not Found");
+        detail.setProperty("code", AiPredictionNotFoundException.CODE);
+        return detail;
+    }
+
+    /**
+     * AI 시뮬레이션 레이트리밋 초과 → HTTP 429 Too Many Requests.
+     *
+     * <p>SPEC-CMS-AI-001 — ip-hash 기준 시간당 호출 한도 초과.
+     */
+    @ExceptionHandler(AiRateLimitExceededException.class)
+    public ProblemDetail handleAiRateLimitExceeded(AiRateLimitExceededException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+        detail.setTitle("AI Rate Limit Exceeded");
+        detail.setProperty("code", AiRateLimitExceededException.CODE);
+        return detail;
+    }
+
+    /**
+     * 추천 피드백 무결성 위반 → HTTP 400 Bad Request.
+     *
+     * <p>SPEC-CMS-AI-002 REQ-PM-013 — interaction_type=VIEWED 또는 policy_id 누락.
+     * DB chk_aprl_feedback 제약과 일관된다.
+     */
+    @ExceptionHandler(AiFeedbackInvalidException.class)
+    public ProblemDetail handleAiFeedbackInvalid(AiFeedbackInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("AI Feedback Invalid");
+        detail.setProperty("code", AiFeedbackInvalidException.CODE);
         return detail;
     }
 

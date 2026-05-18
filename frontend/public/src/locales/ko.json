@@ -105,7 +105,32 @@
     "matchScore": "적합도",
     "description": "사업 설명",
     "eligibility": "지원 자격",
-    "contact": "문의처"
+    "contact": "문의처",
+    "policyId": "정책",
+    "hybridScore": "AI 적합도",
+    "ruleScore": "규칙 점수",
+    "semanticScore": "시맨틱 점수",
+    "whyRecommended": "추천 이유 보기",
+    "applyAction": "신청하기",
+    "aiDegraded": "AI 추론이 일시적으로 불가하여 규칙 기반 추천을 제공합니다"
+  },
+  "rag": {
+    "title": "정책 AI 질의응답",
+    "subtitle": "궁금한 정책을 자연어로 물어보세요. AI가 관련 정책을 찾아 답변합니다",
+    "questionLabel": "질문",
+    "questionPlaceholder": "예: 청년 창업 지원 정책 알려줘",
+    "submit": "질문하기",
+    "answerTitle": "답변",
+    "sourcesTitle": "출처 정책",
+    "relevance": "관련도",
+    "empty": "관련 정책을 찾지 못했습니다",
+    "error": "답변을 가져오지 못했습니다. 잠시 후 다시 시도해 주세요",
+    "degraded": "간소 검색 결과입니다. AI 생성 답변을 일시적으로 제공할 수 없어 키워드 검색 결과를 안내합니다",
+    "helpful": "도움이 됐어요",
+    "unhelpful": "도움이 안 됐어요",
+    "feedbackThanks": "피드백 감사합니다",
+    "questionRequired": "질문을 입력해 주세요",
+    "questionTooLong": "질문은 1000자를 초과할 수 없습니다"
   },
   "safety": {
     "guidelines": "안전 가이드",
@@ -241,6 +266,7 @@
       "list": "정책사업",
       "detail": "정책 상세",
       "match": "정책 매칭",
+      "rag": "정책 AI 질의응답",
       "subscription": "알림 구독"
     },
     "safety": {

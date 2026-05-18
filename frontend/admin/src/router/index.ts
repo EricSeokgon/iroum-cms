@@ -460,6 +460,39 @@ const router = createRouter({
           path: 'synonyms',
           redirect: '/search/synonyms',
         },
+        // ── AI 모델 운영 라우트 (SPEC-CMS-AI-001) ──────────────────────────
+        {
+          path: 'ai/dashboard',
+          name: 'ai-dashboard',
+          component: () => import('@/views/ai/ModelDashboard.vue'),
+          meta: { title: 'AI 모델 대시보드', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'ai/drift-alerts',
+          name: 'ai-drift-alerts',
+          component: () => import('@/views/ai/DriftAlerts.vue'),
+          meta: { title: '드리프트 알림', permissions: ['ADMIN'] },
+        },
+        {
+          path: 'ai/retrain-queue',
+          name: 'ai-retrain-queue',
+          component: () => import('@/views/ai/RetrainQueue.vue'),
+          meta: { title: '재학습 큐', permissions: ['ADMIN'] },
+        },
+        // SPEC-CMS-AI-002 — AI 정책 추천 품질 모니터링
+        {
+          path: 'ai/policy-match-metrics',
+          name: 'ai-policy-match-metrics',
+          component: () => import('@/views/ai/PolicyMatchMetrics.vue'),
+          meta: { title: 'AI 추천 품질 지표', permissions: ['ADMIN'] },
+        },
+        // SPEC-CMS-AI-003 — RAG 질의응답 품질 모니터링
+        {
+          path: 'ai/rag-metrics',
+          name: 'ai-rag-metrics',
+          component: () => import('@/views/ai/RagMetrics.vue'),
+          meta: { title: 'RAG 품질 지표', permissions: ['ADMIN'] },
+        },
       ],
     },
 

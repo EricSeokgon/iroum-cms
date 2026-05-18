@@ -54,7 +54,128 @@
     "searchUnified": "검색",
     "searchSynonyms": "동의어 사전",
     "searchAnalytics": "검색 통계",
-    "synonyms": "동의어 관리"
+    "synonyms": "동의어 관리",
+    "ai": "AI 모델 운영",
+    "aiDashboard": "AI 모델 대시보드",
+    "aiDriftAlerts": "드리프트 알림",
+    "aiRetrainQueue": "재학습 큐"
+  },
+  "ai": {
+    "dashboard": {
+      "title": "AI 모델 대시보드",
+      "empty": "조회된 메트릭이 없습니다",
+      "loadError": "메트릭을 불러오지 못했습니다",
+      "driftBadge": "드리프트 {n}건",
+      "health": {
+        "status": "모델 상태",
+        "loadedModels": "로드된 모델"
+      },
+      "filter": {
+        "modelName": "모델명",
+        "type": "예측 유형",
+        "period": "기간",
+        "all": "전체",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "field": {
+        "modelName": "모델명",
+        "predictionType": "예측 유형",
+        "period": "집계 기간",
+        "accuracy": "정확도",
+        "latencyP95": "지연 P95",
+        "sampleCount": "샘플 수",
+        "drift": "드리프트"
+      },
+      "drift": {
+        "detected": "감지됨",
+        "normal": "정상"
+      }
+    },
+    "driftAlerts": {
+      "title": "드리프트 알림",
+      "empty": "현재 감지된 드리프트가 없습니다",
+      "loadError": "드리프트 알림을 불러오지 못했습니다",
+      "requestRetrain": "재학습 요청",
+      "retrainError": "재학습 요청에 실패했습니다",
+      "retrainSuccessTitle": "재학습 요청 완료",
+      "retrainSuccess": "{model} 모델 재학습이 큐에 등록되었습니다",
+      "field": {
+        "predictionType": "예측 유형",
+        "period": "기간",
+        "accuracy": "정확도",
+        "rmse": "RMSE"
+      },
+      "dialog": {
+        "title": "재학습 요청 확인",
+        "confirm": "{model} 모델에 대해 재학습을 요청하시겠습니까?",
+        "cancel": "취소",
+        "ok": "요청"
+      }
+    },
+    "retrainQueue": {
+      "title": "재학습 큐",
+      "empty": "재학습 큐가 비어 있습니다",
+      "loadError": "재학습 큐를 불러오지 못했습니다",
+      "updateError": "상태 변경에 실패했습니다",
+      "updateSuccess": "상태가 변경되었습니다",
+      "manual": {
+        "modelName": "모델명",
+        "submit": "수동 재학습 요청",
+        "success": "수동 재학습이 큐에 등록되었습니다",
+        "error": "수동 재학습 요청에 실패했습니다"
+      },
+      "field": {
+        "modelName": "모델명",
+        "triggerReason": "트리거 사유",
+        "status": "상태",
+        "requestedAt": "요청 일시",
+        "actions": "작업"
+      },
+      "action": {
+        "acknowledge": "승인",
+        "done": "완료"
+      }
+    },
+    "policyMatch": {
+      "title": "AI 추천 품질 지표",
+      "loadError": "추천 품질 지표를 불러오지 못했습니다",
+      "filter": {
+        "period": "집계 단위",
+        "range": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "metric": {
+        "ctr": "클릭률 (CTR)",
+        "ctrDetail": "클릭 세션 {c} / 노출 세션 {v}",
+        "conversion": "신청 전환율",
+        "conversionDetail": "신청 세션 {a} / 노출 세션 {v}",
+        "coverage": "추천 커버리지",
+        "coverageHint": "추천 등장 정책 / 활성 정책 총수"
+      }
+    },
+    "rag": {
+      "title": "RAG 질의응답 품질 지표",
+      "loadError": "RAG 품질 지표를 불러오지 못했습니다",
+      "filter": {
+        "range": "기간",
+        "search": "검색",
+        "reset": "초기화"
+      },
+      "metric": {
+        "satisfaction": "만족도",
+        "satisfactionHint": "HELPFUL / 전체 피드백",
+        "cacheHit": "캐시 히트율",
+        "cacheHitHint": "캐시 응답 / 전체 질의",
+        "latency": "평균 응답시간",
+        "latencyUnit": "ms",
+        "degraded": "폴백 비율",
+        "degradedHint": "ML 장애 폴백 / 전체 질의",
+        "total": "전체 질의 수"
+      },
+      "timeSeries": "일자별 질의 추이"
+    }
   },
   "system": {
     "dashboard": {

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-003 — RAG 질의/피드백 로그 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.rag.repository.RagQueryLogRepository">
+
+    <!-- REQ-RAG-014: 질의 로그 1행 적재. JSONB는 ::jsonb 캐스팅 (AI-002 패턴). -->
+    <insert id="insertLog"
+            parameterType="kr.co.ircp.cms.domain.ai.rag.entity.AiRagQueryLog"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_rag_query_log
+            (query_ref, question_hash, session_ref, retrieved_policy_ids,
+             answer_quality_score, latency_ms, cache_hit, degraded)
+        VALUES (
+            #{queryRef},
+            #{questionHash},
+            #{sessionRef},
+            <choose><when test="retrievedPolicyIds != null">#{retrievedPolicyIds}::jsonb</when><otherwise>'[]'::jsonb</otherwise></choose>,
+            #{answerQualityScore},
+            #{latencyMs},
+            #{cacheHit},
+            #{degraded}
+        )
+    </insert>
+
+    <!-- REQ-RAG-013: queryRef로 feedback·feedback_at 멱등 갱신 (AC-RAG-004). -->
+    <update id="updateFeedback">
+        UPDATE ai_rag_query_log
+        SET feedback    = #{feedback},
+            feedback_at = now()
+        WHERE query_ref = #{queryRef}
+    </update>
+
+    <!--
+      REQ-RAG-015: 관리자 메트릭 집계 원시 행.
+      from/to NULL이면 최근 7일 윈도우. 비율 계산은 서비스에서 0-나눗셈 가드.
+    -->
+    <select id="aggregateMetrics"
+            parameterType="kr.co.ircp.cms.domain.ai.rag.dto.RagMetricsQuery"
+            resultType="kr.co.ircp.cms.domain.ai.rag.dto.RagMetricsAggregate">
+        SELECT
+            count(*)                                                          AS totalQueries,
+            count(*) FILTER (WHERE feedback = 'HELPFUL')                       AS helpfulCount,
+            count(*) FILTER (WHERE feedback IS NOT NULL)                       AS feedbackCount,
+            count(*) FILTER (WHERE cache_hit = TRUE)                           AS cacheHitCount,
+            count(*) FILTER (WHERE degraded = TRUE)                            AS degradedCount,
+            COALESCE(sum(latency_ms), 0)                                       AS latencySumMs
+        FROM ai_rag_query_log
+        WHERE queried_at &gt;= COALESCE(#{from}::timestamptz, now() - INTERVAL '7 days')
+          AND queried_at &lt; COALESCE((#{to}::date + INTERVAL '1 day'), now() + INTERVAL '1 day')
+    </select>
+
+    <!-- REQ-RAG-015: 일자별 시계열 (질의 수·HELPFUL·피드백 수). -->
+    <select id="timeSeries"
+            parameterType="kr.co.ircp.cms.domain.ai.rag.dto.RagMetricsQuery"
+            resultType="kr.co.ircp.cms.domain.ai.rag.dto.RagTimeSeriesRow">
+        SELECT
+            (queried_at AT TIME ZONE 'UTC')::date                              AS day,
+            count(*)                                                           AS queryCount,
+            count(*) FILTER (WHERE feedback = 'HELPFUL')                        AS helpfulCount,
+            count(*) FILTER (WHERE feedback IS NOT NULL)                        AS feedbackCount
+        FROM ai_rag_query_log
+        WHERE queried_at &gt;= COALESCE(#{from}::timestamptz, now() - INTERVAL '7 days')
+          AND queried_at &lt; COALESCE((#{to}::date + INTERVAL '1 day'), now() + INTERVAL '1 day')
+        GROUP BY (queried_at AT TIME ZONE 'UTC')::date
+        ORDER BY day ASC
+    </select>
+
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-001 — AI 모델 성능 지표 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.mapper.AiModelMetricMapper">
+
+    <resultMap id="modelMetricResultMap" type="kr.co.ircp.cms.domain.ai.model.AiModelMetric">
+        <id property="id" column="id"/>
+        <result property="modelName" column="model_name"/>
+        <result property="predictionType" column="prediction_type"/>
+        <result property="aggregatePeriod" column="aggregate_period"/>
+        <result property="periodStart" column="period_start"/>
+        <result property="rmse" column="rmse"/>
+        <result property="mae" column="mae"/>
+        <result property="accuracy" column="accuracy"/>
+        <result property="latencyP50" column="latency_p50"/>
+        <result property="latencyP95" column="latency_p95"/>
+        <result property="latencyP99" column="latency_p99"/>
+        <result property="sampleCount" column="sample_count"/>
+        <result property="driftDetected" column="drift_detected"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <!-- UNIQUE(model_name, prediction_type, aggregate_period, period_start) upsert -->
+    <insert id="insertOrUpdate" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_model_metric (model_name, prediction_type, aggregate_period, period_start,
+            rmse, mae, accuracy, latency_p50, latency_p95, latency_p99,
+            sample_count, drift_detected)
+        VALUES (#{modelName}, #{predictionType}, #{aggregatePeriod}, #{periodStart},
+            #{rmse}, #{mae}, #{accuracy}, #{latencyP50}, #{latencyP95}, #{latencyP99},
+            #{sampleCount}, #{driftDetected})
+        ON CONFLICT (model_name, prediction_type, aggregate_period, period_start)
+        DO UPDATE SET
+            rmse = EXCLUDED.rmse,
+            mae = EXCLUDED.mae,
+            accuracy = EXCLUDED.accuracy,
+            latency_p50 = EXCLUDED.latency_p50,
+            latency_p95 = EXCLUDED.latency_p95,
+            latency_p99 = EXCLUDED.latency_p99,
+            sample_count = EXCLUDED.sample_count,
+            drift_detected = EXCLUDED.drift_detected
+    </insert>
+
+    <select id="findByModelAndPeriod" resultMap="modelMetricResultMap">
+        SELECT * FROM ai_model_metric
+        WHERE model_name = #{modelName}
+          AND prediction_type = #{predictionType}
+          AND aggregate_period = #{aggregatePeriod}
+          AND period_start = #{periodStart}
+    </select>
+
+    <select id="findDriftDetected" resultMap="modelMetricResultMap">
+        SELECT * FROM ai_model_metric
+        WHERE drift_detected = true
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findLatest" resultMap="modelMetricResultMap">
+        SELECT * FROM ai_model_metric
+        WHERE model_name = #{modelName}
+          AND prediction_type = #{predictionType}
+        ORDER BY period_start DESC, created_at DESC
+        LIMIT 1
+    </select>
+</mapper>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-001 — AI 예측 로그 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.mapper.AiPredictionLogMapper">
+
+    <resultMap id="predictionLogResultMap" type="kr.co.ircp.cms.domain.ai.model.AiPredictionLog">
+        <id property="id" column="id"/>
+        <result property="predictionType" column="prediction_type"/>
+        <result property="modelName" column="model_name"/>
+        <result property="modelVersion" column="model_version"/>
+        <result property="requestRef" column="request_ref"/>
+        <result property="inputFeatures" column="input_features"/>
+        <result property="outputResult" column="output_result"/>
+        <result property="confidence" column="confidence"/>
+        <result property="latencyMs" column="latency_ms"/>
+        <result property="status" column="status"/>
+        <result property="actualValue" column="actual_value"/>
+        <result property="predictedAt" column="predicted_at"/>
+        <result property="labeledAt" column="labeled_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_prediction_log (prediction_type, model_name, model_version, request_ref,
+            input_features, output_result, confidence, latency_ms, status, actual_value)
+        VALUES (#{predictionType}, #{modelName}, #{modelVersion}, #{requestRef},
+            #{inputFeatures}::jsonb,
+            <choose><when test="outputResult != null">#{outputResult}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            #{confidence}, #{latencyMs}, #{status},
+            <choose><when test="actualValue != null">#{actualValue}::jsonb</when><otherwise>NULL</otherwise></choose>)
+    </insert>
+
+    <select id="findById" resultMap="predictionLogResultMap">
+        SELECT * FROM ai_prediction_log WHERE id = #{id}
+    </select>
+
+    <select id="findByPredictionType" resultMap="predictionLogResultMap">
+        SELECT * FROM ai_prediction_log
+        WHERE prediction_type = #{predictionType}
+        ORDER BY predicted_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE ai_prediction_log SET
+            status = #{status},
+            actual_value = <choose><when test="actualValue != null">#{actualValue}::jsonb</when><otherwise>actual_value</otherwise></choose>,
+            labeled_at = <choose><when test="actualValue != null">now()</when><otherwise>labeled_at</otherwise></choose>
+        WHERE id = #{id}
+    </update>
+</mapper>

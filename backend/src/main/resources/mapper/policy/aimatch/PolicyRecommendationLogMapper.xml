@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-002 — AI 정책 추천/피드백 로그 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.policy.aimatch.repository.PolicyRecommendationLogMapper">
+
+    <!-- 추천/피드백 행 적재. JSONB는 ::jsonb 캐스팅 (AI-001 패턴). -->
+    <insert id="insertLog"
+            parameterType="kr.co.ircp.cms.domain.policy.aimatch.entity.PolicyRecommendationLogEntity"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_policy_recommendation_log
+            (session_ref, company_profile, query_text, recommended_policy_ids,
+             ml_scores, interaction_type, policy_id, interacted_at)
+        VALUES (
+            #{sessionRef},
+            #{companyProfile}::jsonb,
+            #{queryText},
+            <choose><when test="recommendedPolicyIds != null">#{recommendedPolicyIds}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            <choose><when test="mlScores != null">#{mlScores}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            #{interactionType},
+            #{policyId},
+            #{interactedAt}
+        )
+    </insert>
+
+    <!--
+      품질 지표 집계 (REQ-PM-015).
+      CTR            = CLICKED 보유 세션 수 / VIEWED 세션 수 (DISTINCT session_ref)
+      conversionRate = APPLIED 보유 세션 수 / VIEWED 세션 수 (DISTINCT session_ref)
+      coverage       = 서비스 레이어에서 countRecommendedDistinctPolicies / countActivePolicies 로 보정
+    -->
+    <select id="findMetrics"
+            parameterType="kr.co.ircp.cms.domain.policy.aimatch.dto.PolicyMatchMetricsRequest"
+            resultType="kr.co.ircp.cms.domain.policy.aimatch.dto.PolicyMatchMetricsResponse">
+        WITH viewed AS (
+            SELECT DISTINCT session_ref
+            FROM ai_policy_recommendation_log
+            WHERE interaction_type = 'VIEWED'
+            <if test="from != null">AND recommended_at &gt;= #{from}</if>
+            <if test="to != null">AND recommended_at &lt; (#{to}::date + INTERVAL '1 day')</if>
+        ),
+        clicked AS (
+            SELECT DISTINCT session_ref
+            FROM ai_policy_recommendation_log
+            WHERE interaction_type = 'CLICKED'
+            <if test="from != null">AND recommended_at &gt;= #{from}</if>
+            <if test="to != null">AND recommended_at &lt; (#{to}::date + INTERVAL '1 day')</if>
+        ),
+        applied AS (
+            SELECT DISTINCT session_ref
+            FROM ai_policy_recommendation_log
+            WHERE interaction_type = 'APPLIED'
+            <if test="from != null">AND recommended_at &gt;= #{from}</if>
+            <if test="to != null">AND recommended_at &lt; (#{to}::date + INTERVAL '1 day')</if>
+        ),
+        agg AS (
+            SELECT
+                (SELECT count(*) FROM viewed)                                          AS total_viewed,
+                (SELECT count(*) FROM clicked c WHERE c.session_ref IN (SELECT session_ref FROM viewed)) AS total_clicked,
+                (SELECT count(*) FROM applied a WHERE a.session_ref IN (SELECT session_ref FROM viewed)) AS total_applied
+        )
+        SELECT
+            #{period}                                                                  AS period,
+            CASE WHEN total_viewed = 0 THEN 0.0
+                 ELSE round(total_clicked::numeric / total_viewed, 4) END               AS ctr,
+            CASE WHEN total_viewed = 0 THEN 0.0
+                 ELSE round(total_applied::numeric / total_viewed, 4) END               AS conversionRate,
+            0.0                                                                         AS coverage,
+            total_viewed                                                                AS totalViewed,
+            total_clicked                                                               AS totalClicked,
+            total_applied                                                               AS totalApplied
+        FROM agg
+    </select>
+
+    <!-- REQ-PM-016 커버리지 분자: 기간 내 추천에 1회 이상 등장한 고유 정책 수. -->
+    <select id="countRecommendedDistinctPolicies"
+            parameterType="kr.co.ircp.cms.domain.policy.aimatch.dto.PolicyMatchMetricsRequest"
+            resultType="long">
+        SELECT count(DISTINCT pid)
+        FROM ai_policy_recommendation_log,
+             LATERAL jsonb_array_elements_text(recommended_policy_ids) AS pid
+        WHERE interaction_type = 'VIEWED'
+          AND recommended_policy_ids IS NOT NULL
+        <if test="from != null">AND recommended_at &gt;= #{from}</if>
+        <if test="to != null">AND recommended_at &lt; (#{to}::date + INTERVAL '1 day')</if>
+    </select>
+
+    <!-- REQ-PM-016 커버리지 분모: SPEC-CMS-007 활성 정책 총수 (정책 도메인 읽기 전용 참조). -->
+    <select id="countActivePolicies" resultType="long">
+        SELECT count(*)
+        FROM policy_program
+        WHERE status = 'ACTIVE'
+          AND (application_end IS NULL OR application_end >= now())
+    </select>
+
+    <!-- 비회원/프로필 미존재 시 ML 시맨틱 후보 풀 (활성 정책 ID, 마감 임박 순). -->
+    <select id="findActivePolicyIds" resultType="long">
+        SELECT id
+        FROM policy_program
+        WHERE status = 'ACTIVE'
+          AND (application_end IS NULL OR application_end >= now())
+        ORDER BY application_end ASC NULLS LAST, id ASC
+        LIMIT #{limit}
+    </select>
+
+</mapper>
