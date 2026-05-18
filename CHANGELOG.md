@@ -11,6 +11,24 @@
 
 ---
 
+## [1.1.0] - 2026-05-18
+
+### Added
+
+- AI/ML 기능 도입 (SPEC-CMS-AI-001) — 옵션 트랙 P1 완전 구현
+  - **성장단계 예측** (`GET /api/v1/ai/growth-stage`): Python ML 서비스 위임, Caffeine 캐시 TTL 1h, Resilience4j CircuitBreaker 적용
+  - **가상 시뮬레이션** (`POST /api/v1/ai/simulation/start`): UUID 세션, PDF 보고서 생성(OpenPDF), 24시간 만료
+  - **경영위험 예측** (`GET /api/v1/ai/risk-score`): GREEN/YELLOW/ORANGE/RED 4등급, 설명 API (`GET /risk-score/explain/{predictionId}`)
+  - **알고리즘 품질 모니터링** 어드민 대시보드: 모델 메트릭·드리프트 경보·재학습 큐 관리 (10개 ADMIN 전용 엔드포인트)
+  - DB 마이그레이션 V28–V31: `ai_prediction_log`, `ai_simulation_session`, `ai_model_metric`, `ai_retrain_queue`
+  - 일일 배치(`AiModelMetricJob`) cron 02:15 — 정확도 < 0.70 또는 nRMSE > 0.20 시 드리프트 감지 + 재학습 큐 자동 등록
+  - IP 평문 미저장 — SHA-256 해시만 보관(`IpHashUtil`), PII 전송 차단
+  - OpenAPI 3.1 계약 문서 (`docs/ai-ml-service-openapi.yaml`)
+  - Vue 3 어드민 대시보드: `ModelDashboard.vue`, `DriftAlerts.vue`, `RetrainQueue.vue` + i18n(ko/en)
+  - `MlServiceClient` 인터페이스 + MockMlServiceClient (테스트 전용) — ML 부재 시 Spring Boot 독립 검증 가능
+
+---
+
 ## [1.0.2] - 2026-05-18
 
 ### Added
