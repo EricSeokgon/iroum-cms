@@ -42,7 +42,12 @@ public abstract class AbstractIntegrationTest {
     static {
         PostgreSQLContainer<?> container = null;
         try {
-            container = new PostgreSQLContainer<>("postgres:16-alpine")
+            // SPEC-CMS-AI-003: pgvector/pgvector:pg16 = 공식 Postgres 16 + pgvector 확장(엄격한 상위 호환).
+            // V33 RAG 마이그레이션의 CREATE EXTENSION vector 가 stock postgres:16-alpine 에는
+            // 없으므로 pgvector 번들 이미지를 사용한다. 기존 IT(pgcrypto/pg_trgm 기반)는 무영향.
+            container = new PostgreSQLContainer<>(
+                    org.testcontainers.utility.DockerImageName.parse("pgvector/pgvector:pg16")
+                            .asCompatibleSubstituteFor("postgres"))
                     .withDatabaseName("iroum_cms_test")
                     .withUsername("test")
                     .withPassword("test");
