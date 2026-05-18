@@ -22,7 +22,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # ─── 의존성 레이어 캐시 최적화 ───
 # workspace 루트 및 각 패키지 manifest만 먼저 복사
-COPY frontend/pnpm-workspace.yaml frontend/package.json ./
+COPY frontend/pnpm-workspace.yaml frontend/package.json frontend/tsconfig.base.json ./
 COPY frontend/${APP}/package.json ./${APP}/
 COPY frontend/shared/package.json ./shared/
 
@@ -56,4 +56,4 @@ EXPOSE 80
 
 # 헬스 체크
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD wget -q --spider http://localhost:80/ || exit 1
+  CMD wget -q --spider http://127.0.0.1:80/ || exit 1

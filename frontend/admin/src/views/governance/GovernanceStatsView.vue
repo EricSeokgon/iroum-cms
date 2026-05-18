@@ -139,6 +139,7 @@ function resetDateRange(): void {
 
 // ── 차트 옵션 타입 ───────────────────────────────────────────────────────────
 interface ChartOption {
+  [key: string]: unknown
   title?: Record<string, unknown>
   tooltip?: Record<string, unknown>
   legend?: Record<string, unknown>

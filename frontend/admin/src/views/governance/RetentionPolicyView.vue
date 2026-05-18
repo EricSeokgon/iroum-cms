@@ -138,6 +138,7 @@ const hasChartData = computed(() =>
 )
 
 interface ChartOption {
+  [key: string]: unknown
   tooltip?: Record<string, unknown>
   legend?: Record<string, unknown>
   grid?: Record<string, unknown>

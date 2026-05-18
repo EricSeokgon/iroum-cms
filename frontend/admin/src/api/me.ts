@@ -41,6 +41,6 @@ export const meApi = {
   updateQnaNotificationPreference(email: boolean): Promise<void> {
     return apiClient.put<void>('/me/notifications/preferences', {
       qnaAnswer: { email },
-    })
+    }).then(() => {})
   },
 }

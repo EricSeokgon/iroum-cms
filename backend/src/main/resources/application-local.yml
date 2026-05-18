@@ -16,7 +16,7 @@ spring:
         debug: false
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/iroum_cms_local
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/iroum_cms_local}
     username: ${DB_USERNAME:iroum_cms}
     password: ${DB_PASSWORD:iroum_cms_dev_pwd}
     driver-class-name: org.postgresql.Driver
@@ -63,3 +63,16 @@ pii:
     keys:
       v1: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     hmac-key: AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE=
+
+# 로컬 환경에서 외부 서비스 미기동 시 actuator health DOWN 방지
+# 운영에서는 application.yml 기본값(true) 유지
+management:
+  health:
+    mail:
+      enabled: false
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      ml-service:
+        registerHealthIndicator: false

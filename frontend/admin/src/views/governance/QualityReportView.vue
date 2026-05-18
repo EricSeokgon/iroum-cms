@@ -246,6 +246,7 @@ const violationByDate = computed<DateBucket[]>(() => {
 const hasChartData = computed(() => violationByDate.value.length > 0)
 
 interface ChartOption {
+  [key: string]: unknown
   tooltip?: Record<string, unknown>
   legend?: Record<string, unknown>
   grid?: Record<string, unknown>
