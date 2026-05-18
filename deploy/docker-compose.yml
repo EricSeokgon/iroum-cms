@@ -9,7 +9,7 @@ services:
   # PostgreSQL 16 — 개발·로컬 데이터베이스
   # ──────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: iroum-postgres
     environment:
       POSTGRES_DB: iroum_cms_local

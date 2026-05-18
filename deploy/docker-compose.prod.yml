@@ -16,7 +16,7 @@ services:
   # PostgreSQL 16 — 운영 데이터베이스
   # ──────────────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: iroum-postgres
     environment:
       POSTGRES_DB: iroum_cms
@@ -70,6 +70,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ACCESS_LOG_IP_SALT: ${ACCESS_LOG_IP_SALT}
       AES_KEY: ${AES_KEY}
+      ML_SERVICE_URL: ${ML_SERVICE_URL}
       JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
     depends_on:
       postgres:
