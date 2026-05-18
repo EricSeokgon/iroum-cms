@@ -1,15 +1,15 @@
 ---
 engine: postgresql
 orm: Spring Data JPA / MyBatis (egovFrame)
-last_synced_at: 2026-05-15
-manifest_hash: v26
+last_synced_at: 2026-05-18
+manifest_hash: v33
 ---
 
 # Database Schema
 
-> Engine: PostgreSQL 16 | ORM: Spring Data JPA / MyBatis | Migrations: Flyway | Last sync: 2026-05-15 (V26)
+> Engine: PostgreSQL 16 | ORM: Spring Data JPA / MyBatis | Migrations: Flyway | Last sync: 2026-05-18 (V33)
 >
-> Extensions: `pgcrypto` (UUID, 암호화 해시), `pg_trgm` (한국어 LIKE 검색 GIN 인덱스)
+> Extensions: `pgcrypto` (UUID, 암호화 해시), `pg_trgm` (한국어 LIKE 검색 GIN 인덱스), `vector` (pgvector 384차원 임베딩 — V33)
 >
 > Timezone: UTC 저장, 애플리케이션에서 Asia/Seoul 변환
 
@@ -376,7 +376,7 @@ manifest_hash: v26
 
 ### `bbs_master`
 
-> Added: V10__board_schema.sql | Domain: Board
+> Added: V10__board_schema.sql | Modified: V27 (deleted_at) | Domain: Board
 
 | Column | Type | Nullable | Default | Notes |
 |--------|------|----------|---------|-------|
@@ -398,8 +398,9 @@ manifest_hash: v26
 | metadata | JSONB | YES | | |
 | created_at | TIMESTAMPTZ | NO | CURRENT_TIMESTAMP | |
 | updated_at | TIMESTAMPTZ | NO | CURRENT_TIMESTAMP | |
+| deleted_at | TIMESTAMPTZ | YES | | soft delete (V27 추가) |
 
-**Indexes:** `idx_bbs_master_status`, `idx_bbs_master_type` WHERE status='ACTIVE'
+**Indexes:** `idx_bbs_master_status`, `idx_bbs_master_type` WHERE status='ACTIVE', `idx_bbs_master_active` ON (status) WHERE deleted_at IS NULL (V27)
 
 ---
 
@@ -1097,7 +1098,7 @@ manifest_hash: v26
 
 ### `policy_program`
 
-> Added: V16__policy_schema.sql | Domain: Policy
+> Added: V16__policy_schema.sql | Modified: V33 (embed_vector, embedded_at, embed_model_version) | Domain: Policy
 
 | Column | Type | Nullable | Default | Notes |
 |--------|------|----------|---------|-------|
@@ -1119,8 +1120,11 @@ manifest_hash: v26
 | status | VARCHAR(20) | NO | 'DRAFT' | DRAFT/ACTIVE/CLOSED/EXPIRED |
 | created_at | TIMESTAMPTZ | NO | now() | |
 | updated_at | TIMESTAMPTZ | NO | now() | |
+| embed_vector | vector(384) | YES | | sentence embedding 384차원 (V33, pgvector) |
+| embedded_at | TIMESTAMPTZ | YES | | 임베딩 생성 시점 (NULL=미생성) |
+| embed_model_version | VARCHAR(64) | YES | | 임베딩 생성 모델 버전 식별자 |
 
-**Indexes:** `idx_pp_status_app`, `idx_pp_industries` GIN, `idx_pp_regions` GIN, `idx_policy_program_name_trgm` GIN (V23), `idx_policy_program_desc_html_trgm` GIN (V23)
+**Indexes:** `idx_pp_status_app`, `idx_pp_industries` GIN, `idx_pp_regions` GIN, `idx_policy_program_name_trgm` GIN (V23), `idx_policy_program_desc_html_trgm` GIN (V23), `idx_policy_program_embed_cosine` IVFFlat (embed_vector vector_cosine_ops, lists=100) (V33)
 
 ---
 
@@ -1345,6 +1349,157 @@ ZIP 다운로드 아카이브 (download_id UUID UNIQUE, mode: SYNC/ASYNC, expire
 
 ---
 
+### AI 도메인
+
+---
+
+### `ai_prediction_log`
+
+> Added: V28__ai_prediction_log.sql | Domain: AI | SPEC: SPEC-CMS-AI-001
+
+ML 추론 호출 전체 적재 테이블. 모니터링·드리프트 분석 기반.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | BIGSERIAL | NO | nextval | PK |
+| prediction_type | VARCHAR(20) | NO | | GROWTH_STAGE / RISK_SCORE / SIMULATION |
+| model_name | VARCHAR(100) | NO | | |
+| model_version | VARCHAR(20) | NO | | |
+| request_ref | VARCHAR(100) | YES | | 요청 추적 키 (평문 미저장 권장) |
+| input_features | JSONB | NO | | PII 제외 입력 피처 |
+| output_result | JSONB | YES | | 모델 출력 |
+| confidence | NUMERIC(5,4) | YES | | |
+| latency_ms | INTEGER | YES | | |
+| status | VARCHAR(20) | NO | | SUCCESS / ML_ERROR / TIMEOUT / FALLBACK |
+| actual_value | JSONB | YES | | 실제값 (사후 레이블링) |
+| predicted_at | TIMESTAMPTZ | NO | now() | |
+| labeled_at | TIMESTAMPTZ | YES | | 레이블 적재 시각 |
+
+**Indexes:** `idx_ai_prediction_log_type`, `idx_ai_prediction_log_status`, `idx_ai_prediction_log_predicted_at` DESC
+
+---
+
+### `ai_simulation_session`
+
+> Added: V29__ai_simulation_session.sql | Domain: AI | SPEC: SPEC-CMS-AI-001
+
+익명 시뮬레이션 세션. **평문 IP 절대 미저장** — `client_ip_hash` SHA-256(64자)만 저장. 24시간 TTL.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | UUID | NO | gen_random_uuid() | PK |
+| ksic_code | VARCHAR(5) | NO | | 한국표준산업분류 코드 |
+| capital_amount | BIGINT | NO | | |
+| founding_year | INTEGER | NO | | |
+| revenue_amount | BIGINT | YES | | |
+| projection_result | JSONB | YES | | 시뮬레이션 결과 |
+| pdf_status | VARCHAR(20) | NO | 'NONE' | NONE / GENERATING / READY / FAILED |
+| client_ip_hash | VARCHAR(64) | NO | | SHA-256(IP) — IpHashUtil 재사용 |
+| created_at | TIMESTAMPTZ | NO | now() | |
+| expires_at | TIMESTAMPTZ | NO | now()+24h | TTL 만료 시각 |
+
+**Indexes:** `idx_ai_simulation_session_ip_hash` ON (client_ip_hash, created_at DESC), `idx_ai_simulation_session_expires` ON (expires_at)
+
+---
+
+### `ai_model_metric`
+
+> Added: V30__ai_model_metric.sql | Domain: AI | SPEC: SPEC-CMS-AI-001
+
+모델/예측유형/집계주기/기간 UNIQUE upsert. 드리프트 감지 플래그 포함.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | BIGSERIAL | NO | nextval | PK |
+| model_name | VARCHAR(100) | NO | | |
+| prediction_type | VARCHAR(20) | NO | | GROWTH_STAGE / RISK_SCORE / SIMULATION |
+| aggregate_period | VARCHAR(10) | NO | | DAILY / WEEKLY / MONTHLY |
+| period_start | DATE | NO | | |
+| rmse | NUMERIC(10,4) | YES | | |
+| mae | NUMERIC(10,4) | YES | | |
+| accuracy | NUMERIC(5,4) | YES | | |
+| latency_p50 | INTEGER | YES | | ms |
+| latency_p95 | INTEGER | YES | | ms |
+| latency_p99 | INTEGER | YES | | ms |
+| sample_count | INTEGER | NO | 0 | |
+| drift_detected | BOOLEAN | NO | false | |
+| created_at | TIMESTAMPTZ | NO | now() | |
+
+**Unique:** `uq_ai_model_metric` (model_name, prediction_type, aggregate_period, period_start)
+
+**Indexes:** `idx_ai_model_metric_drift` ON (drift_detected, created_at DESC)
+
+---
+
+### `ai_retrain_queue`
+
+> Added: V31__ai_retrain_queue.sql | Domain: AI | SPEC: SPEC-CMS-AI-001
+
+드리프트 자동 또는 수동 요청으로 모델 재학습 작업을 큐잉.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | BIGSERIAL | NO | nextval | PK |
+| model_name | VARCHAR(100) | NO | | |
+| trigger_reason | VARCHAR(30) | NO | | DRIFT_ACCURACY / DRIFT_ERROR / MANUAL |
+| trigger_detail | JSONB | YES | | 트리거 상세 정보 |
+| status | VARCHAR(20) | NO | 'QUEUED' | QUEUED → ACKNOWLEDGED → IN_PROGRESS → DONE / CANCELED |
+| requested_by | BIGINT | YES | | FK → users(id) (nullable — 자동 트리거 시 NULL) |
+| requested_at | TIMESTAMPTZ | NO | now() | |
+| updated_at | TIMESTAMPTZ | NO | now() | |
+
+**Indexes:** `idx_ai_retrain_queue_status` ON (status, requested_at DESC)
+
+---
+
+### `ai_policy_recommendation_log`
+
+> Added: V32__create_ai_policy_recommendation_log.sql | Domain: AI | SPEC: SPEC-CMS-AI-002
+
+AI 정책 추천 및 피드백 로그. **PII 완전 배제** — `session_ref` SHA-256, `company_profile` PII 화이트리스트만 허용.
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | BIGSERIAL | NO | nextval | PK |
+| session_ref | VARCHAR(80) | NO | | SHA-256 해시 (평문 식별자 미저장) |
+| company_profile | JSONB | NO | | PII 화이트리스트: ksic_code/employee_count/growth_stage/region_code/annual_revenue |
+| query_text | VARCHAR(500) | YES | | 선택적 자연어 검색어 |
+| recommended_policy_ids | JSONB | YES | | 순서 보존 추천 정책 ID 배열 |
+| ml_scores | JSONB | YES | | {"policy_id": {"semantic":N,"rule":N,"hybrid":N}} |
+| interaction_type | VARCHAR(20) | NO | | VIEWED / CLICKED / APPLIED / DISMISSED |
+| policy_id | BIGINT | YES | | 상호작용 정책 ID (VIEWED=NULL, 나머지=필수) |
+| recommended_at | TIMESTAMPTZ | NO | CURRENT_TIMESTAMP | |
+| interacted_at | TIMESTAMPTZ | YES | | 피드백 행만 |
+
+**Indexes:** `idx_aprl_session` ON (session_ref, recommended_at DESC), `idx_aprl_type_time`, `idx_aprl_policy_time` WHERE policy_id IS NOT NULL, `idx_aprl_metrics_day`
+
+---
+
+### `ai_rag_query_log`
+
+> Added: V33__ai_rag_query_log_and_policy_embedding.sql | Domain: AI | SPEC: SPEC-CMS-AI-003
+
+RAG 질의/피드백 로그. **질문 평문 미저장** — `question_hash` SHA-256. `query_ref` 피드백 상관키(멱등 갱신).
+
+| Column | Type | Nullable | Default | Notes |
+|--------|------|----------|---------|-------|
+| id | BIGSERIAL | NO | nextval | PK |
+| query_ref | VARCHAR(64) | NO | | UNIQUE, 클라이언트 반환 UUID — 피드백 상관키 |
+| question_hash | VARCHAR(80) | NO | | 질문 SHA-256 (ragQueryCache 키와 동일 산식) |
+| session_ref | VARCHAR(80) | NO | | SHA-256 해시 (V32와 동일 규칙) |
+| retrieved_policy_ids | JSONB | YES | | 검색된 정책 ID 배열 |
+| answer_quality_score | SMALLINT | YES | | 0~100 (ML/규칙 산출) |
+| feedback | VARCHAR(20) | YES | | HELPFUL / UNHELPFUL (NULL=미응답) |
+| latency_ms | INTEGER | NO | | 전체 처리 지연(ms) |
+| cache_hit | BOOLEAN | NO | false | ragQueryCache 히트 여부 |
+| degraded | BOOLEAN | NO | false | FTS 단독 폴백 여부 |
+| queried_at | TIMESTAMPTZ | NO | CURRENT_TIMESTAMP | |
+| feedback_at | TIMESTAMPTZ | YES | | 피드백 발생 시각 (feedback과 동시 NULL 또는 동시 NOT NULL) |
+
+**Indexes:** `idx_arql_qhash` ON (question_hash, queried_at DESC), `idx_arql_session`, `idx_arql_feedback` WHERE feedback IS NOT NULL, `idx_arql_metrics_day`, `idx_arql_degraded`
+
+---
+
 ## Relationships (주요)
 
 | 관계 | 설명 |
@@ -1372,6 +1527,13 @@ ZIP 다운로드 아카이브 (download_id UUID UNIQUE, mode: SYNC/ASYNC, expire
 | kpi_definition 1:N kpi_value | KPI 현재값 |
 | dashboard_layout 1:N dashboard_layout_widget | 레이아웃-위젯 |
 | data_quality_rule 1:N data_quality_report | 품질 룰-검사 결과 |
+| ai_prediction_log (독립) | ML 추론 감사 로그 (외래키 없음) |
+| ai_simulation_session (독립) | 익명 시뮬레이션 세션 (외래키 없음, TTL 24h) |
+| ai_model_metric (독립) | 모델 성능 집계 (UNIQUE upsert 패턴) |
+| ai_retrain_queue N:1 users | 수동 재학습 요청자 (NULL=자동 트리거) |
+| ai_policy_recommendation_log N:1 policy_program (via policy_id) | 정책 추천-피드백 연결 |
+| ai_rag_query_log (독립) | RAG 질의/피드백 로그 (평문 미저장) |
+| policy_program embed_vector | pgvector IVFFlat cosine 검색 지원 (V33) |
 
 ---
 
@@ -1413,3 +1575,22 @@ ZIP 다운로드 아카이브 (download_id UUID UNIQUE, mode: SYNC/ASYNC, expire
 ### V23 추가 검색 성능 인덱스 (ILIKE fallback 가속)
 
 - page.title, policy_program.program_name/description_html, media_asset.original_filename/description, users.username/name — 모두 GIN gin_trgm_ops
+
+### AI 도메인 — PII / 익명화 원칙 (V28~V33)
+
+- **IP 주소**: `ai_simulation_session.client_ip_hash` SHA-256(64자) — IpHashUtil 재사용. 평문 IP 절대 미저장.
+- **세션/회원 식별자**: `ai_policy_recommendation_log.session_ref`, `ai_rag_query_log.session_ref` — SHA-256 해시 전용. 평문 미저장.
+- **질문 텍스트**: `ai_rag_query_log.question_hash` — SHA-256 해시 전용. 평문 미저장.
+- **회사 프로필**: `ai_policy_recommendation_log.company_profile` — PII 화이트리스트 5개 필드만 허용(ksic_code/employee_count/growth_stage/region_code/annual_revenue). 대표자명·법인식별번호 금지.
+
+### V27 Board 소프트 삭제
+
+- `bbs_master.deleted_at` 추가 — BbsMasterMapper.xml에서 deleted_at IS NULL 조건으로 활성 게시판 조회.
+- `idx_bbs_master_active` 부분 인덱스로 ACTIVE 게시판 조회 성능 보장.
+
+### V33 pgvector 확장 및 임베딩
+
+- **운영 이미지**: `pgvector/pgvector:pg16` 필수 (`postgres:16-alpine` → 교체됨).
+- **embed_vector**: `policy_program.embed_vector vector(384)` — sentence embedding 384차원. NULL=미생성(임베딩 배치 미실행).
+- **IVFFlat 인덱스**: `lists=100` — 운영 데이터 적재 후 리스트 수 튜닝 필요(일반적으로 `rows/1000` ~ `sqrt(rows)`).
+- **AI 질의 피드백 TTL**: `ai_rag_query_log.feedback`은 비동기 갱신 — `query_ref`로 멱등 UPDATE 처리.

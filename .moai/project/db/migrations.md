@@ -1,7 +1,7 @@
 # Migrations
 
-마이그레이션 버전 이력 및 롤백 메모 (V1–V26, Flyway 순번 기준).
-자동 생성일: 2026-05-15 / 최종 적용 버전: V26
+마이그레이션 버전 이력 및 롤백 메모 (V1–V33, Flyway 순번 기준).
+자동 생성일: 2026-05-15 / 최종 갱신일: 2026-05-18 / 최종 적용 버전: V33
 
 ---
 
@@ -35,12 +35,19 @@
 | V24 | `V24__pii_encryption_email.sql` | **PII 보안**: users 테이블에 email_encrypted(BYTEA), email_iv, email_tag, email_hmac(VARCHAR 64, UNIQUE 부분인덱스), email_key_version 컬럼 추가. email 컬럼 NOT NULL 해제 (V26에서 DROP 예정). data_dictionary PII 시드 5건 | **PII** |
 | V25 | `V25__pii_key_rotation_log.sql` | **PII 보안**: pii_key_rotation_log 테이블 생성 (IN_PROGRESS/COMPLETED/FAILED 상태, 키 버전 추적, 청크 커밋 결합) | **PII** |
 | V26 | `V26__drop_email_plain_column.sql` | **BREAKING (비가역)**: `users.email` 평문 컬럼 DROP. data_dictionary email 상태 REMOVED 갱신. email_encrypted/email_hmac 경로가 표준 경로로 완전 전환됨 | **BREAKING** |
+| V27 | `V27__bbs_master_soft_delete.sql` | bbs_master 소프트 삭제 지원: `deleted_at TIMESTAMPTZ` 컬럼 추가 + `idx_bbs_master_active` 부분 인덱스 (deleted_at IS NULL) | No |
+| V28 | `V28__ai_prediction_log.sql` | **AI 도메인**: `ai_prediction_log` 생성 — ML 추론 입력/출력/지연/상태 전체 적재 (GROWTH_STAGE/RISK_SCORE/SIMULATION, 드리프트 분석 기반) | No |
+| V29 | `V29__ai_simulation_session.sql` | **AI 도메인**: `ai_simulation_session` 생성 — 익명 시뮬레이션 세션. `client_ip_hash` SHA-256 저장(평문 IP 미저장), 24시간 TTL (`expires_at` DEFAULT) | No |
+| V30 | `V30__ai_model_metric.sql` | **AI 도메인**: `ai_model_metric` 생성 — 모델/예측유형/집계주기/기간 UNIQUE upsert. RMSE/MAE/Accuracy/레이턴시 P50·P95·P99 + 드리프트 감지 플래그 | No |
+| V31 | `V31__ai_retrain_queue.sql` | **AI 도메인**: `ai_retrain_queue` 생성 — 드리프트 자동/수동 재학습 큐 (QUEUED→ACKNOWLEDGED→IN_PROGRESS→DONE/CANCELED) | No |
+| V32 | `V32__create_ai_policy_recommendation_log.sql` | **AI 도메인 (SPEC-CMS-AI-002)**: `ai_policy_recommendation_log` 생성 — PII 제외 정책 추천/피드백 로그. `session_ref` SHA-256 해시 전용, `company_profile` PII 화이트리스트(업종/규모/성장단계/지역) 한정 | No |
+| V33 | `V33__ai_rag_query_log_and_policy_embedding.sql` | **AI 도메인 (SPEC-CMS-AI-003)**: `CREATE EXTENSION IF NOT EXISTS vector` (pgvector) 활성화; `policy_program`에 `embed_vector vector(384)`, `embedded_at`, `embed_model_version` 추가 + IVFFlat cosine 인덱스; `ai_rag_query_log` 생성 — RAG 질의/피드백 로그(SHA-256 해시만 저장) | No |
 
 ---
 
 ## Pending Migrations
 
-현재 적용 대기 중인 마이그레이션 없음. (V26이 최신 적용 버전)
+현재 적용 대기 중인 마이그레이션 없음. (V33이 최신 적용 버전)
 
 | Filename | Created At | Description | Blocking? |
 |----------|-----------|-------------|-----------|
@@ -52,6 +59,7 @@
 
 > **V26 이전** 마이그레이션은 모두 가역적(표준 역마이그레이션 적용 가능).
 > V26 이후는 데이터 복구를 위한 별도 백업 또는 PiiEmailMigrationJob 재실행이 필요.
+> V33은 `CREATE EXTENSION vector`를 포함하므로 pgvector가 미설치된 환경에서는 롤백 전 `DROP EXTENSION IF EXISTS vector`가 필요할 수 있음.
 
 | Migration | Risk Level | Rollback Steps | Data Loss? |
 |-----------|-----------|----------------|------------|
@@ -79,6 +87,13 @@
 | V24 | Medium | ALTER TABLE users DROP COLUMN email_key_version, email_hmac, email_tag, email_iv, email_encrypted; ALTER TABLE users ALTER COLUMN email SET NOT NULL; DROP INDEX idx_users_email_hmac. **주의**: PiiEmailMigrationJob 실행 전 롤백 시 email 데이터는 원래대로 존재함 | No (email 컬럼 아직 존재) |
 | V25 | Low | DROP TABLE pii_key_rotation_log | No |
 | **V26** | **CRITICAL — 비가역** | **롤백 불가**: `users.email` 컬럼이 영구 삭제됨. 롤백을 위해서는 V26 적용 직전 PostgreSQL 전체 백업(pg_dump)에서 복원하거나, email_encrypted 컬럼의 데이터를 복호화하여 재삽입하는 별도 스크립트 실행 필요. **data_dictionary email 행은 status=REMOVED로 갱신됨 — 별도 UPDATE로 복구 가능**. UserMapper.xml 및 UserServiceImpl의 코드 패치 동시 롤백 필요 | **YES — 이메일 평문 영구 손실 (암호화본은 email_encrypted에 보존됨)** |
+| V27 | Low | `ALTER TABLE bbs_master DROP COLUMN deleted_at; DROP INDEX idx_bbs_master_active` | No |
+| V28 | Low | `DROP TABLE ai_prediction_log` | No |
+| V29 | Low | `DROP TABLE ai_simulation_session` | No |
+| V30 | Low | `DROP TABLE ai_model_metric` | No |
+| V31 | Low | `DROP TABLE ai_retrain_queue` | No |
+| V32 | Low | `DROP TABLE ai_policy_recommendation_log` | No |
+| V33 | Medium | `DROP TABLE ai_rag_query_log; ALTER TABLE policy_program DROP COLUMN embed_model_version, DROP COLUMN embedded_at, DROP COLUMN embed_vector; DROP EXTENSION IF EXISTS vector` — **주의**: pgvector 확장 DROP은 벡터 타입을 사용하는 다른 컬럼이 없을 때만 안전 | No |
 
 ---
 
@@ -105,3 +120,26 @@
 - **비가역성**: ALTER TABLE users DROP COLUMN email — 복원 불가
 - **코드 동시 패치**: UserMapper.xml email 컬럼 매핑 제거, UserServiceImpl existsByEmail → existsByEmailHmac 전환
 - **운영 주의**: V26 적용 전 반드시 pg_dump 전체 백업 수행
+
+### V29 — AI 시뮬레이션 세션 익명화 (SPEC-CMS-AI-001)
+
+- **목적**: 익명 사용자 시뮬레이션 세션. 평문 IP 절대 미저장.
+- **client_ip_hash**: SHA-256(raw IP) — 64자 hex, IpHashUtil 재사용
+- **TTL**: `expires_at DEFAULT now() + INTERVAL '24 hours'` — 배치 정리 대상
+- **보안**: AI 요청에서 PII(대표자명·식별번호) 제외, 재무지표·업종·연도만 허용
+
+### V32 — AI 정책 추천 로그 익명화 (SPEC-CMS-AI-002)
+
+- **목적**: 정책 추천 이력 적재. PII 완전 배제.
+- **session_ref**: 익명 세션 또는 회원ID의 SHA-256 해시 (평문 미저장)
+- **company_profile**: PII 화이트리스트 — `ksic_code`, `employee_count`, `growth_stage`, `region_code`, `annual_revenue` 5개 필드만 허용 (대표자명·법인식별번호 금지)
+- **interaction_type**: VIEWED(policy_id=NULL) / CLICKED·APPLIED·DISMISSED(policy_id 필수) — CHECK 제약 강제
+
+### V33 — RAG 질의 로그 익명화 + pgvector (SPEC-CMS-AI-003)
+
+- **목적**: RAG 응답 품질 측정 및 피드백 수집. 질문 평문 미저장.
+- **question_hash**: 질문 텍스트 SHA-256 해시 — ragQueryCache 키와 동일 산식
+- **session_ref**: V32와 동일 규칙 (SHA-256 해시 전용)
+- **query_ref**: 클라이언트 반환 UUID — 피드백(feedback/feedback_at) 비동기 갱신의 상관키
+- **pgvector 요구사항**: `pgvector/pgvector:pg16` 이미지 필수 (`postgres:16-alpine` 미사용)
+- **embed_vector**: `vector(384)` — sentence embedding 384차원, IVFFlat cosine 인덱스 (lists=100)
