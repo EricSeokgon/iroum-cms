@@ -11,6 +11,32 @@
 
 ---
 
+## [1.3.0] - 2026-05-18
+
+### Added
+
+- RAG 질의응답 — 자연어 질문 기반 정책 검색·생성형 답변 (SPEC-CMS-AI-003) — 옵션 트랙 P1 완전 구현
+  - **RAG 질의응답** (`POST /api/v1/ai/rag/query`): 자연어 질문 → embed(384차원) → pgvector cosine 유사도 검색 → FTS 하이브리드 재랭킹 → LLM 생성형 답변, `degraded=true` 폴백 지원
+  - **pgvector 코사인 검색**: PostgreSQL `vector(384)`, IVFFlat 인덱스(lists=100, probes=10), `policy_program` 임베딩 컬럼 3개(`name_embedding`, `summary_embedding`, `combined_embedding`)
+  - **CircuitBreaker 폴백**: Resilience4j ml-service OPEN 시 FTS 단독 검색으로 자동 폴백 — 503 미반환, 200 + `degraded=true` 반환
+  - **RAG 쿼리 캐시**: Caffeine ragQueryCache (TTL 15분) — 동일 질문 SHA-256 해시 기반 캐시 키, degraded 응답 미캐싱
+  - **질의 로그 비동기 적재**: `@Async("aiLogExecutor")` — query_ref·cache_hit·latency_ms·degraded 플래그 기록
+  - **사용자 피드백** (`POST /api/v1/ai/rag/feedback`): HELPFUL/NOT_HELPFUL/INCORRECT 피드백 비동기 적재
+  - **DB 마이그레이션 V33**: pgvector 확장 활성화 + `policy_program` 임베딩 컬럼 3개 + IVFFlat 인덱스 + `ai_rag_query_log` 테이블
+  - **관리자 모니터링** (`GET /api/v1/admin/ai/rag/metrics`, ROLE=ADMIN 전용): 만족도 비율·캐시 히트율·평균 응답시간·degraded 비율 시계열 집계
+  - **OpenAPI 3.1 계약** (`docs/ai-ml-service-openapi.yaml`): `POST /ml/v1/embed`, `POST /ml/v1/rag` 엔드포인트 추가
+  - **Vue 3 SPA**: `PolicyRagView.vue` (질문 입력·답변·출처·피드백) + `RagMetrics.vue` (어드민 대시보드) + i18n(ko/en)
+  - **AbstractIntegrationTest 컨테이너**: `postgres:16-alpine` → `pgvector/pgvector:pg16` (pgvector 확장 공식 지원 이미지)
+
+### Security
+
+- `session_ref` 평문 미저장 — SHA-256 해시만 `ai_rag_query_log`에 보관
+- `question_hash` 평문 미저장 — SHA-256 해시만 보관, LLM 입력에서 PII 제외
+- ML 서비스 내부망 한정 접근 — Spring Boot → ML 호출은 사설 네트워크 전용
+- 관리자 메트릭 API `@PreAuthorize("hasRole('ADMIN')")` + audit_log AOP 자동 감사 로그
+
+---
+
 ## [1.2.0] - 2026-05-18
 
 ### Added
