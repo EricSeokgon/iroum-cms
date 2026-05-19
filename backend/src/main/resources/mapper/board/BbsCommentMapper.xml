@@ -13,6 +13,7 @@
         <result property="postId" column="post_id"/>
         <result property="parentCommentId" column="parent_comment_id"/>
         <result property="authorId" column="author_id"/>
+        <result property="authorUsername" column="author_username"/>
         <result property="anonymousName" column="anonymous_name"/>
         <result property="anonymousPwdHash" column="anonymous_pwd_hash"/>
         <result property="content" column="content"/>
@@ -22,10 +23,16 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <!--
+        users 테이블 LEFT JOIN: 로그인 사용자 댓글에 authorUsername 을 함께 조회.
+        익명 댓글(author_id IS NULL)은 author_username = NULL, anonymous_name 사용.
+    -->
     <select id="findByPostId" resultMap="bbsCommentResultMap">
-        SELECT * FROM bbs_comment
-        WHERE post_id = #{postId} AND status != 'DELETED'
-        ORDER BY COALESCE(parent_comment_id, id), id
+        SELECT c.*, u.username AS author_username
+        FROM bbs_comment c
+        LEFT JOIN users u ON u.id = c.author_id
+        WHERE c.post_id = #{postId} AND c.status != 'DELETED'
+        ORDER BY COALESCE(c.parent_comment_id, c.id), c.id
     </select>
 
     <select id="findById" resultMap="bbsCommentResultMap">

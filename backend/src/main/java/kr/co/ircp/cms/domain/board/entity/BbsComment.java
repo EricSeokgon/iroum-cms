@@ -21,6 +21,8 @@ public class BbsComment {
     private Long postId;
     private Long parentCommentId;
     private Long authorId;
+    /** JOIN 조회 전용 — DB 컬럼 없음, users.username 을 alias로 받음 */
+    private String authorUsername;
     private String anonymousName;
     private String anonymousPwdHash;
     private String content;

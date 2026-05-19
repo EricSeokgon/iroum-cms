@@ -9,6 +9,10 @@ const baseDir = new URL('.', import.meta.url).pathname
 export default defineConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [vue() as any],
+  define: {
+    __APP_VERSION__: JSON.stringify('0.1.1'),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     alias: {
       '@': baseDir + 'src',

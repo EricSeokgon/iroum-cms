@@ -105,21 +105,21 @@ public class CommentServiceImpl implements CommentService {
         List<CommentSummary> roots = new ArrayList<>();
         for (BbsComment c : flat) {
             if (c.getParentCommentId() == null) {
-                List<BbsComment> replies = replyMap.getOrDefault(c.getId(), Collections.emptyList());
-                List<CommentSummary> replySummaries = replies.stream()
+                List<BbsComment> childComments = replyMap.getOrDefault(c.getId(), Collections.emptyList());
+                List<CommentSummary> childSummaries = childComments.stream()
                         .map(r -> toSummary(r, Collections.emptyList()))
                         .collect(Collectors.toList());
-                roots.add(toSummary(c, replySummaries));
+                roots.add(toSummary(c, childSummaries));
             }
         }
         return roots;
     }
 
-    private CommentSummary toSummary(BbsComment c, List<CommentSummary> replies) {
+    private CommentSummary toSummary(BbsComment c, List<CommentSummary> children) {
         return new CommentSummary(
                 c.getId(), c.getPostId(), c.getParentCommentId(),
-                c.getAuthorId(), null, c.getAnonymousName(),
-                c.getContent(), c.getStatus(), replies,
+                c.getAuthorId(), c.getAuthorUsername(), c.getAnonymousName(),
+                c.getContent(), c.getStatus(), children,
                 c.getCreatedAt(), c.getUpdatedAt()
         );
     }
