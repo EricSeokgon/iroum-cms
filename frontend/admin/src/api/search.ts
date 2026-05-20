@@ -1,10 +1,11 @@
 // 통합 검색 API 래퍼 — SPEC-CMS-010
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] searchApi — SearchView, SynonymManagementView 등에서 공통 호출
 // @MX:REASON: fan_in >= 3: 검색 뷰, 동의어 관리 뷰, 인기 검색어 위젯에서 참조
+// @MX:NOTE: [AUTO] apiClient 사용 — Authorization 헤더 자동 주입 (raw axios 사용 시 401 발생)
 
-const BASE = '/api/v1/search'
+const BASE = '/search'
 
 // ── 공통 페이지 응답 ──────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -38,20 +39,13 @@ export interface DocResult {
   createdAt: string
 }
 
-export interface SearchFacets {
-  byDomain: Record<string, number>
-}
-
 export interface SearchResponse {
+  searchLogId: number | null
   totalElements: number
   totalPages: number
-  page: number
-  size: number
   expandedQuery: string | null
-  responseMs: number
-  facets: SearchFacets
+  byDomainFacets: Record<string, number>
   content: DocResult[]
-  searchLogId?: number
 }
 
 export interface SearchParams {
@@ -79,13 +73,7 @@ export interface AutocompleteResponse {
 export interface PopularQuery {
   rank: number
   query: string
-  searchCount: number
-}
-
-export interface PopularResponse {
-  period: string
-  periodDate: string
-  items: PopularQuery[]
+  count: number
 }
 
 // ── 동의어 ────────────────────────────────────────────────────────────────────
@@ -129,7 +117,7 @@ export interface SearchStatsResponse {
 
 /** GET /api/v1/search — 통합 검색 */
 export function searchUnified(params: SearchParams): Promise<{ data: SearchResponse }> {
-  return axios.get(BASE, { params })
+  return apiClient.get(BASE, { params })
 }
 
 /** GET /api/v1/search/autocomplete — 자동완성 */
@@ -138,18 +126,18 @@ export function autocomplete(
   limit = 10,
   locale = 'ko',
 ): Promise<{ data: AutocompleteResponse }> {
-  return axios.get(`${BASE}/autocomplete`, {
+  return apiClient.get(`${BASE}/autocomplete`, {
     params: { prefix, limit, locale },
   })
 }
 
-/** GET /api/v1/search/popular — 인기 검색어 */
+/** GET /api/v1/search/popular — 인기 검색어 (배열 직접 반환) */
 export function getPopularQueries(
   period: 'DAILY' | 'WEEKLY' | 'MONTHLY' = 'DAILY',
   locale = 'ko',
   limit = 10,
-): Promise<{ data: PopularResponse }> {
-  return axios.get(`${BASE}/popular`, {
+): Promise<{ data: PopularQuery[] }> {
+  return apiClient.get(`${BASE}/popular`, {
     params: { period, locale, limit },
   })
 }
@@ -161,7 +149,7 @@ export function trackClick(
   docId: number,
   rank: number,
 ): Promise<void> {
-  return axios
+  return apiClient
     .post(`${BASE}/click`, { searchLogId, docType, docId, rank })
     .then(() => undefined)
 }
@@ -172,14 +160,14 @@ export function listSynonyms(
   page = 1,
   size = 20,
 ): Promise<{ data: PageResponse<SynonymItem> }> {
-  return axios.get(`${BASE}/synonyms`, {
+  return apiClient.get(`${BASE}/synonyms`, {
     params: { locale, page, size },
   })
 }
 
 /** POST /api/v1/search/synonyms — 동의어 등록 (ADMIN) */
 export function createSynonym(data: SynonymCreate): Promise<{ data: SynonymItem }> {
-  return axios.post(`${BASE}/synonyms`, data)
+  return apiClient.post(`${BASE}/synonyms`, data)
 }
 
 /** PUT /api/v1/search/synonyms/{id} — 동의어 수정 (ADMIN) */
@@ -187,12 +175,12 @@ export function updateSynonym(
   id: number,
   data: SynonymCreate,
 ): Promise<{ data: SynonymItem }> {
-  return axios.put(`${BASE}/synonyms/${id}`, data)
+  return apiClient.put(`${BASE}/synonyms/${id}`, data)
 }
 
 /** DELETE /api/v1/search/synonyms/{id} — 동의어 삭제 (soft delete, ADMIN) */
 export function deleteSynonym(id: number): Promise<void> {
-  return axios.delete(`${BASE}/synonyms/${id}`).then(() => undefined)
+  return apiClient.delete(`${BASE}/synonyms/${id}`).then(() => undefined)
 }
 
 /** GET /api/v1/search/stats/queries — 검색 통계 (ADMIN) */
@@ -201,7 +189,7 @@ export function getSearchStats(
   to: string,
   limit = 10,
 ): Promise<{ data: SearchStatsResponse }> {
-  return axios.get(`${BASE}/stats/queries`, {
+  return apiClient.get(`${BASE}/stats/queries`, {
     params: { from, to, limit },
   })
 }

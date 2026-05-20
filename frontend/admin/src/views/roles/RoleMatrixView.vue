@@ -2,7 +2,7 @@
   <div class="role-matrix-page flex gap-4 h-full" data-testid="role-matrix">
     <!-- ── 좌측: 역할 목록 (30%) ──────────────────────────────────────────────── -->
     <section
-      class="w-80 flex-shrink-0 rounded-lg border border-gray-200 bg-white shadow-sm"
+      class="min-w-64 w-80 max-w-xs flex-shrink-0 rounded-lg border border-gray-200 bg-white shadow-sm overflow-x-auto"
       :aria-label="t('roles.list')"
     >
       <!-- 헤더 -->
@@ -23,18 +23,18 @@
         {{ t('common.loading') }}
       </div>
 
-      <!-- 역할 테이블 -->
+      <!-- 역할 테이블 (border 필수 — resizable 핸들 표시 조건) -->
       <el-table
         v-else
         :data="roles"
         size="small"
         highlight-current-row
-        class="border-none"
+        border
         :aria-label="t('roles.list')"
         @current-change="handleRoleSelect"
       >
         <!-- 역할 코드 + 시스템 뱃지 -->
-        <el-table-column :label="t('roles.field.code')" min-width="130">
+        <el-table-column :label="t('roles.field.code')" min-width="120" resizable>
           <template #default="{ row }: { row: RoleSummary }">
             <div class="flex items-center gap-1.5">
               <span class="font-mono text-xs">{{ row.code }}</span>
@@ -56,7 +56,7 @@
         </el-table-column>
 
         <!-- 이름 -->
-        <el-table-column :label="t('roles.field.name')" min-width="80">
+        <el-table-column :label="t('roles.field.name')" min-width="80" resizable>
           <template #default="{ row }: { row: RoleSummary }">
             <span class="text-xs">{{ row.name }}</span>
           </template>
@@ -70,7 +70,7 @@
         </el-table-column>
 
         <!-- 액션 -->
-        <el-table-column :label="t('users.col.actions')" width="70" align="center">
+        <el-table-column :label="t('users.col.actions')" width="100" align="center">
           <template #default="{ row }: { row: RoleSummary }">
             <div class="flex gap-1 justify-center">
               <el-button

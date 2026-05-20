@@ -1,5 +1,5 @@
 // 미디어 라이브러리 API 래퍼 — SPEC-CMS-MEDIA-001
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 import type {
   MediaAssetSummary,
   MediaAssetDetail,
@@ -14,7 +14,7 @@ import type {
 // @MX:ANCHOR: [AUTO] mediaApi — MediaLibraryView, MediaDetailView, MediaUploadDialog, MediaCollectionView에서 참조
 // @MX:REASON: fan_in >= 3: 미디어 관련 뷰 컴포넌트 및 테스트에서 공통 호출
 
-const BASE = '/api/v1/media'
+const BASE = '/media'
 
 export interface MediaListParams {
   type?: MediaType | ''
@@ -29,14 +29,14 @@ export const mediaApi = {
 
   /** GET /api/v1/media */
   list(params?: MediaListParams): Promise<{ data: PageResponse<MediaAssetSummary> }> {
-    return axios.get(BASE, { params })
+    return apiClient.get(BASE, { params })
   },
 
   // ── 상세 조회 ──────────────────────────────────────────────────────────────
 
   /** GET /api/v1/media/{uuid} */
   get(uuid: string): Promise<{ data: MediaAssetDetail }> {
-    return axios.get(`${BASE}/${uuid}`)
+    return apiClient.get(`${BASE}/${uuid}`)
   },
 
   // ── 업로드 ─────────────────────────────────────────────────────────────────
@@ -56,7 +56,7 @@ export const mediaApi = {
     if (meta.licenseType) fd.append('licenseType', meta.licenseType)
     if (meta.tags?.length) fd.append('tags', meta.tags.join(','))
 
-    return axios.post(BASE, fd, {
+    return apiClient.post(`${BASE}/upload`, fd, {
       onUploadProgress: (event) => {
         if (onProgress && event.total) {
           onProgress(Math.round((event.loaded * 100) / event.total))
@@ -69,35 +69,35 @@ export const mediaApi = {
 
   /** PUT /api/v1/media/{uuid} */
   update(uuid: string, req: MediaUpdateRequest): Promise<{ data: MediaAssetDetail }> {
-    return axios.put(`${BASE}/${uuid}`, req)
+    return apiClient.put(`${BASE}/${uuid}`, req)
   },
 
   // ── 삭제 ───────────────────────────────────────────────────────────────────
 
   /** DELETE /api/v1/media/{uuid} */
   delete(uuid: string): Promise<void> {
-    return axios.delete(`${BASE}/${uuid}`)
+    return apiClient.delete(`${BASE}/${uuid}`)
   },
 
   // ── 서명 URL ───────────────────────────────────────────────────────────────
 
   /** GET /api/v1/media/{uuid}/url */
   signedUrl(uuid: string): Promise<{ data: MediaSignedUrl }> {
-    return axios.get(`${BASE}/${uuid}/url`)
+    return apiClient.get(`${BASE}/${uuid}/url`)
   },
 
   // ── 사용처 조회 ────────────────────────────────────────────────────────────
 
   /** GET /api/v1/media/{uuid}/usage */
   usage(uuid: string): Promise<{ data: MediaUsageEntry[] }> {
-    return axios.get(`${BASE}/${uuid}/usage`)
+    return apiClient.get(`${BASE}/${uuid}/usage`)
   },
 
   // ── 컬렉션 ─────────────────────────────────────────────────────────────────
 
   /** GET /api/v1/media/collections */
   listCollections(): Promise<{ data: MediaCollectionSummary[] }> {
-    return axios.get(`${BASE}/collections`)
+    return apiClient.get(`${BASE}/collections`)
   },
 
   /** POST /api/v1/media/collections */
@@ -106,6 +106,6 @@ export const mediaApi = {
     description?: string,
     itemUuids?: string[],
   ): Promise<{ data: MediaCollectionSummary }> {
-    return axios.post(`${BASE}/collections`, { name, description, itemUuids })
+    return apiClient.post(`${BASE}/collections`, { name, description, itemUuids })
   },
 }

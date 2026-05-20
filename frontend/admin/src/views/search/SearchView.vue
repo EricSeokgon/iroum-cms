@@ -86,9 +86,16 @@
           @click="onPopularClick(p.query)"
         >
           {{ p.rank }}. {{ p.query }}
-          <span class="ml-1 text-xs text-gray-500">({{ p.searchCount }})</span>
+          <span class="ml-1 text-xs text-gray-500">({{ p.count }})</span>
         </el-tag>
       </div>
+    </div>
+
+    <!-- 초기 안내 (검색어 없고 인기 검색어도 없을 때) -->
+    <div v-if="!hasQueried && popularQueries.length === 0" class="mt-12 flex flex-col items-center text-gray-400">
+      <el-icon :size="64" class="mb-4"><i-ep-search /></el-icon>
+      <p class="text-base">{{ t('search.placeholder') }}</p>
+      <p class="mt-2 text-sm">게시판, 콘텐츠, 정책사업, 안전사고, 미디어, 발간자료를 한번에 검색합니다.</p>
     </div>
 
     <!-- 로딩 중 -->
@@ -99,9 +106,6 @@
       <!-- 결과 헤더 -->
       <div class="mb-4 text-sm text-gray-600">
         {{ t('search.totalResults', { total: totalElements }) }}
-        <span v-if="responseMs >= 0" class="ml-2 text-gray-400">
-          ({{ responseMs }}ms)
-        </span>
         <span v-if="expandedQuery" class="ml-2 text-blue-600">
           {{ t('search.expandedQuery') }}: {{ expandedQuery }}
         </span>
@@ -133,7 +137,7 @@
               class="mb-1 text-base font-semibold text-blue-600 hover:underline"
               v-html="renderHighlight(item.highlight || item.title)"
             ></h3>
-            <p class="line-clamp-2 text-sm text-gray-600">{{ item.snippet }}</p>
+            <p class="line-clamp-2 text-sm text-gray-600" v-html="renderHighlight(item.snippet || '')"></p>
             <p v-if="item.url" class="mt-1 text-xs text-gray-400">{{ item.url }}</p>
           </a>
         </li>
@@ -173,7 +177,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   searchUnified,
@@ -202,10 +206,9 @@ const loading = ref(false)
 const hasQueried = ref(false)
 const results = ref<DocResult[]>([])
 const totalElements = ref(0)
-const responseMs = ref(-1)
 const expandedQuery = ref<string | null>(null)
 const facets = ref<Record<string, number>>({})
-const searchLogId = ref<number | undefined>(undefined)
+const currentSearchLogId = ref<number | null>(null)
 
 const popularQueries = ref<PopularQuery[]>([])
 const liveAnnouncement = ref('')
@@ -287,10 +290,9 @@ async function executeSearch(resetPage = false): Promise<void> {
     })
     results.value = res.data.content
     totalElements.value = res.data.totalElements
-    responseMs.value = res.data.responseMs
     expandedQuery.value = res.data.expandedQuery
-    facets.value = res.data.facets?.byDomain ?? {}
-    searchLogId.value = res.data.searchLogId
+    facets.value = res.data.byDomainFacets ?? {}
+    currentSearchLogId.value = res.data.searchLogId ?? null
 
     liveAnnouncement.value = t('search.totalResults', { total: res.data.totalElements })
 
@@ -331,24 +333,29 @@ function onPopularClick(q: string): void {
   executeSearch(true)
 }
 
-// ── 결과 클릭 — fire-and-forget 추적 + 라우팅 ─────────────────────────────────
-function onResultClick(event: MouseEvent, item: DocResult, idx: number): void {
-  // 클릭 추적은 비동기 fire-and-forget
-  if (searchLogId.value && searchLogId.value > 0) {
-    trackClick(searchLogId.value, item.docType, item.docId, item.rank ?? idx + 1).catch(() => {
-      // 추적 실패는 사용자 흐름을 막지 않음
-      console.warn(t('search.clickResult'))
-    })
+// ── docType → 어드민 라우트 변환 ──────────────────────────────────────────────
+function resolveAdminRoute(item: DocResult): RouteLocationRaw | null {
+  const id = item.docId
+  switch (item.docType) {
+    case 'board':       return { name: 'board-post-detail', params: { id } }
+    case 'publication': return { name: 'board-publication-detail', params: { id } }
+    case 'content':     return { name: 'content-page-edit', params: { id } }
+    case 'policy':      return { name: 'policy-program-detail', params: { id } }
+    case 'safety':      return { name: 'safety-incident-detail', params: { id } }
+    case 'media':       return { name: 'media-detail', params: { uuid: String(id) } }
+    default:            return null
   }
+}
 
-  // URL이 외부 절대경로가 아니면 SPA 라우팅으로 처리
-  if (item.url && item.url.startsWith('/')) {
-    event.preventDefault()
-    router.push(item.url)
+// ── 결과 클릭 — 라우팅 ────────────────────────────────────────────────────────
+function onResultClick(event: MouseEvent, item: DocResult, _idx: number): void {
+  event.preventDefault()
+  if (currentSearchLogId.value != null) {
+    trackClick(currentSearchLogId.value, item.docType, item.docId, item.rank).catch(() => {})
   }
-  // 빈 URL은 기본 동작 차단
-  if (!item.url) {
-    event.preventDefault()
+  const route = resolveAdminRoute(item)
+  if (route) {
+    router.push(route)
   }
 }
 
@@ -382,7 +389,7 @@ function syncUrlParams(): void {
 async function loadPopular(): Promise<void> {
   try {
     const res = await getPopularQueries('DAILY', locale.value, 10)
-    popularQueries.value = res.data.items
+    popularQueries.value = Array.isArray(res.data) ? res.data : []
   } catch {
     // 인기 검색어 로드 실패는 무시
   }
