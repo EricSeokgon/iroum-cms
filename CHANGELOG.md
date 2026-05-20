@@ -11,6 +11,27 @@
 
 ---
 
+## [1.6.0] - 2026-05-20
+
+### Added
+
+- **Python FastAPI ML 추론 서비스** (`ml-service/`, 30개 파일, SPEC-CMS-ML-SERVICE-001)
+  - 런타임: Python 3.11, FastAPI, Pydantic v2, sentence-transformers
+  - 7개 엔드포인트 구현 (OpenAPI 계약 `docs/ai-ml-service-openapi.yaml` 준수):
+    - `POST /ml/v1/growth-stage` — SEED/STARTUP/GROWTH/EXPANSION/MATURITY 성장단계 예측
+    - `POST /ml/v1/risk-score` — GREEN/YELLOW/RED 위험 등급 분류
+    - `POST /ml/v1/simulation` — 매출·직원수 결정적 규칙 기반 프로젝션
+    - `POST /ml/v1/policy-match` — top-K 정책 시맨틱 매칭 (코사인 유사도)
+    - `POST /ml/v1/embed` — 384차원 문장 임베딩 (paraphrase-multilingual-MiniLM-L12-v2, SHA-256 해시 폴백)
+    - `POST /ml/v1/rag` — 환각 가드 포함 RAG 답변 생성 (빈 컨텍스트 → 고정 메시지)
+    - `GET /ml/v1/health` — 로드된 모델 목록 포함 헬스 체크
+  - 보안: 모든 Pydantic 스키마 `extra="forbid"` (PII 가드), 내부 Docker 네트워크 전용 (외부 포트 미노출), IP/session_ref SHA-256 해시 처리, 기업 프로필 5개 필드만 허용 (`ksic_code`/`employee_count`/`growth_stage`/`region_code`/`annual_revenue`)
+  - Docker: `python:3.11-slim` 이미지, 빌드 시 sentence-transformers 모델 사전 다운로드
+  - `deploy/docker-compose.prod.yml`: ml-service 내부 네트워크 추가, `ML_SERVICE_URL` 환경변수 주입
+  - 테스트: 34/34 pytest 통과 (embed, growth_stage, health, policy_match, rag, risk_score, simulation)
+
+---
+
 ## [1.5.0] - 2026-05-18
 
 ### Changed
@@ -877,7 +898,8 @@
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
 
-[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.2.0...v1.3.0
