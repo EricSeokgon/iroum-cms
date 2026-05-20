@@ -24,4 +24,99 @@
         )
     </insert>
 
+    <!-- 공통 ResultMap -->
+    <resultMap id="auditLogResultMap" type="kr.co.ircp.cms.domain.audit.entity.AuditLog">
+        <id     property="id"            column="id"/>
+        <result property="eventTime"     column="event_time"/>
+        <result property="actorId"       column="actor_id"/>
+        <result property="actorRole"     column="actor_role"/>
+        <result property="action"        column="action"/>
+        <result property="entityType"    column="entity_type"/>
+        <result property="entityId"      column="entity_id"/>
+        <result property="beforeValue"   column="before_value"/>
+        <result property="afterValue"    column="after_value"/>
+        <result property="ipAddress"     column="ip_address"/>
+        <result property="userAgent"     column="user_agent"/>
+        <result property="traceId"       column="trace_id"/>
+        <result property="severity"      column="severity"/>
+        <result property="result"        column="result"/>
+        <result property="failureReason" column="failure_reason"/>
+        <result property="durationMs"    column="duration_ms"/>
+    </resultMap>
+
+    <!-- 공통 SELECT 컬럼 (JSONB → text 변환) -->
+    <sql id="selectColumns">
+        id, event_time, actor_id, actor_role, action,
+        entity_type, entity_id,
+        CAST(before_value AS text) AS before_value,
+        CAST(after_value  AS text) AS after_value,
+        ip_address, user_agent, trace_id,
+        severity, result, failure_reason, duration_ms
+    </sql>
+
+    <!-- 동적 WHERE 절 -->
+    <sql id="whereClause">
+        <where>
+            <if test="action != null and action != ''">
+                AND action = #{action}
+            </if>
+            <if test="entityType != null and entityType != ''">
+                AND entity_type = #{entityType}
+            </if>
+            <if test="severity != null and severity != ''">
+                AND severity = #{severity}
+            </if>
+            <if test="actorId != null">
+                AND actor_id = #{actorId}
+            </if>
+            <if test="fromTime != null and fromTime != ''">
+                AND event_time >= #{fromTime}::timestamptz
+            </if>
+            <if test="toTime != null and toTime != ''">
+                AND event_time &lt;= #{toTime}::timestamptz
+            </if>
+        </where>
+    </sql>
+
+    <select id="findById" resultMap="auditLogResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM audit_log
+        WHERE id = #{id}
+    </select>
+
+    <select id="search" resultMap="auditLogResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM audit_log
+        <include refid="whereClause"/>
+        ORDER BY event_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*)
+        FROM audit_log
+        <include refid="whereClause"/>
+    </select>
+
+    <select id="findCritical" resultMap="auditLogResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM audit_log
+        WHERE severity = 'CRITICAL'
+        ORDER BY event_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countLast24h" resultType="long">
+        SELECT COUNT(*)
+        FROM audit_log
+        WHERE event_time >= NOW() - INTERVAL '24 hours'
+    </select>
+
+    <select id="countCriticalLast24h" resultType="long">
+        SELECT COUNT(*)
+        FROM audit_log
+        WHERE event_time >= NOW() - INTERVAL '24 hours'
+          AND severity = 'CRITICAL'
+    </select>
+
 </mapper>

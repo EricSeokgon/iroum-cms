@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.system.stats.service;
 
+import kr.co.ircp.cms.domain.audit.repository.AuditLogMapper;
 import kr.co.ircp.cms.domain.system.stats.dto.DashboardKpiResponse;
 import kr.co.ircp.cms.domain.system.stats.entity.AccessStatDaily;
 import kr.co.ircp.cms.domain.system.stats.mapper.AccessStatDailyMapper;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 public class DashboardServiceImpl implements DashboardService {
 
     private final AccessStatDailyMapper dailyMapper;
+    private final AuditLogMapper auditLogMapper;
 
     // @MX:ANCHOR: [AUTO] getKpi — 대시보드 KPI 조회 진입점 (컨트롤러에서 fan_in >= 3)
     // @MX:REASON: DashboardController, StatsController, HealthController에서 참조
@@ -49,20 +51,21 @@ public class DashboardServiceImpl implements DashboardService {
         int errorCount = last24h.getErrorCount() != null ? last24h.getErrorCount() : 0;
         int totalForRate = last24h.getTotalVisits() != null && last24h.getTotalVisits() > 0
                 ? last24h.getTotalVisits() : 1;
-        double errorRate = (double) errorCount / totalForRate * 100.0;
+        // 비율(0~1)로 반환 — 프론트엔드에서 * 100 포맷팅
+        double errorRate = (double) errorCount / totalForRate;
 
         return DashboardKpiResponse.builder()
                 .todayVisits(totalVisits)
                 .todayUnique(today.getUniqueVisitors() != null ? today.getUniqueVisitors() : 0)
                 .todayPageViews(today.getPageViews() != null ? today.getPageViews() : 0)
                 .todaySignups(0)
-                .errorRate24h(Math.round(errorRate * 100.0) / 100.0)
+                .errorRate24h(Math.round(errorRate * 10000.0) / 10000.0)
                 .avgResponseMs24h(last24h.getAvgResponseMs() != null
                         ? last24h.getAvgResponseMs().longValue() : 0L)
                 .lockedAccounts(0L)
-                .auditLog24hCount(0L)
-                .auditLogCritical24hCount(0L)
-                .healthStatus("UP")
+                .auditLog24hCount(auditLogMapper.countLast24h())
+                .auditLogCritical24hCount(auditLogMapper.countCriticalLast24h())
+                .healthStatus("HEALTHY")
                 .build();
     }
 

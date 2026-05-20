@@ -213,6 +213,19 @@
         "views": "조회수",
         "avgResponse": "평균응답",
         "errorRate": "오류율"
+      },
+      "section": {
+        "system": "시스템 현황",
+        "cms": "콘텐츠 현황"
+      },
+      "cms": {
+        "users": "총 사용자",
+        "media": "미디어 파일",
+        "boards": "게시판 수",
+        "qnaPending": "QnA 미답변",
+        "surveys": "설문조사",
+        "faqs": "FAQ",
+        "pendingQnaTitle": "미답변 Q&A"
       }
     },
     "accessLog": {
@@ -424,7 +437,36 @@
     "systemStatus": "시스템 상태",
     "recentActivity": "최근 활동",
     "comingSoon": "다음 사이클에서 제공 예정",
-    "statusError": "오류"
+    "statusError": "오류",
+    "lastUpdated": "마지막 갱신",
+    "kpiError": "KPI 데이터를 불러오지 못했습니다. 잠시 후 새로고침 해주세요.",
+    "section": {
+      "today": "오늘 현황",
+      "system": "시스템 상태"
+    },
+    "todayVisits": "오늘 방문수",
+    "todayUnique": "오늘 순방문자",
+    "uniqueVisitors": "중복 제외 방문자 수",
+    "todayPageViews": "오늘 페이지뷰",
+    "todaySignups": "오늘 신규 가입",
+    "newMembers": "신규 회원 수",
+    "overallHealth": "전체 시스템 상태",
+    "errorRate24h": "24h 오류율",
+    "last24h": "최근 24시간 기준",
+    "avgResponseMs": "평균 응답시간",
+    "lockedAccounts": "잠긴 계정",
+    "requiresAttention": "관리자 확인 필요",
+    "auditSummary": "24h 감사 로그 현황",
+    "auditTotal24h": "전체 감사 로그",
+    "auditCritical24h": "위험 등급 로그",
+    "quickLinks": "빠른 메뉴",
+    "noChange": "전일 대비 변동 없음",
+    "vsPrevDay": "전일 대비",
+    "health": {
+      "healthy": "정상",
+      "degraded": "성능 저하",
+      "down": "서비스 중단"
+    }
   },
   "account": {
     "title": "내 정보",
@@ -483,6 +525,7 @@
     "startDate": "시작일",
     "endDate": "종료일",
     "required": "필수 항목입니다",
+    "maxLength": "최대 {max}자까지 입력 가능합니다",
     "saveSuccess": "저장되었습니다",
     "saveError": "저장에 실패했습니다",
     "deleteSuccess": "삭제되었습니다",
@@ -495,6 +538,9 @@
     "optional": "선택 사항",
     "empty": "데이터가 없습니다",
     "createdAt": "등록일",
+    "viewAll": "전체 보기",
+    "view": "보기",
+    "action": "액션",
     "error": {
       "network": "서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.",
       "unknown": "알 수 없는 오류가 발생했습니다"
@@ -968,6 +1014,9 @@
       "placeholder": "댓글을 입력하세요",
       "replyPlaceholder": "답글을 입력하세요",
       "writeNew": "새 댓글 작성",
+      "submit": "등록",
+      "reply": "답글",
+      "cancelReply": "답글 취소",
       "delete": "삭제",
       "empty": "댓글이 없습니다",
       "editNotImplemented": "댓글 수정은 준비 중입니다",
@@ -977,11 +1026,13 @@
       "error": {
         "loadFailed": "댓글을 불러오지 못했습니다",
         "saveFailed": "댓글 등록 중 오류가 발생했습니다",
-        "deleteFailed": "댓글 삭제 중 오류가 발생했습니다"
+        "deleteFailed": "댓글 삭제 중 오류가 발생했습니다",
+        "updateFailed": "댓글 수정 중 오류가 발생했습니다"
       },
       "success": {
         "created": "댓글이 등록되었습니다",
-        "deleted": "댓글이 삭제되었습니다"
+        "deleted": "댓글이 삭제되었습니다",
+        "updated": "댓글이 수정되었습니다"
       }
     }
   },
@@ -1568,7 +1619,9 @@
       "questionText": "질문",
       "questionType": "질문 유형",
       "required": "필수 여부",
-      "options": "선택지 (JSON)",
+      "options": "선택지",
+      "optionLabel": "선택지 입력",
+      "addOption": "선택지 추가",
       "distribution": "응답 분포",
       "totalResponses": "전체 응답수",
       "totalAnswers": "응답 수"
@@ -1642,7 +1695,9 @@
     "deleteConfirm": "이 동의어를 삭제하시겠습니까?",
     "saved": "저장되었습니다",
     "deleted": "삭제되었습니다",
-    "empty": "등록된 동의어가 없습니다"
+    "empty": "등록된 동의어가 없습니다",
+    "errorDuplicate": "이미 등록된 동의어입니다",
+    "errorSelfRef": "검색어와 동의어가 같을 수 없습니다"
   },
   "searchAnalytics": {
     "title": "검색 통계",

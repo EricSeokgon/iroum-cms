@@ -14,9 +14,11 @@
     </resultMap>
 
     <resultMap id="TopPageRM" type="kr.co.ircp.cms.domain.system.stats.dto.TopPageResponse">
-        <result property="pageUrl" column="page_url"/>
-        <result property="count"   column="visit_count"/>
-        <result property="rank"    column="rank"/>
+        <result property="pageUrl"       column="page_url"/>
+        <result property="views"         column="visit_count"/>
+        <result property="avgResponseMs" column="avg_response_ms"/>
+        <result property="errorRate"     column="error_rate"/>
+        <result property="rank"          column="rank"/>
     </resultMap>
 
     <!-- 전월 daily → monthly UPSERT -->
@@ -53,11 +55,16 @@
         WHERE stat_month = #{statMonth} AND site_id = #{siteId}
     </select>
 
-    <!-- Top Pages: access_log 직접 집계 -->
+    <!-- Top Pages: access_log 직접 집계 (views, avg_response_ms, error_rate 포함) -->
     <select id="findTopPages" resultMap="TopPageRM">
         SELECT
             page_url,
             COUNT(*) AS visit_count,
+            COALESCE(AVG(response_time_ms)::bigint, 0) AS avg_response_ms,
+            ROUND(
+                COUNT(*) FILTER (WHERE status_code >= 500)::numeric / COUNT(*),
+                4
+            ) AS error_rate,
             ROW_NUMBER() OVER (ORDER BY COUNT(*) DESC) AS rank
         FROM access_log
         WHERE site_id = #{siteId}
