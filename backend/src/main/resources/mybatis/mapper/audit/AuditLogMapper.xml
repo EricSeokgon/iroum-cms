@@ -109,6 +109,20 @@
         LIMIT #{limit}
     </select>
 
+    <!--
+        CSV 내보내기용 커서 스트리밍 조회.
+        fetchSize=1000: JDBC 드라이버에 청크 크기 힌트 (PostgreSQL은 setAutoCommit(false) 또는
+        ResultSet.TYPE_FORWARD_ONLY + CONCUR_READ_ONLY 조합일 때 서버 측 커서로 동작).
+        resultSetType=FORWARD_ONLY: 후방 스크롤 불필요 → 드라이버 메모리 최적화.
+        ResultHandler 파라미터는 자동 결합되며, 결과는 행 단위 콜백으로 전달된다.
+    -->
+    <select id="searchForExport" resultMap="auditLogResultMap" fetchSize="1000" resultSetType="FORWARD_ONLY">
+        SELECT <include refid="selectColumns"/>
+        FROM audit_log
+        <include refid="whereClause"/>
+        ORDER BY event_time ASC
+    </select>
+
     <select id="countLast24h" resultType="long">
         SELECT COUNT(*)
         FROM audit_log
