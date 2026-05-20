@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-ML-SERVICE-001
 version: v0.1
-status: Approved
+status: Tested
 created: 2026-05-19
-updated: 2026-05-19
+updated: 2026-05-20
 author: manager-spec (MoAI)
 priority: P1 (옵션 트랙)
 issue_number: 0
@@ -29,7 +29,7 @@ issue_number: 0
 | 제목 | Python FastAPI ML 추론 서비스 — 7개 엔드포인트 실서비스 구현 |
 | 작성일 | 2026-05-19 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Approved |
+| 상태 | Tested |
 | 버전 | v0.1 |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
@@ -250,3 +250,4 @@ Python FastAPI ML 서비스 (:8000, 내부망 전용 — 본 SPEC 신설)
 ## HISTORY
 
 - 2026-05-19 v0.1 (Draft → Approved): SPEC 신규 작성. `docs/ai-ml-service-openapi.yaml` 계약·`MlServiceClientImpl`·`MockMlServiceClient`·`application.yml` ml.service/resilience4j 설정을 권위 소스로 분석. 7개 엔드포인트 EARS 요구사항(REQ-MLS-001~043), 인수조건 요약, 기술접근, 구현메모 확정. 어노테이션 완료로 상태 Approved 전환. (작성자: manager-spec / MoAI)
+- 2026-05-20 v0.1 (Approved → Tested): 보안 감사 완료 (SPEC-CMS-SECURITY-PII-FOLLOWUP-002). PII 화이트리스트(ksic_code/employee_count/growth_stage/region_code/annual_revenue) 준수 확인, IP 해시 저장·session_ref 해시 처리·관리자 API ROLE=ADMIN 제한 등 보안 요구사항 검증. 상태 Tested 전환. (작성자: MoAI)
