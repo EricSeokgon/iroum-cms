@@ -11,6 +11,21 @@
 
 ---
 
+## [1.6.1] - 2026-05-20
+
+### Added
+
+- **감사 로그 CSV 스트리밍 내보내기** (`AuditLogController.export()`, SPEC-CMS-SECURITY-PII-FOLLOWUP-002)
+  - `GET /api/v1/audit-logs/export` — ADMIN/SUPER_ADMIN 또는 `SYSTEM:AUDIT` 권한 필요 (401/403 반환)
+  - 7개 필터 파라미터: `action`, `entity_type`, `severity`, `result`, `actorId`, `fromTime`, `toTime`
+  - MyBatis `ResultHandler<AuditLog>` 커서 스트리밍 (`fetchSize=1000`, `FORWARD_ONLY`) — OOM 없이 대용량 처리
+  - Spring MVC `StreamingResponseBody` 비동기 청크 전송
+  - RFC 4180 CSV 이스케이핑 (콤마·큰따옴표·개행 포함 필드 처리)
+  - `Content-Disposition: attachment; filename="audit-logs-{ISO_LOCAL_DATE}.csv"`
+  - 통합 테스트 `AuditLogExportIT` 추가 (401/403/200 인증·인가 검증)
+
+---
+
 ## [1.6.0] - 2026-05-20
 
 ### Added
@@ -898,7 +913,8 @@
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
 
-[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.3.0...v1.4.0
