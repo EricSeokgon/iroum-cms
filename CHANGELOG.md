@@ -11,6 +11,32 @@
 
 ---
 
+## [1.6.2] - 2026-05-20
+
+### Fixed
+
+- **접속로그 검색 결과 없음 버그** (`AccessLogSearchRequest.java`)
+  - Java record `offset()` 커스텀 메서드가 MyBatis `#{req.offset}` 바인딩 실패 → LIMIT/OFFSET 0으로 전체 데이터 미조회
+  - `getOffset()` 표준 빈 프로퍼티 추가로 MyBatis `RecordWrapper` 정상 해석 (커밋 b9c2059)
+
+- **공개 홈 공지사항 오류 버그** (`SecurityConfig.java`, `noticeApi.ts`)
+  - `SecurityConfig` `permitAll` 경로가 `/api/v1/boards/**` (복수형)로 잘못 설정 → 실제 경로 `/api/v1/board/**` (단수형)와 불일치, 익명 GET 401 반환
+  - `noticeApi.ts` 호출 경로 `/boards/code/NOTICE`, `/boards/{id}/posts` → 실제 백엔드 경로 `/board/masters/code/{code}`, `/board/posts?bbsId={id}`로 수정 (커밋 b9c2059)
+
+### Security
+
+- **SurveyRespondView XSS 방어 강화** (`SurveyRespondView.vue`) — S1
+  - `v-html="survey.descriptionHtml"` 원시 HTML 바인딩 → `useSafeHtml` 컴포저블의 DOMPurify `sanitize()` 래핑으로 교체 (커밋 e169930)
+
+- **BannerController 권한 우회 차단** (`BannerController.java`) — S3
+  - `GET /api/v1/banners?siteId=*` 요청 시 `CONTENT:READ` 권한 없는 인증 사용자도 전체 배너 목록 접근 가능 → `principal.permissions()` 프로그래밍적 검사 후 `AccessDeniedException` 추가 (커밋 e169930)
+
+- **PostController 쓰기 API 권한 어노테이션 추가** (`PostController.java`) — W2
+  - `POST/PUT/DELETE /api/v1/board/posts/**` 메서드에 `@PreAuthorize` 미적용 → `anyRequest().authenticated()` 만으로 방어, CONTENT:WRITE 검증 누락
+  - `hasAuthority('CONTENT:WRITE') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')` 어노테이션 추가 (커밋 e169930)
+
+---
+
 ## [1.6.1] - 2026-05-20
 
 ### Added
