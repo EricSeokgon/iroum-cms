@@ -7,6 +7,7 @@ import kr.co.ircp.cms.domain.content.banner.service.BannerService;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -45,8 +46,11 @@ public class BannerController {
             @RequestParam(required = false) String group,
             @AuthenticationPrincipal JwtPrincipal principal
     ) {
-        // 관리자 요청: siteId 파라미터 있고 인증된 경우
-        if (siteId != null && principal != null) {
+        // 관리자 요청: siteId 파라미터가 있으면 CONTENT:READ 권한 필수 (REQ-CONTENT-009-D-2)
+        if (siteId != null) {
+            if (principal == null || !principal.permissions().contains("CONTENT:READ")) {
+                throw new AccessDeniedException("CONTENT:READ 권한이 필요합니다.");
+            }
             return bannerService.listBanners(siteId, groupCode);
         }
         // 공개 요청: group 파라미터로 활성 배너 조회

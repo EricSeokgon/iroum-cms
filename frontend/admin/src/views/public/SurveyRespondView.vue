@@ -36,7 +36,7 @@
           <div
             v-if="survey.descriptionHtml"
             class="mt-3 text-sm text-gray-600 prose prose-sm max-w-none"
-            v-html="survey.descriptionHtml"
+            v-html="sanitize(survey.descriptionHtml)"
           />
           <div class="mt-4 flex flex-wrap gap-4 text-xs text-gray-400">
             <span>기간: {{ formatDate(survey.startAt) }} ~ {{ formatDate(survey.endAt) }}</span>
@@ -142,6 +142,9 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getSurvey, submitSurveyResponse } from '@/api/survey'
 import type { SurveyDetail, SurveyAnswerRequest } from '@/api/survey'
+import { useSafeHtml } from '@/composables/useSafeHtml'
+
+const { sanitize } = useSafeHtml()
 
 const route = useRoute()
 const surveyId = Number(route.params.id)
