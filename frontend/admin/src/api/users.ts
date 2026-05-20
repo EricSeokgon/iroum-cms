@@ -66,4 +66,9 @@ export const usersApi = {
   forceLogout(id: number) {
     return apiClient.post<void>(`/users/${id}/force-logout`)
   },
+
+  /** 비밀번호 강제 초기화 — POST /api/v1/users/{id}/reset-password */
+  resetPassword(id: number, newPassword: string) {
+    return apiClient.post<void>(`/users/${id}/reset-password`, { newPassword })
+  },
 }

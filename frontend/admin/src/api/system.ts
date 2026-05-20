@@ -1,10 +1,10 @@
 // 시스템 관리 API 래퍼 — SPEC-CMS-005 Bundle D
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] systemApi — SystemDashboardView, AccessLogView, CodeManagerView, SystemSettingView, MaintenanceManagerView, AuditLogView에서 참조
 // @MX:REASON: fan_in >= 3: Bundle D 6개 뷰 + stores/system.ts에서 공통 호출
 
-const BASE = '/api/v1/system'
+const BASE = '/system'
 
 // ── 공통 페이지 응답 ──────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -56,26 +56,35 @@ export interface VisitorStatsResponse {
 }
 
 // ── 접속 로그 ──────────────────────────────────────────────────────────────────
+// 백엔드 AccessLogResponse record는 @JsonNaming 없음 → camelCase 직렬화
 export interface AccessLogResponse {
   id: number
-  created_at: string
-  page_url: string
-  status: number
-  response_time_ms: number
-  user_agent: string
+  createdAt: string
+  pageUrl: string
+  statusCode: number
+  responseTimeMs: number
+  userAgent: string
   referrer?: string
-  ip_hash: string
-  user_id?: number
+  ipHash: string
+  userId?: number
+  siteId?: number
 }
 
 export interface AccessLogFilter {
   from?: string
   to?: string
-  status?: number
-  ip_hash?: string
-  user_id?: number
-  page?: number
+  statusCode?: number   // 백엔드 파라미터 이름: statusCode
+  pageUrl?: string
+  page?: number         // 백엔드는 0-based
   size?: number
+}
+
+// 백엔드 접속 로그 응답 형식: { items, total, page, size }
+export interface AccessLogPageResponse {
+  items: AccessLogResponse[]
+  total: number
+  page: number
+  size: number
 }
 
 // ── 공통 코드 ──────────────────────────────────────────────────────────────────
@@ -173,15 +182,23 @@ export interface AuditLogResponse {
 }
 
 export interface AuditLogFilter {
-  from?: string
-  to?: string
+  fromTime?: string   // 백엔드 파라미터 이름: fromTime
+  toTime?: string     // 백엔드 파라미터 이름: toTime
   actor_id?: number
   entity_type?: string
   action?: AuditAction
   severity?: AuditSeverity
   result?: AuditResult
-  page?: number
+  page?: number       // 백엔드는 1-based
   size?: number
+}
+
+// 백엔드 감사 로그 응답 형식: { items, total, page, size }
+export interface AuditLogPageResponse {
+  items: AuditLogResponse[]
+  total: number
+  page: number
+  size: number
 }
 
 // ── API 함수 ──────────────────────────────────────────────────────────────────
@@ -190,33 +207,52 @@ export interface AuditLogFilter {
 export const dashboard = {
   kpi(params?: { noCache?: boolean }) {
     const headers = params?.noCache ? { 'X-No-Cache': 'true' } : {}
-    return axios.get<DashboardKpiResponse>(`${BASE}/dashboard/kpi`, { headers })
+    return apiClient.get<DashboardKpiResponse>(`${BASE}/dashboard/kpi`, { headers })
   },
   trends(days: 7 | 30 | 90 = 30) {
-    return axios.get<TrendItemResponse[]>(`${BASE}/dashboard/trends`, { params: { days } })
+    return apiClient.get<TrendItemResponse[]>(`${BASE}/dashboard/trends`, { params: { days } })
   },
   topPages(period: '7d' | '30d' = '7d') {
-    return axios.get<TopPageResponse[]>(`${BASE}/dashboard/top-pages`, { params: { period } })
+    return apiClient.get<TopPageResponse[]>(`${BASE}/dashboard/top-pages`, { params: { period } })
   },
+}
+
+export interface MenuPageStatsResponse {
+  page_url: string
+  visit_count: number
+  unique_visitors: number
+  avg_response_ms: number
+  error_rate: number
+}
+
+export interface MenuPageStatsPageResponse {
+  items: MenuPageStatsResponse[]
+  total: number
+  page: number
+  size: number
 }
 
 /** 방문 통계 */
 export const stats = {
   visitors(params: { period: 'DAILY' | 'MONTHLY'; from: string; to: string }) {
-    return axios.get<VisitorStatsResponse[]>(`${BASE}/stats/visitors`, { params })
+    return apiClient.get<VisitorStatsResponse[]>(`${BASE}/stats/visitors`, { params })
+  },
+  menuPages(params: { from: string; to: string; page?: number; size?: number }) {
+    return apiClient.get<MenuPageStatsPageResponse>(`${BASE}/stats/menu-pages`, { params })
   },
   recompute(params: { from: string; to: string }) {
-    return axios.post(`${BASE}/stats/recompute`, params)
+    return apiClient.post(`${BASE}/stats/recompute`, params)
   },
 }
 
 /** 접속 로그 */
 export const accessLogs = {
   list(params: AccessLogFilter) {
-    return axios.get<PageResponse<AccessLogResponse>>(`${BASE}/access-logs`, { params })
+    // 백엔드: { items, total, page, size } 형식 반환
+    return apiClient.get<AccessLogPageResponse>(`${BASE}/access-logs`, { params })
   },
   exportCsv(params: Omit<AccessLogFilter, 'page' | 'size'>) {
-    return axios.get(`${BASE}/access-logs/export`, {
+    return apiClient.get(`${BASE}/access-logs/export`, {
       params,
       responseType: 'blob',
     })
@@ -226,89 +262,90 @@ export const accessLogs = {
 /** 공통 코드 그룹 */
 export const codeGroups = {
   list() {
-    return axios.get<CodeGroupResponse[]>(`${BASE}/codes/groups`)
+    return apiClient.get<CodeGroupResponse[]>(`${BASE}/codes/groups`)
   },
   create(req: CodeGroupRequest) {
-    return axios.post<CodeGroupResponse>(`${BASE}/codes/groups`, req)
+    return apiClient.post<CodeGroupResponse>(`${BASE}/codes/groups`, req)
   },
   update(code: string, req: Partial<CodeGroupRequest>) {
-    return axios.put<CodeGroupResponse>(`${BASE}/codes/groups/${code}`, req)
+    return apiClient.put<CodeGroupResponse>(`${BASE}/codes/groups/${code}`, req)
   },
   delete(code: string) {
-    return axios.delete(`${BASE}/codes/groups/${code}`)
+    return apiClient.delete(`${BASE}/codes/groups/${code}`)
   },
 }
 
 /** 공통 코드 */
 export const codes = {
   list(groupCode: string) {
-    return axios.get<CodeResponse[]>(`${BASE}/codes`, { params: { group_code: groupCode } })
+    return apiClient.get<CodeResponse[]>(`${BASE}/codes`, { params: { group_code: groupCode } })
   },
   bulk(groupCodes: string[]) {
-    return axios.get<Record<string, CodeResponse[]>>(`${BASE}/codes/bulk`, {
+    return apiClient.get<Record<string, CodeResponse[]>>(`${BASE}/codes/bulk`, {
       params: { groups: groupCodes.join(',') },
     })
   },
   create(req: CodeRequest) {
-    return axios.post<CodeResponse>(`${BASE}/codes`, req)
+    return apiClient.post<CodeResponse>(`${BASE}/codes`, req)
   },
   update(id: number, req: Partial<CodeRequest>) {
-    return axios.put<CodeResponse>(`${BASE}/codes/${id}`, req)
+    return apiClient.put<CodeResponse>(`${BASE}/codes/${id}`, req)
   },
   delete(id: number) {
-    return axios.delete(`${BASE}/codes/${id}`)
+    return apiClient.delete(`${BASE}/codes/${id}`)
   },
 }
 
 /** 시스템 설정 */
 export const settings = {
   list(category?: string) {
-    return axios.get<SystemSettingResponse[]>(`${BASE}/settings`, {
+    return apiClient.get<SystemSettingResponse[]>(`${BASE}/settings`, {
       params: category ? { category } : undefined,
     })
   },
   get(key: string) {
-    return axios.get<SystemSettingResponse>(`${BASE}/settings/${key}`)
+    return apiClient.get<SystemSettingResponse>(`${BASE}/settings/${key}`)
   },
   update(key: string, value: string, valueType: SystemSettingResponse['value_type']) {
-    return axios.put<SystemSettingResponse>(`${BASE}/settings/${key}`, { value, value_type: valueType })
+    return apiClient.put<SystemSettingResponse>(`${BASE}/settings/${key}`, { value, value_type: valueType })
   },
 }
 
 /** 점검 모드 */
 export const maintenance = {
   list() {
-    return axios.get<MaintenanceResponse[]>(`${BASE}/maintenance`)
+    return apiClient.get<MaintenanceResponse[]>(`${BASE}/maintenance`)
   },
   create(req: MaintenanceRequest) {
-    return axios.post<MaintenanceResponse>(`${BASE}/maintenance`, req)
+    return apiClient.post<MaintenanceResponse>(`${BASE}/maintenance`, req)
   },
   update(id: number, req: Partial<MaintenanceRequest>) {
-    return axios.put<MaintenanceResponse>(`${BASE}/maintenance/${id}`, req)
+    return apiClient.put<MaintenanceResponse>(`${BASE}/maintenance/${id}`, req)
   },
   activate(id: number) {
-    return axios.post(`${BASE}/maintenance/${id}/activate`)
+    return apiClient.post(`${BASE}/maintenance/${id}/activate`)
   },
   cancel(id: number) {
-    return axios.post(`${BASE}/maintenance/${id}/cancel`)
+    return apiClient.post(`${BASE}/maintenance/${id}/cancel`)
   },
 }
 
 /** 통합 감사 로그 */
 export const auditLogs = {
   search(params: AuditLogFilter) {
-    return axios.get<PageResponse<AuditLogResponse>>(`${BASE}/audit-logs`, { params })
+    // 백엔드: { items, total, page, size } 형식 반환
+    return apiClient.get<AuditLogPageResponse>(`${BASE}/audit-logs`, { params })
   },
   detail(id: number) {
-    return axios.get<AuditLogResponse>(`${BASE}/audit-logs/${id}`)
+    return apiClient.get<AuditLogResponse>(`${BASE}/audit-logs/${id}`)
   },
   exportCsv(params: Omit<AuditLogFilter, 'page' | 'size'>) {
-    return axios.get(`${BASE}/audit-logs/export`, {
+    return apiClient.get(`${BASE}/audit-logs/export`, {
       params,
       responseType: 'blob',
     })
   },
   critical() {
-    return axios.get<AuditLogResponse[]>(`${BASE}/audit-logs/critical`)
+    return apiClient.get<AuditLogResponse[]>(`${BASE}/audit-logs/critical`)
   },
 }

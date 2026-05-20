@@ -2,7 +2,7 @@
   <!-- 공통 코드 관리 — SPEC-CMS-005 Bundle D REQ-SYS-003-D -->
   <div class="flex gap-4">
     <!-- 좌측: 그룹 목록 -->
-    <el-card class="w-80 shrink-0" shadow="never">
+    <el-card class="w-[520px] shrink-0" shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
           <span class="font-medium">{{ t('system.code.group.title') }}</span>
@@ -20,8 +20,8 @@
         v-loading="groupLoading"
         @current-change="onGroupSelect"
       >
-        <el-table-column prop="code" :label="t('system.code.group.col.code')" width="90" />
-        <el-table-column prop="name" :label="t('system.code.group.col.name')" />
+        <el-table-column prop="code" :label="t('system.code.group.col.code')" width="110" />
+        <el-table-column prop="name" :label="t('system.code.group.col.name')" min-width="150" />
         <el-table-column :label="t('system.code.group.col.status')" width="80" align="center">
           <template #default="scope">
             <el-tag v-if="scope?.row" :type="scope.row.status === 'ACTIVE' ? 'success' : 'info'" size="small">

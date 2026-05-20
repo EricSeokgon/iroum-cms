@@ -36,14 +36,17 @@
     </select>
 
     <select id="findById" resultMap="bbsCommentResultMap">
-        SELECT * FROM bbs_comment WHERE id = #{id} AND status != 'DELETED'
+        SELECT c.*, u.username AS author_username
+          FROM bbs_comment c
+          LEFT JOIN users u ON u.id = c.author_id
+         WHERE c.id = #{id} AND c.status != 'DELETED'
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO bbs_comment (post_id, parent_comment_id, author_id,
             anonymous_name, anonymous_pwd_hash, content, ip_address, status)
         VALUES (#{postId}, #{parentCommentId}, #{authorId},
-            #{anonymousName}, #{anonymousPwdHash}, #{content}, #{ipAddress}, #{status})
+            #{anonymousName}, #{anonymousPwdHash}, #{content}, #{ipAddress, jdbcType=OTHER}, #{status})
     </insert>
 
     <update id="update">

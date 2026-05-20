@@ -309,6 +309,13 @@ public class MediaServiceImpl implements MediaService {
     // ─── 컬렉션 (REQ-MEDIA-005-D) ────────────────────────────────────────────
 
     @Override
+    public List<MediaCollectionSummary> listCollections(long ownerId) {
+        return collectionMapper.findByOwner(ownerId, 0, 200).stream()
+                .map(MediaCollectionSummary::from)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public MediaCollectionSummary createCollection(MediaCollectionCreateRequest req, long ownerId) {
         MediaCollection collection = MediaCollection.builder()

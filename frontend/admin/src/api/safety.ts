@@ -1,10 +1,10 @@
 // 안전관리 API 래퍼 — SPEC-CMS-006
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] safetyApi — IncidentListView, IncidentDetailView, SafetyProfileView, MatchResultView, GuidelineReportView, TemplateManageView에서 참조
 // @MX:REASON: fan_in >= 3: SPEC-CMS-006 6개 뷰 + safetyStore에서 공통 호출
 
-const BASE = '/api/v1/safety'
+const BASE = '/safety'
 
 // ── 공통 페이지 응답 ──────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -226,121 +226,121 @@ export const safetyApi = {
   // 사고사례
   incidents: {
     list(params: IncidentFilter): Promise<{ data: PageResponse<IncidentSummary> }> {
-      return axios.get(`${BASE}/incidents`, { params })
+      return apiClient.get(`${BASE}/incidents`, { params })
     },
     get(id: number): Promise<{ data: IncidentDetail }> {
-      return axios.get(`${BASE}/incidents/${id}`)
+      return apiClient.get(`${BASE}/incidents/${id}`)
     },
     create(req: IncidentCreateRequest): Promise<{ data: IncidentDetail }> {
-      return axios.post(`${BASE}/incidents`, req)
+      return apiClient.post(`${BASE}/incidents`, req)
     },
     update(id: number, req: Partial<IncidentCreateRequest>): Promise<{ data: IncidentDetail }> {
-      return axios.put(`${BASE}/incidents/${id}`, req)
+      return apiClient.put(`${BASE}/incidents/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/incidents/${id}`)
+      return apiClient.delete(`${BASE}/incidents/${id}`)
     },
     sync(): Promise<{ data: { triggered_at: string; job_id?: string } }> {
-      return axios.post(`${BASE}/incidents/sync`)
+      return apiClient.post(`${BASE}/incidents/sync`)
     },
   },
 
   // 키워드
   keywords: {
     list(): Promise<{ data: KeywordResponse[] }> {
-      return axios.get(`${BASE}/keywords`)
+      return apiClient.get(`${BASE}/keywords`)
     },
     create(req: KeywordRequest): Promise<{ data: KeywordResponse }> {
-      return axios.post(`${BASE}/keywords`, req)
+      return apiClient.post(`${BASE}/keywords`, req)
     },
     update(id: number, req: Partial<KeywordRequest>): Promise<{ data: KeywordResponse }> {
-      return axios.put(`${BASE}/keywords/${id}`, req)
+      return apiClient.put(`${BASE}/keywords/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/keywords/${id}`)
+      return apiClient.delete(`${BASE}/keywords/${id}`)
     },
   },
 
   // 안전 프로필
   profile: {
     me(): Promise<{ data: SafetyProfileResponse }> {
-      return axios.get(`${BASE}/profile/me`)
+      return apiClient.get(`${BASE}/profile/me`)
     },
     upsert(req: SafetyProfileUpsertRequest): Promise<{ data: SafetyProfileResponse }> {
-      return axios.put(`${BASE}/profile/me`, req)
+      return apiClient.put(`${BASE}/profile/me`, req)
     },
   },
 
   // 매칭
   matching: {
     run(): Promise<{ data: MatchResultResponse }> {
-      return axios.post(`${BASE}/match/run`)
+      return apiClient.post(`${BASE}/match/run`)
     },
     cached(): Promise<{ data: MatchResultResponse }> {
-      return axios.get(`${BASE}/match/cached`)
+      return apiClient.get(`${BASE}/match/cached`)
     },
   },
 
   // 가이드라인 보고서
   reports: {
     create(req: ReportCreateRequest): Promise<{ data: ReportDetail }> {
-      return axios.post(`${BASE}/reports`, req)
+      return apiClient.post(`${BASE}/reports`, req)
     },
     get(uuid: string): Promise<{ data: ReportDetail }> {
-      return axios.get(`${BASE}/reports/${uuid}`)
+      return apiClient.get(`${BASE}/reports/${uuid}`)
     },
     pdf(uuid: string): Promise<{ data: Blob }> {
-      return axios.get(`${BASE}/reports/${uuid}/pdf`, { responseType: 'blob' })
+      return apiClient.get(`${BASE}/reports/${uuid}/pdf`, { responseType: 'blob' })
     },
     listMine(params?: { page?: number; size?: number }): Promise<{ data: PageResponse<ReportSummary> }> {
-      return axios.get(`${BASE}/reports/me`, { params })
+      return apiClient.get(`${BASE}/reports/me`, { params })
     },
     listAll(params?: { page?: number; size?: number; user_id?: number }): Promise<{ data: PageResponse<ReportSummary> }> {
-      return axios.get(`${BASE}/reports`, { params })
+      return apiClient.get(`${BASE}/reports`, { params })
     },
   },
 
   // 체크리스트
   checklist: {
     list(reportUuid: string): Promise<{ data: ChecklistItemResult[] }> {
-      return axios.get(`${BASE}/reports/${reportUuid}/checklist`)
+      return apiClient.get(`${BASE}/reports/${reportUuid}/checklist`)
     },
     update(reportUuid: string, itemId: number, req: ChecklistUpdateRequest): Promise<{ data: ChecklistItemResult }> {
-      return axios.put(`${BASE}/reports/${reportUuid}/checklist/${itemId}`, req)
+      return apiClient.put(`${BASE}/reports/${reportUuid}/checklist/${itemId}`, req)
     },
     stats(reportUuid: string): Promise<{ data: ChecklistStats }> {
-      return axios.get(`${BASE}/reports/${reportUuid}/checklist/stats`)
+      return apiClient.get(`${BASE}/reports/${reportUuid}/checklist/stats`)
     },
   },
 
   // 템플릿
   templates: {
     list(): Promise<{ data: TemplateSummary[] }> {
-      return axios.get(`${BASE}/templates`)
+      return apiClient.get(`${BASE}/templates`)
     },
     get(id: number): Promise<{ data: TemplateDetail }> {
-      return axios.get(`${BASE}/templates/${id}`)
+      return apiClient.get(`${BASE}/templates/${id}`)
     },
     create(req: TemplateRequest): Promise<{ data: TemplateDetail }> {
-      return axios.post(`${BASE}/templates`, req)
+      return apiClient.post(`${BASE}/templates`, req)
     },
     update(id: number, req: Partial<TemplateRequest>): Promise<{ data: TemplateDetail }> {
-      return axios.put(`${BASE}/templates/${id}`, req)
+      return apiClient.put(`${BASE}/templates/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/templates/${id}`)
+      return apiClient.delete(`${BASE}/templates/${id}`)
     },
     preview(id: number): Promise<{ data: { html: string } }> {
-      return axios.get(`${BASE}/templates/${id}/preview`)
+      return apiClient.get(`${BASE}/templates/${id}/preview`)
     },
     checklist(templateId: number): Promise<{ data: TemplateChecklistItem[] }> {
-      return axios.get(`${BASE}/templates/${templateId}/checklist`)
+      return apiClient.get(`${BASE}/templates/${templateId}/checklist`)
     },
     addChecklistItem(templateId: number, req: TemplateChecklistItem): Promise<{ data: TemplateChecklistItem }> {
-      return axios.post(`${BASE}/templates/${templateId}/checklist`, req)
+      return apiClient.post(`${BASE}/templates/${templateId}/checklist`, req)
     },
     deleteChecklistItem(templateId: number, itemId: number): Promise<void> {
-      return axios.delete(`${BASE}/templates/${templateId}/checklist/${itemId}`)
+      return apiClient.delete(`${BASE}/templates/${templateId}/checklist/${itemId}`)
     },
   },
 }

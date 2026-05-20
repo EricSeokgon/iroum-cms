@@ -1,6 +1,6 @@
 // RAG 질의응답 품질 모니터링 API 래퍼 — SPEC-CMS-AI-003
 // 모든 응답은 ApiResponse 래퍼 없는 평문 ResponseEntity<T> (프로젝트 컨벤션)
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 export interface RagMetricsQuery {
   from?: string
@@ -22,10 +22,10 @@ export interface RagMetricsDto {
   timeSeries: RagTimeSeriesPoint[]
 }
 
-const BASE = '/api/v1/admin/ai/rag'
+const BASE = '/admin/ai/rag'
 
 export const ragMetricsApi = {
   getMetrics(params: RagMetricsQuery): Promise<{ data: RagMetricsDto }> {
-    return axios.get(`${BASE}/metrics`, { params })
+    return apiClient.get(`${BASE}/metrics`, { params })
   },
 }

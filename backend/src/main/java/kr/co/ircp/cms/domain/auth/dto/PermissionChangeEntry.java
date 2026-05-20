@@ -19,7 +19,7 @@ import java.time.Instant;
  * @param reason           변경 사유
  */
 public record PermissionChangeEntry(
-        long id,
+        Long id,
         Long targetUserId,
         String targetUsername,
         String changeType,

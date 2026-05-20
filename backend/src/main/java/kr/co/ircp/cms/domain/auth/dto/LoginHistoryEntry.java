@@ -20,7 +20,7 @@ import java.time.Instant;
 // @MX:ANCHOR: [AUTO] LoginHistoryEntry — LoginHistoryController, MyLoginHistoryController, LoginHistoryService 응답 계약
 // @MX:REASON: fan_in >= 3: LoginHistoryController, MyLoginHistoryController, LoginHistoryService, 프론트엔드 LoginHistoryEntry 타입 대응
 public record LoginHistoryEntry(
-        long id,
+        Long id,
         Long userId,
         String username,
         String ipAddress,

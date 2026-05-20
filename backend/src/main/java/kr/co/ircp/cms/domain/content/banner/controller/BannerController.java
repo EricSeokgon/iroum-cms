@@ -4,9 +4,11 @@ import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.content.banner.dto.BannerRequest;
 import kr.co.ircp.cms.domain.content.banner.dto.BannerResponse;
 import kr.co.ircp.cms.domain.content.banner.service.BannerService;
+import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,12 +33,35 @@ public class BannerController {
     private final BannerService bannerService;
 
     /**
-     * 그룹별 활성 배너 조회 (PUBLIC).
+     * 배너 목록 조회.
+     * - siteId만 있으면: 관리자용 전체 목록 (CONTENT:READ 권한 필요)
+     * - group만 있으면: 공개 활성 배너 조회 (인증 불필요)
      * REQ-CONTENT-009-D-2
      */
     @GetMapping
-    public List<BannerResponse> getActiveBanners(@RequestParam String group) {
-        return bannerService.getActiveBannersByGroup(group);
+    public List<BannerResponse> getBanners(
+            @RequestParam(required = false) Long siteId,
+            @RequestParam(required = false) String groupCode,
+            @RequestParam(required = false) String group,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        // 관리자 요청: siteId 파라미터 있고 인증된 경우
+        if (siteId != null && principal != null) {
+            return bannerService.listBanners(siteId, groupCode);
+        }
+        // 공개 요청: group 파라미터로 활성 배너 조회
+        String targetGroup = (group != null && !group.isBlank()) ? group
+                : (groupCode != null && !groupCode.isBlank()) ? groupCode : "";
+        return bannerService.getActiveBannersByGroup(targetGroup);
+    }
+
+    /**
+     * 사이트별 배너 그룹 코드 목록 조회 (관리자용).
+     */
+    @GetMapping("/groups")
+    @PreAuthorize("hasAuthority('CONTENT:READ')")
+    public List<String> listGroups(@RequestParam(required = false) Long siteId) {
+        return bannerService.listGroups(siteId);
     }
 
     /**

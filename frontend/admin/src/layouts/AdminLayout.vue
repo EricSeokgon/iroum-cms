@@ -30,7 +30,7 @@
         class="border-none"
         :aria-label="t('nav.mainMenu')"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item index="/system/dashboard">
           <el-icon><i-ep-home-filled /></el-icon>
           <span>{{ t('nav.dashboard') }}</span>
         </el-menu-item>
@@ -184,9 +184,6 @@
             <el-icon><i-ep-setting /></el-icon>
             <span>{{ t('nav.system') }}</span>
           </template>
-          <el-menu-item index="/system/dashboard">
-            <span>{{ t('nav.systemDashboard') }}</span>
-          </el-menu-item>
           <el-menu-item index="/system/access-logs">
             <span>{{ t('nav.systemAccessLogs') }}</span>
           </el-menu-item>
@@ -201,6 +198,9 @@
           </el-menu-item>
           <el-menu-item index="/system/audit-logs">
             <span>{{ t('nav.systemAuditLogs') }}</span>
+          </el-menu-item>
+          <el-menu-item index="/system/menu-stats">
+            <span>메뉴별 방문 통계</span>
           </el-menu-item>
           <!-- 동의어 관리 (SPEC-CMS-010) — ADMIN 전용 -->
           <el-menu-item
@@ -258,20 +258,25 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 구분선 -->
-        <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
-
-        <!-- 로그아웃 -->
-        <el-menu-item
-          index=""
-          @click.prevent="handleLogout"
-          :aria-label="t('nav.logout')"
-          data-testid="btn-logout"
-        >
-          <el-icon><i-ep-switch-button /></el-icon>
-          <span>{{ t('nav.logout') }}</span>
-        </el-menu-item>
       </el-menu>
+
+      <!-- 구분선 + 로그아웃 (el-menu 라우터 이동 충돌 방지를 위해 메뉴 외부 배치) -->
+      <div class="mx-4 my-2 border-t border-gray-700" role="separator" />
+      <button
+        class="flex w-full cursor-pointer items-center gap-2 px-5 py-3 text-sm text-gray-300 hover:bg-gray-700 hover:text-white"
+        :aria-label="t('nav.logout')"
+        data-testid="btn-logout"
+        :disabled="loggingOut"
+        @click="handleLogout"
+      >
+        <el-icon><i-ep-switch-button /></el-icon>
+        <span>{{ t('nav.logout') }}</span>
+      </button>
+
+      <!-- 빌드 버전 표시 -->
+      <div class="px-4 py-2 text-center text-xs text-gray-500 border-t border-gray-700">
+        v{{ appVersion }} · {{ buildDate }}
+      </div>
     </el-aside>
 
     <!-- 오른쪽 메인 영역 -->
@@ -351,6 +356,17 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
+
+declare const __APP_VERSION__: string
+declare const __BUILD_TIME__: string
+
+const appVersion = __APP_VERSION__
+const buildDate = new Date(__BUILD_TIME__).toLocaleDateString('ko-KR', {
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})
 
 // 권한 기반 메뉴 노출 헬퍼
 function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string): boolean {

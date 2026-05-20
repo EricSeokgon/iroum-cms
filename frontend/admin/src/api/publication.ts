@@ -1,10 +1,10 @@
 // 발간자료 API 래퍼 — SPEC-CMS-003
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] publicationApi — PublicationListView/DetailView 등에서 공통 참조
 // @MX:REASON: fan_in >= 3: 목록/상세/카테고리/생성/수정/삭제/ZIP 다운로드 다수 콜사이트
 
-const BASE = '/api/v1/publications'
+const BASE = '/publications'
 
 // ── 공통 페이지 응답 ─────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -88,37 +88,37 @@ export interface PublicationListParams {
 export function listPublications(
   params: PublicationListParams,
 ): Promise<{ data: PageResponse<PublicationSummary> }> {
-  return axios.get(BASE, { params })
+  return apiClient.get(BASE, { params })
 }
 
 export function getPublication(id: number): Promise<{ data: PublicationDetail }> {
-  return axios.get(`${BASE}/${id}`)
+  return apiClient.get(`${BASE}/${id}`)
 }
 
 export function getCategories(): Promise<{ data: PublicationCategoryDto[] }> {
-  return axios.get(`${BASE}/categories`)
+  return apiClient.get(`${BASE}/categories`)
 }
 
 export function createPublication(
   req: PublicationCreateRequest,
 ): Promise<{ data: PublicationDetail }> {
-  return axios.post(BASE, req)
+  return apiClient.post(BASE, req)
 }
 
 export function updatePublication(
   id: number,
   req: PublicationUpdateRequest,
 ): Promise<{ data: PublicationDetail }> {
-  return axios.put(`${BASE}/${id}`, req)
+  return apiClient.put(`${BASE}/${id}`, req)
 }
 
 export function deletePublication(id: number): Promise<void> {
-  return axios.delete(`${BASE}/${id}`)
+  return apiClient.delete(`${BASE}/${id}`)
 }
 
 export function requestZipDownload(
   postId: number,
   req: ZipDownloadRequest,
 ): Promise<{ data: ZipDownloadResponse }> {
-  return axios.post(`${BASE}/${postId}/download-zip`, req)
+  return apiClient.post(`${BASE}/${postId}/download-zip`, req)
 }

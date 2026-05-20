@@ -83,9 +83,8 @@ export const useAuthStore = defineStore('auth', () => {
       // 네트워크 오류여도 로컬 상태는 반드시 초기화
     }
     _clearState()
-    // router import는 순환 참조 방지를 위해 동적으로
-    const { default: router } = await import('@/router')
-    router.push('/login')
+    // window.location 으로 이동 — 순환 참조 없이 완전 초기화 보장
+    window.location.href = '/login'
   }
 
   /**

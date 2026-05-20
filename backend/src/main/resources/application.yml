@@ -15,6 +15,12 @@ spring:
     contentnegotiation:
       favor-parameter: false
 
+  # 파일 업로드 크기 제한 — Spring 기본값(1MB)을 미디어 서비스 최대값과 맞춤
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 210MB
+
   # MyBatis는 JPA를 사용하지 않으므로 open-in-view 경고 억제
   jpa:
     open-in-view: false
@@ -82,6 +88,26 @@ mybatis:
 # iroum CMS JWT 설정 (SPEC-CMS-002 REQ-AUTH-001/002)
 # SPEC-CMS-SECURITY-JWT — 시크릿 기본값 제거: 환경변수 미설정 시 부팅 실패
 iroum:
+  # 미디어 라이브러리 설정 (REQ-MEDIA-001 ~ REQ-MEDIA-005)
+  media:
+    base-path: ${MEDIA_STORAGE_PATH:/tmp/iroum-cms/media}
+    signed-url-secret: ${MEDIA_SIGNED_URL_SECRET:CHANGE_ME_IN_PRODUCTION}
+    signed-url-ttl: PT15M
+    max-size-mb: 200
+    allowed-mime-types:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp
+      - image/svg+xml
+      - video/mp4
+      - video/webm
+      - video/quicktime
+      - audio/mpeg
+      - audio/ogg
+      - audio/wav
+      - application/pdf
+      - text/plain
   jwt:
     # JWT_SECRET 환경변수 필수 (최소 256비트). 미설정 시 application context 부팅 실패.
     secret: ${JWT_SECRET}

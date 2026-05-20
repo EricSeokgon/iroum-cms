@@ -1,10 +1,10 @@
 // 콘텐츠 관리 API 래퍼 — SPEC-CMS-004 Bundle C
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] contentApi — SiteView, MenuTreeView, TemplateManagerView, PageListView, PageEditorView 등에서 참조
 // @MX:REASON: fan_in >= 3: Bundle C 8개 뷰 컴포넌트 및 stores/content.ts에서 공통 호출
 
-const BASE = '/api/v1/content'
+const BASE = '/content'
 
 // ── 공통 페이지 응답 ──────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -297,81 +297,81 @@ export interface SeoRedirectRequest {
 export const sites = {
   /** GET /api/v1/content/sites/current */
   getCurrent(): Promise<{ data: SiteResponse }> {
-    return axios.get(`${BASE}/sites/current`)
+    return apiClient.get(`${BASE}/sites/current`)
   },
 
   /** PUT /api/v1/content/sites/{id} */
   update(id: number, req: SiteUpdateRequest): Promise<{ data: SiteResponse }> {
-    return axios.put(`${BASE}/sites/${id}`, req)
+    return apiClient.put(`${BASE}/sites/${id}`, req)
   },
 }
 
 export const menus = {
   /** GET /api/v1/content/menus/tree?siteId={}&context={} */
   tree(params: { siteId?: number; context?: 'ADMIN' | 'USER' }): Promise<{ data: MenuTreeNode[] }> {
-    return axios.get(`${BASE}/menus/tree`, { params })
+    return apiClient.get(`${BASE}/menus/tree`, { params })
   },
 
   /** GET /api/v1/content/menus/{id} */
   get(id: number): Promise<{ data: MenuTreeNode }> {
-    return axios.get(`${BASE}/menus/${id}`)
+    return apiClient.get(`${BASE}/menus/${id}`)
   },
 
   /** POST /api/v1/content/menus */
   create(req: MenuRequest): Promise<{ data: MenuTreeNode }> {
-    return axios.post(`${BASE}/menus`, req)
+    return apiClient.post(`${BASE}/menus`, req)
   },
 
   /** PUT /api/v1/content/menus/{id} */
   update(id: number, req: Partial<MenuRequest>): Promise<{ data: MenuTreeNode }> {
-    return axios.put(`${BASE}/menus/${id}`, req)
+    return apiClient.put(`${BASE}/menus/${id}`, req)
   },
 
   /** PATCH /api/v1/content/menus/{id}/order */
   changeOrder(id: number, sortOrder: number): Promise<{ data: MenuTreeNode }> {
-    return axios.patch(`${BASE}/menus/${id}/order`, { sortOrder })
+    return apiClient.patch(`${BASE}/menus/${id}/order`, { sortOrder })
   },
 
   /** PATCH /api/v1/content/menus/{id}/move */
   move(id: number, parentId: number | null): Promise<{ data: MenuTreeNode }> {
-    return axios.patch(`${BASE}/menus/${id}/move`, { parentId })
+    return apiClient.patch(`${BASE}/menus/${id}/move`, { parentId })
   },
 
   /** PATCH /api/v1/content/menus/{id}/visibility */
   toggleVisibility(id: number): Promise<{ data: MenuTreeNode }> {
-    return axios.patch(`${BASE}/menus/${id}/visibility`)
+    return apiClient.patch(`${BASE}/menus/${id}/visibility`)
   },
 
   /** DELETE /api/v1/content/menus/{id} */
   delete(id: number): Promise<void> {
-    return axios.delete(`${BASE}/menus/${id}`)
+    return apiClient.delete(`${BASE}/menus/${id}`)
   },
 
   /** POST /api/v1/content/menus/{id}/permissions */
   replacePermissions(id: number, codes: string[]): Promise<void> {
-    return axios.post(`${BASE}/menus/${id}/permissions`, { codes })
+    return apiClient.post(`${BASE}/menus/${id}/permissions`, { codes })
   },
 }
 
 export const templates = {
   /** GET /api/v1/content/templates */
   list(): Promise<{ data: TemplateResponse[] }> {
-    return axios.get(`${BASE}/templates`)
+    return apiClient.get(`${BASE}/templates`)
   },
 
   /** POST /api/v1/content/templates */
   create(req: TemplateRequest): Promise<{ data: TemplateResponse }> {
-    return axios.post(`${BASE}/templates`, req)
+    return apiClient.post(`${BASE}/templates`, req)
   },
 
   /** PUT /api/v1/content/templates/{id} */
   update(id: number, req: Partial<TemplateRequest>): Promise<{ data: TemplateResponse }> {
-    return axios.put(`${BASE}/templates/${id}`, req)
+    return apiClient.put(`${BASE}/templates/${id}`, req)
   },
 
   /** PATCH /api/v1/content/templates/{id}/status */
   changeStatus(id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<{ data: TemplateResponse }> {
-    return axios.patch(`${BASE}/templates/${id}/status`, { status })
+    return apiClient.patch(`${BASE}/templates/${id}/status`, { status })
   },
 }
 
@@ -384,143 +384,143 @@ export const pages = {
     size?: number
     search?: string
   }): Promise<{ data: PageResponse<PageItemResponse> }> {
-    return axios.get(`${BASE}/pages`, { params })
+    return apiClient.get(`${BASE}/pages`, { params })
   },
 
   /** GET /api/v1/content/pages/{id} */
   get(id: number): Promise<{ data: PageItemResponse }> {
-    return axios.get(`${BASE}/pages/${id}`)
+    return apiClient.get(`${BASE}/pages/${id}`)
   },
 
   /** GET /api/v1/content/pages/by-slug/{slug}?preview=&token= */
   bySlug(slug: string, params?: { preview?: boolean; token?: string }): Promise<{ data: PageItemResponse }> {
-    return axios.get(`${BASE}/pages/by-slug/${slug}`, { params })
+    return apiClient.get(`${BASE}/pages/by-slug/${slug}`, { params })
   },
 
   /** POST /api/v1/content/pages */
   create(req: PageCreateRequest): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages`, req)
+    return apiClient.post(`${BASE}/pages`, req)
   },
 
   /** PUT /api/v1/content/pages/{id} */
   update(id: number, req: PageUpdateRequest): Promise<{ data: PageItemResponse }> {
-    return axios.put(`${BASE}/pages/${id}`, req)
+    return apiClient.put(`${BASE}/pages/${id}`, req)
   },
 
   /** PATCH /api/v1/content/pages/{id}/seo */
   updateSeo(id: number, req: Partial<PageUpdateRequest>): Promise<{ data: PageItemResponse }> {
-    return axios.patch(`${BASE}/pages/${id}/seo`, req)
+    return apiClient.patch(`${BASE}/pages/${id}/seo`, req)
   },
 
   /** POST /api/v1/content/pages/{id}/publish */
   publish(id: number): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages/${id}/publish`)
+    return apiClient.post(`${BASE}/pages/${id}/publish`)
   },
 
   /** POST /api/v1/content/pages/{id}/schedule */
   schedule(id: number, scheduledAt: string): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages/${id}/schedule`, { scheduledAt })
+    return apiClient.post(`${BASE}/pages/${id}/schedule`, { scheduledAt })
   },
 
   /** POST /api/v1/content/pages/{id}/unschedule */
   cancelSchedule(id: number): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages/${id}/unschedule`)
+    return apiClient.post(`${BASE}/pages/${id}/unschedule`)
   },
 
   /** POST /api/v1/content/pages/{id}/retract */
   retract(id: number, reason?: string): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages/${id}/retract`, { reason })
+    return apiClient.post(`${BASE}/pages/${id}/retract`, { reason })
   },
 
   /** GET /api/v1/content/pages/{id}/history */
   history(id: number): Promise<{ data: PageHistoryResponse[] }> {
-    return axios.get(`${BASE}/pages/${id}/history`)
+    return apiClient.get(`${BASE}/pages/${id}/history`)
   },
 
   /** POST /api/v1/content/pages/{id}/rollback/{version} */
   rollback(id: number, version: number): Promise<{ data: PageItemResponse }> {
-    return axios.post(`${BASE}/pages/${id}/rollback/${version}`)
+    return apiClient.post(`${BASE}/pages/${id}/rollback/${version}`)
   },
 
   /** GET /api/v1/content/pages/{pageId}/blocks */
   listBlocks(pageId: number): Promise<{ data: ContentBlockResponse[] }> {
-    return axios.get(`${BASE}/pages/${pageId}/blocks`)
+    return apiClient.get(`${BASE}/pages/${pageId}/blocks`)
   },
 
   /** PATCH /api/v1/content/pages/{pageId}/blocks/order */
   reorderBlocks(pageId: number, items: BlockReorderItem[]): Promise<void> {
-    return axios.patch(`${BASE}/pages/${pageId}/blocks/order`, { items })
+    return apiClient.patch(`${BASE}/pages/${pageId}/blocks/order`, { items })
   },
 
   /** POST /api/v1/content/pages/{id}/preview-token */
   generatePreviewToken(id: number): Promise<{ data: { previewUrl: string; token: string } }> {
-    return axios.post(`${BASE}/pages/${id}/preview-token`)
+    return apiClient.post(`${BASE}/pages/${id}/preview-token`)
   },
 }
 
 export const blocks = {
   /** GET /api/v1/content/pages/{pageId}/blocks */
   list(pageId: number): Promise<{ data: ContentBlockResponse[] }> {
-    return axios.get(`${BASE}/pages/${pageId}/blocks`)
+    return apiClient.get(`${BASE}/pages/${pageId}/blocks`)
   },
 
   /** POST /api/v1/content/pages/{pageId}/blocks */
   create(pageId: number, req: ContentBlockRequest): Promise<{ data: ContentBlockResponse }> {
-    return axios.post(`${BASE}/pages/${pageId}/blocks`, req)
+    return apiClient.post(`${BASE}/pages/${pageId}/blocks`, req)
   },
 
   /** PUT /api/v1/content/blocks/{id} */
   update(id: number, req: Partial<ContentBlockRequest>): Promise<{ data: ContentBlockResponse }> {
-    return axios.put(`${BASE}/blocks/${id}`, req)
+    return apiClient.put(`${BASE}/blocks/${id}`, req)
   },
 
   /** DELETE /api/v1/content/blocks/{id} */
   delete(id: number): Promise<void> {
-    return axios.delete(`${BASE}/blocks/${id}`)
+    return apiClient.delete(`${BASE}/blocks/${id}`)
   },
 
   /** PATCH /api/v1/content/pages/{pageId}/blocks/order */
   reorder(pageId: number, items: BlockReorderItem[]): Promise<void> {
-    return axios.patch(`${BASE}/pages/${pageId}/blocks/order`, { items })
+    return apiClient.patch(`${BASE}/pages/${pageId}/blocks/order`, { items })
   },
 }
 
 export const popups = {
   /** GET /api/v1/content/popups/active?siteId= */
   active(siteId: number): Promise<{ data: PopupActiveResponse[] }> {
-    return axios.get(`${BASE}/popups/active`, { params: { siteId } })
+    return apiClient.get(`${BASE}/popups/active`, { params: { siteId } })
   },
 
   /** GET /api/v1/content/popups?siteId= */
   list(siteId?: number): Promise<{ data: PopupResponse[] }> {
-    return axios.get(`${BASE}/popups`, { params: siteId ? { siteId } : undefined })
+    return apiClient.get(`${BASE}/popups`, { params: siteId ? { siteId } : undefined })
   },
 
   /** POST /api/v1/content/popups */
   create(req: PopupRequest): Promise<{ data: PopupResponse }> {
-    return axios.post(`${BASE}/popups`, req)
+    return apiClient.post(`${BASE}/popups`, req)
   },
 
   /** PUT /api/v1/content/popups/{id} */
   update(id: number, req: Partial<PopupRequest>): Promise<{ data: PopupResponse }> {
-    return axios.put(`${BASE}/popups/${id}`, req)
+    return apiClient.put(`${BASE}/popups/${id}`, req)
   },
 
   /** PATCH /api/v1/content/popups/{id}/active */
   setActive(id: number, isActive: boolean): Promise<{ data: PopupResponse }> {
-    return axios.patch(`${BASE}/popups/${id}/active`, { isActive })
+    return apiClient.patch(`${BASE}/popups/${id}/active`, { isActive })
   },
 
   /** DELETE /api/v1/content/popups/{id} */
   delete(id: number): Promise<void> {
-    return axios.delete(`${BASE}/popups/${id}`)
+    return apiClient.delete(`${BASE}/popups/${id}`)
   },
 }
 
 export const banners = {
   /** GET /api/v1/content/banners/groups?siteId= */
   listGroups(siteId?: number): Promise<{ data: string[] }> {
-    return axios.get(`${BASE}/banners/groups`, { params: siteId ? { siteId } : undefined })
+    return apiClient.get(`${BASE}/banners/groups`, { params: siteId ? { siteId } : undefined })
   },
 
   /** GET /api/v1/content/banners?siteId=&groupCode= */
@@ -528,54 +528,60 @@ export const banners = {
     const params: Record<string, unknown> = {}
     if (siteId) params['siteId'] = siteId
     if (groupCode) params['groupCode'] = groupCode
-    return axios.get(`${BASE}/banners`, { params })
+    return apiClient.get(`${BASE}/banners`, { params })
   },
 
   /** POST /api/v1/content/banners */
   create(req: BannerRequest): Promise<{ data: BannerResponse }> {
-    return axios.post(`${BASE}/banners`, req)
+    return apiClient.post(`${BASE}/banners`, req)
   },
 
   /** PUT /api/v1/content/banners/{id} */
   update(id: number, req: Partial<BannerRequest>): Promise<{ data: BannerResponse }> {
-    return axios.put(`${BASE}/banners/${id}`, req)
+    return apiClient.put(`${BASE}/banners/${id}`, req)
   },
 
   /** PATCH /api/v1/content/banners/{id}/active */
   setActive(id: number, isActive: boolean): Promise<{ data: BannerResponse }> {
-    return axios.patch(`${BASE}/banners/${id}/active`, { isActive })
+    return apiClient.patch(`${BASE}/banners/${id}/active`, { isActive })
   },
 
   /** DELETE /api/v1/content/banners/{id} */
   delete(id: number): Promise<void> {
-    return axios.delete(`${BASE}/banners/${id}`)
+    return apiClient.delete(`${BASE}/banners/${id}`)
   },
 
   /** POST /api/v1/content/banners/{id}/click */
   click(id: number): Promise<void> {
-    return axios.post(`${BASE}/banners/${id}/click`)
+    return apiClient.post(`${BASE}/banners/${id}/click`)
   },
 }
 
+export interface I18nListResponse {
+  items: I18nResourceItem[]
+  total: number
+  page: number
+  size: number
+}
+
 export const i18n = {
-  /** GET /api/v1/content/i18n?namespace=&resourceId=&page=&size= */
-  list(params: {
-    namespace?: I18nNamespace
-    resourceId?: string | number
+  /** GET /api/v1/content/i18n/list?namespace=&page=&size= (편집기용 namespace 전체 목록) */
+  listByNamespace(params: {
+    namespace: I18nNamespace
     page?: number
     size?: number
-  }): Promise<{ data: I18nResourceItem[] }> {
-    return axios.get(`${BASE}/i18n`, { params })
+  }) {
+    return apiClient.get<I18nListResponse>(`${BASE}/i18n/list`, { params })
   },
 
-  /** GET /api/v1/content/i18n?namespace=&resourceId= */
-  query(params: { namespace: I18nNamespace; resourceId: string | number }): Promise<{ data: I18nResourceItem[] }> {
-    return axios.get(`${BASE}/i18n`, { params })
+  /** GET /api/v1/content/i18n?namespace=&resourceId=&lang= (단건 조회) */
+  query(params: { namespace: I18nNamespace; resourceId: string | number; lang?: string }) {
+    return apiClient.get<I18nResourceItem[]>(`${BASE}/i18n`, { params })
   },
 
   /** PUT /api/v1/content/i18n (bulk upsert) */
-  bulkUpsert(items: Array<{ namespace: string; resourceId: string | number; value: string; language?: string; fieldName?: string }>): Promise<void> {
-    return axios.put(`${BASE}/i18n`, { items })
+  bulkUpsert(items: Array<{ namespace: string; resourceId: number; language: string; fieldName: string; value: string }>) {
+    return apiClient.put(`${BASE}/i18n`, { items })
   },
 }
 
@@ -587,21 +593,21 @@ export const seoRedirects = {
     size?: number
     search?: string
   }): Promise<{ data: SeoRedirectResponse[] }> {
-    return axios.get(`${BASE}/seo/redirects`, { params })
+    return apiClient.get(`${BASE}/seo/redirects`, { params })
   },
 
   /** POST /api/v1/content/seo/redirects */
   create(req: SeoRedirectRequest): Promise<{ data: SeoRedirectResponse }> {
-    return axios.post(`${BASE}/seo/redirects`, req)
+    return apiClient.post(`${BASE}/seo/redirects`, req)
   },
 
   /** PUT /api/v1/content/seo/redirects/{id} */
   update(id: number, req: Partial<SeoRedirectRequest>): Promise<{ data: SeoRedirectResponse }> {
-    return axios.put(`${BASE}/seo/redirects/${id}`, req)
+    return apiClient.put(`${BASE}/seo/redirects/${id}`, req)
   },
 
   /** DELETE /api/v1/content/seo/redirects/{id} */
   delete(id: number): Promise<void> {
-    return axios.delete(`${BASE}/seo/redirects/${id}`)
+    return apiClient.delete(`${BASE}/seo/redirects/${id}`)
   },
 }

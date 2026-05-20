@@ -1,6 +1,6 @@
 // AI 정책 추천 모니터링 API 래퍼 — SPEC-CMS-AI-002
 // 모든 응답은 ApiResponse 래퍼 없는 평문 ResponseEntity<T> (프로젝트 컨벤션)
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 export type PolicyMatchMetricsPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY'
 
@@ -20,12 +20,12 @@ export interface PolicyMatchMetricsDto {
   totalApplied: number
 }
 
-const BASE = '/api/v1/admin/ai/policy-match'
+const BASE = '/admin/ai/policy-match'
 
 export const policyMatchAdminApi = {
   getMetrics(
     params: PolicyMatchMetricsQuery,
   ): Promise<{ data: PolicyMatchMetricsDto }> {
-    return axios.get(`${BASE}/metrics`, { params })
+    return apiClient.get(`${BASE}/metrics`, { params })
   },
 }

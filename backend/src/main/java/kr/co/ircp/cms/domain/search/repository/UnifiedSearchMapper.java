@@ -70,7 +70,7 @@ public interface UnifiedSearchMapper {
 
     /**
      * 상위 검색어 (기간 내 빈도 상위 N).
-     * 반환 Map 키: query(string), count(long).
+     * 반환 Map 키: query(string), searchCount(long), clickCount(long), ctr(double).
      */
     List<Map<String, Object>> topQueries(
             @Param("from") LocalDate from,
@@ -92,6 +92,12 @@ public interface UnifiedSearchMapper {
 
     /** 총 검색 수. */
     long totalSearchCount(
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
+
+    /** 기간 내 고유 검색어 수. */
+    long uniqueQueriesCount(
             @Param("from") LocalDate from,
             @Param("to") LocalDate to
     );

@@ -3,6 +3,7 @@ package kr.co.ircp.cms.domain.content.page.controller;
 import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
+import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageScheduleRequest;
@@ -34,6 +35,19 @@ import java.util.List;
 public class PageController {
 
     private final PageService pageService;
+
+    /** GET /api/v1/content/pages — 관리자용 페이지 목록 조회 */
+    @GetMapping
+    @PreAuthorize("hasAuthority('PAGE:READ')")
+    public ResponseEntity<PageListResponse> listPages(
+            @RequestParam(required = false) Long siteId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(pageService.listPages(siteId, status, search, page, size));
+    }
 
     /** POST /api/v1/content/pages — 페이지 생성 */
     @PostMapping

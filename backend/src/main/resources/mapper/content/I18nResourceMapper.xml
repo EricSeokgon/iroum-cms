@@ -25,6 +25,17 @@
           AND language    = #{language}
     </select>
 
+    <select id="findByNamespace" resultMap="i18nResultMap">
+        SELECT * FROM i18n_resource
+        WHERE namespace = #{namespace}
+        ORDER BY resource_id, field_name, language
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByNamespace" resultType="int">
+        SELECT COUNT(*) FROM i18n_resource WHERE namespace = #{namespace}
+    </select>
+
     <insert id="upsertBatch">
         INSERT INTO i18n_resource (namespace, resource_id, language, field_name, value)
         VALUES

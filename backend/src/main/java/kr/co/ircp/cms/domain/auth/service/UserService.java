@@ -116,6 +116,19 @@ public interface UserService {
     void forceLogout(long id, long actorId);
 
     /**
+     * 관리자 비밀번호 강제 초기화 (SUPER_ADMIN 전용).
+     *
+     * <p>비밀번호 정책 검증 → BCrypt 해싱 → DB 갱신 순으로 처리.
+     *
+     * @param id          대상 사용자 PK
+     * @param newPassword 새 비밀번호 (평문)
+     * @param actorId     처리자 userId
+     * @throws kr.co.ircp.cms.domain.auth.exception.UserNotFoundException 존재하지 않는 id
+     * @throws kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException 비밀번호 정책 위반
+     */
+    void adminResetPassword(long id, String newPassword, long actorId);
+
+    /**
      * 본인 정보 조회.
      *
      * @param currentUserId JWT에서 추출한 로그인 사용자 id

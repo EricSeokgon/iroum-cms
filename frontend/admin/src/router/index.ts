@@ -21,6 +21,12 @@ const router = createRouter({
       component: () => import('@/views/auth/ForgotPasswordView.vue'),
       meta: { public: true, title: '비밀번호 재설정' },
     },
+    {
+      path: '/public/survey/:id',
+      name: 'public-survey',
+      component: () => import('@/views/public/SurveyRespondView.vue'),
+      meta: { public: true, title: '설문 참여' },
+    },
 
     // ── 인증 필요 라우트 ───────────────────────────────────────────────────
     {
@@ -28,7 +34,7 @@ const router = createRouter({
       component: () => import('@/layouts/AdminLayout.vue'),
       meta: { requiresAuth: true },
       children: [
-        { path: '', redirect: '/dashboard' },
+        { path: '', redirect: '/system/dashboard' },
         {
           path: 'dashboard',
           name: 'dashboard',
@@ -321,6 +327,12 @@ const router = createRouter({
           name: 'system-audit-logs',
           component: () => import('@/views/system/AuditLogView.vue'),
           meta: { title: '감사 로그', permissions: ['SYSTEM:AUDIT:READ'] },
+        },
+        {
+          path: 'system/menu-stats',
+          name: 'system-menu-stats',
+          component: () => import('@/views/system/MenuStatsView.vue'),
+          meta: { title: '메뉴별 방문 통계', permissions: ['SYSTEM:STATS'] },
         },
         // ── 안전관리 라우트 (SPEC-CMS-006) ─────────────────────────────────
         {

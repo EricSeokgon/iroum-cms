@@ -119,6 +119,7 @@ public class SimulationServiceImpl implements SimulationService {
         aiPredictionLogService.logAsync(AiPredictionLog.builder()
                 .predictionType(TYPE)
                 .modelName(MODEL_NAME)
+                .modelVersion("rule-v1.0.0")
                 .inputFeatures(toJson(dto))
                 .outputResult(projectionJson)
                 .latencyMs((int) (System.currentTimeMillis() - start))

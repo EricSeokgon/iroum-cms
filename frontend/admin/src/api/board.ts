@@ -1,5 +1,5 @@
 // 게시판 API 래퍼 — SPEC-CMS-003
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 import type {
   BbsMasterSummary,
   BbsMasterDetail,
@@ -18,34 +18,34 @@ import type {
 // @MX:ANCHOR: [AUTO] boardApi — BoardListView, PostListView, PostDetailView, PostFormView에서 참조
 // @MX:REASON: fan_in >= 3: 게시판 관련 뷰 컴포넌트 및 테스트에서 공통 호출
 
-const BASE = '/api/v1/board'
+const BASE = '/board'
 
 export const boardApi = {
   // ── 게시판 마스터 ──────────────────────────────────────────────────────────
 
   /** GET /api/v1/board/masters */
   listMasters(): Promise<{ data: BbsMasterSummary[] }> {
-    return axios.get(`${BASE}/masters`)
+    return apiClient.get(`${BASE}/masters`)
   },
 
   /** GET /api/v1/board/masters/{id} */
   getMaster(id: number): Promise<{ data: BbsMasterDetail }> {
-    return axios.get(`${BASE}/masters/${id}`)
+    return apiClient.get(`${BASE}/masters/${id}`)
   },
 
   /** POST /api/v1/board/masters (SUPER_ADMIN) */
   createMaster(req: BbsMasterCreateRequest): Promise<{ data: BbsMasterDetail }> {
-    return axios.post(`${BASE}/masters`, req)
+    return apiClient.post(`${BASE}/masters`, req)
   },
 
   /** PUT /api/v1/board/masters/{id} */
   updateMaster(id: number, req: Partial<BbsMasterCreateRequest>): Promise<{ data: BbsMasterDetail }> {
-    return axios.put(`${BASE}/masters/${id}`, req)
+    return apiClient.put(`${BASE}/masters/${id}`, req)
   },
 
   /** DELETE /api/v1/board/masters/{id} */
   deleteMaster(id: number): Promise<void> {
-    return axios.delete(`${BASE}/masters/${id}`)
+    return apiClient.delete(`${BASE}/masters/${id}`)
   },
 
   // ── 게시글 ──────────────────────────────────────────────────────────────────
@@ -58,49 +58,49 @@ export const boardApi = {
     search?: string
     sort?: string
   }): Promise<{ data: PageResponse<PostSummary> }> {
-    return axios.get(`${BASE}/posts`, { params })
+    return apiClient.get(`${BASE}/posts`, { params })
   },
 
   /** GET /api/v1/board/posts/{id} */
   getPost(id: number): Promise<{ data: PostDetail }> {
-    return axios.get(`${BASE}/posts/${id}`)
+    return apiClient.get(`${BASE}/posts/${id}`)
   },
 
   /** POST /api/v1/board/posts */
   createPost(bbsId: number, req: PostCreateRequest): Promise<{ data: PostDetail }> {
-    return axios.post(`${BASE}/posts`, { ...req, bbsId })
+    return apiClient.post(`${BASE}/posts`, { ...req, bbsId })
   },
 
   /** PUT /api/v1/board/posts/{id} */
   updatePost(id: number, req: PostUpdateRequest): Promise<{ data: PostDetail }> {
-    return axios.put(`${BASE}/posts/${id}`, req)
+    return apiClient.put(`${BASE}/posts/${id}`, req)
   },
 
   /** DELETE /api/v1/board/posts/{id} */
   deletePost(id: number): Promise<void> {
-    return axios.delete(`${BASE}/posts/${id}`)
+    return apiClient.delete(`${BASE}/posts/${id}`)
   },
 
   // ── 댓글 ──────────────────────────────────────────────────────────────────
 
   /** GET /api/v1/board/posts/{postId}/comments */
   listComments(postId: number): Promise<{ data: CommentSummary[] }> {
-    return axios.get(`${BASE}/posts/${postId}/comments`)
+    return apiClient.get(`${BASE}/posts/${postId}/comments`)
   },
 
   /** POST /api/v1/board/posts/{postId}/comments */
   createComment(postId: number, req: CommentCreateRequest): Promise<{ data: CommentSummary }> {
-    return axios.post(`${BASE}/posts/${postId}/comments`, req)
+    return apiClient.post(`${BASE}/posts/${postId}/comments`, req)
   },
 
   /** PUT /api/v1/board/comments/{id} */
   updateComment(id: number, content: string): Promise<{ data: CommentSummary }> {
-    return axios.put(`${BASE}/comments/${id}`, { content })
+    return apiClient.put(`${BASE}/comments/${id}`, { content })
   },
 
   /** DELETE /api/v1/board/comments/{id} */
   deleteComment(id: number): Promise<void> {
-    return axios.delete(`${BASE}/comments/${id}`)
+    return apiClient.delete(`${BASE}/comments/${id}`)
   },
 
   // ── 첨부파일 ──────────────────────────────────────────────────────────────
@@ -109,13 +109,13 @@ export const boardApi = {
   uploadAttachment(file: File): Promise<{ data: AttachmentSummary }> {
     const fd = new FormData()
     fd.append('file', file)
-    return axios.post(`${BASE}/attachments`, fd, {
+    return apiClient.post(`${BASE}/attachments`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
 
   /** GET /api/v1/board/attachments/{id}/url */
   getAttachmentUrl(id: number): Promise<{ data: AttachmentDownloadUrl }> {
-    return axios.get(`${BASE}/attachments/${id}/url`)
+    return apiClient.get(`${BASE}/attachments/${id}/url`)
   },
 }

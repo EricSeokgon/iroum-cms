@@ -33,7 +33,7 @@ public class AccessLogController {
 
     @Operation(summary = "접속 로그 목록 조회 (페이징)")
     @GetMapping
-    @PreAuthorize("hasAuthority('SYSTEM:LOG:READ')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN') or hasAuthority('SYSTEM:LOG:READ')")
     public ResponseEntity<Map<String, Object>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,

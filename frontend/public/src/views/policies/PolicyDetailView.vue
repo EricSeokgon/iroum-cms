@@ -78,6 +78,7 @@
               rel="noopener noreferrer"
               :aria-label="t('policy.applyExternal') + ' (' + applyDomain + ')'"
               class="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus-visible:outline-2 focus-visible:outline-primary-600"
+              @click="onApplyClick"
               data-testid="apply-external-link"
             >
               {{ t('policy.applyExternal') }}
@@ -112,6 +113,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { policyApi, type PolicyDetail } from '@/api/policyApi'
 import { apiClient } from '@/api/client'
+import { searchApi } from '@/api/searchApi'
 import { useAuthStore } from '@/stores/authStore'
 import { isSafeUrl, extractDomain } from '@/utils/urlSafety'
 import NoticeContent from '@/components/notice/NoticeContent.vue'
@@ -126,6 +128,15 @@ const policy = ref<PolicyDetail | null>(null)
 const loading = ref(false)
 const error = ref(false)
 const subscribing = ref(false)
+
+// 검색 결과에서 진입한 경우 history state에 추적 정보가 담겨 있음
+interface SearchState {
+  searchLogId?: number | null
+  docType?: string
+  docId?: number
+  rank?: number
+}
+const searchState = (window.history.state ?? {}) as SearchState
 
 const applyUrlSafe = computed(() => isSafeUrl(policy.value?.applyUrl))
 const applyDomain = computed(() => extractDomain(policy.value?.applyUrl))
@@ -168,6 +179,17 @@ async function onSubscribe(): Promise<void> {
     ElMessage.error(t('policy.subscribeError'))
   } finally {
     subscribing.value = false
+  }
+}
+
+function onApplyClick(): void {
+  if (searchState.searchLogId && searchState.docType && searchState.docId) {
+    searchApi.trackClick(
+      searchState.searchLogId,
+      searchState.docType,
+      searchState.docId,
+      searchState.rank ?? 1,
+    )
   }
 }
 

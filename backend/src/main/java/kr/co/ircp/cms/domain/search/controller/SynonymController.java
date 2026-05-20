@@ -32,7 +32,8 @@ import java.net.URI;
 @RestController
 @RequestMapping("/api/v1/search/synonyms")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+// 관리자(SUPER_ADMIN 포함) 전용 — ROLE_SUPER_ADMIN도 hasRole('ADMIN') 체크를 통과하도록 양쪽 허용
+@PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
 public class SynonymController {
 
     private final SynonymService synonymService;
@@ -40,10 +41,11 @@ public class SynonymController {
     @GetMapping
     public ResponseEntity<PageResponse<SearchSynonym>> list(
             @RequestParam(name = "locale", required = false, defaultValue = "ko") String locale,
-            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            // 프론트엔드는 1-based page(첫 페이지=1)로 전송 → 백엔드 0-based로 변환
+            @RequestParam(name = "page", required = false, defaultValue = "1") int page,
             @RequestParam(name = "size", required = false, defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(synonymService.listSynonyms(locale, page, size));
+        return ResponseEntity.ok(synonymService.listSynonyms(locale, Math.max(0, page - 1), size));
     }
 
     @PostMapping

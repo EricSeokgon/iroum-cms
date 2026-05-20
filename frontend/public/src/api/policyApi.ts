@@ -104,12 +104,41 @@ export interface RagFeedbackRequest {
   feedback: RagFeedbackValue
 }
 
+// 백엔드 PolicyProgramSummary → 프론트 PolicySummary 매핑용 내부 타입
+interface RawProgramSummary {
+  id: number
+  code: string
+  ministry: string
+  programName: string
+  targetIndustries: string[]
+  targetRegions: string[]
+  applicationStart?: string
+  applicationEnd?: string
+  status: string
+}
+
+function mapProgram(p: RawProgramSummary): PolicySummary {
+  return {
+    id: p.id,
+    title: p.programName,
+    industry: p.targetIndustries?.[0] ?? '-',
+    region: p.targetRegions?.[0] ?? '전국',
+    type: p.ministry ?? '정책',
+    deadline: p.applicationEnd ?? undefined,
+  }
+}
+
 export const policyApi = {
-  list(params: PolicyListParams = {}): Promise<PageResponse<PolicySummary>> {
-    return apiClient.get<PageResponse<PolicySummary>>('/policies', { params }).then((r) => r.data)
+  async list(params: PolicyListParams = {}): Promise<PageResponse<PolicySummary>> {
+    const raw = await apiClient
+      .get<PageResponse<RawProgramSummary>>('/policy/programs', {
+        params: { status: 'ACTIVE', ...params },
+      })
+      .then((r) => r.data)
+    return { ...raw, content: raw.content.map(mapProgram) }
   },
   detail(id: number): Promise<PolicyDetail> {
-    return apiClient.get<PolicyDetail>(`/policies/${id}`).then((r) => r.data)
+    return apiClient.get<PolicyDetail>(`/policy/programs/${id}`).then((r) => r.data)
   },
   match(req: PolicyMatchRequest): Promise<PolicyMatchResult[]> {
     return apiClient.post<PolicyMatchResult[]>('/policies/match', req).then((r) => r.data)

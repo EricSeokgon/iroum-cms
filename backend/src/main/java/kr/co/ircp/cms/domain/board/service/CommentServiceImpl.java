@@ -69,7 +69,9 @@ public class CommentServiceImpl implements CommentService {
                 .build();
         bbsCommentMapper.insert(comment);
 
-        return toSummary(comment, Collections.emptyList());
+        BbsComment saved = bbsCommentMapper.findById(comment.getId())
+                .orElse(comment);
+        return toSummary(saved, Collections.emptyList());
     }
 
     @Override

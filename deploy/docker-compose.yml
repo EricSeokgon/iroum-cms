@@ -52,6 +52,27 @@ services:
     restart: unless-stopped
 
   # ──────────────────────────────────────────
+  # ML Service — Python FastAPI 추론 서비스
+  # SPEC-CMS-ML-SERVICE-001 (내부망 전용)
+  # ──────────────────────────────────────────
+  ml-service:
+    build:
+      context: ../ml-service
+      dockerfile: Dockerfile
+    container_name: iroum-ml-service
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/ml/v1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - iroum-net
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────
   # Backend — Spring Boot 3.2 + egovframe 5
   # ──────────────────────────────────────────
   backend:
@@ -65,11 +86,14 @@ services:
       DB_USERNAME: iroum_cms
       DB_PASSWORD: iroum_cms_dev_pwd
       JWT_SECRET: ${JWT_SECRET:-dev-only-secret-replace-in-production-min256bit}
+      ML_SERVICE_URL: http://ml-service:8000
       JAVA_OPTS: "-XX:MaxRAMPercentage=75 -XX:+UseG1GC"
     ports:
       - "8080:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      ml-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/api/v1/health || exit 1"]

@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -73,11 +77,26 @@ public class MlServiceClientImpl implements MlServiceClient {
         this.healthRt = rt(builder, healthMs);
     }
 
+    // SimpleClientHttpRequestFactory를 명시적으로 지정 — Spring Boot 3.5.x에서 RestTemplateBuilder가
+    // JdkClientHttpRequestFactory(java.net.http.HttpClient)를 기본 사용할 때 body가 null로 전송되는 문제 우회
     private RestTemplate rt(RestTemplateBuilder builder, long timeoutMs) {
+        Duration timeout = Duration.ofMillis(timeoutMs);
         return builder
-                .connectTimeout(Duration.ofMillis(timeoutMs))
-                .readTimeout(Duration.ofMillis(timeoutMs))
+                .requestFactory(() -> {
+                    SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                    factory.setConnectTimeout(timeout);
+                    factory.setReadTimeout(timeout);
+                    return factory;
+                })
                 .build();
+    }
+
+    // Content-Type: application/json 헤더를 명시적으로 설정 — Python Pydantic extra="forbid" 환경에서
+    // RestTemplate이 body 없이 요청을 보내는 경우 422 오류가 발생하므로 HttpEntity로 감쌈
+    private static <T> HttpEntity<T> jsonEntity(T body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return new HttpEntity<>(body, headers);
     }
 
     @Override
@@ -85,7 +104,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public GrowthStageResponse predictGrowthStage(GrowthStageRequest request) {
         try {
             return growthStageRt.postForObject(
-                    baseUrl + "/ml/v1/growth-stage", request, GrowthStageResponse.class);
+                    baseUrl + "/ml/v1/growth-stage", jsonEntity(request), GrowthStageResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("growth-stage prediction failed", e);
         }
@@ -96,7 +115,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public RiskScoreResponse predictRiskScore(RiskScoreRequest request) {
         try {
             return riskScoreRt.postForObject(
-                    baseUrl + "/ml/v1/risk-score", request, RiskScoreResponse.class);
+                    baseUrl + "/ml/v1/risk-score", jsonEntity(request), RiskScoreResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("risk-score prediction failed", e);
         }
@@ -107,7 +126,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public SimulationResponse predictSimulation(SimulationRequest request) {
         try {
             return simulationRt.postForObject(
-                    baseUrl + "/ml/v1/simulation", request, SimulationResponse.class);
+                    baseUrl + "/ml/v1/simulation", jsonEntity(request), SimulationResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("simulation failed", e);
         }
@@ -118,7 +137,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public MlPolicyMatchResponse policyMatch(MlPolicyMatchRequest request) {
         try {
             return policyMatchRt.postForObject(
-                    baseUrl + "/ml/v1/policy-match", request, MlPolicyMatchResponse.class);
+                    baseUrl + "/ml/v1/policy-match", jsonEntity(request), MlPolicyMatchResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("policy-match failed", e);
         }
@@ -129,7 +148,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public EmbedResponse embed(EmbedRequest request) {
         try {
             return embedRt.postForObject(
-                    baseUrl + "/ml/v1/embed", request, EmbedResponse.class);
+                    baseUrl + "/ml/v1/embed", jsonEntity(request), EmbedResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("embed failed", e);
         }
@@ -140,7 +159,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     public RagResponse rag(RagRequest request) {
         try {
             return ragRt.postForObject(
-                    baseUrl + "/ml/v1/rag", request, RagResponse.class);
+                    baseUrl + "/ml/v1/rag", jsonEntity(request), RagResponse.class);
         } catch (RestClientException e) {
             throw new MlServiceException("rag generation failed", e);
         }

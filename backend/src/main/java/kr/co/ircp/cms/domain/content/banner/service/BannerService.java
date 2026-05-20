@@ -34,4 +34,10 @@ public interface BannerService {
      * REQ-CONTENT-009-D-3: click_count++ 원자적 UPDATE + audit_log 기록
      */
     void recordClick(Long id);
+
+    /** 관리자용 배너 목록 조회 (사이트/그룹 필터) */
+    List<BannerResponse> listBanners(Long siteId, String groupCode);
+
+    /** 사이트별 배너 그룹 코드 목록 조회 */
+    List<String> listGroups(Long siteId);
 }

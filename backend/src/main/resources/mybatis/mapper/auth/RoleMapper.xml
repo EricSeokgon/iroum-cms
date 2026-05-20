@@ -27,9 +27,9 @@
             r.description,
             r.is_system    AS isSystem,
             r.aliased_to   AS aliasedTo,
-            r.created_at   AS createdAt,
             COALESCE(uc.cnt, 0) AS userCount,
-            COALESCE(pc.cnt, 0) AS permissionCount
+            COALESCE(pc.cnt, 0) AS permissionCount,
+            r.created_at   AS createdAt
         FROM roles r
         LEFT JOIN (
             SELECT role_code, COUNT(*) AS cnt

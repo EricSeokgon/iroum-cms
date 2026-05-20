@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.system.stats.mapper;
 
+import kr.co.ircp.cms.domain.system.stats.dto.MenuPageStatsResponse;
 import kr.co.ircp.cms.domain.system.stats.dto.TrendItemResponse;
 import kr.co.ircp.cms.domain.system.stats.entity.AccessStatDaily;
 import org.apache.ibatis.annotations.Mapper;
@@ -37,4 +38,20 @@ public interface AccessStatDailyMapper {
 
     /** 최근 24h 평균 응답시간 + 에러율 */
     AccessStatDaily findLast24hStats(@Param("siteId") long siteId);
+
+    /** 메뉴별 방문 통계 목록 (페이지네이션) */
+    List<MenuPageStatsResponse> findMenuStats(
+            @Param("siteId") long siteId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to,
+            @Param("offset") int offset,
+            @Param("limit") int limit
+    );
+
+    /** 메뉴별 방문 통계 전체 건수 */
+    int countMenuStats(
+            @Param("siteId") long siteId,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }

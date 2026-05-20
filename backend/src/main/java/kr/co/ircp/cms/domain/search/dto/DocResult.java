@@ -12,6 +12,7 @@ public record DocResult(
         Long docId,
         String title,
         String snippet,
+        String highlight,
         double rank,
         String domain,
         String url,

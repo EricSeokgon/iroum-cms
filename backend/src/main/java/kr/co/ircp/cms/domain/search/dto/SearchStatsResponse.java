@@ -6,14 +6,16 @@ import java.util.Map;
 /**
  * 검색 통계 응답 (운영자용, REQ-SEARCH-008).
  *
- * @param topQueries       상위 쿼리 (query/count)
- * @param zeroResultRatio  0건 검색 비율
- * @param avgResponseMs    평균 응답 시간(ms)
- * @param totalSearches    총 검색 수
+ * @param from          조회 시작일 (ISO-8601 yyyy-MM-dd)
+ * @param to            조회 종료일 (ISO-8601 yyyy-MM-dd)
+ * @param totalSearches 총 검색 수
+ * @param uniqueQueries 고유 검색어 수
+ * @param topQueries    상위 쿼리 (query/searchCount/clickCount/ctr)
  */
 public record SearchStatsResponse(
-        List<Map<String, Object>> topQueries,
-        double zeroResultRatio,
-        double avgResponseMs,
-        long totalSearches
+        String from,
+        String to,
+        long totalSearches,
+        long uniqueQueries,
+        List<Map<String, Object>> topQueries
 ) {}

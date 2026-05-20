@@ -54,7 +54,7 @@ export const mediaApi = {
     fd.append('file', file)
     if (meta.altText) fd.append('altText', meta.altText)
     if (meta.licenseType) fd.append('licenseType', meta.licenseType)
-    if (meta.tags?.length) fd.append('tags', meta.tags.join(','))
+    meta.tags?.forEach((tag) => fd.append('tags', tag))
 
     return apiClient.post(`${BASE}/upload`, fd, {
       onUploadProgress: (event) => {

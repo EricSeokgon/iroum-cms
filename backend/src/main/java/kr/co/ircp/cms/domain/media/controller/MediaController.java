@@ -120,6 +120,14 @@ public class MediaController {
 
     // ─── 컬렉션 (REQ-MEDIA-005-D) ────────────────────────────────────────────
 
+    /** GET /api/v1/media/collections — 컬렉션 목록 (소유자 기준) */
+    @GetMapping("/collections")
+    public ResponseEntity<List<MediaCollectionSummary>> listCollections(
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        return ResponseEntity.ok(mediaService.listCollections(principal.userId()));
+    }
+
     /** POST /api/v1/media/collections — 컬렉션 생성 */
     @PostMapping("/collections")
     public ResponseEntity<MediaCollectionSummary> createCollection(

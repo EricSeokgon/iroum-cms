@@ -51,6 +51,8 @@ springdoc:
 iroum:
   jwt:
     secret: ${JWT_SECRET:local-dev-only-jwt-secret-256-bits-minimum-do-not-use-in-prod}
+  media:
+    signed-url-secret: ${MEDIA_SIGNED_URL_SECRET:local-dev-only-media-secret-do-not-use-in-prod}
   board:
     attachment:
       hmac-secret: ${ATTACHMENT_HMAC_SECRET:local-dev-only-hmac-secret-do-not-use-in-prod}

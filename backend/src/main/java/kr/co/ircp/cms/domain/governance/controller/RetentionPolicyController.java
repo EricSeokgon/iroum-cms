@@ -3,12 +3,14 @@ package kr.co.ircp.cms.domain.governance.controller;
 import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.governance.batch.AccessLogRetentionJob;
 import kr.co.ircp.cms.domain.governance.batch.AuditLogArchiveJob;
+import kr.co.ircp.cms.domain.governance.batch.GovernanceJobSupport;
 import kr.co.ircp.cms.domain.governance.batch.IntegrationLogRetentionJob;
 import kr.co.ircp.cms.domain.governance.batch.LoginHistoryPurgeJob;
 import kr.co.ircp.cms.domain.governance.batch.PersonalDataRetentionJob;
 import kr.co.ircp.cms.domain.governance.dto.RetentionPolicyRequest;
 import kr.co.ircp.cms.domain.governance.dto.RetentionPolicyResponse;
 import kr.co.ircp.cms.domain.governance.entity.RetentionPolicy;
+import kr.co.ircp.cms.domain.governance.service.BatchExecutionLogService;
 import kr.co.ircp.cms.domain.governance.service.RetentionPolicyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 보존 정책 REST 컨트롤러.
@@ -43,6 +46,7 @@ import java.util.Map;
 public class RetentionPolicyController {
 
     private final RetentionPolicyService service;
+    private final BatchExecutionLogService batchLog;
     private final PersonalDataRetentionJob personalJob;
     private final AuditLogArchiveJob auditJob;
     private final LoginHistoryPurgeJob loginJob;
@@ -85,12 +89,20 @@ public class RetentionPolicyController {
             @RequestParam(defaultValue = "false") boolean dryRun) {
         RetentionPolicy policy = service.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("retention_policy not found: id=" + id));
-        int processed = dispatchRun(policy.getTargetTable(), dryRun);
+        String target = policy.getTargetTable();
+        AtomicInteger result = new AtomicInteger(0);
+        // 수동 트리거도 GovernanceJobSupport를 통해 batch_execution_log 기록
+        GovernanceJobSupport.run(batchLog, target + "_manual", "RETENTION",
+                () -> {
+                    int n = dispatchRun(target, dryRun);
+                    result.set(n);
+                    return n;
+                });
         return ResponseEntity.ok(Map.of(
                 "id", id,
-                "targetTable", policy.getTargetTable(),
+                "targetTable", target,
                 "dryRun", dryRun,
-                "processed", processed
+                "processed", result.get()
         ));
     }
 

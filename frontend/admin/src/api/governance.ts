@@ -1,10 +1,10 @@
 // 거버넌스 API 래퍼 — SPEC-CMS-009
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] governanceApi — 6개 거버넌스 뷰에서 공통 참조
 // @MX:REASON: fan_in >= 3: DataDictionary/RetentionPolicy/BatchLogs/QualityRule/QualityReport/RecoveryDrill 뷰
 
-const BASE = '/api/v1/governance'
+const BASE = '/governance'
 
 // ── 공통 페이지 응답 ──────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -296,112 +296,112 @@ export const governanceApi = {
   // 데이터 사전
   dictionary: {
     list(params: DataDictionaryFilter): Promise<{ data: PageResponse<DataDictionary> }> {
-      return axios.get(`${BASE}/dictionary`, { params })
+      return apiClient.get(`${BASE}/dictionary`, { params })
     },
     get(id: number): Promise<{ data: DataDictionaryDetail }> {
-      return axios.get(`${BASE}/dictionary/${id}`)
+      return apiClient.get(`${BASE}/dictionary/${id}`)
     },
     create(req: DataDictionaryRequest): Promise<{ data: DataDictionary }> {
-      return axios.post(`${BASE}/dictionary`, req)
+      return apiClient.post(`${BASE}/dictionary`, req)
     },
     update(id: number, req: DataDictionaryRequest): Promise<{ data: DataDictionary }> {
-      return axios.put(`${BASE}/dictionary/${id}`, req)
+      return apiClient.put(`${BASE}/dictionary/${id}`, req)
     },
     remove(id: number): Promise<void> {
-      return axios.delete(`${BASE}/dictionary/${id}`)
+      return apiClient.delete(`${BASE}/dictionary/${id}`)
     },
     exportFile(format: 'csv' | 'xlsx'): Promise<{ data: Blob }> {
-      return axios.get(`${BASE}/dictionary/export`, {
+      return apiClient.get(`${BASE}/dictionary/export`, {
         params: { format },
         responseType: 'blob',
       })
     },
     freshness(): Promise<{ data: FreshnessResult }> {
-      return axios.get(`${BASE}/dictionary/freshness`)
+      return apiClient.get(`${BASE}/dictionary/freshness`)
     },
   },
 
   // 보존 정책
   retention: {
     list(): Promise<{ data: RetentionPolicy[] }> {
-      return axios.get(`${BASE}/retention-policies`)
+      return apiClient.get(`${BASE}/retention-policies`)
     },
     create(req: RetentionPolicyRequest): Promise<{ data: RetentionPolicy }> {
-      return axios.post(`${BASE}/retention-policies`, req)
+      return apiClient.post(`${BASE}/retention-policies`, req)
     },
     update(id: number, req: RetentionPolicyRequest): Promise<{ data: RetentionPolicy }> {
-      return axios.put(`${BASE}/retention-policies/${id}`, req)
+      return apiClient.put(`${BASE}/retention-policies/${id}`, req)
     },
     runNow(id: number): Promise<{ data: RetentionRunResult }> {
-      return axios.post(`${BASE}/retention-policies/${id}/run`)
+      return apiClient.post(`${BASE}/retention-policies/${id}/run`)
     },
   },
 
   // 배치 로그
   batchLogs: {
     list(params: BatchLogFilter): Promise<{ data: PageResponse<BatchExecutionLog> }> {
-      return axios.get(`${BASE}/batch-logs`, { params })
+      return apiClient.get(`${BASE}/batch-logs`, { params })
     },
     get(id: number): Promise<{ data: BatchExecutionLog }> {
-      return axios.get(`${BASE}/batch-logs/${id}`)
+      return apiClient.get(`${BASE}/batch-logs/${id}`)
     },
     recompute(req: StatsRecomputeRequest): Promise<{ data: BatchExecutionLog }> {
-      return axios.post(`${BASE}/stats/recompute`, req)
+      return apiClient.post(`${BASE}/stats/recompute`, req)
     },
   },
 
   // 통계 (차트용)
   stats: {
     boards(params: { boardId?: number; from?: string; to?: string; period?: 'daily' | 'monthly' }): Promise<{ data: BoardStatRow[] }> {
-      return axios.get(`${BASE}/stats/boards`, { params })
+      return apiClient.get(`${BASE}/stats/boards`, { params })
     },
     contents(params: { contentId?: number; from?: string; to?: string }): Promise<{ data: ContentStatRow[] }> {
-      return axios.get(`${BASE}/stats/contents`, { params })
+      return apiClient.get(`${BASE}/stats/contents`, { params })
     },
     policies(params: { policyId?: number; from?: string; to?: string }): Promise<{ data: PolicyStatRow[] }> {
-      return axios.get(`${BASE}/stats/policies`, { params })
+      return apiClient.get(`${BASE}/stats/policies`, { params })
     },
     safety(params: { category?: string; from?: string; to?: string }): Promise<{ data: SafetyStatRow[] }> {
-      return axios.get(`${BASE}/stats/safety`, { params })
+      return apiClient.get(`${BASE}/stats/safety`, { params })
     },
   },
 
   // 품질 룰
   qualityRules: {
     list(params: QualityRuleFilter): Promise<{ data: PageResponse<QualityRule> }> {
-      return axios.get(`${BASE}/quality-rules`, { params })
+      return apiClient.get(`${BASE}/quality-rules`, { params })
     },
     create(req: QualityRuleRequest): Promise<{ data: QualityRule }> {
-      return axios.post(`${BASE}/quality-rules`, req)
+      return apiClient.post(`${BASE}/quality-rules`, req)
     },
     update(id: number, req: QualityRuleRequest): Promise<{ data: QualityRule }> {
-      return axios.put(`${BASE}/quality-rules/${id}`, req)
+      return apiClient.put(`${BASE}/quality-rules/${id}`, req)
     },
     remove(id: number): Promise<void> {
-      return axios.delete(`${BASE}/quality-rules/${id}`)
+      return apiClient.delete(`${BASE}/quality-rules/${id}`)
     },
     runNow(id: number): Promise<{ data: BatchExecutionLog }> {
-      return axios.post(`${BASE}/quality-rules/${id}/run`)
+      return apiClient.post(`${BASE}/quality-rules/${id}/run`)
     },
   },
 
   // 품질 리포트
   qualityReports: {
     list(params: QualityReportFilter): Promise<{ data: PageResponse<QualityReport> }> {
-      return axios.get(`${BASE}/quality-reports`, { params })
+      return apiClient.get(`${BASE}/quality-reports`, { params })
     },
     get(id: number): Promise<{ data: QualityReport }> {
-      return axios.get(`${BASE}/quality-reports/${id}`)
+      return apiClient.get(`${BASE}/quality-reports/${id}`)
     },
   },
 
   // 복구 시험
   recoveryDrills: {
     list(params: RecoveryDrillFilter): Promise<{ data: RecoveryDrill[] }> {
-      return axios.get(`${BASE}/recovery-drills`, { params })
+      return apiClient.get(`${BASE}/recovery-drills`, { params })
     },
     create(req: RecoveryDrillRequest): Promise<{ data: RecoveryDrill }> {
-      return axios.post(`${BASE}/recovery-drills`, req)
+      return apiClient.post(`${BASE}/recovery-drills`, req)
     },
   },
 
@@ -409,7 +409,7 @@ export const governanceApi = {
   backup: {
     status(): Promise<{ data: BackupStatus }> {
       // 503 도 정상 응답으로 받아 rpo_compliance 판단
-      return axios.get(`/api/v1/actuator/backup-status`, {
+      return apiClient.get(`/api/v1/actuator/backup-status`, {
         validateStatus: (s) => s === 200 || s === 503,
       })
     },

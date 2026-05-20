@@ -166,7 +166,7 @@ const uploadQueue = ref<UploadQueueItem[]>([])
 
 const form = ref({
   altText: '',
-  licenseType: 'ALL_RIGHTS_RESERVED' as LicenseType,
+  licenseType: 'PROPRIETARY' as LicenseType,
   tags: [] as string[],
 })
 
@@ -182,12 +182,11 @@ const hasImageFile = computed(() =>
 )
 
 const licenseOptions: { value: LicenseType; label: string; description: string }[] = [
-  { value: 'ALL_RIGHTS_RESERVED', label: 'All Rights Reserved', description: '모든 권리 보유' },
+  { value: 'PROPRIETARY', label: '저작권 보유', description: '모든 권리 보유 (기본값)' },
+  { value: 'INTERNAL', label: '내부 용도', description: '내부 사용 전용' },
   { value: 'CC_BY', label: 'CC BY 4.0', description: '저작자 표시' },
-  { value: 'CC_BY_SA', label: 'CC BY-SA 4.0', description: '저작자 표시-동일 조건' },
   { value: 'CC_BY_NC', label: 'CC BY-NC 4.0', description: '저작자 표시-비영리' },
   { value: 'CC0', label: 'CC0 1.0', description: '퍼블릭 도메인 기증' },
-  { value: 'PUBLIC_DOMAIN', label: 'Public Domain', description: '퍼블릭 도메인' },
 ]
 
 const licenseDescription = computed(

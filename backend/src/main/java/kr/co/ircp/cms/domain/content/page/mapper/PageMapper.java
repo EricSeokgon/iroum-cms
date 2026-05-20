@@ -59,4 +59,20 @@ public interface PageMapper {
             @Param("toPath") String toPath,
             @Param("reason") String reason
     );
+
+    /** 관리자용 페이지 목록 조회 (사이트/상태/검색 필터 + 페이징) */
+    List<Page> listBySiteId(
+            @Param("siteId") Long siteId,
+            @Param("status") String status,
+            @Param("search") String search,
+            @Param("offset") int offset,
+            @Param("limit") int limit
+    );
+
+    /** 관리자용 페이지 총 수 조회 */
+    long countBySiteId(
+            @Param("siteId") Long siteId,
+            @Param("status") String status,
+            @Param("search") String search
+    );
 }

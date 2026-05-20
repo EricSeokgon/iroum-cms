@@ -28,12 +28,13 @@ public interface AuditLogMapper {
 
     /**
      * 조건 검색 (동적 WHERE).
-     * action/entityType/severity/actorId/fromTime/toTime 중 null인 조건은 무시.
+     * action/entityType/severity/result/actorId/fromTime/toTime 중 null인 조건은 무시.
      */
     List<AuditLog> search(
             @Param("action") String action,
             @Param("entityType") String entityType,
             @Param("severity") String severity,
+            @Param("result") String result,
             @Param("actorId") Long actorId,
             @Param("fromTime") String fromTime,
             @Param("toTime") String toTime,
@@ -46,6 +47,7 @@ public interface AuditLogMapper {
             @Param("action") String action,
             @Param("entityType") String entityType,
             @Param("severity") String severity,
+            @Param("result") String result,
             @Param("actorId") Long actorId,
             @Param("fromTime") String fromTime,
             @Param("toTime") String toTime

@@ -1,10 +1,10 @@
 // Q&A API 래퍼 — SPEC-CMS-003
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] qnaApi — QnaListView, QnaDetailView 등 Q&A 뷰에서 공통 참조
 // @MX:REASON: fan_in >= 3: 목록/상세/등록/답변/종결/삭제 콜사이트 다수
 
-const BASE = '/api/v1/qnas'
+const BASE = '/qnas'
 
 // ── 공통 페이지 응답 ─────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -63,25 +63,25 @@ export interface QnaAnswerRequest {
 
 // ── API 함수 ─────────────────────────────────────────────────────────────────
 export function listQnas(params: QnaListParams): Promise<{ data: PageResponse<QnaSummary> }> {
-  return axios.get(BASE, { params })
+  return apiClient.get(BASE, { params })
 }
 
 export function getQna(id: number): Promise<{ data: QnaDetail }> {
-  return axios.get(`${BASE}/${id}`)
+  return apiClient.get(`${BASE}/${id}`)
 }
 
 export function createQna(req: QnaCreateRequest): Promise<{ data: QnaDetail }> {
-  return axios.post(BASE, req)
+  return apiClient.post(BASE, req)
 }
 
 export function answerQna(id: number, req: QnaAnswerRequest): Promise<{ data: QnaDetail }> {
-  return axios.post(`${BASE}/${id}/answer`, req)
+  return apiClient.post(`${BASE}/${id}/answer`, req)
 }
 
 export function closeQna(id: number): Promise<{ data: QnaDetail }> {
-  return axios.post(`${BASE}/${id}/close`)
+  return apiClient.post(`${BASE}/${id}/close`)
 }
 
 export function deleteQna(id: number): Promise<void> {
-  return axios.delete(`${BASE}/${id}`)
+  return apiClient.delete(`${BASE}/${id}`)
 }

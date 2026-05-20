@@ -92,9 +92,10 @@ public class PostServiceImpl implements PostService {
 
         BbsMaster master = bbsMasterMapper.findById(post.getBbsId()).orElse(null);
         String masterCode = master != null ? master.getCode() : null;
+        boolean useComment = master != null && master.isUseComment();
 
         return new PostDetail(
-                post.getId(), post.getBbsId(), masterCode,
+                post.getId(), post.getBbsId(), masterCode, useComment,
                 post.getTitle(), post.getContentHtml(),
                 post.getAuthorId(), post.getAuthorName(),
                 post.isNotice(), post.getNoticeFrom(), post.getNoticeUntil(),
@@ -129,7 +130,7 @@ public class PostServiceImpl implements PostService {
         bbsPostMapper.insert(post);
 
         return new PostDetail(
-                post.getId(), post.getBbsId(), master.getCode(),
+                post.getId(), post.getBbsId(), master.getCode(), master.isUseComment(),
                 post.getTitle(), post.getContentHtml(),
                 post.getAuthorId(), post.getAuthorName(),
                 post.isNotice(), post.getNoticeFrom(), post.getNoticeUntil(),
@@ -177,9 +178,10 @@ public class PostServiceImpl implements PostService {
 
         BbsMaster master = bbsMasterMapper.findById(existing.getBbsId()).orElse(null);
         String masterCode = master != null ? master.getCode() : null;
+        boolean useComment = master != null && master.isUseComment();
 
         return new PostDetail(
-                existing.getId(), existing.getBbsId(), masterCode,
+                existing.getId(), existing.getBbsId(), masterCode, useComment,
                 existing.getTitle(), existing.getContentHtml(),
                 existing.getAuthorId(), existing.getAuthorName(),
                 existing.isNotice(), existing.getNoticeFrom(), existing.getNoticeUntil(),

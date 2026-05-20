@@ -14,7 +14,7 @@ import java.time.Instant;
  * SUPER_ADMIN: 평문, 그 외: 마스킹. UserSelf DTO는 마스킹 미적용.
  */
 public record UserSummary(
-        long id,
+        Long id,
         String uuid,
         String username,
         @JsonSerialize(using = EmailMaskSerializer.class)

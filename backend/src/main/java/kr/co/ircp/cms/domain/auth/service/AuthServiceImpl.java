@@ -278,15 +278,18 @@ public class AuthServiceImpl implements AuthService {
             throw new TokenExpiredException();
         }
 
-        // 5. username 결정 — UserMapper에 findById 없음; userId를 string fallback으로 사용
-        // Role 조회도 이번 단계에서는 빈 Set — 다음 사이클에서 UserRoleMapper 연동
-        String username = String.valueOf(userId);
+        // 5. 사용자 정보 + 권한 로드 (REQ-AUTH-002: Refresh 시 최신 권한 반영)
+        User user = userMapper.findById(userId)
+                .orElseThrow(InvalidCredentialsException::new);
+        String username = user.getUsername();
+        Set<String> userRoles = userMapper.findRoleCodesByUserId(userId);
+        Set<String> userPermissions = permissionService.findEffectivePermissionsForUser(userId);
 
         // 6. Rotation — 기존 무효화
         refreshTokenMapper.revoke(tokenHash, now);
 
-        // 7. 새 토큰 쌍 발급
-        String newAccess = jwtTokenProvider.generateAccessToken(userId, username, Set.of());
+        // 7. 새 토큰 쌍 발급 (roles + permissions 포함)
+        String newAccess = jwtTokenProvider.generateAccessToken(userId, username, userRoles, userPermissions);
         String newRefresh = jwtTokenProvider.generateRefreshToken(userId);
 
         Instant refreshExpires = now.plus(jwtProperties.refreshTokenTtl());

@@ -33,12 +33,8 @@
           </el-select>
         </div>
         <div>
-          <p class="mb-1 text-xs text-gray-500">{{ t('system.accessLog.filter.ipHash') }}</p>
-          <el-input v-model="filterIpHash" clearable size="small" style="width: 160px" />
-        </div>
-        <div>
-          <p class="mb-1 text-xs text-gray-500">{{ t('system.accessLog.filter.userId') }}</p>
-          <el-input-number v-model="filterUserId" :min="1" :controls="false" size="small" style="width: 120px" />
+          <p class="mb-1 text-xs text-gray-500">페이지 URL</p>
+          <el-input v-model="filterPageUrl" clearable size="small" style="width: 200px" placeholder="/path/..." />
         </div>
         <el-button type="primary" size="small" @click="search">{{ t('common.search') }}</el-button>
         <el-button size="small" @click="resetFilter">{{ t('common.reset') }}</el-button>
@@ -48,22 +44,22 @@
     <!-- 테이블 -->
     <el-card shadow="never" v-loading="loading">
       <el-table :data="rows" stripe row-class-name="cursor-pointer" @row-click="openDetail">
-        <el-table-column prop="created_at" :label="t('system.accessLog.col.time')" width="180">
-          <template #default="{ row }">{{ formatDate(row.created_at) }}</template>
+        <el-table-column prop="createdAt" :label="t('system.accessLog.col.time')" width="180">
+          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column prop="page_url" :label="t('system.accessLog.col.url')" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="status" :label="t('system.accessLog.col.status')" width="80" align="center">
+        <el-table-column prop="pageUrl" :label="t('system.accessLog.col.url')" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="statusCode" :label="t('system.accessLog.col.status')" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="statusType(row.status)" size="small">{{ row.status }}</el-tag>
+            <el-tag :type="statusType(row.statusCode)" size="small">{{ row.statusCode }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="response_time_ms" :label="t('system.accessLog.col.responseTime')" width="110" align="right">
-          <template #default="{ row }">{{ row.response_time_ms }}ms</template>
+        <el-table-column prop="responseTimeMs" :label="t('system.accessLog.col.responseTime')" width="110" align="right">
+          <template #default="{ row }">{{ row.responseTimeMs }}ms</template>
         </el-table-column>
-        <el-table-column prop="ip_hash" :label="t('system.accessLog.col.ipHash')" width="140" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.ip_hash?.slice(0, 12) }}...</template>
+        <el-table-column prop="ipHash" :label="t('system.accessLog.col.ipHash')" width="140" show-overflow-tooltip>
+          <template #default="{ row }">{{ row.ipHash?.slice(0, 12) }}...</template>
         </el-table-column>
-        <el-table-column prop="user_agent" :label="t('system.accessLog.col.userAgent')" min-width="160" show-overflow-tooltip />
+        <el-table-column prop="userAgent" :label="t('system.accessLog.col.userAgent')" min-width="160" show-overflow-tooltip />
       </el-table>
 
       <el-pagination
@@ -85,14 +81,14 @@
     >
       <template v-if="selected">
         <el-descriptions :column="1" border size="small">
-          <el-descriptions-item :label="t('system.accessLog.col.time')">{{ formatDate(selected.created_at) }}</el-descriptions-item>
-          <el-descriptions-item :label="t('system.accessLog.col.url')">{{ selected.page_url }}</el-descriptions-item>
-          <el-descriptions-item :label="t('system.accessLog.col.status')">{{ selected.status }}</el-descriptions-item>
-          <el-descriptions-item :label="t('system.accessLog.col.responseTime')">{{ selected.response_time_ms }}ms</el-descriptions-item>
-          <el-descriptions-item :label="t('system.accessLog.col.ipHash')">{{ selected.ip_hash }}</el-descriptions-item>
-          <el-descriptions-item :label="t('system.accessLog.col.userAgent')">{{ selected.user_agent }}</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.time')">{{ formatDate(selected.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.url')">{{ selected.pageUrl }}</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.status')">{{ selected.statusCode }}</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.responseTime')">{{ selected.responseTimeMs }}ms</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.ipHash')">{{ selected.ipHash }}</el-descriptions-item>
+          <el-descriptions-item :label="t('system.accessLog.col.userAgent')">{{ selected.userAgent }}</el-descriptions-item>
           <el-descriptions-item v-if="selected.referrer" :label="t('system.accessLog.col.referrer')">{{ selected.referrer }}</el-descriptions-item>
-          <el-descriptions-item v-if="selected.user_id" :label="t('system.accessLog.col.userId')">{{ selected.user_id }}</el-descriptions-item>
+          <el-descriptions-item v-if="selected.userId" :label="t('system.accessLog.col.userId')">{{ selected.userId }}</el-descriptions-item>
         </el-descriptions>
       </template>
     </el-dialog>
@@ -104,7 +100,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { accessLogs } from '@/api/system'
-import type { AccessLogResponse } from '@/api/system'
+import type { AccessLogResponse, AccessLogPageResponse } from '@/api/system'
 
 const { t } = useI18n()
 
@@ -117,8 +113,7 @@ const total = ref(0)
 
 const dateRange = ref<[string, string] | null>(null)
 const filterStatus = ref<number | null>(null)
-const filterIpHash = ref('')
-const filterUserId = ref<number | undefined>(undefined)
+const filterPageUrl = ref('')
 
 const detailVisible = ref(false)
 const selected = ref<AccessLogResponse | null>(null)
@@ -127,10 +122,9 @@ function buildFilter() {
   return {
     from: dateRange.value?.[0],
     to: dateRange.value?.[1],
-    status: filterStatus.value ?? undefined,
-    ip_hash: filterIpHash.value || undefined,
-    user_id: filterUserId.value,
-    page: page.value - 1,
+    statusCode: filterStatus.value ?? undefined,
+    pageUrl: filterPageUrl.value || undefined,
+    page: page.value - 1,   // 백엔드는 0-based, el-pagination은 1-based
     size: size.value,
   }
 }
@@ -139,8 +133,8 @@ async function search(): Promise<void> {
   loading.value = true
   try {
     const res = await accessLogs.list(buildFilter())
-    rows.value = res.data.content
-    total.value = res.data.totalElements
+    rows.value = res.data.items
+    total.value = res.data.total
   } catch {
     ElMessage.error(t('common.loadError'))
   } finally {
@@ -151,8 +145,7 @@ async function search(): Promise<void> {
 function resetFilter(): void {
   dateRange.value = null
   filterStatus.value = null
-  filterIpHash.value = ''
-  filterUserId.value = undefined
+  filterPageUrl.value = ''
   page.value = 1
   search()
 }
@@ -163,9 +156,8 @@ async function exportCsv(): Promise<void> {
     const res = await accessLogs.exportCsv({
       from: dateRange.value?.[0],
       to: dateRange.value?.[1],
-      status: filterStatus.value ?? undefined,
-      ip_hash: filterIpHash.value || undefined,
-      user_id: filterUserId.value,
+      statusCode: filterStatus.value ?? undefined,
+      pageUrl: filterPageUrl.value || undefined,
     })
     const url = URL.createObjectURL(res.data)
     const a = document.createElement('a')

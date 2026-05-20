@@ -213,6 +213,19 @@
         "views": "Views",
         "avgResponse": "Avg Response",
         "errorRate": "Error Rate"
+      },
+      "section": {
+        "system": "System Status",
+        "cms": "Content Status"
+      },
+      "cms": {
+        "users": "Total Users",
+        "media": "Media Files",
+        "boards": "Boards",
+        "qnaPending": "QnA Pending",
+        "surveys": "Surveys",
+        "faqs": "FAQs",
+        "pendingQnaTitle": "Unanswered Q&A"
       }
     },
     "accessLog": {
@@ -424,7 +437,36 @@
     "systemStatus": "System Status",
     "recentActivity": "Recent Activity",
     "comingSoon": "Coming in next cycle",
-    "statusError": "Error"
+    "statusError": "Error",
+    "lastUpdated": "Last Updated",
+    "kpiError": "Failed to load KPI data. Please refresh shortly.",
+    "section": {
+      "today": "Today",
+      "system": "System Status"
+    },
+    "todayVisits": "Today's Visits",
+    "todayUnique": "Unique Visitors",
+    "uniqueVisitors": "Deduplicated visitor count",
+    "todayPageViews": "Today's Page Views",
+    "todaySignups": "Today's Sign-ups",
+    "newMembers": "New members",
+    "overallHealth": "Overall system health",
+    "errorRate24h": "Error Rate (24h)",
+    "last24h": "Last 24 hours",
+    "avgResponseMs": "Avg Response Time",
+    "lockedAccounts": "Locked Accounts",
+    "requiresAttention": "Requires attention",
+    "auditSummary": "Audit Log (24h)",
+    "auditTotal24h": "Total Audit Logs",
+    "auditCritical24h": "Critical Logs",
+    "quickLinks": "Quick Links",
+    "noChange": "No change from previous day",
+    "vsPrevDay": "vs prev day",
+    "health": {
+      "healthy": "Healthy",
+      "degraded": "Degraded",
+      "down": "Down"
+    }
   },
   "account": {
     "title": "My Account",
@@ -484,6 +526,7 @@
     "startDate": "Start",
     "endDate": "End",
     "required": "This field is required",
+    "maxLength": "Maximum {max} characters allowed",
     "saveSuccess": "Saved successfully",
     "saveError": "Failed to save",
     "deleteSuccess": "Deleted successfully",
@@ -496,6 +539,9 @@
     "optional": "Optional",
     "empty": "No data available",
     "createdAt": "Created",
+    "viewAll": "View All",
+    "view": "View",
+    "action": "Action",
     "error": {
       "network": "Unable to connect to server. Please try again later.",
       "unknown": "An unknown error occurred"
@@ -969,6 +1015,9 @@
       "placeholder": "Write a comment",
       "replyPlaceholder": "Write a reply",
       "writeNew": "New Comment",
+      "submit": "Post",
+      "reply": "Reply",
+      "cancelReply": "Cancel Reply",
       "delete": "Delete",
       "empty": "No comments yet",
       "editNotImplemented": "Comment editing is coming soon",
@@ -1515,7 +1564,9 @@
       "questionText": "Question",
       "questionType": "Question Type",
       "required": "Required",
-      "options": "Options (JSON)",
+      "options": "Options",
+      "optionLabel": "Option text",
+      "addOption": "Add option",
       "distribution": "Distribution",
       "totalResponses": "Total Responses",
       "totalAnswers": "Answers"
@@ -1536,6 +1587,12 @@
     "confirm": {
       "delete": "Are you sure you want to delete this survey?",
       "deleteTitle": "Confirm Delete"
+    },
+    "preview": "Preview",
+    "previewHint": {
+      "textPlaceholder": "Enter text here",
+      "datePlaceholder": "Select a date",
+      "noOptions": "No options configured"
     },
     "msg": {
       "created": "Survey created successfully.",
@@ -1589,7 +1646,9 @@
     "deleteConfirm": "Delete this synonym?",
     "saved": "Saved",
     "deleted": "Deleted",
-    "empty": "No synonyms registered"
+    "empty": "No synonyms registered",
+    "errorDuplicate": "This synonym is already registered",
+    "errorSelfRef": "Term and synonym cannot be the same"
   },
   "searchAnalytics": {
     "title": "Search Analytics",

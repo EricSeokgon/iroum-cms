@@ -1,10 +1,10 @@
 // 대시보드 + KPI 시각화 API 래퍼 — SPEC-CMS-008
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] dashboardApi — DashboardMainView, WidgetManageView, ExportHistoryView 및 dashboardStore에서 참조
 // @MX:REASON: fan_in >= 3: SPEC-CMS-008 3개 뷰 + dashboardStore에서 공통 호출
 
-const BASE = '/api/v1/dashboard'
+const BASE = '/dashboard'
 
 // ── 위젯 (Widget) ─────────────────────────────────────────────────────────────
 export type WidgetType =
@@ -206,82 +206,82 @@ export const dashboardApi = {
   // 위젯 CRUD
   widgets: {
     list(params?: WidgetListParams): Promise<{ data: WidgetResponse[] }> {
-      return axios.get(`${BASE}/widgets`, { params })
+      return apiClient.get(`${BASE}/widgets`, { params })
     },
     get(id: number): Promise<{ data: WidgetResponse }> {
-      return axios.get(`${BASE}/widgets/${id}`)
+      return apiClient.get(`${BASE}/widgets/${id}`)
     },
     create(req: WidgetRequest): Promise<{ data: WidgetResponse }> {
-      return axios.post(`${BASE}/widgets`, req)
+      return apiClient.post(`${BASE}/widgets`, req)
     },
     update(id: number, req: WidgetRequest): Promise<{ data: WidgetResponse }> {
-      return axios.put(`${BASE}/widgets/${id}`, req)
+      return apiClient.put(`${BASE}/widgets/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/widgets/${id}`)
+      return apiClient.delete(`${BASE}/widgets/${id}`)
     },
     preview(req: WidgetRequest, roles?: string[]): Promise<{ data: WidgetDataResponse }> {
-      return axios.post(`${BASE}/widgets/preview`, req, { params: { roles } })
+      return apiClient.post(`${BASE}/widgets/preview`, req, { params: { roles } })
     },
     data(id: number, params?: WidgetDataParams): Promise<{ data: WidgetDataResponse }> {
-      return axios.get(`${BASE}/widgets/${id}/data`, { params })
+      return apiClient.get(`${BASE}/widgets/${id}/data`, { params })
     },
     series(id: number, dim?: string, group?: string, roles?: string[]): Promise<{ data: WidgetDataResponse }> {
-      return axios.get(`${BASE}/widgets/${id}/data/series`, { params: { dim, group, roles } })
+      return apiClient.get(`${BASE}/widgets/${id}/data/series`, { params: { dim, group, roles } })
     },
   },
 
   // 레이아웃
   layouts: {
     list(): Promise<{ data: LayoutResponse[] }> {
-      return axios.get(`${BASE}/layouts`)
+      return apiClient.get(`${BASE}/layouts`)
     },
     get(id: number): Promise<{ data: LayoutResponse }> {
-      return axios.get(`${BASE}/layouts/${id}`)
+      return apiClient.get(`${BASE}/layouts/${id}`)
     },
     create(req: LayoutRequest): Promise<{ data: LayoutResponse }> {
-      return axios.post(`${BASE}/layouts`, req)
+      return apiClient.post(`${BASE}/layouts`, req)
     },
     update(id: number, req: LayoutRequest): Promise<{ data: LayoutResponse }> {
-      return axios.put(`${BASE}/layouts/${id}`, req)
+      return apiClient.put(`${BASE}/layouts/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/layouts/${id}`)
+      return apiClient.delete(`${BASE}/layouts/${id}`)
     },
     clone(id: number): Promise<{ data: LayoutResponse }> {
-      return axios.post(`${BASE}/layouts/${id}/clone`)
+      return apiClient.post(`${BASE}/layouts/${id}/clone`)
     },
     setDefault(id: number): Promise<{ data: LayoutResponse }> {
-      return axios.put(`${BASE}/layouts/${id}/default`)
+      return apiClient.put(`${BASE}/layouts/${id}/default`)
     },
   },
 
   // 저장된 뷰
   views: {
     list(dashboardId?: number): Promise<{ data: SavedViewResponse[] }> {
-      return axios.get(`${BASE}/views`, { params: { dashboard_id: dashboardId } })
+      return apiClient.get(`${BASE}/views`, { params: { dashboard_id: dashboardId } })
     },
     create(req: SavedViewRequest): Promise<{ data: SavedViewResponse }> {
-      return axios.post(`${BASE}/views`, req)
+      return apiClient.post(`${BASE}/views`, req)
     },
     update(id: number, req: SavedViewRequest): Promise<{ data: SavedViewResponse }> {
-      return axios.put(`${BASE}/views/${id}`, req)
+      return apiClient.put(`${BASE}/views/${id}`, req)
     },
     delete(id: number): Promise<void> {
-      return axios.delete(`${BASE}/views/${id}`)
+      return apiClient.delete(`${BASE}/views/${id}`)
     },
     apply(id: number): Promise<{ data: SavedViewResponse }> {
-      return axios.post(`${BASE}/views/${id}/apply`)
+      return apiClient.post(`${BASE}/views/${id}/apply`)
     },
   },
 
   // 내보내기
   exports: {
     create(req: ExportRequest): Promise<{ data: ExportResponse }> {
-      return axios.post(`${BASE}/export`, req)
+      return apiClient.post(`${BASE}/export`, req)
     },
     status(id: number): Promise<{ data: ExportResponse }> {
-      return axios.get(`${BASE}/export/${id}/status`)
+      return apiClient.get(`${BASE}/export/${id}/status`)
     },
     download(id: number, signature?: string, exp?: number): string {
       // 다운로드는 브라우저가 직접 처리 (URL 생성만 반환)
@@ -292,17 +292,17 @@ export const dashboardApi = {
       return `${BASE}/export/${id}/download${qs ? '?' + qs : ''}`
     },
     history(status?: ExportStatus): Promise<{ data: ExportResponse[] }> {
-      return axios.get(`${BASE}/export`, { params: { status } })
+      return apiClient.get(`${BASE}/export`, { params: { status } })
     },
   },
 
   // 캐시 (관리자)
   cache: {
     invalidate(req: CacheInvalidateRequest): Promise<void> {
-      return axios.post(`${BASE}/cache/invalidate`, req)
+      return apiClient.post(`${BASE}/cache/invalidate`, req)
     },
     stats(): Promise<{ data: CacheStatsResponse }> {
-      return axios.get(`${BASE}/cache/stats`)
+      return apiClient.get(`${BASE}/cache/stats`)
     },
   },
 }

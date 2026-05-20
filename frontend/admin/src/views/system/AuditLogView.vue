@@ -194,13 +194,13 @@ const actionOptions: AuditAction[] = [
 
 function buildFilter() {
   return {
-    from: dateRange.value?.[0],
-    to: dateRange.value?.[1],
+    fromTime: dateRange.value?.[0],   // 백엔드 파라미터 이름
+    toTime: dateRange.value?.[1],     // 백엔드 파라미터 이름
     action: filterAction.value || undefined,
     severity: filterSeverity.value || undefined,
     result: filterResult.value || undefined,
     entity_type: filterEntityType.value || undefined,
-    page: page.value - 1,
+    page: page.value,   // 백엔드는 1-based
     size: size.value,
   }
 }
@@ -209,8 +209,8 @@ async function search(): Promise<void> {
   loading.value = true
   try {
     const res = await auditLogs.search(buildFilter())
-    rows.value = res.data.content
-    total.value = res.data.totalElements
+    rows.value = res.data.items
+    total.value = res.data.total
   } catch {
     ElMessage.error(t('common.loadError'))
   } finally {

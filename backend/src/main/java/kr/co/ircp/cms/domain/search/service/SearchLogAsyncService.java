@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 검색 로그 비동기 적재 서비스.
@@ -22,6 +24,23 @@ import org.springframework.stereotype.Service;
 public class SearchLogAsyncService {
 
     private final SearchLogMapper searchLogMapper;
+
+    /**
+     * 검색 로그 동기 INSERT — SearchResponse에 searchLogId를 포함하기 위해 사용.
+     * readOnly 트랜잭션에서 호출되므로 REQUIRES_NEW로 별도 쓰기 트랜잭션을 생성한다.
+     * MyBatis useGeneratedKeys로 entry.id에 생성된 PK가 채워진다.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Long insertSync(SearchLog entry) {
+        try {
+            searchLogMapper.insert(entry);
+            return entry.getId();
+        } catch (RuntimeException e) {
+            log.warn("검색 로그 동기 적재 실패 (무시): query={}, msg={}",
+                    entry == null ? null : entry.getQuery(), e.getMessage());
+            return null;
+        }
+    }
 
     /**
      * 검색 로그 비동기 INSERT.

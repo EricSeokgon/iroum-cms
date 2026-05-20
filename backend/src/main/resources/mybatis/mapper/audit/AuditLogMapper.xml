@@ -66,6 +66,9 @@
             <if test="severity != null and severity != ''">
                 AND severity = #{severity}
             </if>
+            <if test="result != null and result != ''">
+                AND result = #{result}
+            </if>
             <if test="actorId != null">
                 AND actor_id = #{actorId}
             </if>

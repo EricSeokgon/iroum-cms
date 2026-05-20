@@ -171,7 +171,7 @@
             v-model="form.synonym"
             type="textarea"
             :rows="3"
-            maxlength="500"
+            maxlength="100"
             show-word-limit
             :placeholder="t('synonyms.synonymPlaceholder')"
           />
@@ -250,8 +250,14 @@ const form = reactive<FormState>({
 })
 
 const formRules: FormRules = {
-  term: [{ required: true, message: t('common.required'), trigger: 'blur' }],
-  synonym: [{ required: true, message: t('common.required'), trigger: 'blur' }],
+  term: [
+    { required: true, message: t('common.required'), trigger: 'blur' },
+    { max: 100, message: t('common.maxLength', { max: 100 }), trigger: 'blur' },
+  ],
+  synonym: [
+    { required: true, message: t('common.required'), trigger: 'blur' },
+    { max: 100, message: t('common.maxLength', { max: 100 }), trigger: 'blur' },
+  ],
   locale: [{ required: true, message: t('common.required'), trigger: 'change' }],
 }
 
@@ -321,8 +327,15 @@ async function handleSubmit(): Promise<void> {
     ElMessage.success(t('synonyms.saved'))
     showDialog.value = false
     loadSynonyms()
-  } catch {
-    ElMessage.error(t('common.saveError'))
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status === 409) {
+      ElMessage.error(t('synonyms.errorDuplicate'))
+    } else if (status === 400) {
+      ElMessage.error(t('synonyms.errorSelfRef'))
+    } else {
+      ElMessage.error(t('common.saveError'))
+    }
   } finally {
     submitting.value = false
   }

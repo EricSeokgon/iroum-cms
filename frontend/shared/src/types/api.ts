@@ -424,6 +424,7 @@ export interface PostSummary {
 
 /** 게시글 상세 DTO */
 export interface PostDetail extends PostSummary {
+  useComment: boolean
   contentHtml: string
   categoryCode?: string
   attachments: AttachmentSummary[]
@@ -487,8 +488,8 @@ export type MediaType = 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO'
 /** 미디어 자산 상태 */
 export type MediaStatus = 'ACTIVE' | 'PROCESSING' | 'ERROR' | 'DELETED'
 
-/** 라이선스 유형 */
-export type LicenseType = 'ALL_RIGHTS_RESERVED' | 'CC_BY' | 'CC_BY_SA' | 'CC_BY_NC' | 'CC0' | 'PUBLIC_DOMAIN'
+/** 라이선스 유형 — 백엔드 LicenseType enum과 동기화 */
+export type LicenseType = 'CC0' | 'CC_BY' | 'CC_BY_NC' | 'PROPRIETARY' | 'INTERNAL'
 
 /** 미디어 자산 목록용 요약 DTO */
 export interface MediaAssetSummary {

@@ -11,6 +11,7 @@ public record PostDetail(
         Long id,
         Long bbsMasterId,
         String bbsMasterCode,
+        boolean useComment,
         String title,
         String contentHtml,
         Long authorId,

@@ -1649,6 +1649,12 @@
       "close": "설문조사를 마감하면 더 이상 응답할 수 없습니다. 마감하시겠습니까?",
       "closeTitle": "마감 확인"
     },
+    "preview": "미리보기",
+    "previewHint": {
+      "textPlaceholder": "텍스트를 입력하세요",
+      "datePlaceholder": "날짜를 선택하세요",
+      "noOptions": "선택지가 없습니다"
+    },
     "msg": {
       "created": "설문조사가 등록되었습니다.",
       "updated": "설문조사가 수정되었습니다.",

@@ -181,6 +181,9 @@
         >
           {{ t('users.action.unlock') }}
         </el-button>
+        <el-button type="info" plain @click="openPasswordReset">
+          {{ t('users.action.resetPassword', '비밀번호 초기화') }}
+        </el-button>
         <el-button type="warning" plain @click="handleForceLogout">
           {{ t('users.action.forceLogout') }}
         </el-button>
@@ -198,6 +201,31 @@
       @close="showForm = false"
       @saved="onSaved"
     />
+
+    <!-- 비밀번호 초기화 다이얼로그 -->
+    <el-dialog
+      v-model="showPasswordReset"
+      :title="t('users.action.resetPassword', '비밀번호 초기화')"
+      width="420px"
+      :close-on-click-modal="false"
+    >
+      <el-form label-position="top" @submit.prevent>
+        <el-form-item :label="t('users.field.newPassword', '새 비밀번호')" required>
+          <el-input
+            v-model="newPassword"
+            type="password"
+            show-password
+            :placeholder="t('users.passwordHint', '8자 이상, 영문·숫자·특수문자 조합')"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showPasswordReset = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="passwordResetting" @click="handlePasswordReset">
+          {{ t('common.confirm', '확인') }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -219,6 +247,11 @@ const user = ref<UserDetail | null>(null)
 const loading = ref(false)
 const loadError = ref('')
 const showForm = ref(false)
+
+// 비밀번호 초기화
+const showPasswordReset = ref(false)
+const newPassword = ref('')
+const passwordResetting = ref(false)
 
 // 권한 변경 이력 (REQ-AUTH-016)
 const recentPermissionChanges = ref<PermissionChangeEntry[]>([])
@@ -289,6 +322,29 @@ async function handleForceLogout(): Promise<void> {
     ElMessage.success(t('users.success.forcedLogout'))
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(t('users.error.forceLogoutFailed'))
+  }
+}
+
+function openPasswordReset(): void {
+  newPassword.value = ''
+  showPasswordReset.value = true
+}
+
+async function handlePasswordReset(): Promise<void> {
+  if (!user.value) return
+  if (!newPassword.value.trim()) {
+    ElMessage.warning(t('common.required'))
+    return
+  }
+  passwordResetting.value = true
+  try {
+    await usersApi.resetPassword(user.value.id, newPassword.value)
+    ElMessage.success(t('users.success.passwordReset', '비밀번호가 초기화되었습니다'))
+    showPasswordReset.value = false
+  } catch {
+    ElMessage.error(t('users.error.passwordResetFailed', '비밀번호 초기화에 실패했습니다'))
+  } finally {
+    passwordResetting.value = false
   }
 }
 

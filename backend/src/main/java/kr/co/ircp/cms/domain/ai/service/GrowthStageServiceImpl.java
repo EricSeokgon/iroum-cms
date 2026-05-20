@@ -89,6 +89,7 @@ public class GrowthStageServiceImpl implements GrowthStageService {
         return AiPredictionLog.builder()
                 .predictionType(TYPE)
                 .modelName(MODEL_NAME)
+                .modelVersion("rule-v1.0.0")
                 .inputFeatures(toJson(q))
                 .outputResult(outputJson)
                 .confidence(confidence)

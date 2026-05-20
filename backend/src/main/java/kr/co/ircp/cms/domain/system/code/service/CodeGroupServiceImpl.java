@@ -51,6 +51,13 @@ public class CodeGroupServiceImpl implements CodeGroupService {
     }
 
     @Override
+    public CodeGroupResponse getByCode(String groupCode) {
+        return codeGroupMapper.findByGroupCode(groupCode)
+                .map(CodeGroupResponse::from)
+                .orElseThrow(() -> new NoSuchElementException("코드 그룹을 찾을 수 없습니다. groupCode=" + groupCode));
+    }
+
+    @Override
     @Cacheable("codeGroups")
     public List<CodeGroupResponse> listAll() {
         return codeGroupMapper.findAll().stream()

@@ -40,4 +40,13 @@ public interface BannerMapper {
      * REQ-CONTENT-009-D-3: UPDATE banner SET click_count = click_count + 1
      */
     int incrementClickCount(@Param("id") Long id);
+
+    /** 관리자용 배너 목록 조회 (사이트/그룹 필터) */
+    List<Banner> findAdminBySiteId(
+            @Param("siteId") Long siteId,
+            @Param("bannerGroupCode") String bannerGroupCode
+    );
+
+    /** 사이트별 배너 그룹 코드 목록 조회 (중복 제거) */
+    List<String> findGroupsBySiteId(@Param("siteId") Long siteId);
 }

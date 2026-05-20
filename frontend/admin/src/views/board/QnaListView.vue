@@ -3,6 +3,9 @@
     <!-- 헤더 -->
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-xl font-semibold text-gray-800">{{ t('qna.title') }}</h2>
+      <el-button v-if="isAdmin" type="primary" @click="openCreateDialog">
+        {{ t('common.create') }}
+      </el-button>
     </div>
 
     <!-- 검색 영역 -->
@@ -217,6 +220,39 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 등록 다이얼로그 -->
+    <el-dialog
+      v-model="showCreateDialog"
+      :title="t('qna.createTitle', 'Q&A 등록')"
+      width="640px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="createForm" label-position="top" @submit.prevent>
+        <el-form-item :label="t('qna.field.title')" required>
+          <el-input v-model="createForm.title" :placeholder="t('qna.field.title')" />
+        </el-form-item>
+        <el-form-item :label="t('qna.field.content', '내용')" required>
+          <el-input
+            v-model="createForm.questionHtml"
+            type="textarea"
+            :rows="6"
+            :placeholder="t('qna.field.content', '질문 내용을 입력하세요')"
+          />
+        </el-form-item>
+        <el-form-item :label="t('qna.field.isPrivate')">
+          <el-switch v-model="createForm.isPrivate" />
+          <span class="ml-2 text-sm text-gray-500">{{ t('qna.privacy.private') }}</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showCreateDialog = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleCreateSubmit">
+          {{ t('common.save') }}
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -228,6 +264,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import {
   listQnas,
+  createQna,
   answerQna,
   closeQna,
   deleteQna,
@@ -253,6 +290,9 @@ const liveAnnouncement = ref('')
 const showAnswerDialog = ref(false)
 const answeringQna = ref<QnaSummary | null>(null)
 const answerHtml = ref('')
+
+const showCreateDialog = ref(false)
+const createForm = ref({ title: '', questionHtml: '', isPrivate: false })
 
 // ── 권한 ──────────────────────────────────────────────────────────────────
 const isAdmin = computed(() => {
@@ -291,6 +331,29 @@ function onSearch(): void {
 
 function goDetail(row: QnaSummary): void {
   router.push({ name: 'board-qna-detail', params: { id: row.id } })
+}
+
+function openCreateDialog(): void {
+  createForm.value = { title: '', questionHtml: '', isPrivate: false }
+  showCreateDialog.value = true
+}
+
+async function handleCreateSubmit(): Promise<void> {
+  if (!createForm.value.title.trim() || !createForm.value.questionHtml.trim()) {
+    ElMessage.warning(t('common.required'))
+    return
+  }
+  submitting.value = true
+  try {
+    await createQna(createForm.value)
+    ElMessage.success(t('common.saveSuccess'))
+    showCreateDialog.value = false
+    loadQnas()
+  } catch {
+    ElMessage.error(t('common.saveError'))
+  } finally {
+    submitting.value = false
+  }
 }
 
 function openAnswerDialog(row: QnaSummary): void {

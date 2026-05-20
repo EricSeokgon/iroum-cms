@@ -97,6 +97,7 @@ public class SearchServiceImpl implements SearchService {
     private final SearchPopularCacheMapper popularCacheMapper;
     private final SearchLogMapper searchLogMapper;
     private final SynonymService synonymService;
+    private final SearchLogAsyncService searchLogAsyncService;
 
     @Override
     public SearchResponse search(SearchRequest req, Long requesterId, boolean isAdmin,
@@ -128,7 +129,7 @@ public class SearchServiceImpl implements SearchService {
 
         // 4) 빈 쿼리 처리
         if (normalized.isBlank()) {
-            return new SearchResponse(0, 0, List.of(), Map.of(), normalized);
+            return new SearchResponse(null, 0, 0, List.of(), Map.of(), normalized);
         }
 
         // 5) UnifiedSearchMapper 호출
@@ -145,6 +146,7 @@ public class SearchServiceImpl implements SearchService {
         Map<String, Long> facets = new LinkedHashMap<>();
         for (Map<String, Object> row : rows) {
             String snippet = sanitizeHighlight((String) row.get("snippet"));
+            String highlight = sanitizeHighlight((String) row.get("highlight"));
             String rawTitle = (String) row.get("title");
             String title = rawTitle == null ? null : Jsoup.clean(rawTitle, Safelist.none());
             DocResult doc = new DocResult(
@@ -152,6 +154,7 @@ public class SearchServiceImpl implements SearchService {
                     asLong(row.get("doc_id")),
                     title,
                     snippet,
+                    highlight,
                     asDouble(row.get("rank")),
                     (String) row.get("domain"),
                     (String) row.get("url"),
@@ -163,17 +166,12 @@ public class SearchServiceImpl implements SearchService {
 
         int totalPages = size == 0 ? 0 : (int) Math.ceil((double) total / size);
 
-        // 7) 비동기 검색 로그 적재 (REQ-SEARCH-008) — 응답 직전, 트랜잭션 후 적재가 이상적이나
-        //    Step 2 범위에서는 동기 INSERT로 처리(@Async 도입은 후속 트랙). 응답 시간 영향은 < 10ms 가정.
+        // 7) 검색 로그 적재 — REQUIRES_NEW 트랜잭션으로 ID 즉시 반환 (REQ-SEARCH-008)
         long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000L;
-        try {
-            insertSearchLog(rawQuery, normalized, expandedQuery, (int) total,
-                    (int) elapsedMs, locale, domain, requesterId, sessionId, ipHash);
-        } catch (Exception ignored) {
-            // 로깅 실패가 검색 결과 노출을 막아서는 안 됨
-        }
+        Long searchLogId = insertSearchLog(rawQuery, normalized, expandedQuery, (int) total,
+                (int) elapsedMs, locale, domain, requesterId, sessionId, ipHash);
 
-        return new SearchResponse((int) total, totalPages, content, facets, expandedQuery);
+        return new SearchResponse(searchLogId, (int) total, totalPages, content, facets, expandedQuery);
     }
 
     @Override
@@ -281,15 +279,15 @@ public class SearchServiceImpl implements SearchService {
         List<Map<String, Object>> topQueries = unifiedSearchMapper.topQueries(
                 effectiveFrom, effectiveTo, effectiveLimit
         );
-        Double zeroRatio = unifiedSearchMapper.zeroResultRatio(effectiveFrom, effectiveTo);
-        Double avgMs = unifiedSearchMapper.avgResponseMs(effectiveFrom, effectiveTo);
         long totalCount = unifiedSearchMapper.totalSearchCount(effectiveFrom, effectiveTo);
+        long uniqueCount = unifiedSearchMapper.uniqueQueriesCount(effectiveFrom, effectiveTo);
 
         return new SearchStatsResponse(
-                topQueries == null ? List.of() : topQueries,
-                zeroRatio == null ? 0.0 : zeroRatio,
-                avgMs == null ? 0.0 : avgMs,
-                totalCount
+                effectiveFrom.toString(),
+                effectiveTo.toString(),
+                totalCount,
+                uniqueCount,
+                topQueries == null ? List.of() : topQueries
         );
     }
 
@@ -339,7 +337,7 @@ public class SearchServiceImpl implements SearchService {
         return cleaned;
     }
 
-    private void insertSearchLog(String rawQuery, String normalized, String expanded,
+    private Long insertSearchLog(String rawQuery, String normalized, String expanded,
                                   int resultCount, int responseMs, String locale,
                                   String domainFilter, Long userId, String sessionId, String ipHash) {
         SearchLog entry = SearchLog.builder()
@@ -354,7 +352,8 @@ public class SearchServiceImpl implements SearchService {
                 .domainFilter(domainFilter)
                 .ipHash(ipHash)
                 .build();
-        searchLogMapper.insert(entry);
+        // REQUIRES_NEW 트랜잭션으로 동기 INSERT — searchLogId를 응답에 포함하기 위해 필요
+        return searchLogAsyncService.insertSync(entry);
     }
 
     private static Long asLong(Object o) {

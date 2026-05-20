@@ -1,8 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
+import pkg from './package.json'
 
-// import.meta.url은 ESM 모듈에서 현재 파일의 URL을 반환함
-// fileURLToPath 없이 pathname 직접 사용 (Linux/WSL 환경)
 const baseDir = new URL('.', import.meta.url).pathname
 
 // https://vite.dev/config/
@@ -10,7 +9,7 @@ export default defineConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   plugins: [vue() as any],
   define: {
-    __APP_VERSION__: JSON.stringify('0.1.1'),
+    __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
   resolve: {

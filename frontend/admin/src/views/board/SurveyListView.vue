@@ -150,7 +150,7 @@
       <el-table-column
         v-if="isAdmin"
         :label="t('common.actions')"
-        width="220"
+        width="260"
         fixed="right"
       >
         <template #default="{ row }">
@@ -166,16 +166,27 @@
             >
               {{ t('survey.publish') }}
             </el-button>
-            <el-button
-              v-else-if="row.status === 'OPEN'"
-              size="small"
-              type="warning"
-              plain
-              :aria-label="`${t('survey.close')} ${row.title}`"
-              @click="handlePublish(row, 'CLOSED')"
-            >
-              {{ t('survey.close') }}
-            </el-button>
+            <template v-else-if="row.status === 'OPEN'">
+              <el-button
+                size="small"
+                type="warning"
+                plain
+                :aria-label="`${t('survey.close')} ${row.title}`"
+                @click="handlePublish(row, 'CLOSED')"
+              >
+                {{ t('survey.close') }}
+              </el-button>
+              <el-tooltip content="공개 링크 복사" placement="top">
+                <el-button
+                  size="small"
+                  type="info"
+                  plain
+                  @click="copyPublicLink(row.id)"
+                >
+                  링크 복사
+                </el-button>
+              </el-tooltip>
+            </template>
             <el-button
               size="small"
               type="primary"
@@ -633,6 +644,15 @@ function formatDateTime(iso: string): string {
   if (!iso) return '-'
   // "YYYY-MM-DDTHH:mm:ss..." → "YYYY-MM-DD HH:mm"
   return `${iso.slice(0, 10)} ${iso.slice(11, 16)}`
+}
+
+function copyPublicLink(id: number): void {
+  const url = `${window.location.origin}/public/survey/${id}`
+  navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success('링크가 복사되었습니다.')
+  }).catch(() => {
+    ElMessage.error('링크 복사에 실패했습니다.')
+  })
 }
 
 onMounted(() => {

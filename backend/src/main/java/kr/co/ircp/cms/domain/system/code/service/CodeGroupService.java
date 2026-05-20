@@ -15,6 +15,9 @@ public interface CodeGroupService {
 
     CodeGroupResponse getById(Long id);
 
+    /** groupCode 문자열로 조회 (프론트엔드 URL param용) */
+    CodeGroupResponse getByCode(String groupCode);
+
     List<CodeGroupResponse> listAll();
 
     CodeGroupResponse update(Long id, CodeGroupRequest request);

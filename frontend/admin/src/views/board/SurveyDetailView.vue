@@ -63,39 +63,94 @@
         />
       </section>
 
-      <!-- 질문 목록 -->
+      <!-- 질문 목록 (미리보기) -->
       <section class="rounded border border-gray-200 bg-white p-6">
-        <h3 class="mb-3 text-base font-semibold text-gray-800">
-          {{ t('survey.field.questions') }} ({{ survey.questions.length }})
-        </h3>
+        <div class="mb-4 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-800">
+            {{ t('survey.field.questions') }} ({{ survey.questions.length }})
+          </h3>
+          <el-tag type="info" size="small" effect="plain">
+            {{ t('survey.preview') }}
+          </el-tag>
+        </div>
         <div v-if="survey.questions.length === 0" class="text-sm text-gray-400">
           {{ t('common.empty') }}
         </div>
         <el-card
           v-for="(q, idx) in survey.questions"
           :key="q.id"
-          class="mb-3"
+          class="mb-4"
           shadow="never"
         >
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex-1">
-              <div class="mb-1 text-sm text-gray-500">Q{{ idx + 1 }}</div>
-              <div class="text-base font-medium text-gray-800">
+          <div class="mb-3 flex items-start justify-between gap-3">
+            <div>
+              <div class="mb-0.5 text-xs text-gray-400">Q{{ idx + 1 }}</div>
+              <div class="text-sm font-semibold text-gray-800">
                 {{ q.questionText }}
-              </div>
-              <div v-if="q.options" class="mt-2 text-xs text-gray-500">
-                {{ q.options }}
+                <span v-if="q.required" class="ml-1 text-red-500">*</span>
               </div>
             </div>
-            <div class="flex flex-col items-end gap-1">
-              <el-tag size="small">
-                {{ t(`survey.questionType.${q.questionType}`) }}
-              </el-tag>
-              <el-tag v-if="q.required" size="small" type="danger" effect="plain">
-                {{ t('survey.field.required') }}
-              </el-tag>
-            </div>
+            <el-tag size="small" effect="plain">
+              {{ t(`survey.questionType.${q.questionType}`) }}
+            </el-tag>
           </div>
+
+          <!-- TEXT: 주관식 -->
+          <template v-if="q.questionType === 'TEXT'">
+            <el-input
+              type="textarea"
+              :rows="3"
+              :placeholder="t('survey.previewHint.textPlaceholder')"
+              disabled
+            />
+          </template>
+
+          <!-- SINGLE: 단일 선택 -->
+          <template v-else-if="q.questionType === 'SINGLE'">
+            <el-radio-group disabled class="flex flex-col gap-2">
+              <el-radio
+                v-for="(opt, optIdx) in parseOptions(q.options)"
+                :key="optIdx"
+                :label="opt.value"
+              >
+                {{ opt.label }}
+              </el-radio>
+            </el-radio-group>
+            <div v-if="!parseOptions(q.options).length" class="text-xs text-gray-400">
+              {{ t('survey.previewHint.noOptions') }}
+            </div>
+          </template>
+
+          <!-- MULTI: 복수 선택 -->
+          <template v-else-if="q.questionType === 'MULTI'">
+            <div class="flex flex-col gap-2">
+              <el-checkbox
+                v-for="(opt, optIdx) in parseOptions(q.options)"
+                :key="optIdx"
+                disabled
+              >
+                {{ opt.label }}
+              </el-checkbox>
+            </div>
+            <div v-if="!parseOptions(q.options).length" class="text-xs text-gray-400">
+              {{ t('survey.previewHint.noOptions') }}
+            </div>
+          </template>
+
+          <!-- RATING: 평점 -->
+          <template v-else-if="q.questionType === 'RATING'">
+            <el-rate disabled :model-value="0" />
+          </template>
+
+          <!-- DATE: 날짜 -->
+          <template v-else-if="q.questionType === 'DATE'">
+            <el-date-picker
+              disabled
+              type="date"
+              :placeholder="t('survey.previewHint.datePlaceholder')"
+              style="width: 200px"
+            />
+          </template>
         </el-card>
       </section>
 
@@ -220,12 +275,31 @@
             v-if="question.questionType === 'SINGLE' || question.questionType === 'MULTI'"
             :label="t('survey.field.options')"
           >
-            <el-input
-              v-model="question.options"
-              type="textarea"
-              :rows="3"
-              :placeholder="optionsPlaceholder"
-            />
+            <div class="w-full space-y-2">
+              <div
+                v-for="(opt, optIdx) in optionLists[idx]"
+                :key="optIdx"
+                class="flex items-center gap-2"
+              >
+                <el-input
+                  v-model="opt.label"
+                  :placeholder="t('survey.field.optionLabel')"
+                  class="flex-1"
+                />
+                <el-button
+                  size="small"
+                  type="danger"
+                  plain
+                  :aria-label="t('common.delete')"
+                  @click="removeOption(idx, optIdx)"
+                >
+                  -
+                </el-button>
+              </div>
+              <el-button type="primary" plain size="small" @click="addOption(idx)">
+                + {{ t('survey.field.addOption') }}
+              </el-button>
+            </div>
           </el-form-item>
         </div>
 
@@ -343,7 +417,7 @@ const resultLoading = ref(false)
 const result = ref<SurveyResultDto | null>(null)
 
 const questionTypeOptions: QuestionType[] = ['SINGLE', 'MULTI', 'TEXT', 'RATING', 'DATE']
-const optionsPlaceholder = 'JSON 배열 직접 입력, 예: [{"value":"A","label":"선택1"}]'
+const optionLists = ref<{ value: string; label: string }[][]>([])
 
 interface FormState {
   title: string
@@ -412,6 +486,16 @@ function openEditDialog(): void {
     sortOrder: q.sortOrder,
     options: q.options,
   }))
+  optionLists.value = form.questions.map((q) => {
+    if ((q.questionType === 'SINGLE' || q.questionType === 'MULTI') && q.options) {
+      try {
+        return JSON.parse(q.options) as { value: string; label: string }[]
+      } catch {
+        return []
+      }
+    }
+    return []
+  })
   showDialog.value = true
 }
 
@@ -423,13 +507,24 @@ function addQuestion(): void {
     sortOrder: form.questions.length + 1,
     options: null,
   })
+  optionLists.value.push([])
 }
 
 function removeQuestion(idx: number): void {
   form.questions.splice(idx, 1)
+  optionLists.value.splice(idx, 1)
   form.questions.forEach((q, i) => {
     q.sortOrder = i + 1
   })
+}
+
+function addOption(qIdx: number): void {
+  const list = optionLists.value[qIdx]
+  list.push({ value: String(list.length + 1), label: '' })
+}
+
+function removeOption(qIdx: number, optIdx: number): void {
+  optionLists.value[qIdx].splice(optIdx, 1)
 }
 
 async function handleSubmit(): Promise<void> {
@@ -443,6 +538,12 @@ async function handleSubmit(): Promise<void> {
 
   submitting.value = true
   try {
+    form.questions.forEach((q, i) => {
+      if (q.questionType === 'SINGLE' || q.questionType === 'MULTI') {
+        const opts = optionLists.value[i] ?? []
+        q.options = opts.length > 0 ? JSON.stringify(opts) : null
+      }
+    })
     const payload = {
       title: form.title,
       descriptionHtml: form.descriptionHtml || undefined,
@@ -499,6 +600,15 @@ async function openResultDialog(): Promise<void> {
 
 function goBack(): void {
   router.push({ name: 'board-surveys' })
+}
+
+function parseOptions(raw: string | null): { value: string; label: string }[] {
+  if (!raw) return []
+  try {
+    return JSON.parse(raw) as { value: string; label: string }[]
+  } catch {
+    return []
+  }
 }
 
 function formatDate(iso: string): string {

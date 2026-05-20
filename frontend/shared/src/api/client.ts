@@ -42,7 +42,7 @@ function processQueue(error: unknown, token: string | null): void {
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     // 로그인·갱신 엔드포인트는 토큰 헤더 제외
-    const skipPaths = ['/auth/login', '/auth/refresh', '/auth/logout']
+    const skipPaths = ['/auth/login', '/auth/refresh']
     const url = config.url ?? ''
     if (skipPaths.some((p) => url.includes(p))) {
       return config
@@ -71,8 +71,8 @@ apiClient.interceptors.response.use(
     const status = error.response?.status
     const code = (error.response?.data as ApiError | undefined)?.code ?? ''
 
-    // 로그인 자격증명 오류(401)는 재시도 안 함
-    if (originalRequest.url?.includes('/auth/login')) {
+    // 로그인·갱신 엔드포인트 401은 재시도 안 함 (무한 루프 방지)
+    if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/refresh')) {
       return Promise.reject(error)
     }
 

@@ -6,6 +6,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -207,6 +211,12 @@ public class SecurityConfig {
                     "/api/v1/ai/rag/query",
                     "/api/v1/ai/rag/feedback"
                 ).permitAll()
+                // REQ-POLICY-001: 정책사업 목록·단건 공개 조회 허용
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/policy/programs",
+                    "/api/v1/policy/programs/**"
+                ).permitAll()
                 // SPEC-CMS-AI-001 — AI 운영자 API는 ADMIN 전용(defense-in-depth, @PreAuthorize와 이중화)
                 .requestMatchers("/api/v1/admin/ai/**").hasRole("ADMIN")
                 // SPEC-CMS-AI-001 — AI 예측/시뮬레이션은 인증 사용자 전용
@@ -234,6 +244,23 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    // SUPER_ADMIN은 ADMIN의 모든 권한을 포함한다.
+    // Spring Security 6.4+: RoleHierarchy @Bean 선언만으로 @PreAuthorize + URL 룰 모두 자동 적용.
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
+        hierarchy.setHierarchy("ROLE_SUPER_ADMIN > ROLE_ADMIN");
+        return hierarchy;
+    }
+
+    // @PreAuthorize 표현식에 RoleHierarchy 적용 (static — 빈 초기화 순서 보장)
+    @Bean
+    static MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
     }
 
     @Bean

@@ -102,4 +102,42 @@
           AND site_id = #{siteId}
     </select>
 
+
+    <resultMap id="MenuPageRM" type="kr.co.ircp.cms.domain.system.stats.dto.MenuPageStatsResponse">
+        <result property="pageUrl"        column="page_url"/>
+        <result property="visitCount"     column="visit_count"/>
+        <result property="uniqueVisitors" column="unique_visitors"/>
+        <result property="avgResponseMs"  column="avg_response_ms"/>
+        <result property="errorRate"      column="error_rate"/>
+    </resultMap>
+
+    <!-- 메뉴별 방문 통계: access_log 직접 집계, 날짜 범위 + 페이지네이션 -->
+    <select id="findMenuStats" resultMap="MenuPageRM">
+        SELECT
+            page_url,
+            COUNT(*)                          AS visit_count,
+            COUNT(DISTINCT ip_hash)           AS unique_visitors,
+            COALESCE(AVG(response_time_ms)::bigint, 0) AS avg_response_ms,
+            ROUND(
+                COUNT(*) FILTER (WHERE status_code >= 500)::numeric
+                / NULLIF(COUNT(*), 0),
+                4
+            ) AS error_rate
+        FROM access_log
+        WHERE site_id = #{siteId}
+          AND created_at >= #{from}::date
+          AND created_at  &lt; #{to}::date + INTERVAL '1 day'
+        GROUP BY page_url
+        ORDER BY visit_count DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countMenuStats" resultType="int">
+        SELECT COUNT(DISTINCT page_url)
+        FROM access_log
+        WHERE site_id = #{siteId}
+          AND created_at >= #{from}::date
+          AND created_at  &lt; #{to}::date + INTERVAL '1 day'
+    </select>
+
 </mapper>

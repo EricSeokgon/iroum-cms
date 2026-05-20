@@ -293,6 +293,16 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @AuditLog(action = "PASSWORD_RESET", entityType = "User", severity = "WARN")
+    public void adminResetPassword(long id, String newPassword, long actorId) {
+        userMapper.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        passwordPolicyService.validate(newPassword);
+        String hashed = passwordPolicyService.hash(newPassword);
+        userMapper.updatePassword(id, hashed, Instant.now());
+    }
+
+    @Override
+    @Transactional
     public UserSelf updateMe(long currentUserId, UserSelfUpdateRequest req) {
         User existing = userMapper.findById(currentUserId)
                 .orElseThrow(() -> new UserNotFoundException(currentUserId));

@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.auth.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.domain.auth.dto.AdminPasswordResetRequest;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -135,5 +136,19 @@ public class UserController {
     public void forceLogout(@PathVariable long id,
                             @AuthenticationPrincipal JwtPrincipal principal) {
         userService.forceLogout(id, principal.userId());
+    }
+
+    /**
+     * 관리자 비밀번호 강제 초기화.
+     *
+     * <p>권한: SUPER_ADMIN. 비밀번호 정책(8자, 3종류 이상) 적용.
+     */
+    @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@PathVariable long id,
+                              @Valid @RequestBody AdminPasswordResetRequest req,
+                              @AuthenticationPrincipal JwtPrincipal principal) {
+        userService.adminResetPassword(id, req.newPassword(), principal.userId());
     }
 }

@@ -63,4 +63,19 @@
         WHERE id = #{id}
     </update>
 
+    <select id="findAdminBySiteId" resultMap="bannerResultMap">
+        SELECT * FROM banner
+        WHERE 1=1
+        <if test="siteId != null">AND site_id = #{siteId}</if>
+        <if test="bannerGroupCode != null and bannerGroupCode != ''">AND banner_group_code = #{bannerGroupCode}</if>
+        ORDER BY banner_group_code ASC, sort_order ASC
+    </select>
+
+    <select id="findGroupsBySiteId" resultType="string">
+        SELECT DISTINCT banner_group_code FROM banner
+        WHERE 1=1
+        <if test="siteId != null">AND site_id = #{siteId}</if>
+        ORDER BY banner_group_code ASC
+    </select>
+
 </mapper>

@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.content.page.service;
 
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
+import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageScheduleRequest;
@@ -42,4 +43,7 @@ public interface PageService {
 
     /** slug로 발행된 페이지 조회 (시민 라우팅 — DRAFT/SCHEDULED/RETRACTED는 404) */
     PageResponse getPublishedPageBySlug(Long siteId, String slug);
+
+    /** 관리자용 페이지 목록 조회 (페이징 + 필터) */
+    PageListResponse listPages(Long siteId, String status, String search, int page, int size);
 }

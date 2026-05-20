@@ -26,6 +26,21 @@ public interface I18nResourceMapper {
     );
 
     /**
+     * namespace 전체 목록 조회 (페이지네이션).
+     * REQ-CONTENT-010-D-3: 다국어 리소스 목록 편집기용
+     */
+    List<I18nResource> findByNamespace(
+            @Param("namespace") String namespace,
+            @Param("offset") int offset,
+            @Param("limit") int limit
+    );
+
+    /**
+     * namespace 전체 건수 조회.
+     */
+    int countByNamespace(@Param("namespace") String namespace);
+
+    /**
      * 배치 upsert: UNIQUE (namespace, resource_id, language, field_name) ON CONFLICT UPDATE.
      * REQ-CONTENT-010-D
      */

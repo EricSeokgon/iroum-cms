@@ -9,6 +9,7 @@ import java.util.Map;
  * <p>SPEC-CMS-010 REQ-SEARCH-001/004/009.
  */
 public record SearchResponse(
+        Long searchLogId,
         int totalElements,
         int totalPages,
         List<DocResult> content,

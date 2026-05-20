@@ -25,13 +25,14 @@
     <!--
         공통 ResultMap — users JOIN으로 username 조회.
     -->
+    <!-- javaType="_long" = primitive long; "long" = java.lang.Long (박싱). record 생성자는 primitive이므로 반드시 _long 사용. -->
     <resultMap id="entryMap" type="kr.co.ircp.cms.domain.auth.dto.PersonalDataAccessEntry">
         <constructor>
-            <idArg column="id"              javaType="long"/>
-            <arg  column="viewer_id"        javaType="long"/>
+            <idArg column="id"              javaType="_long"/>
+            <arg  column="viewer_id"        javaType="_long"/>
             <arg  column="viewer_username"  javaType="String"/>
             <arg  column="viewer_role"      javaType="String"/>
-            <arg  column="target_user_id"   javaType="long"/>
+            <arg  column="target_user_id"   javaType="_long"/>
             <arg  column="target_username"  javaType="String"/>
             <arg  column="accessed_fields"
                   javaType="java.util.List"

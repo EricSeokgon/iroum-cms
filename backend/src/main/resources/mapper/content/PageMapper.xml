@@ -98,4 +98,26 @@
         ON CONFLICT (from_path) DO UPDATE SET to_path = #{toPath}, reason = #{reason}, is_active = TRUE
     </insert>
 
+    <select id="listBySiteId" resultMap="pageResultMap">
+        SELECT * FROM page
+        WHERE deleted_at IS NULL
+        <if test="siteId != null">AND site_id = #{siteId}</if>
+        <if test="status != null and status != ''">AND status = #{status}</if>
+        <if test="search != null and search != ''">
+            AND (title ILIKE CONCAT('%', #{search}, '%') OR slug ILIKE CONCAT('%', #{search}, '%'))
+        </if>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countBySiteId" resultType="long">
+        SELECT COUNT(*) FROM page
+        WHERE deleted_at IS NULL
+        <if test="siteId != null">AND site_id = #{siteId}</if>
+        <if test="status != null and status != ''">AND status = #{status}</if>
+        <if test="search != null and search != ''">
+            AND (title ILIKE CONCAT('%', #{search}, '%') OR slug ILIKE CONCAT('%', #{search}, '%'))
+        </if>
+    </select>
+
 </mapper>

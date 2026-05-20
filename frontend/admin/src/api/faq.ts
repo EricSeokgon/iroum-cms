@@ -1,10 +1,10 @@
 // FAQ API 래퍼 — SPEC-CMS-003
-import axios from 'axios'
+import { apiClient } from '@iroum/shared/api/client'
 
 // @MX:ANCHOR: [AUTO] faqApi — FaqListView 및 FAQ 관련 뷰에서 공통 참조
 // @MX:REASON: fan_in >= 3: 목록/카테고리/생성/수정/삭제/순서변경 등 다수 콜사이트
 
-const BASE = '/api/v1/faqs'
+const BASE = '/faqs'
 
 // ── 공통 페이지 응답 ─────────────────────────────────────────────────────────
 export interface PageResponse<T> {
@@ -79,29 +79,29 @@ export interface FaqReorderRequest {
 
 // ── API 함수 ─────────────────────────────────────────────────────────────────
 export function listFaqs(params: FaqListParams): Promise<{ data: PageResponse<FaqSummary> }> {
-  return axios.get(BASE, { params })
+  return apiClient.get(BASE, { params })
 }
 
 export function getFaq(id: number): Promise<{ data: FaqDetail }> {
-  return axios.get(`${BASE}/${id}`)
+  return apiClient.get(`${BASE}/${id}`)
 }
 
 export function getCategories(): Promise<{ data: FaqCategoryCount[] }> {
-  return axios.get(`${BASE}/categories`)
+  return apiClient.get(`${BASE}/categories`)
 }
 
 export function createFaq(req: FaqCreateRequest): Promise<{ data: FaqDetail }> {
-  return axios.post(BASE, req)
+  return apiClient.post(BASE, req)
 }
 
 export function updateFaq(id: number, req: FaqUpdateRequest): Promise<{ data: FaqDetail }> {
-  return axios.put(`${BASE}/${id}`, req)
+  return apiClient.put(`${BASE}/${id}`, req)
 }
 
 export function deleteFaq(id: number): Promise<void> {
-  return axios.delete(`${BASE}/${id}`)
+  return apiClient.delete(`${BASE}/${id}`)
 }
 
 export function reorderFaqs(req: FaqReorderRequest): Promise<void> {
-  return axios.put(`${BASE}/reorder`, req)
+  return apiClient.put(`${BASE}/reorder`, req)
 }

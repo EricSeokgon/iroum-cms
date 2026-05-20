@@ -120,6 +120,26 @@ public class BannerServiceImpl implements BannerService {
     }
 
     /**
+     * 관리자용 배너 목록 조회.
+     */
+    @Override
+    public List<BannerResponse> listBanners(Long siteId, String groupCode) {
+        String effectiveGroup = (groupCode == null || groupCode.isBlank()) ? null : groupCode;
+        return bannerMapper.findAdminBySiteId(siteId, effectiveGroup)
+                .stream()
+                .map(BannerResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 사이트별 배너 그룹 코드 목록 조회.
+     */
+    @Override
+    public List<String> listGroups(Long siteId) {
+        return bannerMapper.findGroupsBySiteId(siteId);
+    }
+
+    /**
      * 배너 클릭 이벤트 기록.
      * REQ-CONTENT-009-D-3: click_count 원자적 UPDATE + audit_log 기록
      *

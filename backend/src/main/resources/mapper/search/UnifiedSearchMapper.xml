@@ -44,9 +44,11 @@
             bp.title                                     AS title,
             ts_headline('simple', COALESCE(bp.content_text, bp.title), websearch_to_tsquery('simple', #{query}),
                 'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            ts_headline('simple', bp.title, websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=15,MinWords=3,MaxFragments=1,HighlightAll=true') AS highlight,
             (ts_rank_cd(bp.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.board}) AS rank,
             bp.created_at                                AS created_at,
-            ('/board/' || bm.code || '/' || bp.id)       AS url,
+            ('/board/posts/' || bp.id)                    AS url,
             'board'                                      AS domain
         FROM bbs_post bp
         JOIN bbs_master bm ON bm.id = bp.bbs_id
@@ -64,9 +66,11 @@
             bp.title                                     AS title,
             ts_headline('simple', COALESCE(bp.content_text, bp.title), websearch_to_tsquery('simple', #{query}),
                 'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            ts_headline('simple', bp.title, websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=15,MinWords=3,MaxFragments=1,HighlightAll=true') AS highlight,
             (ts_rank_cd(bp.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.publication}) AS rank,
             bp.created_at                                AS created_at,
-            ('/publications/' || bp.id)                  AS url,
+            ('/board/publications/' || bp.id)             AS url,
             'publication'                                AS domain
         FROM bbs_post bp
         JOIN bbs_master bm ON bm.id = bp.bbs_id
@@ -82,10 +86,11 @@
             p.id                                         AS doc_id,
             p.title                                      AS title,
             SUBSTRING(p.title FROM 1 FOR 200)            AS snippet,
+            NULL                                         AS highlight,
             (CASE WHEN p.title ILIKE '%' || #{query} || '%' THEN 0.9 ELSE 0.5 END
              * #{weights.content})                       AS rank,
             p.created_at                                 AS created_at,
-            ('/contents/' || p.id)                       AS url,
+            ('/content/pages/' || p.id || '/edit')        AS url,
             'content'                                    AS domain
         FROM page p
         WHERE p.title ILIKE '%' || #{query} || '%'
@@ -104,6 +109,7 @@
                     THEN SUBSTRING(pp.description_html FROM 1 FOR 200)
                 ELSE pp.program_name
             END                                          AS snippet,
+            NULL                                         AS highlight,
             (
               CASE
                 WHEN pp.program_name ILIKE '%' || #{query} || '%' THEN 0.8
@@ -112,7 +118,7 @@
               END * #{weights.policy}
             )                                            AS rank,
             pp.created_at                                AS created_at,
-            ('/policies/' || pp.id)                      AS url,
+            ('/policy/programs/' || pp.id)               AS url,
             'policy'                                     AS domain
         FROM policy_program pp
         WHERE (pp.program_name ILIKE '%' || #{query} || '%'
@@ -128,6 +134,8 @@
             si.summary                                   AS title,
             ts_headline('simple', si.summary, websearch_to_tsquery('simple', #{query}),
                 'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=30,MinWords=5,MaxFragments=2') AS snippet,
+            ts_headline('simple', si.summary, websearch_to_tsquery('simple', #{query}),
+                'StartSel=&lt;mark&gt;,StopSel=&lt;/mark&gt;,MaxWords=15,MinWords=3,MaxFragments=1,HighlightAll=true') AS highlight,
             (ts_rank_cd(si.search_vector, websearch_to_tsquery('simple', #{query})) * #{weights.safety}) AS rank,
             si.created_at                                AS created_at,
             ('/safety/incidents/' || si.id)              AS url,
@@ -144,6 +152,7 @@
             ma.id                                        AS doc_id,
             ma.original_filename                         AS title,
             COALESCE(SUBSTRING(ma.description FROM 1 FOR 200), ma.original_filename) AS snippet,
+            NULL                                         AS highlight,
             (0.5 * #{weights.media})                     AS rank,
             ma.created_at                                AS created_at,
             ('/media/' || ma.id)                         AS url,
@@ -269,17 +278,29 @@
 
     <!-- ─────────────────────────── 운영자 통계 (REQ-SEARCH-008) ───────────────────── -->
 
-    <!-- 기간 내 normalized_query 빈도 상위 N -->
+    <!-- 기간 내 normalized_query 빈도 상위 N (searchCount/clickCount/ctr 포함) -->
     <select id="topQueries" resultType="map">
         SELECT
-            normalized_query AS "query",
-            COUNT(*)         AS "count"
+            normalized_query                                                    AS "query",
+            COUNT(*)                                                            AS "searchCount",
+            COUNT(clicked_doc_id)                                               AS "clickCount",
+            CASE WHEN COUNT(*) = 0 THEN 0.0
+                 ELSE COUNT(clicked_doc_id)::float / COUNT(*)::float
+            END                                                                 AS "ctr"
           FROM search_log
          WHERE created_at &gt;= #{from}::date
            AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
         GROUP BY normalized_query
-        ORDER BY "count" DESC
+        ORDER BY "searchCount" DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 기간 내 고유 검색어 수 -->
+    <select id="uniqueQueriesCount" resultType="long">
+        SELECT COUNT(DISTINCT normalized_query)
+          FROM search_log
+         WHERE created_at &gt;= #{from}::date
+           AND created_at &lt;  (#{to}::date + INTERVAL '1 day')
     </select>
 
     <!-- 0건 검색 비율 (전체 검색 대비) -->

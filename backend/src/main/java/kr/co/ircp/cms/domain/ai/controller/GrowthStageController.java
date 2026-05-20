@@ -29,7 +29,8 @@ public class GrowthStageController {
     @GetMapping("/growth-stage")
     @Cacheable(cacheNames = "aiGrowthStage",
             key = "#ksicCode + '|' + #capitalAmount + '|' + #foundingYear + '|' "
-                    + "+ (#revenueAmount == null ? 'NA' : #revenueAmount)")
+                    + "+ (#revenueAmount == null ? 'NA' : #revenueAmount)",
+            unless = "#result.body != null && #result.body.fallback()")
     public ResponseEntity<GrowthStageResultDto> growthStage(
             @RequestParam(name = "ksicCode") String ksicCode,
             @RequestParam(name = "capitalAmount") Long capitalAmount,

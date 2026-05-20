@@ -57,6 +57,9 @@ public interface MediaService {
 
     // ─── 컬렉션 (REQ-MEDIA-005-D) ─────────────────────────────────────────────
 
+    /** 컬렉션 목록 조회 (소유자 기준). REQ-MEDIA-005-D */
+    List<MediaCollectionSummary> listCollections(long ownerId);
+
     MediaCollectionSummary createCollection(MediaCollectionCreateRequest req, long ownerId);
 
     MediaCollectionDetail getCollection(Long collectionId, long requesterId);

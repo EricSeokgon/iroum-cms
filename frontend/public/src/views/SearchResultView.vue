@@ -30,8 +30,8 @@
         class="divide-y divide-gray-100"
         data-testid="search-result-list"
       >
-        <li v-for="item in results" :key="`${item.type}-${item.id}`">
-          <SearchResultCard :item="item" />
+        <li v-for="(item, idx) in results" :key="`${item.docType}-${item.docId}`">
+          <SearchResultCard :item="item" :search-log-id="searchLogId ?? undefined" :position="idx + 1" />
         </li>
       </ul>
       <EmptyState v-else>
@@ -69,6 +69,7 @@ const totalCount = ref(0)
 const allCount = ref(0)
 const facets = ref<Record<string, number>>({})
 const loading = ref(false)
+const searchLogId = ref<number | null>(null)
 
 function parseType(value: unknown): SearchType {
   const v = String(value ?? 'ALL') as SearchType
@@ -86,12 +87,13 @@ async function runSearch(): Promise<void> {
     const res = await searchApi.search({
       q: query.value,
       type: currentType.value,
-      page: 0,
+      page: 1,
       size: 20,
     })
-    results.value = res.results
+    results.value = res.content ?? []
     totalCount.value = res.totalElements
-    if (res.facets) facets.value = res.facets
+    searchLogId.value = res.searchLogId ?? null
+    if (res.byDomainFacets) facets.value = res.byDomainFacets
     if (currentType.value === 'ALL') {
       allCount.value = res.totalElements
     }

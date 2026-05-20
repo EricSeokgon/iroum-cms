@@ -23,10 +23,12 @@ import java.util.List;
 /**
  * 공통코드 그룹 API 컨트롤러.
  * REQ-SYSTEM-004-D
+ * 경로: /api/v1/system/codes/groups (프론트엔드 system.ts 스펙)
+ * PUT/DELETE는 groupCode 문자열로 식별
  */
 @Tag(name = "System Code Group", description = "공통코드 그룹 관리 API")
 @RestController
-@RequestMapping("/api/v1/system/code-groups")
+@RequestMapping("/api/v1/system/codes/groups")
 @RequiredArgsConstructor
 public class CodeGroupController {
 
@@ -39,7 +41,7 @@ public class CodeGroupController {
         return ResponseEntity.ok(codeGroupService.listAll());
     }
 
-    @Operation(summary = "코드 그룹 단건 조회")
+    @Operation(summary = "코드 그룹 단건 조회 (id)")
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('SYSTEM:CODE:READ')")
     public ResponseEntity<CodeGroupResponse> get(@PathVariable Long id) {
@@ -53,19 +55,22 @@ public class CodeGroupController {
         return ResponseEntity.status(201).body(codeGroupService.create(request));
     }
 
-    @Operation(summary = "코드 그룹 수정")
-    @PutMapping("/{id}")
+    @Operation(summary = "코드 그룹 수정 (groupCode 문자열로 식별)")
+    @PutMapping("/{code}")
     @PreAuthorize("hasAuthority('SYSTEM:CODE:WRITE')")
     public ResponseEntity<CodeGroupResponse> update(
-            @PathVariable Long id,
+            @PathVariable String code,
             @Valid @RequestBody CodeGroupRequest request) {
+        // groupCode로 id를 조회한 뒤 기존 update(id, ...) 호출
+        Long id = codeGroupService.getByCode(code).id();
         return ResponseEntity.ok(codeGroupService.update(id, request));
     }
 
-    @Operation(summary = "코드 그룹 삭제 (RESTRICT)")
-    @DeleteMapping("/{id}")
+    @Operation(summary = "코드 그룹 삭제 (groupCode 문자열, RESTRICT)")
+    @DeleteMapping("/{code}")
     @PreAuthorize("hasAuthority('SYSTEM:CODE:WRITE')")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String code) {
+        Long id = codeGroupService.getByCode(code).id();
         codeGroupService.delete(id);
         return ResponseEntity.noContent().build();
     }

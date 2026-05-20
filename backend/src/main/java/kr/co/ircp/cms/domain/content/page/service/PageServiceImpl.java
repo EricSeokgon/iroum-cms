@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.content.page.service;
 
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
+import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageScheduleRequest;
@@ -238,6 +239,21 @@ public class PageServiceImpl implements PageService {
         pageHistoryMapper.insert(rollbackHistory);
 
         return PageResponse.from(page);
+    }
+
+    /**
+     * 관리자용 페이지 목록 조회.
+     * REQ-CONTENT-005-D: 사이트/상태/검색 필터 + 페이징
+     */
+    @Override
+    public PageListResponse listPages(Long siteId, String status, String search, int page, int size) {
+        String effectiveStatus = (status == null || status.isBlank()) ? null : status;
+        String effectiveSearch = (search == null || search.isBlank()) ? null : search;
+        int offset = page * size;
+        List<Page> pages = pageMapper.listBySiteId(siteId, effectiveStatus, effectiveSearch, offset, size);
+        long total = pageMapper.countBySiteId(siteId, effectiveStatus, effectiveSearch);
+        List<PageResponse> content = pages.stream().map(PageResponse::from).collect(Collectors.toList());
+        return PageListResponse.of(content, page, size, total);
     }
 
     /**

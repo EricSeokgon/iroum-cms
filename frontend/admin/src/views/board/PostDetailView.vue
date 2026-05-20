@@ -102,8 +102,8 @@
         />
       </el-card>
 
-      <!-- 댓글 섹션 -->
-      <PostCommentSection :post-id="post.id" />
+      <!-- 댓글 섹션 — 게시판 마스터의 useComment 허용 시에만 표시 -->
+      <PostCommentSection v-if="post.useComment" :post-id="post.id" />
     </template>
 
     <!-- 404 상태 -->
