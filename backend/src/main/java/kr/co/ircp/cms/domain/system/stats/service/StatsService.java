@@ -24,6 +24,9 @@ public interface StatsService {
     /** 최근 30일 추이 */
     List<TrendItemResponse> getTrend30Days(long siteId);
 
+    /** days 파라미터로 동적 기간 추이 (7/30/90일) */
+    List<TrendItemResponse> getTrendDays(long siteId, int days);
+
     /** Top Pages (7d 또는 30d) */
     List<TopPageResponse> getTopPages(int days, long siteId);
 }

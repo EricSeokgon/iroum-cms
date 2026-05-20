@@ -66,6 +66,12 @@ public class StatsServiceImpl implements StatsService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<TrendItemResponse> getTrendDays(long siteId, int days) {
+        return dailyMapper.findTrendDays(siteId, days);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TopPageResponse> getTopPages(int days, long siteId) {
         return monthlyMapper.findTopPages(days, siteId);
     }

@@ -29,6 +29,9 @@ public interface AccessStatDailyMapper {
     /** 최근 30일 추이 */
     List<TrendItemResponse> findTrend30Days(@Param("siteId") long siteId);
 
+    /** days 파라미터로 동적 기간 추이 (7/30/90일) */
+    List<TrendItemResponse> findTrendDays(@Param("siteId") long siteId, @Param("days") int days);
+
     /** 오늘 통계 (todayVisits, todayUnique, todayPageViews 합산) */
     Optional<AccessStatDaily> findToday(@Param("siteId") long siteId);
 

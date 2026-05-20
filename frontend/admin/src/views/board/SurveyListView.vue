@@ -150,11 +150,32 @@
       <el-table-column
         v-if="isAdmin"
         :label="t('common.actions')"
-        width="160"
+        width="220"
         fixed="right"
       >
         <template #default="{ row }">
-          <div class="flex gap-1">
+          <div class="flex gap-1 flex-wrap">
+            <!-- DRAFT → OPEN(게시), OPEN → CLOSED(마감) -->
+            <el-button
+              v-if="row.status === 'DRAFT'"
+              size="small"
+              type="success"
+              plain
+              :aria-label="`${t('survey.publish')} ${row.title}`"
+              @click="handlePublish(row, 'OPEN')"
+            >
+              {{ t('survey.publish') }}
+            </el-button>
+            <el-button
+              v-else-if="row.status === 'OPEN'"
+              size="small"
+              type="warning"
+              plain
+              :aria-label="`${t('survey.close')} ${row.title}`"
+              @click="handlePublish(row, 'CLOSED')"
+            >
+              {{ t('survey.close') }}
+            </el-button>
             <el-button
               size="small"
               type="primary"
@@ -305,12 +326,32 @@
             v-if="question.questionType === 'SINGLE' || question.questionType === 'MULTI'"
             :label="t('survey.field.options')"
           >
-            <el-input
-              v-model="question.options"
-              type="textarea"
-              :rows="3"
-              :placeholder="optionsPlaceholder"
-            />
+            <div class="w-full space-y-2">
+              <div
+                v-for="(opt, optIdx) in optionLists[idx]"
+                :key="optIdx"
+                class="flex items-center gap-2"
+              >
+                <span class="min-w-[1.5rem] text-right text-sm font-medium text-gray-600">{{ optIdx + 1 }}.</span>
+                <el-input
+                  v-model="opt.label"
+                  :placeholder="t('survey.field.optionLabel')"
+                  class="flex-1"
+                />
+                <el-button
+                  size="small"
+                  type="danger"
+                  plain
+                  :aria-label="t('common.delete')"
+                  @click="removeOption(idx, optIdx)"
+                >
+                  -
+                </el-button>
+              </div>
+              <el-button type="primary" plain size="small" @click="addOption(idx)">
+                + {{ t('survey.field.addOption') }}
+              </el-button>
+            </div>
           </el-form-item>
         </div>
 
@@ -369,8 +410,7 @@ const formRef = ref<FormInstance>()
 
 const statusOptions: SurveyStatus[] = ['DRAFT', 'OPEN', 'CLOSED', 'HIDDEN']
 const questionTypeOptions: QuestionType[] = ['SINGLE', 'MULTI', 'TEXT', 'RATING', 'DATE']
-
-const optionsPlaceholder = 'JSON 배열 직접 입력, 예: [{"value":"A","label":"선택1"}]'
+const optionLists = ref<{ value: string; label: string }[][]>([])
 
 interface FormState {
   title: string
@@ -470,6 +510,7 @@ function resetForm(): void {
   form.maxResponses = null
   form.descriptionHtml = ''
   form.questions = []
+  optionLists.value = []
 }
 
 function addQuestion(): void {
@@ -480,13 +521,26 @@ function addQuestion(): void {
     sortOrder: form.questions.length + 1,
     options: null,
   })
+  optionLists.value.push([])
 }
 
 function removeQuestion(idx: number): void {
   form.questions.splice(idx, 1)
-  // sortOrder 재정렬
+  optionLists.value.splice(idx, 1)
   form.questions.forEach((q, i) => {
     q.sortOrder = i + 1
+  })
+}
+
+function addOption(qIdx: number): void {
+  const list = optionLists.value[qIdx]
+  list.push({ value: String(list.length + 1), label: '' })
+}
+
+function removeOption(qIdx: number, optIdx: number): void {
+  optionLists.value[qIdx].splice(optIdx, 1)
+  optionLists.value[qIdx].forEach((opt, i) => {
+    opt.value = String(i + 1)
   })
 }
 
@@ -501,11 +555,17 @@ async function handleSubmit(): Promise<void> {
 
   submitting.value = true
   try {
+    form.questions.forEach((q, i) => {
+      if (q.questionType === 'SINGLE' || q.questionType === 'MULTI') {
+        const opts = optionLists.value[i] ?? []
+        q.options = opts.length > 0 ? JSON.stringify(opts) : null
+      }
+    })
     const payload = {
       title: form.title,
       descriptionHtml: form.descriptionHtml || undefined,
-      startAt: form.period[0],
-      endAt: form.period[1],
+      startAt: new Date(form.period[0]).toISOString(),
+      endAt: new Date(form.period[1]).toISOString(),
       isAnonymous: form.isAnonymous,
       maxResponses: form.maxResponses,
       questions: form.questions,
@@ -523,6 +583,25 @@ async function handleSubmit(): Promise<void> {
     ElMessage.error(t('common.saveError'))
   } finally {
     submitting.value = false
+  }
+}
+
+async function handlePublish(row: SurveySummary, newStatus: SurveyStatus): Promise<void> {
+  const labelKey = newStatus === 'OPEN' ? 'survey.confirm.publish' : 'survey.confirm.close'
+  const titleKey = newStatus === 'OPEN' ? 'survey.confirm.publishTitle' : 'survey.confirm.closeTitle'
+  try {
+    await ElMessageBox.confirm(t(labelKey), t(titleKey), {
+      type: 'warning',
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
+    })
+    await updateSurvey(row.id, { status: newStatus })
+    ElMessage.success(
+      newStatus === 'OPEN' ? t('survey.msg.published') : t('survey.msg.closed'),
+    )
+    loadSurveys()
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error(t('common.saveError'))
   }
 }
 
