@@ -1,12 +1,12 @@
 <template>
   <!-- KPI 위젯 카드 — SPEC-CMS-005 Bundle D REQ-SYS-001-D -->
   <div
-    class="rounded-lg border bg-white p-4 shadow-sm"
-    :class="borderClass"
+    class="rounded-lg border p-4 shadow-sm"
+    :class="cardClass"
     role="region"
     :aria-label="label"
   >
-    <p class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ label }}</p>
+    <p class="text-xs font-medium uppercase tracking-wide" :class="labelClass">{{ label }}</p>
     <p class="mt-1 text-3xl font-bold" :class="valueClass">{{ formattedValue }}</p>
     <p v-if="changePct !== undefined" class="mt-1 flex items-center gap-1 text-sm">
       <span :class="changeClass">
@@ -21,7 +21,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-type ColorLevel = 'normal' | 'warning' | 'danger'
+type ColorLevel = 'normal' | 'success' | 'warning' | 'danger'
 
 const props = defineProps<{
   label: string
@@ -42,18 +42,29 @@ const formattedValue = computed(() => {
   return props.value
 })
 
-const borderClass = computed(() => {
+const cardClass = computed(() => {
   switch (props.color) {
-    case 'warning': return 'border-yellow-300'
-    case 'danger':  return 'border-red-300'
-    default:        return 'border-gray-200'
+    case 'success': return 'border-green-300 bg-green-50'
+    case 'warning': return 'border-yellow-300 bg-yellow-50'
+    case 'danger':  return 'border-red-300 bg-red-50'
+    default:        return 'border-gray-200 bg-white'
+  }
+})
+
+const labelClass = computed(() => {
+  switch (props.color) {
+    case 'success': return 'text-green-600'
+    case 'warning': return 'text-yellow-600'
+    case 'danger':  return 'text-red-500'
+    default:        return 'text-gray-500'
   }
 })
 
 const valueClass = computed(() => {
   switch (props.color) {
-    case 'warning': return 'text-yellow-600'
-    case 'danger':  return 'text-red-600'
+    case 'success': return 'text-green-700'
+    case 'warning': return 'text-yellow-700'
+    case 'danger':  return 'text-red-700'
     default:        return 'text-gray-900'
   }
 })
