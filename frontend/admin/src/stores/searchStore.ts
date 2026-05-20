@@ -94,7 +94,7 @@ export const useSearchStore = defineStore('search', () => {
     popularLoading.value = true
     try {
       const res = await getPopularQueries(period, locale, limit)
-      popularQueries.value = res.data.items
+      popularQueries.value = res.data
     } catch (e) {
       setError(e, '인기 검색어 조회 실패')
       popularQueries.value = []
