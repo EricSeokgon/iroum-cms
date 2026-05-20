@@ -23,4 +23,9 @@ public record AccessLogSearchRequest(
     public int offset() {
         return page * size;
     }
+
+    /** MyBatis #{req.offset} 프로퍼티 바인딩용 — record 컴포넌트가 아닌 offset()을 빈 프로퍼티로 노출 */
+    public int getOffset() {
+        return page * size;
+    }
 }

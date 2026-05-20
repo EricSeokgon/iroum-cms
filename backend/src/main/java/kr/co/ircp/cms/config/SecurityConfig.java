@@ -130,9 +130,12 @@ public class SecurityConfig {
                     "/swagger-ui.html"
                 ).permitAll()
                 // REQ-BOARD-001~003: 게시판·게시글·댓글 목록·상세 공개 조회 허용
+                // 실제 백엔드 경로: /api/v1/board/masters/**, /api/v1/board/posts/**
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,
-                    "/api/v1/boards/**"
+                    "/api/v1/board/masters/**",
+                    "/api/v1/board/posts/**",
+                    "/api/v1/board/comments/**"
                 ).permitAll()
                 // REQ-BOARD-007: FAQ 공개 조회 허용 (목록·카테고리·단건)
                 .requestMatchers(

@@ -1,4 +1,4 @@
-// SPEC-CMS-003 공지사항 — /boards/code/NOTICE → /boards/{id}/posts 로 조회
+// SPEC-CMS-003 공지사항 — 실제 백엔드 경로: /board/masters/code/{code}, /board/posts?bbsId={id}
 import { apiClient } from './client'
 import type { PageResponse, PostSummary, PostDetail } from '@iroum/shared/types/api'
 
@@ -17,7 +17,7 @@ let _noticeBoardId: number | null = null
 async function getNoticeBoardId(): Promise<number> {
   if (_noticeBoardId) return _noticeBoardId
   const board = await apiClient
-    .get<{ id: number }>('/boards/code/NOTICE')
+    .get<{ id: number }>('/board/masters/code/NOTICE')
     .then((r) => r.data)
   _noticeBoardId = board.id
   return board.id
@@ -27,10 +27,10 @@ export const noticeApi = {
   async list(params: NoticeListParams = {}): Promise<PageResponse<PostSummary>> {
     const boardId = await getNoticeBoardId()
     return apiClient
-      .get<PageResponse<PostSummary>>(`/boards/${boardId}/posts`, { params })
+      .get<PageResponse<PostSummary>>('/board/posts', { params: { bbsId: boardId, ...params } })
       .then((r) => r.data)
   },
   detail(id: number): Promise<PostDetail> {
-    return apiClient.get<PostDetail>(`/posts/${id}`).then((r) => r.data)
+    return apiClient.get<PostDetail>(`/board/posts/${id}`).then((r) => r.data)
   },
 }
