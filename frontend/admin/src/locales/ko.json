@@ -1138,11 +1138,30 @@
       "create": "컬렉션 만들기",
       "empty": "컬렉션이 없습니다",
       "created": "컬렉션이 생성되었습니다",
+      "manage": "관리",
+      "delete": "컬렉션 삭제",
+      "confirmDelete": "이 컬렉션을 삭제하시겠습니까? 컬렉션 내 미디어 파일은 삭제되지 않습니다.",
+      "addItems": "아이템 추가",
+      "removeItem": "아이템 제거",
+      "selectMedia": "미디어 선택",
+      "selectedCount": "{count}개 선택됨",
       "field": {
         "name": "컬렉션명",
         "description": "설명",
         "itemCount": "항목 수",
         "createdAt": "생성일"
+      },
+      "success": {
+        "created": "컬렉션이 생성되었습니다",
+        "deleted": "컬렉션이 삭제되었습니다",
+        "itemsAdded": "아이템이 추가되었습니다"
+      },
+      "error": {
+        "loadFailed": "컬렉션을 불러오는데 실패했습니다",
+        "createFailed": "컬렉션 생성에 실패했습니다",
+        "deleteFailed": "컬렉션 삭제에 실패했습니다",
+        "addFailed": "아이템 추가에 실패했습니다",
+        "removeFailed": "아이템 제거에 실패했습니다"
       }
     }
   },

@@ -1137,11 +1137,30 @@
       "create": "New Collection",
       "empty": "No collections found",
       "created": "Collection created successfully",
+      "manage": "Manage",
+      "delete": "Delete Collection",
+      "confirmDelete": "Are you sure you want to delete this collection? Media files inside the collection will not be deleted.",
+      "addItems": "Add Items",
+      "removeItem": "Remove Item",
+      "selectMedia": "Select Media",
+      "selectedCount": "{count} selected",
       "field": {
         "name": "Name",
         "description": "Description",
         "itemCount": "Items",
         "createdAt": "Created At"
+      },
+      "success": {
+        "created": "Collection created successfully",
+        "deleted": "Collection deleted successfully",
+        "itemsAdded": "Items added successfully"
+      },
+      "error": {
+        "loadFailed": "Failed to load collections",
+        "createFailed": "Failed to create collection",
+        "deleteFailed": "Failed to delete collection",
+        "addFailed": "Failed to add items",
+        "removeFailed": "Failed to remove item"
       }
     }
   },

@@ -7,6 +7,7 @@ import type {
   MediaUsageEntry,
   MediaUpdateRequest,
   MediaCollectionSummary,
+  MediaCollectionDetail,
   MediaType,
   PageResponse,
 } from '@iroum/shared/types/api'
@@ -107,5 +108,25 @@ export const mediaApi = {
     itemUuids?: string[],
   ): Promise<{ data: MediaCollectionSummary }> {
     return apiClient.post(`${BASE}/collections`, { name, description, itemUuids })
+  },
+
+  /** GET /api/v1/media/collections/{id} */
+  getCollection(id: number): Promise<{ data: MediaCollectionDetail }> {
+    return apiClient.get(`${BASE}/collections/${id}`)
+  },
+
+  /** POST /api/v1/media/collections/{id}/items */
+  addToCollection(id: number, assetUuids: string[]): Promise<{ data: void }> {
+    return apiClient.post(`${BASE}/collections/${id}/items`, { assetUuids })
+  },
+
+  /** DELETE /api/v1/media/collections/{id}/items/{assetUuid} */
+  removeFromCollection(id: number, assetUuid: string): Promise<{ data: void }> {
+    return apiClient.delete(`${BASE}/collections/${id}/items/${assetUuid}`)
+  },
+
+  /** DELETE /api/v1/media/collections/{id} */
+  deleteCollection(id: number): Promise<{ data: void }> {
+    return apiClient.delete(`${BASE}/collections/${id}`)
   },
 }

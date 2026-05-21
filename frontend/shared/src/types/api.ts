@@ -542,6 +542,18 @@ export interface MediaCollectionSummary {
   createdAt: string
 }
 
+/** 미디어 컬렉션 상세 DTO (아이템 목록 포함) */
+export interface MediaCollectionDetail {
+  id: number
+  name: string
+  description?: string | null
+  ownerId: number
+  isPublic: boolean
+  sortOrder: number
+  createdAt: string
+  items: MediaAssetSummary[]
+}
+
 /** 미디어 자산 수정 요청 */
 export interface MediaUpdateRequest {
   altText?: string | null
