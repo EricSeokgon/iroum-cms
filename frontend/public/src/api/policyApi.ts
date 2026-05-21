@@ -114,6 +114,10 @@ interface RawProgramSummary {
   targetRegions: string[]
   applicationStart?: string
   applicationEnd?: string
+  budgetPerCompany?: number
+  sourceUrl?: string
+  descriptionHtml?: string
+  eligibilityHtml?: string
   status: string
 }
 
@@ -121,10 +125,20 @@ function mapProgram(p: RawProgramSummary): PolicySummary {
   return {
     id: p.id,
     title: p.programName,
-    industry: p.targetIndustries?.[0] ?? '-',
-    region: p.targetRegions?.[0] ?? '전국',
+    industry: p.targetIndustries?.join(', ') || '-',
+    region: p.targetRegions?.length ? '전국' : '-',
     type: p.ministry ?? '정책',
+    supportAmount: p.budgetPerCompany ? `${p.budgetPerCompany.toLocaleString()}원` : undefined,
     deadline: p.applicationEnd ?? undefined,
+  }
+}
+
+function mapProgramDetail(p: RawProgramSummary): PolicyDetail {
+  return {
+    ...mapProgram(p),
+    descriptionHtml: p.descriptionHtml ?? '',
+    eligibilityHtml: p.eligibilityHtml ?? '',
+    applyUrl: p.sourceUrl ?? undefined,
   }
 }
 
@@ -138,7 +152,9 @@ export const policyApi = {
     return { ...raw, content: raw.content.map(mapProgram) }
   },
   detail(id: number): Promise<PolicyDetail> {
-    return apiClient.get<PolicyDetail>(`/policy/programs/${id}`).then((r) => r.data)
+    return apiClient
+      .get<RawProgramSummary>(`/policy/programs/${id}`)
+      .then((r) => mapProgramDetail(r.data))
   },
   match(req: PolicyMatchRequest): Promise<PolicyMatchResult[]> {
     return apiClient.post<PolicyMatchResult[]>('/policies/match', req).then((r) => r.data)

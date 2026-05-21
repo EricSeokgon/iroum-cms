@@ -28,7 +28,7 @@ const routes: RouteRecordRaw[] = [
     children: [
       // A. 홈·정보
       { path: '', name: 'home', component: () => import('@/views/HomeView.vue'), meta: { title: 'route.home', breadcrumb: [] } },
-      { path: 'about', name: 'about', component: stub, meta: { title: 'route.about', breadcrumb: ['route.home', 'route.about'] } },
+      { path: 'about', name: 'about', component: () => import('@/views/AboutView.vue'), meta: { title: 'route.about', breadcrumb: ['route.home', 'route.about'] } },
 
       // B. 공지·게시판·FAQ·Q&A
       { path: 'notices', name: 'notice-list', component: () => import('@/views/notices/NoticeListView.vue'), meta: { title: 'route.notice.list', breadcrumb: ['route.home', 'route.notice.list'] } },

@@ -22,7 +22,7 @@
         <ul class="flex items-center gap-6">
           <li v-for="menu in menus" :key="menu.id">
             <a
-              :href="menu.path"
+              :href="menu.url || '/'"
               class="text-sm font-medium text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"
             >
               {{ menu.name }}
@@ -99,7 +99,7 @@
       <ul class="flex flex-col">
         <li v-for="menu in menus" :key="menu.id">
           <a
-            :href="menu.path"
+            :href="menu.url || '/'"
             class="block px-4 py-3 text-sm font-medium text-content-DEFAULT hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-primary-600"
             @click="mobileOpen = false"
           >

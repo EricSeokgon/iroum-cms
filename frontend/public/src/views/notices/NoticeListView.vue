@@ -113,8 +113,7 @@
 import { reactive, ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { noticeApi, type NoticeListParams } from '@/api/noticeApi'
-import type { PostSummary } from '@iroum/shared/types/api'
+import { noticeApi, type NoticeListParams, type NoticeSummary } from '@/api/noticeApi'
 import NoticeCard from '@/components/notice/NoticeCard.vue'
 import PaginationBar from '@/components/common/PaginationBar.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -133,7 +132,7 @@ const filters = reactive({
 })
 
 const currentPage = ref(parseInt((route.query.page as string) ?? '0', 10) || 0)
-const items = ref<PostSummary[]>([])
+const items = ref<NoticeSummary[]>([])
 const totalElements = ref(0)
 const totalPages = ref(0)
 const loading = ref(false)

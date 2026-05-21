@@ -50,7 +50,7 @@
               @click="downloadAttachment(att.id, att.fileName)"
             >
               {{ att.fileName }}
-              <span class="text-xs text-content-muted">({{ formatSize(att.sizeBytes) }})</span>
+              <span class="text-xs text-content-muted">({{ formatSize(att.fileSize) }})</span>
             </button>
           </li>
         </ul>
@@ -74,9 +74,9 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { noticeApi } from '@/api/noticeApi'
+import { noticeApi, type NoticeDetail } from '@/api/noticeApi'
 import { apiClient } from '@/api/client'
-import type { PostDetail, AttachmentDownloadUrl } from '@iroum/shared/types/api'
+import type { AttachmentDownloadUrl } from '@iroum/shared/types/api'
 import NoticeContent from '@/components/notice/NoticeContent.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
@@ -84,14 +84,14 @@ import ErrorState from '@/components/common/ErrorState.vue'
 const { t } = useI18n()
 const route = useRoute()
 
-const notice = ref<PostDetail | null>(null)
+const notice = ref<NoticeDetail | null>(null)
 const loading = ref(false)
 const error = ref(false)
 const downloadingId = ref<number | null>(null)
 
 const formattedDate = computed(() => {
   if (!notice.value) return ''
-  const raw = notice.value.publishedAt ?? notice.value.createdAt
+  const raw = notice.value.createdAt
   return raw ? raw.slice(0, 10) : ''
 })
 

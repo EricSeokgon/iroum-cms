@@ -162,6 +162,39 @@
     "noAttachments": "첨부파일이 없습니다",
     "selectAtLeastOne": "1개 이상의 첨부를 선택하세요"
   },
+  "about": {
+    "title": "기관소개",
+    "subtitle": "iroum-cms를 운영하는 기관을 소개합니다",
+    "mission": {
+      "title": "미션",
+      "description": "공공 데이터와 정보를 개방하여 국민과 기업이 안전하고 편리하게 활용할 수 있는 디지털 공공서비스 환경을 구축합니다."
+    },
+    "vision": {
+      "title": "비전",
+      "description": "데이터 기반 행정혁신을 선도하고, 투명하고 신뢰받는 공공 디지털 플랫폼으로 성장합니다."
+    },
+    "values": {
+      "title": "핵심 가치",
+      "transparency": "투명성",
+      "transparencyDesc": "공정하고 열린 정보 공개",
+      "innovation": "혁신",
+      "innovationDesc": "디지털 기술 선도 도입",
+      "safety": "안전",
+      "safetyDesc": "안전한 서비스 환경 제공",
+      "service": "서비스",
+      "serviceDesc": "국민 중심 행정 서비스"
+    },
+    "org": {
+      "title": "조직도"
+    },
+    "contact": {
+      "title": "연락처",
+      "address": "주소",
+      "phone": "전화",
+      "email": "이메일",
+      "hours": "업무시간"
+    }
+  },
   "home": {
     "title": "iroum-cms에 오신 것을 환영합니다",
     "subtitle": "정보를 검색하고 서비스를 이용하세요.",

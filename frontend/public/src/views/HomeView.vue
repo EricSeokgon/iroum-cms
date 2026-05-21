@@ -138,10 +138,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { noticeApi } from '@/api/noticeApi'
+import { noticeApi, type NoticeSummary } from '@/api/noticeApi'
 import { policyApi, type PolicySummary } from '@/api/policyApi'
 import { statsApi, type KpiValue } from '@/api/statsApi'
-import type { PostSummary } from '@iroum/shared/types/api'
 import NoticeCard from '@/components/notice/NoticeCard.vue'
 import PolicyCard from '@/components/policy/PolicyCard.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
@@ -151,7 +150,7 @@ const { t } = useI18n()
 const router = useRouter()
 
 const heroQuery = ref('')
-const notices = ref<PostSummary[]>([])
+const notices = ref<NoticeSummary[]>([])
 const policies = ref<PolicySummary[]>([])
 const kpiValues = ref<KpiValue[]>([])
 const loadingNotices = ref(false)

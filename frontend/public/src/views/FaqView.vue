@@ -93,7 +93,8 @@
           class="border-t border-gray-100 bg-surface-muted px-4 py-3 text-sm text-content-muted"
         >
           <span class="mr-2 font-bold text-primary-600">A.</span>
-          <span class="whitespace-pre-line">{{ faq.answer }}</span>
+          <span v-if="faq.answerHtml" class="prose prose-sm max-w-none" v-html="faq.answerHtml" />
+          <span v-else class="text-gray-400">{{ t('common.loading') }}</span>
         </div>
       </li>
     </ul>
@@ -104,6 +105,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { faqApi, type FaqSummary } from '@/api/faqApi'
+import DOMPurify from 'dompurify'
 
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
@@ -153,12 +155,22 @@ function onSearchSubmit(): void {
   loadFaqs()
 }
 
-function toggle(id: number): void {
+async function toggle(id: number): Promise<void> {
   const next = new Set(expandedSet.value)
   if (next.has(id)) {
     next.delete(id)
   } else {
     next.add(id)
+    // answerHtml 아직 없으면 상세 API 호출
+    const faq = faqs.value.find((f) => f.id === id)
+    if (faq && !faq.answerHtml) {
+      try {
+        const detail = await faqApi.detail(id)
+        faq.answerHtml = DOMPurify.sanitize(detail.answerHtml ?? '')
+      } catch {
+        faq.answerHtml = '답변을 불러올 수 없습니다.'
+      }
+    }
   }
   expandedSet.value = next
 }

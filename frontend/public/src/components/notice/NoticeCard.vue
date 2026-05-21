@@ -46,18 +46,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { PostSummary } from '@iroum/shared/types/api'
+import type { NoticeSummary } from '@/api/noticeApi'
 
 const props = defineProps<{
-  notice: PostSummary
+  notice: NoticeSummary
 }>()
 
 const { t } = useI18n()
 
 const formattedDate = computed(() => {
-  const raw = props.notice.publishedAt ?? props.notice.createdAt
+  const raw = props.notice.createdAt
   if (!raw) return ''
-  // YYYY-MM-DD 형식으로 잘라낸다 (ISO 8601 기준)
   return raw.slice(0, 10)
 })
 </script>
