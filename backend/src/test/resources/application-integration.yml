@@ -8,6 +8,10 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: false
+    # application.properties 의 `spring.flyway.target=32` 를 덮어써서 V33 (pgvector) 까지 적용.
+    # integration 프로파일은 AbstractIntegrationTest 의 `pgvector/pgvector:pg16` 이미지를 사용하므로
+    # vector 확장 생성이 가능하다 (SPEC-CMS-AI-003).
+    target: latest
   datasource:
     hikari:
       maximum-pool-size: 5
