@@ -62,7 +62,8 @@ class DashboardServiceTest {
         // then
         assertThat(kpi.todayVisits()).isEqualTo(0);
         assertThat(kpi.errorRate24h()).isEqualTo(0.0);
-        assertThat(kpi.healthStatus()).isEqualTo("UP");
+        // DashboardServiceImpl은 healthStatus로 "HEALTHY"를 반환함 (DTO 정의에 따라)
+        assertThat(kpi.healthStatus()).isEqualTo("HEALTHY");
     }
 
     @Test
@@ -82,17 +83,17 @@ class DashboardServiceTest {
     }
 
     @Test
-    @DisplayName("getKpi() — 오류율이 백분율로 계산됨")
+    @DisplayName("getKpi() — 오류율이 비율(0~1)로 계산됨")
     void getKpi_error_rate_calculated_as_percentage() {
-        // given — 1000건 중 50건 오류 = 5.0%
+        // given — 1000건 중 50건 오류 = 0.05 (비율). 프론트엔드에서 *100 포맷팅
         when(dailyMapper.findToday(1L)).thenReturn(Optional.of(daily(1000, 400, 2000, 50, 80)));
         when(dailyMapper.findLast24hStats(1L)).thenReturn(daily(1000, 400, 2000, 50, 80));
 
         // when
         DashboardKpiResponse kpi = dashboardService.getKpi(false);
 
-        // then
-        assertThat(kpi.errorRate24h()).isEqualTo(5.0);
+        // then — DashboardServiceImpl은 비율(0~1) 형태로 반환
+        assertThat(kpi.errorRate24h()).isEqualTo(0.05);
     }
 
     @Test

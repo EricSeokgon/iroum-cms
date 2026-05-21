@@ -106,23 +106,23 @@ class AuthorizationCoverageArchTest {
      * 의도적 변경 시 본 baseline + IT 시나리오를 함께 갱신해야 함.
      */
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 103, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 114, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 RUN 시점 운영 @PreAuthorize 메소드 레벨 103건
+        // baseline: 본 RUN 시점 운영 @PreAuthorize 메소드 레벨 114건 (11개 신규 엔드포인트 추가됨)
         // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 5개 컨트롤러)는
         // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 Step 2에서 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(103)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(114)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(103L);
+                .isEqualTo(114L);
     }
 
     // =================================================================================

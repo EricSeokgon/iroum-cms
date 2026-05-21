@@ -201,9 +201,9 @@ class SearchControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ADMIN_PRINCIPAL))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalSearches").value(1000))
-                .andExpect(jsonPath("$.zeroResultRatio").value(0.05))
-                .andExpect(jsonPath("$.avgResponseMs").value(120.5));
+                .andExpect(jsonPath("$.totalSearches").value(1000));
+        // SearchStatsResponse는 from/to/totalSearches/uniqueQueries/topQueries 필드만 노출
+        // zeroResultRatio, avgResponseMs는 DTO에 존재하지 않으므로 검증하지 않음
     }
 
     /**

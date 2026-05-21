@@ -257,7 +257,14 @@ class AuthServiceTest {
 
         when(jwtTokenProvider.extractUserId(oldRaw)).thenReturn(Optional.of(1L));
         when(refreshTokenMapper.findByTokenHash(sha256Hex(oldRaw))).thenReturn(Optional.of(stored));
-        when(jwtTokenProvider.generateAccessToken(eq(1L), any(), any())).thenReturn("new-access");
+        // REQ-AUTH-002 Rotation: refresh 흐름은 최신 권한 반영을 위해 사용자 + 역할/권한 재조회
+        User refreshedUser = activeUser(1L, "admin", 0);
+        when(userMapper.findById(1L)).thenReturn(Optional.of(refreshedUser));
+        when(userMapper.findRoleCodesByUserId(1L)).thenReturn(Set.of("SUPER_ADMIN"));
+        when(permissionService.findEffectivePermissionsForUser(1L)).thenReturn(Set.of("USER:READ"));
+        // 4-인자 generateAccessToken 시그니처(userId, username, roles, permissions)에 맞춰 스텁
+        when(jwtTokenProvider.generateAccessToken(eq(1L), any(), any(Set.class), any(Set.class)))
+                .thenReturn("new-access");
         when(jwtTokenProvider.generateRefreshToken(1L)).thenReturn("new-refresh");
 
         var result = authService.refresh(oldRaw, "127.0.0.1", "ua");

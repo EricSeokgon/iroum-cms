@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -52,7 +53,7 @@ class PostControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts — 200 OK, 페이징 응답")
+    @DisplayName("GET /api/v1/board/posts?bbsId=X — 200 OK, 페이징 응답")
     void listPosts_returns200WithPage() throws Exception {
         PostSummary summary = new PostSummary(
                 1L, 1L, "NOTICE", "공지 제목", 10L, "관리자",
@@ -61,26 +62,30 @@ class PostControllerTest {
         PageResponse<PostSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
         when(postService.listPosts(anyLong(), anyInt(), anyInt())).thenReturn(page);
 
-        mockMvc.perform(get("/api/v1/boards/1/posts"))
+        // PostController는 /api/v1/board/posts 매핑이며 bbsId를 쿼리 파라미터로 받음
+        mockMvc.perform(get("/api/v1/board/posts")
+                        .param("bbsId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].id").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test
-    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts/search — 200 OK, 검색 결과")
+    @DisplayName("GET /api/v1/board/posts/search?bbsId=X — 200 OK, 검색 결과")
     void searchPosts_returns200WithResults() throws Exception {
         PageResponse<PostSummary> empty = PageResponse.of(List.of(), 0, 20, 0L);
         when(postService.searchPosts(anyLong(), anyString(), anyInt(), anyInt())).thenReturn(empty);
 
-        mockMvc.perform(get("/api/v1/boards/1/posts/search")
+        mockMvc.perform(get("/api/v1/board/posts/search")
+                        .param("bbsId", "1")
                         .param("keyword", "공지"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }
 
     @Test
-    @DisplayName("POST /api/v1/boards/{bbsMasterId}/posts — 201 Created, 게시글 반환")
+    @WithMockUser(authorities = {"CONTENT:WRITE"})
+    @DisplayName("POST /api/v1/board/posts — 201 Created, 게시글 반환")
     void createPost_returns201WithDetail() throws Exception {
         PostDetail created = new PostDetail(
                 5L, 1L, "NOTICE", false, "테스트 제목", "<p>내용</p>",
@@ -95,7 +100,8 @@ class PostControllerTest {
                 false, null, null, false, null, null, null
         );
 
-        mockMvc.perform(post("/api/v1/boards/1/posts")
+        // bbsMasterId(=bbsId)는 요청 바디에 포함되어 전달됨
+        mockMvc.perform(post("/api/v1/board/posts")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())

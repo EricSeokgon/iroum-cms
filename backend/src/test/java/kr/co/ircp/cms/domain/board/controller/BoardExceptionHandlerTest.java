@@ -48,7 +48,7 @@ class BoardExceptionHandlerTest {
     void bbsMasterNotFound_returns404() throws Exception {
         when(bbsMasterService.getBoard(999L)).thenThrow(new BbsMasterNotFoundException(999L));
 
-        mockMvc.perform(get("/api/v1/boards/999"))
+        mockMvc.perform(get("/api/v1/board/masters/999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.title").value("Board Not Found"))
                 .andExpect(jsonPath("$.code").value("BOARD_NOT_FOUND"));
@@ -59,7 +59,7 @@ class BoardExceptionHandlerTest {
     void duplicateBbsCode_returns409() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new DuplicateBbsCodeException("NOTICE"));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("BOARD_CODE_DUPLICATE"));
     }
@@ -69,7 +69,7 @@ class BoardExceptionHandlerTest {
     void postNotFound_returns404() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new PostNotFoundException(42L));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
     }
@@ -79,7 +79,7 @@ class BoardExceptionHandlerTest {
     void commentNotFound_returns404() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new CommentNotFoundException(10L));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
@@ -89,7 +89,7 @@ class BoardExceptionHandlerTest {
     void attachmentNotFound_returns404() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new AttachmentNotFoundException(5L));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("ATTACHMENT_NOT_FOUND"));
     }
@@ -99,7 +99,7 @@ class BoardExceptionHandlerTest {
     void attachmentTooLarge_returns413() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new AttachmentTooLargeException(52000L, 51200L));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("ATTACHMENT_TOO_LARGE"));
     }
@@ -109,7 +109,7 @@ class BoardExceptionHandlerTest {
     void invalidAttachmentType_returns400() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new InvalidAttachmentTypeException("application/x-msdownload"));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("ATTACHMENT_TYPE_INVALID"));
     }
@@ -119,7 +119,7 @@ class BoardExceptionHandlerTest {
     void attachmentDownloadDenied_returns403() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new AttachmentDownloadDeniedException("서명 검증 실패"));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ATTACHMENT_DOWNLOAD_DENIED"));
     }
@@ -129,7 +129,7 @@ class BoardExceptionHandlerTest {
     void boardCommentDisabled_returns400() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new BoardCommentDisabledException("NOTICE"));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BOARD_COMMENT_DISABLED"));
     }
@@ -139,7 +139,7 @@ class BoardExceptionHandlerTest {
     void boardAttachmentDisabled_returns400() throws Exception {
         when(bbsMasterService.getBoard(1L)).thenThrow(new BoardAttachmentDisabledException("FAQ"));
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BOARD_ATTACHMENT_DISABLED"));
     }

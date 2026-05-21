@@ -72,7 +72,7 @@ class CodeGroupControllerTest {
                 sample(2L, "STATUS", "상태")
         ));
 
-        mockMvc.perform(get("/api/v1/system/code-groups"))
+        mockMvc.perform(get("/api/v1/system/codes/groups"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].groupCode").value("GENDER"))
@@ -85,7 +85,7 @@ class CodeGroupControllerTest {
     void get_returnsOkWithGroup() throws Exception {
         when(codeGroupService.getById(eq(7L))).thenReturn(sample(7L, "GENDER", "성별"));
 
-        mockMvc.perform(get("/api/v1/system/code-groups/7"))
+        mockMvc.perform(get("/api/v1/system/codes/groups/7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(7))
                 .andExpect(jsonPath("$.groupCode").value("GENDER"));
@@ -99,7 +99,7 @@ class CodeGroupControllerTest {
         when(codeGroupService.create(any(CodeGroupRequest.class)))
                 .thenReturn(sample(10L, "GENDER", "성별"));
 
-        mockMvc.perform(post("/api/v1/system/code-groups")
+        mockMvc.perform(post("/api/v1/system/codes/groups")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -114,7 +114,7 @@ class CodeGroupControllerTest {
         // groupCode, name 모두 누락 → @NotBlank 위반
         String invalidJson = "{}";
 
-        mockMvc.perform(post("/api/v1/system/code-groups")
+        mockMvc.perform(post("/api/v1/system/codes/groups")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
@@ -122,13 +122,16 @@ class CodeGroupControllerTest {
 
     @Test
     @WithMockUser(authorities = {"SYSTEM:CODE:WRITE"})
-    @DisplayName("PUT /code-groups/{id} — 그룹 수정 200 OK")
+    @DisplayName("PUT /codes/groups/{code} — 그룹 수정 200 OK (groupCode 문자열 식별)")
     void update_returnsOkWithUpdatedGroup() throws Exception {
         CodeGroupRequest req = new CodeGroupRequest("GENDER", "성별 (변경)", "변경된 설명");
+        // 컨트롤러는 code → id 변환을 위해 getByCode를 먼저 호출
+        when(codeGroupService.getByCode(eq("GENDER")))
+                .thenReturn(sample(5L, "GENDER", "성별"));
         when(codeGroupService.update(eq(5L), any(CodeGroupRequest.class)))
                 .thenReturn(sample(5L, "GENDER", "성별 (변경)"));
 
-        mockMvc.perform(put("/api/v1/system/code-groups/5")
+        mockMvc.perform(put("/api/v1/system/codes/groups/GENDER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())
@@ -138,9 +141,13 @@ class CodeGroupControllerTest {
 
     @Test
     @WithMockUser(authorities = {"SYSTEM:CODE:WRITE"})
-    @DisplayName("DELETE /code-groups/{id} — 그룹 삭제 204 No Content")
+    @DisplayName("DELETE /codes/groups/{code} — 그룹 삭제 204 No Content (groupCode 문자열 식별)")
     void delete_returnsNoContent() throws Exception {
-        mockMvc.perform(delete("/api/v1/system/code-groups/3"))
+        // 컨트롤러는 code → id 변환을 위해 getByCode를 먼저 호출
+        when(codeGroupService.getByCode(eq("STATUS")))
+                .thenReturn(sample(3L, "STATUS", "상태"));
+
+        mockMvc.perform(delete("/api/v1/system/codes/groups/STATUS"))
                 .andExpect(status().isNoContent());
 
         verify(codeGroupService).delete(3L);
@@ -149,7 +156,7 @@ class CodeGroupControllerTest {
     @Test
     @DisplayName("POST /code-groups — 인증 없이 접근 시 403 Forbidden")
     void createCodeGroup_unauthenticated_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/system/code-groups")
+        mockMvc.perform(post("/api/v1/system/codes/groups")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"groupCode\":\"G1\",\"name\":\"그룹\"}"))
                 .andExpect(status().isForbidden());

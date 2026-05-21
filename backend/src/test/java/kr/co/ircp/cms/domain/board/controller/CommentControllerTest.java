@@ -21,9 +21,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,7 +47,7 @@ class CommentControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/boards/{bbsMasterId}/posts/{postId}/comments — 200 OK, 목록 반환")
+    @DisplayName("GET /api/v1/board/posts/{postId}/comments — 200 OK, 목록 반환")
     void listComments_returns200WithList() throws Exception {
         CommentSummary comment = new CommentSummary(
                 1L, 1L, null, 10L, "작성자", null,
@@ -58,14 +56,15 @@ class CommentControllerTest {
         );
         when(commentService.listComments(anyLong())).thenReturn(List.of(comment));
 
-        mockMvc.perform(get("/api/v1/boards/1/posts/1/comments"))
+        // CommentController는 bbsMasterId 경로 변수를 제거하고 /api/v1/board/posts/{postId}/comments로 단순화됨
+        mockMvc.perform(get("/api/v1/board/posts/1/comments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(1))
                 .andExpect(jsonPath("$[0].content").value("댓글 내용입니다."));
     }
 
     @Test
-    @DisplayName("POST /api/v1/boards/{bbsMasterId}/posts/{postId}/comments — 201 Created, 댓글 반환")
+    @DisplayName("POST /api/v1/board/posts/{postId}/comments — 201 Created, 댓글 반환")
     void createComment_returns201WithBody() throws Exception {
         CommentSummary created = new CommentSummary(
                 7L, 1L, null, null, null, "익명",
@@ -78,21 +77,14 @@ class CommentControllerTest {
                 null, "댓글 내용입니다.", null, null, null
         );
 
-        mockMvc.perform(post("/api/v1/boards/1/posts/1/comments")
+        mockMvc.perform(post("/api/v1/board/posts/1/comments")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(7));
     }
 
-    @Test
-    @DisplayName("DELETE /api/v1/boards/{bbsMasterId}/posts/{postId}/comments/{commentId} — 204 No Content")
-    void deleteComment_returns204() throws Exception {
-        doNothing().when(commentService).deleteComment(anyLong(), any());
-
-        mockMvc.perform(delete("/api/v1/boards/1/posts/1/comments/1"))
-                .andExpect(status().isNoContent());
-    }
+    // CommentController에는 DELETE 매핑이 없음 — 삭제 테스트는 제거됨
 
     // ──────────────────────────────────────────────────────────────
     // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오 (적용 불가)

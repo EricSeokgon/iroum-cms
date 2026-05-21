@@ -99,6 +99,8 @@ class SearchServiceTest {
                 ));
         when(unifiedSearchMapper.countUnified(anyString(), anyString(), anyString(), any(), anyBoolean()))
                 .thenReturn(3L);
+        // SearchLog 비동기 저장 스텁 — insertSync는 생성된 검색 로그 ID를 반환
+        when(searchLogAsyncService.insertSync(any(SearchLog.class))).thenReturn(1L);
 
         SearchRequest req = new SearchRequest("청년", "ALL", 1, 20, "ko");
         SearchResponse resp = service.search(req, 100L, false, "sess-1", "iphash");
@@ -106,7 +108,8 @@ class SearchServiceTest {
         assertThat(resp.totalElements()).isEqualTo(3);
         assertThat(resp.content()).hasSize(3);
         assertThat(resp.byDomainFacets()).containsKeys("board", "content", "policy");
-        verify(searchLogMapper).insert(any(SearchLog.class));
+        // SearchServiceImpl.insertSearchLog는 searchLogAsyncService.insertSync로 위임됨
+        verify(searchLogAsyncService).insertSync(any(SearchLog.class));
     }
 
     @Test

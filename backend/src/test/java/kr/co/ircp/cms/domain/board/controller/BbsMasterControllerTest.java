@@ -51,7 +51,7 @@ class BbsMasterControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("GET /api/v1/boards — 200 OK, 목록 반환")
+    @DisplayName("GET /api/v1/board/masters — 200 OK, 목록 반환")
     void listBoards_returns200WithList() throws Exception {
         BbsMasterSummary summary = new BbsMasterSummary(
                 1L, "NOTICE", "공지사항", BbsType.NOTICE,
@@ -59,13 +59,13 @@ class BbsMasterControllerTest {
         );
         when(bbsMasterService.listBoards()).thenReturn(List.of(summary));
 
-        mockMvc.perform(get("/api/v1/boards"))
+        mockMvc.perform(get("/api/v1/board/masters"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].code").value("NOTICE"));
     }
 
     @Test
-    @DisplayName("GET /api/v1/boards/{id} — 200 OK, 단건 반환")
+    @DisplayName("GET /api/v1/board/masters/{id} — 200 OK, 단건 반환")
     void getBoard_returns200WithDetail() throws Exception {
         BbsMasterDetail detail = new BbsMasterDetail(
                 1L, "NOTICE", "공지사항", null, BbsType.NOTICE,
@@ -74,14 +74,14 @@ class BbsMasterControllerTest {
         );
         when(bbsMasterService.getBoard(1L)).thenReturn(detail);
 
-        mockMvc.perform(get("/api/v1/boards/1"))
+        mockMvc.perform(get("/api/v1/board/masters/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    @DisplayName("POST /api/v1/boards — 201 Created, Location 헤더 포함")
+    @DisplayName("POST /api/v1/board/masters — 201 Created, Location 헤더 포함")
     void createBoard_returns201WithBody() throws Exception {
         BbsMasterDetail created = new BbsMasterDetail(
                 2L, "NOTICE", "공지사항", null, BbsType.NOTICE,
@@ -95,7 +95,7 @@ class BbsMasterControllerTest {
                 true, false, 0, 0L, false, false, 20, null, null
         );
 
-        mockMvc.perform(post("/api/v1/boards")
+        mockMvc.perform(post("/api/v1/board/masters")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -108,21 +108,21 @@ class BbsMasterControllerTest {
     // ──────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("AC-COV-001-1 — DELETE /api/v1/boards/{id} 인증 없이 접근 시 403 Forbidden (@WebMvcTest 한계)")
+    @DisplayName("AC-COV-001-1 — DELETE /api/v1/board/masters/{id} 인증 없이 접근 시 403 Forbidden (@WebMvcTest 한계)")
     void deleteBoard_returns403_withoutAuthentication() throws Exception {
         // @WebMvcTest + SecurityAutoConfiguration 제외 → SecurityFilterChain 없음 → @PreAuthorize 거부 → 403
         // 401 검증은 SecurityConfig 통합 테스트에서 별도 (REQ-IRR-003).
-        mockMvc.perform(delete("/api/v1/boards/1"))
+        mockMvc.perform(delete("/api/v1/board/masters/1"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     @WithMockUser(authorities = {"WRONG_AUTHORITY"})
-    @DisplayName("AC-COV-001-2 — DELETE /api/v1/boards/{id} 권한 부족 시 403 Forbidden")
+    @DisplayName("AC-COV-001-2 — DELETE /api/v1/board/masters/{id} 권한 부족 시 403 Forbidden")
     void deleteBoard_returns403_withInsufficientAuthority() throws Exception {
         // given: WRONG_AUTHORITY는 ROLE_ADMIN 정책 미충족
         // when & then: @PreAuthorize 거부 → AccessDeniedHandler → 403
-        mockMvc.perform(delete("/api/v1/boards/1"))
+        mockMvc.perform(delete("/api/v1/board/masters/1"))
                 .andExpect(status().isForbidden());
     }
 }
