@@ -3,6 +3,7 @@ package kr.co.ircp.cms.domain.search.service;
 import kr.co.ircp.cms.domain.search.repository.SearchLogMapper;
 import kr.co.ircp.cms.domain.search.repository.SearchPopularCacheMapper;
 import kr.co.ircp.cms.domain.search.repository.UnifiedSearchMapper;
+import kr.co.ircp.cms.domain.search.service.SearchLogAsyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ class SearchServiceXssTest {
     @Mock private SearchPopularCacheMapper popularCacheMapper;
     @Mock private SearchLogMapper searchLogMapper;
     @Mock private SynonymService synonymService;
+    @Mock private SearchLogAsyncService searchLogAsyncService;
 
     private SearchServiceImpl service;
     private Method sanitizeMethod;
@@ -41,7 +43,7 @@ class SearchServiceXssTest {
     @BeforeEach
     void setUp() throws NoSuchMethodException {
         service = new SearchServiceImpl(
-                unifiedSearchMapper, popularCacheMapper, searchLogMapper, synonymService);
+                unifiedSearchMapper, popularCacheMapper, searchLogMapper, synonymService, searchLogAsyncService);
         sanitizeMethod = SearchServiceImpl.class.getDeclaredMethod(
                 "sanitizeHighlight", String.class);
         sanitizeMethod.setAccessible(true);

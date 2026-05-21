@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.system.stats.service;
 
 import kr.co.ircp.cms.domain.system.stats.dto.DashboardKpiResponse;
+import kr.co.ircp.cms.domain.audit.repository.AuditLogMapper;
 import kr.co.ircp.cms.domain.system.stats.entity.AccessStatDaily;
 import kr.co.ircp.cms.domain.system.stats.mapper.AccessStatDailyMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,12 +27,13 @@ import static org.mockito.Mockito.when;
 class DashboardServiceTest {
 
     @Mock private AccessStatDailyMapper dailyMapper;
+    @Mock private AuditLogMapper auditLogMapper;
 
     private DashboardServiceImpl dashboardService;
 
     @BeforeEach
     void setUp() {
-        dashboardService = new DashboardServiceImpl(dailyMapper);
+        dashboardService = new DashboardServiceImpl(dailyMapper, auditLogMapper);
     }
 
     private AccessStatDaily daily(int visits, int unique, int pageViews, int errors, int avgMs) {

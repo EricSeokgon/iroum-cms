@@ -235,18 +235,17 @@ class MediaIT extends AbstractIntegrationTest {
         }
 
         @Test
-        @DisplayName("AC-004-3.1 (@MX:TODO): 고아 자산 목록 — orphan 엔드포인트 미구현")
-        // @MX:TODO: [AUTO] AC-004-3.1 — MediaController 에 /orphans 엔드포인트 없음.
-        // 후속 SPEC 에서 OrphanCleanupJob + REST endpoint 추가 필요.
+        @org.junit.jupiter.api.Disabled("AC-004-3.1: /orphans 엔드포인트 구현 완료. IT는 ADMIN 토큰 발급/JdbcTemplate 시드 보강 후 작성 예정.")
+        @DisplayName("AC-004-3.1: 고아 자산 목록 — 엔드포인트 구현 완료, IT pending")
         void orphans_list_todo() {
-            // 검증 생략 — MX:TODO 로 추적
+            // implemented in MediaController.listOrphans, IT pending
         }
 
         @Test
-        @DisplayName("AC-004-3.2 (@MX:TODO): 고아 정리 dry_run — orphan 엔드포인트 미구현")
-        // @MX:TODO: [AUTO] AC-004-3.2 — /orphans/cleanup 미구현. dry_run 파라미터도 후속 SPEC 대상.
+        @org.junit.jupiter.api.Disabled("AC-004-3.2: /orphans/cleanup 엔드포인트 구현 완료. IT는 ADMIN 토큰 발급/JdbcTemplate 시드 보강 후 작성 예정.")
+        @DisplayName("AC-004-3.2: 고아 정리 dry_run — 엔드포인트 구현 완료, IT pending")
         void orphans_cleanup_todo() {
-            // 검증 생략 — MX:TODO 로 추적
+            // implemented in MediaController.cleanupOrphans, IT pending
         }
 
         @Test

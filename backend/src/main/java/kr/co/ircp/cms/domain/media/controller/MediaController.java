@@ -178,4 +178,50 @@ public class MediaController {
         mediaService.deleteCollection(id, principal.userId());
         return ResponseEntity.noContent().build();
     }
+
+    // ─── 고아 자산 관리 (REQ-MEDIA-004-D-3) ───────────────────────────────────
+    // 인가는 SecurityConfig 의 URL 매처(ADMIN 전용)에서 강제한다.
+
+    /**
+     * GET /api/v1/media/orphans — 고아 자산 목록 (ADMIN 전용)
+     * @param olderThanDays 며칠 이상 경과된 자산만 조회 (기본 30)
+     * @param page          0-base 페이지 번호
+     * @param pageSize      페이지 크기 (기본 50)
+     */
+    @GetMapping("/orphans")
+    public ResponseEntity<Map<String, Object>> listOrphans(
+            @RequestParam(defaultValue = "30") int olderThanDays,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int pageSize,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        List<MediaAssetSummary> content = mediaService.findOrphans(olderThanDays, page, pageSize);
+        long total = mediaService.countOrphans(olderThanDays);
+        return ResponseEntity.ok(Map.of(
+                "content", content,
+                "page", page,
+                "size", pageSize,
+                "total", total,
+                "olderThanDays", olderThanDays
+        ));
+    }
+
+    /**
+     * POST /api/v1/media/orphans/cleanup — 고아 자산 정리 (ADMIN 전용)
+     * @param olderThanDays 며칠 이상 경과된 자산만 정리 (기본 30)
+     * @param dryRun        true면 실제 삭제 없이 대상 수만 반환 (기본 true)
+     */
+    @PostMapping("/orphans/cleanup")
+    public ResponseEntity<Map<String, Object>> cleanupOrphans(
+            @RequestParam(defaultValue = "30") int olderThanDays,
+            @RequestParam(name = "dry_run", defaultValue = "true") boolean dryRun,
+            @AuthenticationPrincipal JwtPrincipal principal
+    ) {
+        long count = mediaService.cleanupOrphans(olderThanDays, dryRun);
+        return ResponseEntity.ok(Map.of(
+                "count", count,
+                "dryRun", dryRun,
+                "olderThanDays", olderThanDays
+        ));
+    }
 }

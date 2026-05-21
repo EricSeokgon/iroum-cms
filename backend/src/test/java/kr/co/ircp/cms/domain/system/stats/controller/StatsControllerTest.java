@@ -69,8 +69,8 @@ class StatsControllerTest {
     @WithMockUser(authorities = {"SYSTEM:STATS"})
     @DisplayName("GET /stats/top-pages — 기본 7일 Top Pages 200 OK")
     void topPages_default7days_returnsOk() throws Exception {
-        TopPageResponse p1 = new TopPageResponse("/home", 1500L, 1);
-        TopPageResponse p2 = new TopPageResponse("/about", 800L, 2);
+        TopPageResponse p1 = new TopPageResponse("/home", 1500L, null, null, 1);
+        TopPageResponse p2 = new TopPageResponse("/about", 800L, null, null, 2);
         when(statsService.getTopPages(eq(7), anyLong())).thenReturn(List.of(p1, p2));
 
         mockMvc.perform(get("/api/v1/system/stats/top-pages"))
@@ -84,7 +84,7 @@ class StatsControllerTest {
     @WithMockUser(authorities = {"SYSTEM:STATS"})
     @DisplayName("GET /stats/top-pages?days=30 — 30일 Top Pages 200 OK")
     void topPages_30days_returnsOk() throws Exception {
-        TopPageResponse p1 = new TopPageResponse("/board", 5000L, 1);
+        TopPageResponse p1 = new TopPageResponse("/board", 5000L, null, null, 1);
         when(statsService.getTopPages(eq(30), anyLong())).thenReturn(List.of(p1));
 
         mockMvc.perform(get("/api/v1/system/stats/top-pages").param("days", "30"))

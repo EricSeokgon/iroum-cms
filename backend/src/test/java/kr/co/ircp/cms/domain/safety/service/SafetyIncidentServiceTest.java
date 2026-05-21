@@ -8,7 +8,10 @@ import kr.co.ircp.cms.domain.safety.dto.IncidentUpdateRequest;
 import kr.co.ircp.cms.domain.safety.dto.SyncResult;
 import kr.co.ircp.cms.domain.safety.entity.SafetyIncident;
 import kr.co.ircp.cms.domain.safety.exception.SafetyIncidentNotFoundException;
+import kr.co.ircp.cms.domain.safety.repository.SafetyIncidentKeywordMapper;
 import kr.co.ircp.cms.domain.safety.repository.SafetyIncidentMapper;
+import kr.co.ircp.cms.domain.safety.repository.SafetyKeywordMapper;
+import kr.co.ircp.cms.infra.kosha.KoshaApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,11 +38,14 @@ import static org.mockito.Mockito.when;
 class SafetyIncidentServiceTest {
 
     @Mock private SafetyIncidentMapper incidentMapper;
+    @Mock private SafetyKeywordMapper keywordMapper;
+    @Mock private SafetyIncidentKeywordMapper incidentKeywordMapper;
     private SafetyIncidentServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new SafetyIncidentServiceImpl(incidentMapper);
+        service = new SafetyIncidentServiceImpl(
+                incidentMapper, keywordMapper, incidentKeywordMapper, Optional.empty());
     }
 
     private SafetyIncident sample(long id) {

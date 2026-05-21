@@ -79,10 +79,10 @@ class RagQueryServiceTest {
 
     private void givenFtsPolicies() {
         when(searchService.search(any(), any(), anyBoolean(), any(), any())).thenReturn(
-                new SearchResponse(2, 1, List.of(
-                        new DocResult("policy", 101L, "청년 창업 지원", "snippet", 0.8,
+                new SearchResponse(null, 2, 1, List.of(
+                        new DocResult("policy", 101L, "청년 창업 지원", "snippet", null, 0.8,
                                 "policy", "/policy/101", Instant.now()),
-                        new DocResult("policy", 203L, "예비창업패키지", "snippet", 0.6,
+                        new DocResult("policy", 203L, "예비창업패키지", "snippet", null, 0.6,
                                 "policy", "/policy/203", Instant.now())),
                         Map.of(), "청년 창업"));
     }
@@ -166,7 +166,7 @@ class RagQueryServiceTest {
     void emptyResults() {
         when(embeddingRepo.searchByCosine(anyString(), anyInt())).thenReturn(List.of());
         when(searchService.search(any(), any(), anyBoolean(), any(), any())).thenReturn(
-                new SearchResponse(0, 0, List.of(), Map.of(), "무관"));
+                new SearchResponse(null, 0, 0, List.of(), Map.of(), "무관"));
 
         RagQueryResponse resp = service.query(
                 new RagQueryRequest("존재하지 않는 정책 xyz"), "anon-5", null);

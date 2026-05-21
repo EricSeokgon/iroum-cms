@@ -72,7 +72,7 @@ class SearchControllerTest {
     void search_validParams_returns200WithResults() throws Exception {
         // given
         SearchResponse resp = new SearchResponse(
-                0, 0, List.of(), Map.of("ALL", 0L), "검색어"
+                null, 0, 0, List.of(), Map.of("ALL", 0L), "검색어"
         );
         when(searchService.search(any(), any(), anyBoolean(), anyString(), any()))
                 .thenReturn(resp);
@@ -191,8 +191,7 @@ class SearchControllerTest {
     void stats_returns200WithStats_whenAdmin() throws Exception {
         // given
         SearchStatsResponse stats = new SearchStatsResponse(
-                List.of(Map.of("query", "정책", "count", 50L)),
-                0.05, 120.5, 1000L
+                null, null, 1000L, 0L, List.of(Map.of("query", "정책", "count", 50L))
         );
         when(searchService.getStats(isNull(), isNull(), eq(20)))
                 .thenReturn(stats);

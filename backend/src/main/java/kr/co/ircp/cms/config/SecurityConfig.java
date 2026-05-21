@@ -224,6 +224,20 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/admin/ai/**").hasRole("ADMIN")
                 // SPEC-CMS-AI-001 — AI 예측/시뮬레이션은 인증 사용자 전용
                 .requestMatchers("/api/v1/ai/**").authenticated()
+                // REQ-MEDIA-004-D-1: 미디어 업로드 EDITOR+ 전용 (DEPT_ADMIN/ADMIN 포함, SUPER_ADMIN은 RoleHierarchy 자동 승격)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/media/upload"
+                ).hasAnyRole("EDITOR", "DEPT_ADMIN", "ADMIN")
+                // REQ-MEDIA-004-D-3: 고아 자산 목록·정리는 ADMIN 전용
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/media/orphans"
+                ).hasRole("ADMIN")
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/media/orphans/cleanup"
+                ).hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 삽입

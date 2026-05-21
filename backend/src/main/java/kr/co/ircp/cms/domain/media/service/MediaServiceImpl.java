@@ -382,6 +382,42 @@ public class MediaServiceImpl implements MediaService {
         collectionMapper.deleteById(collectionId);
     }
 
+    // ─── 고아 자산 관리 (REQ-MEDIA-004-D-3) ───────────────────────────────────
+
+    @Override
+    public List<MediaAssetSummary> findOrphans(int olderThanDays, int page, int pageSize) {
+        int offset = Math.max(0, page) * Math.max(1, pageSize);
+        return assetMapper.findOrphans(olderThanDays, offset, Math.max(1, pageSize)).stream()
+                .map(MediaAssetSummary::from)
+                .toList();
+    }
+
+    @Override
+    public long countOrphans(int olderThanDays) {
+        return assetMapper.countOrphans(olderThanDays);
+    }
+
+    /**
+     * 고아 자산 정리. dryRun=true면 삭제 없이 대상 수만 반환.
+     * 대상은 활성 사용처가 0이고 olderThanDays일 이상 경과한 자산.
+     * REQ-MEDIA-004-D-3
+     */
+    @Override
+    @Transactional
+    public long cleanupOrphans(int olderThanDays, boolean dryRun) {
+        // 충분히 큰 limit으로 한 번에 조회 (배치 정리 가정). 페이지네이션 불필요.
+        List<MediaAsset> orphans = assetMapper.findOrphans(olderThanDays, 0, 10000);
+        if (dryRun) {
+            log.info("고아 자산 정리(dryRun): olderThanDays={}, 대상={}건", olderThanDays, orphans.size());
+            return orphans.size();
+        }
+        for (MediaAsset orphan : orphans) {
+            assetMapper.softDelete(orphan.getId());
+        }
+        log.info("고아 자산 정리 완료: olderThanDays={}, 삭제={}건", olderThanDays, orphans.size());
+        return orphans.size();
+    }
+
     // ─── 내부 유틸리티 ────────────────────────────────────────────────────────
 
     private MediaType resolveMediaType(String mime) {

@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
  *   <li>codes        — TTL 1시간, max 500 entries (공통코드)</li>
  *   <li>codeGroups   — TTL 1시간, max 100 entries (공통코드 그룹)</li>
  *   <li>dashboard    — TTL 60초,  max 10 entries  (대시보드 KPI)</li>
+ *   <li>siteByDomain — TTL 10분,  max 50 entries  (REQ-CONTENT-007-D-3)</li>
+ *   <li>siteByCode   — TTL 10분,  max 50 entries  (REQ-CONTENT-007-D-3)</li>
  * </ul>
  */
 @Configuration
@@ -80,8 +82,16 @@ public class CacheConfig {
                         .expireAfterWrite(ragProperties.getCacheTtlMinutes(), TimeUnit.MINUTES)
                         .maximumSize(ragProperties.getCacheMaxSize()));
 
+        // REQ-CONTENT-007-D-3: 사이트 조회 캐시 (도메인 매핑 고빈도 — TTL 10분, max 50)
+        CaffeineCache siteByDomain = build("siteByDomain",
+                Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(50));
+
+        CaffeineCache siteByCode = build("siteByCode",
+                Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(50));
+
         manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
-                codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache, ragQueryCache));
+                codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache, ragQueryCache,
+                siteByDomain, siteByCode));
         return manager;
     }
 

@@ -14,6 +14,7 @@ import kr.co.ircp.cms.domain.search.exception.SearchQueryTooLongException;
 import kr.co.ircp.cms.domain.search.repository.SearchLogMapper;
 import kr.co.ircp.cms.domain.search.repository.SearchPopularCacheMapper;
 import kr.co.ircp.cms.domain.search.repository.UnifiedSearchMapper;
+import kr.co.ircp.cms.domain.search.service.SearchLogAsyncService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,12 +61,14 @@ class SearchServiceTest {
     @Mock private SearchPopularCacheMapper popularCacheMapper;
     @Mock private SearchLogMapper searchLogMapper;
     @Mock private SynonymService synonymService;
+    @Mock private SearchLogAsyncService searchLogAsyncService;
 
     private SearchService service;
 
     @BeforeEach
     void setUp() {
-        service = new SearchServiceImpl(unifiedSearchMapper, popularCacheMapper, searchLogMapper, synonymService);
+        service = new SearchServiceImpl(
+                unifiedSearchMapper, popularCacheMapper, searchLogMapper, synonymService, searchLogAsyncService);
     }
 
     private Map<String, Object> stubRow(String docType, long docId, String title) {

@@ -83,7 +83,7 @@ class PostControllerTest {
     @DisplayName("POST /api/v1/boards/{bbsMasterId}/posts — 201 Created, 게시글 반환")
     void createPost_returns201WithDetail() throws Exception {
         PostDetail created = new PostDetail(
-                5L, 1L, "NOTICE", "테스트 제목", "<p>내용</p>",
+                5L, 1L, "NOTICE", false, "테스트 제목", "<p>내용</p>",
                 null, null, false, null, null, false,
                 0L, 0L, "ACTIVE", null, List.of(),
                 Instant.now(), Instant.now()

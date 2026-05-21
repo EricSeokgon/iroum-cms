@@ -69,4 +69,18 @@ public interface MediaService {
     void removeFromCollection(Long collectionId, UUID assetUuid, long requesterId);
 
     void deleteCollection(Long collectionId, long requesterId);
+
+    // ─── 고아 자산 관리 (REQ-MEDIA-004-D-3) ────────────────────────────────────
+
+    /** 고아 자산 목록 조회 (활성 사용처 없음 + olderThanDays일 경과). REQ-MEDIA-004-D-3 */
+    List<MediaAssetSummary> findOrphans(int olderThanDays, int page, int pageSize);
+
+    /** 고아 자산 총 수. REQ-MEDIA-004-D-3 */
+    long countOrphans(int olderThanDays);
+
+    /**
+     * 고아 자산 정리. dryRun=true면 삭제 없이 대상 수만 반환.
+     * REQ-MEDIA-004-D-3
+     */
+    long cleanupOrphans(int olderThanDays, boolean dryRun);
 }

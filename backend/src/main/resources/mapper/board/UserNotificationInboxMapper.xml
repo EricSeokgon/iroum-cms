@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.UserNotificationInboxMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO user_notification_inbox (user_id, type, title, body, ref_id, ref_type)
+    VALUES (#{userId}, #{type}, #{title}, #{body}, #{refId}, #{refType})
+  </insert>
+
+  <update id="markRead">
+    UPDATE user_notification_inbox
+    SET is_read = TRUE, read_at = NOW()
+    WHERE id = #{id}
+      AND user_id = #{userId}
+      AND is_read = FALSE
+  </update>
+
+</mapper>

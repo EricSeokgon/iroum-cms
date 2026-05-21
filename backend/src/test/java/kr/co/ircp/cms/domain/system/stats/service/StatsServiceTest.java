@@ -177,7 +177,7 @@ class StatsServiceTest {
     @DisplayName("getTopPages — monthlyMapper.findTopPages 결과 반환")
     void getTopPages_returnsList() {
         // given
-        TopPageResponse top = new TopPageResponse("/index", 1234L, 1);
+        TopPageResponse top = new TopPageResponse("/index", 1234L, null, null, 1);
         when(monthlyMapper.findTopPages(7, 1L)).thenReturn(List.of(top));
 
         // when

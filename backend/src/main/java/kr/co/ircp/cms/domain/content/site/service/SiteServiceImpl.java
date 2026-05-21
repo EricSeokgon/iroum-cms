@@ -6,6 +6,9 @@ import kr.co.ircp.cms.domain.content.site.entity.Site;
 import kr.co.ircp.cms.domain.content.site.exception.SiteMultiDisabledException;
 import kr.co.ircp.cms.domain.content.site.mapper.SiteMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +30,11 @@ public class SiteServiceImpl implements SiteService {
      * 도메인으로 현재 사이트 조회.
      * 일치하는 사이트가 없으면 code='MAIN' 기본 사이트로 폴백.
      * REQ-CONTENT-003-D-1, D-2
+     *
+     * // @MX:NOTE: [AUTO] siteByDomain 캐시 적용 — 모든 콘텐츠 요청 진입점으로 고빈도 조회. TTL 10분.
      */
     @Override
+    @Cacheable(value = "siteByDomain", key = "#domain")
     public SiteResponse getCurrentSite(String domain) {
         return siteMapper.findByDomain(domain)
                 .or(() -> siteMapper.findByCode("MAIN"))
@@ -37,6 +43,7 @@ public class SiteServiceImpl implements SiteService {
     }
 
     @Override
+    @Cacheable(value = "siteByCode", key = "#code")
     public SiteResponse getSiteByCode(String code) {
         return siteMapper.findByCode(code)
                 .map(SiteResponse::from)
@@ -45,6 +52,10 @@ public class SiteServiceImpl implements SiteService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "siteByDomain", allEntries = true),
+            @CacheEvict(value = "siteByCode", allEntries = true)
+    })
     public SiteResponse updateSite(Long id, SiteUpdateRequest request) {
         Site site = siteMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("사이트를 찾을 수 없습니다. id=" + id));
@@ -58,8 +69,6 @@ public class SiteServiceImpl implements SiteService {
     /**
      * 멀티사이트 생성.
      * REQ-CONTENT-003-D-3: 1차 출시 기본값 비활성화 → 항상 거부
-     *
-     * // @MX:TODO: [AUTO] REQ-CONTENT-007-D-3 Caffeine 캐시 도입 (사이트 목록 캐싱)
      */
     @Override
     @Transactional

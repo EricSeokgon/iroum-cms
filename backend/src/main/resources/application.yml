@@ -208,3 +208,14 @@ logging:
 #       encrypted-keys:
 #         dek-v1: BASE64_KMS_ENCRYPTED_AES_KEY_V1
 #         hmac: BASE64_KMS_ENCRYPTED_HMAC_KEY
+
+# KOSHA OpenAPI 연동 (REQ-SAFETY-001-D-4)
+# service-key 미설정 시 KoshaApiClient 빈이 비활성화됨 (로컬·테스트 안전 폴백)
+# 운영: KOSHA_API_KEY 환경변수로 주입
+kosha:
+  api:
+    base-url: http://apis.data.go.kr/B552015/OSHIS_SAFE_ACCIDENT
+    service-key: ${KOSHA_API_KEY:}   # 빈 문자열이면 빈 비활성화
+    page-size: 100
+    connect-timeout-ms: 5000
+    read-timeout-ms: 10000
