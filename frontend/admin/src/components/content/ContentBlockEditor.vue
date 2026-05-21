@@ -69,16 +69,13 @@
       </div>
 
       <!-- RICH_TEXT 블록 -->
-      <!-- @MX:TODO: [AUTO] Tiptap 위지윅 에디터 통합 필요 — 1차 출시는 textarea + 미리보기로 대체 -->
       <template v-if="block.blockType === 'RICH_TEXT'">
-        <el-input
+        <TiptapEditor
           v-model="(block.payload as unknown as RichTextPayload).html"
-          type="textarea"
           :rows="6"
           :placeholder="t('content.page.blocks.richTextPlaceholder')"
           :aria-label="t('content.page.blocks.type.RICH_TEXT')"
         />
-        <div class="mt-2 text-xs text-gray-400">{{ t('content.page.blocks.richTextNote') }}</div>
       </template>
 
       <!-- IMAGE 블록 — KWCAG 1.1.1 alt 필수 -->
@@ -181,6 +178,7 @@ import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import MediaPicker from '@/components/content/MediaPicker.vue'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 import type { ContentBlockResponse, BlockType } from '@/api/content'
 
 const { t } = useI18n()

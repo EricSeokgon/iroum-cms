@@ -23,7 +23,6 @@ export const meApi = {
    * GET /api/v1/me/login-history
    * 권한: 인증된 모든 사용자 (자기 데이터)
    * REQ-AUTH-011
-   * @MX:TODO: [AUTO] 백엔드 미구현 — Phase R-15에서 추가 예정
    */
   myLoginHistory(params: { page?: number; size?: number }) {
     return apiClient.get<PageResponse<LoginHistoryEntry>>(

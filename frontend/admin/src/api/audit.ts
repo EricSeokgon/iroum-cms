@@ -69,7 +69,6 @@ export const auditApi = {
    * GET /api/v1/audit/login-history
    * 권한: AUDIT:READ
    * REQ-AUTH-011
-   * @MX:TODO: [AUTO] 백엔드 미구현 — Phase R-15에서 추가 예정
    */
   loginHistory(params: {
     page?: number

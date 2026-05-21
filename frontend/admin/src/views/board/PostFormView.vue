@@ -57,17 +57,12 @@
           />
         </el-form-item>
 
-        <!-- 본문 — 1차: textarea, 추후 Tiptap 통합 -->
-        <!-- @MX:TODO: [AUTO] Tiptap WYSIWYG 에디터 통합 — SPEC-CMS-003 추후 단계 -->
         <el-form-item :label="t('board.posts.field.content')" prop="contentHtml">
-          <el-input
-            id="post-content"
+          <TiptapEditor
             v-model="form.contentHtml"
-            type="textarea"
-            :rows="15"
             :placeholder="t('board.posts.field.contentPlaceholder')"
-            aria-required="true"
-            aria-multiline="true"
+            :rows="15"
+            :aria-label="t('board.posts.field.content')"
           />
         </el-form-item>
 
@@ -120,6 +115,7 @@ import type { FormInstance, FormRules, UploadFile, UploadRawFile } from 'element
 import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
 import type { PostCreateRequest } from '@iroum/shared/types/api'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 
 interface Props {
   bbsId?: string
@@ -153,7 +149,7 @@ const rules: FormRules = {
     { max: 500, message: t('board.posts.error.titleLength'), trigger: 'blur' },
   ],
   contentHtml: [
-    { required: true, message: t('board.posts.error.contentRequired'), trigger: 'blur' },
+    { required: true, message: t('board.posts.error.contentRequired'), trigger: 'change' },
   ],
 }
 
