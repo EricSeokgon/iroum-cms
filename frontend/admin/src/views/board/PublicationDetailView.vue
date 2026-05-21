@@ -159,7 +159,12 @@
         </div>
 
         <el-form-item :label="t('publication.field.content')" prop="contentHtml">
-          <el-input v-model="form.contentHtml" type="textarea" :rows="8" />
+          <TiptapEditor
+            v-model="form.contentHtml"
+            :rows="8"
+            :upload-image="uploadImage"
+            :aria-label="t('publication.field.content')"
+          />
         </el-form-item>
       </el-form>
 
@@ -191,6 +196,8 @@ import {
   type DocumentType,
 } from '@/api/publication'
 import { useSafeHtml } from '@/composables/useSafeHtml'
+import { boardApi } from '@/api/board'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 
 const { sanitize } = useSafeHtml()
 
@@ -270,6 +277,12 @@ const isAdmin = computed(() => {
   const roles = auth.user?.roleCodes ?? []
   return roles.includes('SUPER_ADMIN') || roles.includes('ADMIN') || roles.includes('DEPT_ADMIN')
 })
+
+async function uploadImage(file: File): Promise<string> {
+  const res = await boardApi.uploadAttachment(file)
+  const urlRes = await boardApi.getAttachmentUrl(res.data.id)
+  return urlRes.data.signedUrl
+}
 
 async function loadPublication(): Promise<void> {
   loading.value = true

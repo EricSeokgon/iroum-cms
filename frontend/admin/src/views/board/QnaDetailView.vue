@@ -82,11 +82,11 @@
         </h3>
         <el-form label-position="top">
           <el-form-item :label="t('qna.field.answer')">
-            <el-input
+            <TiptapEditor
               v-model="answerInput"
-              type="textarea"
               :rows="6"
-              :placeholder="t('qna.field.answer')"
+              :upload-image="uploadImage"
+              :aria-label="t('qna.field.answer')"
             />
           </el-form-item>
           <el-form-item>
@@ -138,6 +138,8 @@ import {
   type QnaDetail,
 } from '@/api/qna'
 import { useSafeHtml } from '@/composables/useSafeHtml'
+import { boardApi } from '@/api/board'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 
 const { sanitize } = useSafeHtml()
 
@@ -177,6 +179,12 @@ async function loadQna(): Promise<void> {
   } finally {
     loading.value = false
   }
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const res = await boardApi.uploadAttachment(file)
+  const urlRes = await boardApi.getAttachmentUrl(res.data.id)
+  return urlRes.data.signedUrl
 }
 
 async function handleAnswerSubmit(): Promise<void> {

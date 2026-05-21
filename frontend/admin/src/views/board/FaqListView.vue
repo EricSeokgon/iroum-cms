@@ -199,7 +199,12 @@
         </el-form-item>
 
         <el-form-item :label="t('faq.field.answer')" prop="answerHtml">
-          <el-input v-model="form.answerHtml" type="textarea" :rows="6" />
+          <TiptapEditor
+            v-model="form.answerHtml"
+            :rows="6"
+            :upload-image="uploadImage"
+            :aria-label="t('faq.field.answer')"
+          />
         </el-form-item>
 
         <el-form-item :label="t('faq.field.sortOrder')" prop="sortOrder">
@@ -244,6 +249,8 @@ import {
   type FaqCategoryCount,
   type FaqStatus,
 } from '@/api/faq'
+import { boardApi } from '@/api/board'
+import TiptapEditor from '@/components/editor/TiptapEditor.vue'
 
 const { t } = useI18n()
 const auth = useAuthStore()
@@ -414,6 +421,12 @@ async function handleDelete(row: FaqSummary): Promise<void> {
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(t('common.deleteError'))
   }
+}
+
+async function uploadImage(file: File): Promise<string> {
+  const res = await boardApi.uploadAttachment(file)
+  const urlRes = await boardApi.getAttachmentUrl(res.data.id)
+  return urlRes.data.signedUrl
 }
 
 function formatDate(iso: string): string {

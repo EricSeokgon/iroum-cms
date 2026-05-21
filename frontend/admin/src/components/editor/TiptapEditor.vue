@@ -146,6 +146,29 @@
         🔗
       </button>
 
+      <!-- 이미지 업로드 (uploadImage prop 제공 시 노출) -->
+      <template v-if="uploadImage">
+        <span class="tiptap-toolbar__divider" aria-hidden="true"></span>
+        <button
+          type="button"
+          class="tiptap-toolbar__btn"
+          aria-label="이미지 삽입"
+          title="이미지 업로드"
+          :disabled="imageUploading"
+          @click="triggerImageUpload"
+        >
+          {{ imageUploading ? '⏳' : '🖼' }}
+        </button>
+        <input
+          ref="imageInputRef"
+          type="file"
+          accept="image/*"
+          class="sr-only"
+          aria-hidden="true"
+          @change="handleImageFile"
+        />
+      </template>
+
       <span class="tiptap-toolbar__divider" aria-hidden="true"></span>
 
       <!-- 실행 취소/다시 실행 -->
@@ -181,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -192,7 +215,9 @@ import TableRow from '@tiptap/extension-table-row'
 import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 
-// @MX:NOTE: SPEC-CMS-003 — Tiptap WYSIWYG 에디터 공통 컴포넌트
+// @MX:NOTE: SPEC-CMS-003 — Tiptap WYSIWYG 에디터 공통 컴포넌트; uploadImage prop으로 이미지 업로드 연동
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const imageUploading = ref(false)
 // 서버 측 OWASP HTML Sanitizer가 XSS 방어 담당, 클라이언트는 sanitize 미적용
 
 interface Props {
@@ -200,6 +225,7 @@ interface Props {
   placeholder?: string
   rows?: number
   ariaLabel?: string
+  uploadImage?: (file: File) => Promise<string>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -289,6 +315,28 @@ function handleSetLink(): void {
   }
 
   ed.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+}
+
+function triggerImageUpload(): void {
+  imageInputRef.value?.click()
+}
+
+async function handleImageFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !props.uploadImage) return
+
+  imageUploading.value = true
+  try {
+    const url = await props.uploadImage(file)
+    editor.value?.chain().focus().setImage({ src: url, alt: file.name }).run()
+  } catch {
+    // 업로드 실패 — 조용히 처리 (호출자에서 에러 표시)
+  } finally {
+    imageUploading.value = false
+    // 같은 파일 재선택 허용
+    if (input) input.value = ''
+  }
 }
 
 onBeforeUnmount(() => {
