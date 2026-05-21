@@ -11,6 +11,30 @@
 
 ---
 
+## [1.6.3] - 2026-05-21
+
+### Changed
+
+- **단위 테스트 전체 GREEN 달성** — 1963건 0 실패 (커밋 e6526e6, 2ae6d48, cd32f16)
+  - 프로덕션 코드 변경에 따른 단위 테스트 불일치 수정 (11개 파일)
+    - `SearchServiceTest`: `searchLogMapper.insert()` → `searchLogAsyncService.insertSync()` 검증 경로 수정
+    - `SearchControllerTest`: 실제 DTO에 없는 `zeroResultRatio`, `avgResponseMs` 필드 단언 제거
+    - `PostControllerTest`, `BbsMasterControllerTest`, `CommentControllerTest`, `BoardExceptionHandlerTest`: 컨트롤러 실제 URL에 맞게 수정 (`/boards/**` → `/board/masters/**`, `/board/posts/**`)
+    - `DashboardServiceTest`: healthStatus `"UP"` → `"HEALTHY"`, errorRate `5.0` → `0.05` (소수 비율)
+    - `AuthorizationCoverageArchTest`: @PreAuthorize 기준선 `103L` → `114L` 동기화
+    - `QnaNotificationServiceImplTest`: 누락 @Mock 5개 추가
+    - `AuthServiceTest`: `generateAccessToken` 4인자 시그니처 스텁 수정
+    - `CodeGroupControllerTest`: URL `/system/code-groups` → `/system/codes/groups` 수정
+  - pgvector 없는 로컬 테스트 환경 ApplicationContext 로드 오류 해결
+    - `src/test/resources/application.properties` 신설: `spring.flyway.target=32` (V33 pgvector 마이그레이션 우회)
+    - `src/test/resources/application-integration.yml`: `spring.flyway.target=latest` 명시 (Docker CI 환경에서 V33 정상 적용 유지)
+  - AuthorizationMatrix IT URL 불일치 및 @WebMvcTest 누락 MockBean 수정 (8개 파일)
+    - `AuthorizationMatrixExpand3IT`, `AuthorizationMatrixExpand4IT`, `AuthorizationMatrixExpandIT`: 컨트롤러 실제 URL에 맞게 수정
+    - `DashboardControllerTest`, `RetentionPolicyControllerTest`, `I18nControllerTest`, `StatsControllerTest`: 누락 @MockBean 추가
+    - `AuditLogExportIT`: `StreamingResponseBody` async dispatch 시 SecurityContext 유실 우회
+
+---
+
 ## [1.6.2] - 2026-05-20
 
 ### Fixed
