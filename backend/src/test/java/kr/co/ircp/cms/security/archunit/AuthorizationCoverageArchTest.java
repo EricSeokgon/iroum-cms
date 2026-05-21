@@ -444,12 +444,12 @@ class AuthorizationCoverageArchTest {
                 "POST /api/v1/organizations",
                 "GET /api/v1/qnas",
                 "POST /api/v1/qnas",
-                // §A.5 System (5)
+                // §A.5 System (5) — CodeGroup 경로는 /api/v1/system/codes/groups로 변경됨 (프론트엔드 system.ts 스펙)
                 "GET /api/v1/system/codes",
-                "GET /api/v1/system/code-groups",
+                "GET /api/v1/system/codes/groups",
                 "POST /api/v1/system/codes",
                 "PUT /api/v1/system/codes/{id}",
-                "POST /api/v1/system/code-groups",
+                "POST /api/v1/system/codes/groups",
                 // §A.6 Governance (3)
                 "GET /api/v1/governance/quality-rules",
                 "POST /api/v1/governance/quality-rules",
@@ -458,8 +458,9 @@ class AuthorizationCoverageArchTest {
                 "POST /api/v1/content/menus",
                 "PATCH /api/v1/content/menus/{id}/order",
                 "DELETE /api/v1/content/menus/{id}",
-                "POST /api/v1/boards",
-                "PUT /api/v1/boards/{id}",
+                // BbsMaster 경로는 /api/v1/board/masters로 변경됨 (프론트엔드 board.ts 스펙)
+                "POST /api/v1/board/masters",
+                "PUT /api/v1/board/masters/{id}",
 
                 // ─── AUTHZ-IT-EXPAND-002 19 endpoint (Phase A + B) ───────────────
                 // §A.1 ContentRead 4 (CONTENT:READ/PAGE:READ/TEMPLATE:READ/ROLE:CONTENT_ADMIN)
@@ -504,13 +505,13 @@ class AuthorizationCoverageArchTest {
                 "PUT /api/v1/users/{id}",
                 "DELETE /api/v1/users/{id}",
                 "POST /api/v1/users/{id}/unlock",
-                // §A.3 CodeDomain (6, GET /code-groups는 EXPAND-001 §A.5에 이미 baseline 등록됨)
+                // §A.3 CodeDomain (6, GET /codes/groups는 EXPAND-001 §A.5에 이미 baseline 등록됨)
                 "GET /api/v1/system/codes/bulk",
                 "GET /api/v1/system/codes/{id}",
                 "DELETE /api/v1/system/codes/{id}",
-                "GET /api/v1/system/code-groups/{id}",
-                "PUT /api/v1/system/code-groups/{id}",
-                "DELETE /api/v1/system/code-groups/{id}",
+                "GET /api/v1/system/codes/groups/{id}",
+                "PUT /api/v1/system/codes/groups/{id}",
+                "DELETE /api/v1/system/codes/groups/{id}",
                 // §A.4 MenuMaintenance (4)
                 "PATCH /api/v1/content/menus/{id}/move",
                 "PATCH /api/v1/content/menus/{id}/visibility",
@@ -536,7 +537,7 @@ class AuthorizationCoverageArchTest {
                 // ─── AUTHZ-IT-EXPAND-004 22 endpoint (Phase A + B + C, Bbs/Publication/Faq/Qna/Survey + Block/Popup/Template + Role/Cache) ───
                 // §A.1 BoardDomain 15 (Bbs 1 + Publication 3 + Faq 4 + Qna 3 신규 + Survey 4)
                 // ※ GET /api/v1/qnas, POST /api/v1/qnas는 AUTHZ-IT-EXPAND-001 §A.4에 이미 등록되어 dedup됨
-                "DELETE /api/v1/boards/{id}",
+                "DELETE /api/v1/board/masters/{id}",
                 "POST /api/v1/publications",
                 "PUT /api/v1/publications/{id}",
                 "DELETE /api/v1/publications/{id}",

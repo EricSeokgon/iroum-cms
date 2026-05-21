@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.system.stats.dto.TopPageResponse;
 import kr.co.ircp.cms.domain.system.stats.dto.TrendItemResponse;
+import kr.co.ircp.cms.domain.system.stats.mapper.AccessStatDailyMapper;
 import kr.co.ircp.cms.domain.system.stats.service.StatsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,10 @@ class StatsControllerTest {
     @MockitoBean
     private StatsService statsService;
 
+    // StatsController는 AccessStatDailyMapper도 주입받으므로 슬라이스에서 @MockitoBean으로 대체
+    @MockitoBean
+    private AccessStatDailyMapper accessStatDailyMapper;
+
     @Test
     @WithMockUser(authorities = {"SYSTEM:STATS"})
     @DisplayName("GET /stats/trend — 30일 추이 200 OK + 응답 배열")
@@ -73,10 +78,11 @@ class StatsControllerTest {
         TopPageResponse p2 = new TopPageResponse("/about", 800L, null, null, 2);
         when(statsService.getTopPages(eq(7), anyLong())).thenReturn(List.of(p1, p2));
 
+        // 응답 DTO는 @JsonNaming(SnakeCaseStrategy)로 직렬화되므로 JSON 경로도 snake_case 사용
         mockMvc.perform(get("/api/v1/system/stats/top-pages"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].pageUrl").value("/home"))
+                .andExpect(jsonPath("$[0].page_url").value("/home"))
                 .andExpect(jsonPath("$[0].rank").value(1));
     }
 
@@ -87,10 +93,11 @@ class StatsControllerTest {
         TopPageResponse p1 = new TopPageResponse("/board", 5000L, null, null, 1);
         when(statsService.getTopPages(eq(30), anyLong())).thenReturn(List.of(p1));
 
+        // TopPageResponse DTO는 views 필드를 사용 (count → views 리네이밍됨)
         mockMvc.perform(get("/api/v1/system/stats/top-pages").param("days", "30"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].count").value(5000));
+                .andExpect(jsonPath("$[0].views").value(5000));
     }
 
     @Test

@@ -196,28 +196,28 @@ class AuthorizationMatrixExpand4IT {
     @DisplayName("§A.1 BoardDomainTests (Bbs 1 + Publication 3 = 4 미커버, Step 3 Phase A 활성화)")
     class BoardDomainTests {
 
-        // ── DELETE /api/v1/boards/{id} — hasRole(ADMIN) ──
+        // ── DELETE /api/v1/board/masters/{id} — hasRole(ADMIN) ──
         @Test
-        @DisplayName("AC-AME4-A1-1: DELETE /api/v1/boards/{id} — Authorization 부재 + 401")
+        @DisplayName("AC-AME4-A1-1: DELETE /api/v1/board/masters/{id} — Authorization 부재 + 401")
         void bbsDelete_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(delete("/api/v1/boards/1"))
+            mockMvc.perform(delete("/api/v1/board/masters/1"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("AC-AME4-A1-2: DELETE /api/v1/boards/{id} — USER 역할 + 403")
+        @DisplayName("AC-AME4-A1-2: DELETE /api/v1/board/masters/{id} — USER 역할 + 403")
         void bbsDelete_missingAdminRole_returns403() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
-            mockMvc.perform(delete("/api/v1/boards/1")
+            mockMvc.perform(delete("/api/v1/board/masters/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("AC-AME4-A1-3: DELETE /api/v1/boards/{id} — ADMIN 보유 + 401/403 아님")
+        @DisplayName("AC-AME4-A1-3: DELETE /api/v1/board/masters/{id} — ADMIN 보유 + 401/403 아님")
         void bbsDelete_hasAdminRole_passesAuthz() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of());
-            assertAuthzPassed(delete("/api/v1/boards/1")
+            assertAuthzPassed(delete("/api/v1/board/masters/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
 

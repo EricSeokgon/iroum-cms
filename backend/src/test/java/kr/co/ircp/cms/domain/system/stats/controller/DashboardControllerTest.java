@@ -3,6 +3,7 @@ package kr.co.ircp.cms.domain.system.stats.controller;
 import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.system.stats.dto.DashboardKpiResponse;
 import kr.co.ircp.cms.domain.system.stats.service.DashboardServiceImpl;
+import kr.co.ircp.cms.domain.system.stats.service.StatsService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,10 @@ class DashboardControllerTest {
     @MockitoBean
     private DashboardServiceImpl dashboardService;
 
+    // DashboardController는 StatsService도 주입받으므로 슬라이스에서 @MockitoBean으로 대체
+    @MockitoBean
+    private StatsService statsService;
+
     private static DashboardKpiResponse sample() {
         return DashboardKpiResponse.builder()
                 .todayVisits(100)
@@ -59,10 +64,11 @@ class DashboardControllerTest {
     void kpi_default_returnsOkFromCache() throws Exception {
         when(dashboardService.getKpi(eq(false))).thenReturn(sample());
 
+        // 응답 DTO는 @JsonNaming(SnakeCaseStrategy)로 직렬화되므로 JSON 경로도 snake_case 사용
         mockMvc.perform(get("/api/v1/system/dashboard/kpi"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.todayVisits").value(100))
-                .andExpect(jsonPath("$.healthStatus").value("UP"));
+                .andExpect(jsonPath("$.today_visits").value(100))
+                .andExpect(jsonPath("$.health_status").value("UP"));
 
         verify(dashboardService).getKpi(false);
     }
@@ -75,8 +81,8 @@ class DashboardControllerTest {
 
         mockMvc.perform(get("/api/v1/system/dashboard/kpi").header("X-No-Cache", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.todayUnique").value(80))
-                .andExpect(jsonPath("$.errorRate24h").value(0.5));
+                .andExpect(jsonPath("$.today_unique").value(80))
+                .andExpect(jsonPath("$.error_rate_24h").value(0.5));
 
         verify(dashboardService).getKpiFresh();
     }
@@ -89,7 +95,7 @@ class DashboardControllerTest {
 
         mockMvc.perform(get("/api/v1/system/dashboard/kpi").header("X-No-Cache", "false"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.avgResponseMs24h").value(120));
+                .andExpect(jsonPath("$.avg_response_ms_24h").value(120));
 
         verify(dashboardService).getKpi(false);
     }
@@ -102,13 +108,13 @@ class DashboardControllerTest {
 
         mockMvc.perform(get("/api/v1/system/dashboard/kpi"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.todayVisits").value(100))
-                .andExpect(jsonPath("$.todayUnique").value(80))
-                .andExpect(jsonPath("$.todayPageViews").value(250))
-                .andExpect(jsonPath("$.todaySignups").value(5))
-                .andExpect(jsonPath("$.lockedAccounts").value(2))
-                .andExpect(jsonPath("$.auditLog24hCount").value(50))
-                .andExpect(jsonPath("$.auditLogCritical24hCount").value(1));
+                .andExpect(jsonPath("$.today_visits").value(100))
+                .andExpect(jsonPath("$.today_unique").value(80))
+                .andExpect(jsonPath("$.today_page_views").value(250))
+                .andExpect(jsonPath("$.today_signups").value(5))
+                .andExpect(jsonPath("$.locked_accounts").value(2))
+                .andExpect(jsonPath("$.audit_log_24h_count").value(50))
+                .andExpect(jsonPath("$.audit_log_critical_24h_count").value(1));
     }
 
     // ──────────────────────────────────────────────────────────────

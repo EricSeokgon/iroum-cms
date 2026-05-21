@@ -5,6 +5,7 @@ import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.content.i18n.dto.I18nResourceItem;
 import kr.co.ircp.cms.domain.content.i18n.dto.I18nResponse;
 import kr.co.ircp.cms.domain.content.i18n.dto.I18nUpsertRequest;
+import kr.co.ircp.cms.domain.content.i18n.mapper.I18nResourceMapper;
 import kr.co.ircp.cms.domain.content.i18n.service.I18nResolver;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,10 @@ class I18nControllerTest {
 
     @MockitoBean
     private I18nResolver i18nResolver;
+
+    // I18nController는 I18nResourceMapper도 주입받으므로 슬라이스에서 @MockitoBean으로 대체
+    @MockitoBean
+    private I18nResourceMapper i18nResourceMapper;
 
     @Test
     @WithMockUser(authorities = {"CONTENT:READ"})

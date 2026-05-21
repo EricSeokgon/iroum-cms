@@ -9,6 +9,7 @@ import kr.co.ircp.cms.domain.governance.batch.LoginHistoryPurgeJob;
 import kr.co.ircp.cms.domain.governance.batch.PersonalDataRetentionJob;
 import kr.co.ircp.cms.domain.governance.dto.RetentionPolicyRequest;
 import kr.co.ircp.cms.domain.governance.entity.RetentionPolicy;
+import kr.co.ircp.cms.domain.governance.service.BatchExecutionLogService;
 import kr.co.ircp.cms.domain.governance.service.RetentionPolicyService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,10 @@ class RetentionPolicyControllerTest {
 
     @MockitoBean
     private RetentionPolicyService service;
+
+    // RetentionPolicyController는 BatchExecutionLogService도 주입받으므로 슬라이스에서 @MockitoBean으로 대체
+    @MockitoBean
+    private BatchExecutionLogService batchLog;
 
     @MockitoBean
     private PersonalDataRetentionJob personalJob;

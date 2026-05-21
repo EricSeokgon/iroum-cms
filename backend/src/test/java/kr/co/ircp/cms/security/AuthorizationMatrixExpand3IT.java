@@ -602,75 +602,75 @@ class AuthorizationMatrixExpand3IT {
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
 
-        // ── GET /system/code-groups — hasAuthority(SYSTEM:CODE:READ) ──
+        // ── GET /system/codes/groups — hasAuthority(SYSTEM:CODE:READ) ──
         @Test
-        @DisplayName("AC-AME3-A3-10: GET /api/v1/system/code-groups — Authorization 부재 + 401")
+        @DisplayName("AC-AME3-A3-10: GET /api/v1/system/codes/groups — Authorization 부재 + 401")
         void codeGroupList_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(get("/api/v1/system/code-groups"))
+            mockMvc.perform(get("/api/v1/system/codes/groups"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-11: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 부재 + 403")
+        @DisplayName("AC-AME3-A3-11: GET /api/v1/system/codes/groups — SYSTEM:CODE:READ 부재 + 403")
         void codeGroupList_missingAuthority_returns403() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
-            mockMvc.perform(get("/api/v1/system/code-groups")
+            mockMvc.perform(get("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-12: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        @DisplayName("AC-AME3-A3-12: GET /api/v1/system/codes/groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
         void codeGroupList_hasAuthority_passesAuthz() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
-            mockMvc.perform(get("/api/v1/system/code-groups")
+            mockMvc.perform(get("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().is(not(equalTo(401))))
                     .andExpect(status().is(not(equalTo(403))));
         }
 
-        // ── GET /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:READ) ──
+        // ── GET /system/codes/groups/{id} — hasAuthority(SYSTEM:CODE:READ) ──
         @Test
-        @DisplayName("AC-AME3-A3-13: GET /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        @DisplayName("AC-AME3-A3-13: GET /api/v1/system/codes/groups/{id} — Authorization 부재 + 401")
         void codeGroupGet_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(get("/api/v1/system/code-groups/1"))
+            mockMvc.perform(get("/api/v1/system/codes/groups/1"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-14: GET /api/v1/system/code-groups/{id} — SYSTEM:CODE:READ 부재 + 403")
+        @DisplayName("AC-AME3-A3-14: GET /api/v1/system/codes/groups/{id} — SYSTEM:CODE:READ 부재 + 403")
         void codeGroupGet_missingAuthority_returns403() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
-            mockMvc.perform(get("/api/v1/system/code-groups/1")
+            mockMvc.perform(get("/api/v1/system/codes/groups/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-15: GET /api/v1/system/code-groups/{id} — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        @DisplayName("AC-AME3-A3-15: GET /api/v1/system/codes/groups/{id} — SYSTEM:CODE:READ 보유 + 401/403 아님")
         void codeGroupGet_hasAuthority_passesAuthz() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
-            assertAuthzPassed(get("/api/v1/system/code-groups/1")
+            assertAuthzPassed(get("/api/v1/system/codes/groups/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
 
-        // ── PUT /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
+        // ── PUT /system/codes/groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
         private static final String CODE_GROUP_BODY = "{\"groupCode\":\"TEST_GRP\",\"name\":\"테스트 그룹\"}";
 
         @Test
-        @DisplayName("AC-AME3-A3-16: PUT /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        @DisplayName("AC-AME3-A3-16: PUT /api/v1/system/codes/groups/{id} — Authorization 부재 + 401")
         void codeGroupUpdate_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(put("/api/v1/system/code-groups/1")
+            mockMvc.perform(put("/api/v1/system/codes/groups/1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(CODE_GROUP_BODY))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-17: PUT /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 부재 + 403 (분리 회귀)")
+        @DisplayName("AC-AME3-A3-17: PUT /api/v1/system/codes/groups/{id} — SYSTEM:CODE:WRITE 부재 + 403 (분리 회귀)")
         void codeGroupUpdate_missingWriteAuthority_returns403() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
-            mockMvc.perform(put("/api/v1/system/code-groups/1")
+            mockMvc.perform(put("/api/v1/system/codes/groups/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(CODE_GROUP_BODY))
@@ -678,37 +678,37 @@ class AuthorizationMatrixExpand3IT {
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-18: PUT /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        @DisplayName("AC-AME3-A3-18: PUT /api/v1/system/codes/groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
         void codeGroupUpdate_hasWriteAuthority_passesAuthz() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
-            assertAuthzPassed(put("/api/v1/system/code-groups/1")
+            assertAuthzPassed(put("/api/v1/system/codes/groups/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(CODE_GROUP_BODY));
         }
 
-        // ── DELETE /system/code-groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
+        // ── DELETE /system/codes/groups/{id} — hasAuthority(SYSTEM:CODE:WRITE) ──
         @Test
-        @DisplayName("AC-AME3-A3-19: DELETE /api/v1/system/code-groups/{id} — Authorization 부재 + 401")
+        @DisplayName("AC-AME3-A3-19: DELETE /api/v1/system/codes/groups/{id} — Authorization 부재 + 401")
         void codeGroupDelete_unauthenticated_returns401() throws Exception {
-            mockMvc.perform(delete("/api/v1/system/code-groups/1"))
+            mockMvc.perform(delete("/api/v1/system/codes/groups/1"))
                     .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-20: DELETE /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 부재 + 403")
+        @DisplayName("AC-AME3-A3-20: DELETE /api/v1/system/codes/groups/{id} — SYSTEM:CODE:WRITE 부재 + 403")
         void codeGroupDelete_missingWriteAuthority_returns403() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:READ"));
-            mockMvc.perform(delete("/api/v1/system/code-groups/1")
+            mockMvc.perform(delete("/api/v1/system/codes/groups/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden());
         }
 
         @Test
-        @DisplayName("AC-AME3-A3-21: DELETE /api/v1/system/code-groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        @DisplayName("AC-AME3-A3-21: DELETE /api/v1/system/codes/groups/{id} — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
         void codeGroupDelete_hasWriteAuthority_passesAuthz() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
-            assertAuthzPassed(delete("/api/v1/system/code-groups/1")
+            assertAuthzPassed(delete("/api/v1/system/codes/groups/1")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
     }

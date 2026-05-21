@@ -12,6 +12,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -20,6 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -166,10 +170,17 @@ class AuditLogExportIT {
     @Test
     @DisplayName("Test 3: ADMIN 역할 → 200 + text/csv + CSV 헤더 라인 + 시드 행 포함")
     void export_returns200WithCsv_whenAdminRole() throws Exception {
-        givenValidToken(Set.of("ADMIN"), Set.of());
+        // StreamingResponseBody 응답은 비동기 dispatch를 거치는데, 운영 JwtAuthenticationFilter는
+        // OncePerRequestFilter 기본 동작상 ASYNC dispatch에서 재실행되지 않아 SecurityContext가 유실된다.
+        // 따라서 본 테스트에서는 Bearer 헤더 대신 SecurityMockMvcRequestPostProcessors.authentication을
+        // 사용하여 TestSecurityContextRepository에 인증 컨텍스트를 저장 — async dispatch에도 보존된다.
+        UsernamePasswordAuthenticationToken adminAuth = new UsernamePasswordAuthenticationToken(
+                "testuser",
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
         MvcResult asyncResult = mockMvc.perform(get(EXPORT_PATH)
-                        .header("Authorization", "Bearer " + VALID_TOKEN))
+                        .with(SecurityMockMvcRequestPostProcessors.authentication(adminAuth)))
                 .andExpect(request().asyncStarted())
                 .andReturn();
 

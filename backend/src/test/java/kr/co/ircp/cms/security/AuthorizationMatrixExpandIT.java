@@ -81,10 +81,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *     <tr><td>Auth</td><td>POST</td><td>/api/v1/qnas</td><td>isAuthenticated()</td><td>isAuthenticated (401/200만)</td></tr>
  *     <tr><td colspan="5"><b>§A.5 SystemDomainTests (5 endpoint)</b></td></tr>
  *     <tr><td>System</td><td>GET</td><td>/api/v1/system/codes</td><td>hasAuthority('SYSTEM:CODE:READ')</td><td>SYSTEM:CODE:READ</td></tr>
- *     <tr><td>System</td><td>GET</td><td>/api/v1/system/code-groups</td><td>hasAuthority('SYSTEM:CODE:READ')</td><td>SYSTEM:CODE:READ</td></tr>
+ *     <tr><td>System</td><td>GET</td><td>/api/v1/system/codes/groups</td><td>hasAuthority('SYSTEM:CODE:READ')</td><td>SYSTEM:CODE:READ</td></tr>
  *     <tr><td>System</td><td>POST</td><td>/api/v1/system/codes</td><td>hasAuthority('SYSTEM:CODE:WRITE')</td><td>SYSTEM:CODE:WRITE</td></tr>
  *     <tr><td>System</td><td>PUT</td><td>/api/v1/system/codes/{id}</td><td>hasAuthority('SYSTEM:CODE:WRITE')</td><td>SYSTEM:CODE:WRITE</td></tr>
- *     <tr><td>System</td><td>POST</td><td>/api/v1/system/code-groups</td><td>hasAuthority('SYSTEM:CODE:WRITE')</td><td>SYSTEM:CODE:WRITE</td></tr>
+ *     <tr><td>System</td><td>POST</td><td>/api/v1/system/codes/groups</td><td>hasAuthority('SYSTEM:CODE:WRITE')</td><td>SYSTEM:CODE:WRITE</td></tr>
  *     <tr><td colspan="5"><b>§A.6 GovernanceDomainTests (3 endpoint)</b></td></tr>
  *     <tr><td>Governance</td><td>GET</td><td>/api/v1/governance/quality-rules</td><td>hasRole('ADMIN') (클래스 레벨)</td><td>ADMIN</td></tr>
  *     <tr><td>Governance</td><td>POST</td><td>/api/v1/governance/quality-rules</td><td>hasRole('ADMIN') (클래스 레벨)</td><td>ADMIN</td></tr>
@@ -93,8 +93,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *     <tr><td>Menu</td><td>POST</td><td>/api/v1/content/menus</td><td>hasAuthority('MENU:WRITE')</td><td>MENU:WRITE</td></tr>
  *     <tr><td>Menu</td><td>PATCH</td><td>/api/v1/content/menus/{id}/order</td><td>hasAuthority('MENU:WRITE')</td><td>MENU:WRITE</td></tr>
  *     <tr><td>Menu</td><td>DELETE</td><td>/api/v1/content/menus/{id}</td><td>hasAuthority('MENU:WRITE')</td><td>MENU:WRITE</td></tr>
- *     <tr><td>Board</td><td>POST</td><td>/api/v1/boards</td><td>hasRole('ADMIN')</td><td>ADMIN (다른 컨트롤러 보강)</td></tr>
- *     <tr><td>Board</td><td>PUT</td><td>/api/v1/boards/{id}</td><td>hasRole('ADMIN')</td><td>ADMIN (다른 컨트롤러 보강)</td></tr>
+ *     <tr><td>Board</td><td>POST</td><td>/api/v1/board/masters</td><td>hasRole('ADMIN')</td><td>ADMIN (다른 컨트롤러 보강)</td></tr>
+ *     <tr><td>Board</td><td>PUT</td><td>/api/v1/board/masters/{id}</td><td>hasRole('ADMIN')</td><td>ADMIN (다른 컨트롤러 보강)</td></tr>
  *   </tbody>
  * </table>
  *
@@ -1062,24 +1062,24 @@ class AuthorizationMatrixExpandIT {
                     .andExpect(status().is(not(equalTo(403))));
         }
 
-        // ─── 2. GET /api/v1/system/code-groups — SYSTEM:CODE:READ ───────────────
+        // ─── 2. GET /api/v1/system/codes/groups — SYSTEM:CODE:READ ───────────────
 
         /** AC-AME-001-A5-4: CodeGroup 목록 — 토큰 부재 → 401. */
         @Test
-        @DisplayName("AC-AME-001-A5-4: GET /api/v1/system/code-groups — Authorization 헤더 부재 + 401")
+        @DisplayName("AC-AME-001-A5-4: GET /api/v1/system/codes/groups — Authorization 헤더 부재 + 401")
         void codeGroupsList_unauthorized_whenNoToken() throws Exception {
-            mockMvc.perform(get("/api/v1/system/code-groups"))
+            mockMvc.perform(get("/api/v1/system/codes/groups"))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
         }
 
         /** AC-AME-001-A5-5: CodeGroup 목록 — SYSTEM:CODE:READ 부재 → 403. */
         @Test
-        @DisplayName("AC-AME-001-A5-5: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 부재 + 403")
+        @DisplayName("AC-AME-001-A5-5: GET /api/v1/system/codes/groups — SYSTEM:CODE:READ 부재 + 403")
         void codeGroupsList_forbidden_whenCodeReadMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("CONTENT:WRITE"));
 
-            mockMvc.perform(get("/api/v1/system/code-groups")
+            mockMvc.perform(get("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
@@ -1087,11 +1087,11 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A5-6: CodeGroup 목록 — SYSTEM:CODE:READ 보유 → 401/403 외. */
         @Test
-        @DisplayName("AC-AME-001-A5-6: GET /api/v1/system/code-groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
+        @DisplayName("AC-AME-001-A5-6: GET /api/v1/system/codes/groups — SYSTEM:CODE:READ 보유 + 401/403 아님")
         void codeGroupsList_passesAuthorization_whenCodeReadPresent() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
 
-            mockMvc.perform(get("/api/v1/system/code-groups")
+            mockMvc.perform(get("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN))
                     .andExpect(status().is(not(equalTo(401))))
                     .andExpect(status().is(not(equalTo(403))));
@@ -1184,13 +1184,13 @@ class AuthorizationMatrixExpandIT {
                     .andExpect(status().is(not(equalTo(403))));
         }
 
-        // ─── 5. POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE ─────────────
+        // ─── 5. POST /api/v1/system/codes/groups — SYSTEM:CODE:WRITE ─────────────
 
         /** AC-AME-001-A5-13: CodeGroup 생성 — 토큰 부재 → 401. */
         @Test
-        @DisplayName("AC-AME-001-A5-13: POST /api/v1/system/code-groups — Authorization 헤더 부재 + 401")
+        @DisplayName("AC-AME-001-A5-13: POST /api/v1/system/codes/groups — Authorization 헤더 부재 + 401")
         void codeGroupCreate_unauthorized_whenNoToken() throws Exception {
-            mockMvc.perform(post("/api/v1/system/code-groups")
+            mockMvc.perform(post("/api/v1/system/codes/groups")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isUnauthorized())
@@ -1199,12 +1199,12 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A5-14: CodeGroup 생성 — SYSTEM:CODE:WRITE 부재 → 403. */
         @Test
-        @DisplayName("AC-AME-001-A5-14: POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE 부재 + 403")
+        @DisplayName("AC-AME-001-A5-14: POST /api/v1/system/codes/groups — SYSTEM:CODE:WRITE 부재 + 403")
         void codeGroupCreate_forbidden_whenCodeWriteMissing() throws Exception {
             givenValidToken(Set.of("USER"), Set.of("SYSTEM:CODE:READ"));
 
             // CodeGroupRequest required: groupCode, name
-            mockMvc.perform(post("/api/v1/system/code-groups")
+            mockMvc.perform(post("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"groupCode\":\"TEST_GRP\",\"name\":\"테스트 그룹\"}"))
@@ -1214,11 +1214,11 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A5-15: CodeGroup 생성 — SYSTEM:CODE:WRITE 보유 → 401/403 외. */
         @Test
-        @DisplayName("AC-AME-001-A5-15: POST /api/v1/system/code-groups — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
+        @DisplayName("AC-AME-001-A5-15: POST /api/v1/system/codes/groups — SYSTEM:CODE:WRITE 보유 + 401/403 아님")
         void codeGroupCreate_passesAuthorization_whenCodeWritePresent() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of("SYSTEM:CODE:WRITE"));
 
-            mockMvc.perform(post("/api/v1/system/code-groups")
+            mockMvc.perform(post("/api/v1/system/codes/groups")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
@@ -1376,13 +1376,13 @@ class AuthorizationMatrixExpandIT {
     @DisplayName("§A.7 BoardMenuDomainTests (Step 2 부분: Board 2 endpoint × 3 시나리오 = 6 AC, MENU:WRITE는 Step 3)")
     class BoardMenuDomainTests {
 
-        // ─── 1. POST /api/v1/boards — hasRole('ADMIN') ──────────────────────────
+        // ─── 1. POST /api/v1/board/masters — hasRole('ADMIN') ──────────────────────────
 
         /** AC-AME-001-A7-1: Board 생성 — 토큰 부재 → 401. */
         @Test
-        @DisplayName("AC-AME-001-A7-1: POST /api/v1/boards — Authorization 헤더 부재 + 401")
+        @DisplayName("AC-AME-001-A7-1: POST /api/v1/board/masters — Authorization 헤더 부재 + 401")
         void boardCreate_unauthorized_whenNoToken() throws Exception {
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isUnauthorized())
@@ -1391,12 +1391,12 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A7-2: Board 생성 — USER 역할 → 403. */
         @Test
-        @DisplayName("AC-AME-001-A7-2: POST /api/v1/boards — USER 역할 + 403")
+        @DisplayName("AC-AME-001-A7-2: POST /api/v1/board/masters — USER 역할 + 403")
         void boardCreate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
             // BbsMasterCreateRequest required: code, name, type(BbsType enum NORMAL/NOTICE/QNA/...), useComment/useAttachment/allowAnonymous/allowSecret(boolean), maxAttachmentCount/maxAttachmentSizeKb/pageSize
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"code\":\"TEST_BBS\",\"name\":\"테스트 게시판\",\"type\":\"NORMAL\","
@@ -1408,11 +1408,11 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A7-3: Board 생성 — ADMIN 보유 → 401/403 외. */
         @Test
-        @DisplayName("AC-AME-001-A7-3: POST /api/v1/boards — ADMIN + 401/403 아님")
+        @DisplayName("AC-AME-001-A7-3: POST /api/v1/board/masters — ADMIN + 401/403 아님")
         void boardCreate_passesAuthorization_whenAdmin() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of());
 
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
@@ -1420,13 +1420,13 @@ class AuthorizationMatrixExpandIT {
                     .andExpect(status().is(not(equalTo(403))));
         }
 
-        // ─── 2. PUT /api/v1/boards/{id} — hasRole('ADMIN') ──────────────────────
+        // ─── 2. PUT /api/v1/board/masters/{id} — hasRole('ADMIN') ──────────────────────
 
         /** AC-AME-001-A7-4: Board 수정 — 토큰 부재 → 401. */
         @Test
-        @DisplayName("AC-AME-001-A7-4: PUT /api/v1/boards/{id} — Authorization 헤더 부재 + 401")
+        @DisplayName("AC-AME-001-A7-4: PUT /api/v1/board/masters/{id} — Authorization 헤더 부재 + 401")
         void boardUpdate_unauthorized_whenNoToken() throws Exception {
-            mockMvc.perform(put("/api/v1/boards/1")
+            mockMvc.perform(put("/api/v1/board/masters/1")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
                     .andExpect(status().isUnauthorized())
@@ -1435,12 +1435,12 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A7-5: Board 수정 — USER 역할 → 403. */
         @Test
-        @DisplayName("AC-AME-001-A7-5: PUT /api/v1/boards/{id} — USER 역할 + 403")
+        @DisplayName("AC-AME-001-A7-5: PUT /api/v1/board/masters/{id} — USER 역할 + 403")
         void boardUpdate_forbidden_whenNotAdmin() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
 
             // BbsMasterUpdateRequest required: name, useComment/useAttachment/allowAnonymous/allowSecret, maxAttachmentCount/maxAttachmentSizeKb/pageSize
-            mockMvc.perform(put("/api/v1/boards/1")
+            mockMvc.perform(put("/api/v1/board/masters/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"name\":\"테스트 게시판\",\"useComment\":false,\"useAttachment\":false,"
@@ -1452,11 +1452,11 @@ class AuthorizationMatrixExpandIT {
 
         /** AC-AME-001-A7-6: Board 수정 — ADMIN 보유 → 401/403 외. */
         @Test
-        @DisplayName("AC-AME-001-A7-6: PUT /api/v1/boards/{id} — ADMIN + 401/403 아님")
+        @DisplayName("AC-AME-001-A7-6: PUT /api/v1/board/masters/{id} — ADMIN + 401/403 아님")
         void boardUpdate_passesAuthorization_whenAdmin() throws Exception {
             givenValidToken(Set.of("ADMIN"), Set.of());
 
-            mockMvc.perform(put("/api/v1/boards/1")
+            mockMvc.perform(put("/api/v1/board/masters/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{}"))
