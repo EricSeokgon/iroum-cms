@@ -1498,6 +1498,7 @@
     "title": "Q&A Management",
     "empty": "No Q&As registered.",
     "answer": "Answer",
+    "editAnswer": "Edit Answer",
     "close": "Close",
     "field": {
       "title": "Title",

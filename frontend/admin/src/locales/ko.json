@@ -1553,6 +1553,7 @@
     "title": "Q&A 관리",
     "empty": "등록된 Q&A가 없습니다.",
     "answer": "답변하기",
+    "editAnswer": "답변 수정",
     "close": "종결",
     "field": {
       "title": "제목",

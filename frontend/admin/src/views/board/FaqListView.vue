@@ -242,6 +242,7 @@ import { useAuthStore } from '@/stores/auth'
 import {
   listFaqs,
   getCategories,
+  getFaq,
   createFaq,
   updateFaq,
   deleteFaq,
@@ -348,7 +349,7 @@ function openCreateDialog(): void {
   showDialog.value = true
 }
 
-function openEditDialog(row: FaqSummary): void {
+async function openEditDialog(row: FaqSummary): Promise<void> {
   dialogMode.value = 'edit'
   editingId.value = row.id
   form.categoryCode = row.categoryCode
@@ -356,8 +357,13 @@ function openEditDialog(row: FaqSummary): void {
   form.answerHtml = ''
   form.sortOrder = row.sortOrder
   form.status = (row.status as FaqStatus) || 'PUBLISHED'
-  // answerHtml 은 상세 조회로 가져와야 정확하지만, summary 만으로 충분히 편집 가능
   showDialog.value = true
+  try {
+    const res = await getFaq(row.id)
+    form.answerHtml = res.data.answerHtml ?? ''
+  } catch {
+    // 상세 조회 실패 시 빈 상태 유지
+  }
 }
 
 function resetForm(): void {

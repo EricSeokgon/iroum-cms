@@ -74,11 +74,11 @@
 
       <!-- 답변 작성 폼 (PENDING 상태 + 관리자) -->
       <section
-        v-if="qna.status === 'PENDING' && isAdmin"
+        v-if="(qna.status === 'PENDING' || editingAnswer) && isAdmin"
         class="rounded border border-gray-200 bg-white p-6"
       >
         <h3 class="mb-3 text-base font-semibold text-gray-800">
-          {{ t('qna.answer') }}
+          {{ editingAnswer ? t('qna.editAnswer') : t('qna.answer') }}
         </h3>
         <el-form label-position="top">
           <el-form-item :label="t('qna.field.answer')">
@@ -95,7 +95,10 @@
               :loading="submitting"
               @click="handleAnswerSubmit"
             >
-              {{ t('qna.answer') }}
+              {{ t('common.save') }}
+            </el-button>
+            <el-button v-if="editingAnswer" @click="cancelEditAnswer">
+              {{ t('common.cancel') }}
             </el-button>
           </el-form-item>
         </el-form>
@@ -103,6 +106,14 @@
 
       <!-- 액션 버튼들 -->
       <div class="flex justify-end gap-2">
+        <el-button
+          v-if="qna.status === 'ANSWERED' && isAdmin && !editingAnswer"
+          type="primary"
+          plain
+          @click="startEditAnswer"
+        >
+          {{ t('qna.editAnswer') }}
+        </el-button>
         <el-button
           v-if="qna.status !== 'CLOSED' && isAdmin"
           type="info"
@@ -156,6 +167,7 @@ const qna = ref<QnaDetail | null>(null)
 const loading = ref(false)
 const submitting = ref(false)
 const answerInput = ref('')
+const editingAnswer = ref(false)
 
 const isAdmin = computed(() => {
   const roles = auth.user?.roleCodes ?? []
@@ -187,6 +199,16 @@ async function uploadImage(file: File): Promise<string> {
   return urlRes.data.signedUrl
 }
 
+function startEditAnswer(): void {
+  answerInput.value = qna.value?.answerHtml ?? ''
+  editingAnswer.value = true
+}
+
+function cancelEditAnswer(): void {
+  editingAnswer.value = false
+  answerInput.value = ''
+}
+
 async function handleAnswerSubmit(): Promise<void> {
   if (!qna.value) return
   if (!answerInput.value.trim()) {
@@ -198,6 +220,7 @@ async function handleAnswerSubmit(): Promise<void> {
     const res = await answerQna(qna.value.id, { answerHtml: answerInput.value })
     qna.value = res.data
     answerInput.value = ''
+    editingAnswer.value = false
     ElMessage.success(t('common.saveSuccess'))
   } catch {
     ElMessage.error(t('common.saveError'))
