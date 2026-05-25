@@ -72,6 +72,30 @@
           <span :class="{ 'font-bold': localeStore.locale === 'en' }">{{ t('locale.en') }}</span>
         </button>
 
+        <!-- 인증 영역: 비인증 시 로그인 링크, 인증 시 사용자명 + 로그아웃 -->
+        <template v-if="authStore.isAuthenticated">
+          <span class="hidden text-sm text-content-muted md:inline" data-testid="header-user-name">
+            {{ displayName }}
+          </span>
+          <button
+            type="button"
+            class="rounded px-2 py-1 text-sm text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"
+            data-testid="header-logout"
+            @click="onLogout"
+          >
+            {{ t('common.logout') }}
+          </button>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="rounded px-2 py-1 text-sm text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"
+          data-testid="header-login"
+          @click="onLogin"
+        >
+          {{ t('common.login') }}
+        </button>
+
         <!-- 모바일 햄버거 -->
         <button
           type="button"
@@ -112,11 +136,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useLocaleStore } from '@/stores/localeStore'
 import { useMenuStore } from '@/stores/menuStore'
+import { useAuthStore } from '@/stores/authStore'
 import { storeToRefs } from 'pinia'
 import SearchHistoryDropdown from '@/components/search/SearchHistoryDropdown.vue'
 
@@ -124,7 +149,23 @@ const { t } = useI18n()
 const router = useRouter()
 const localeStore = useLocaleStore()
 const menuStore = useMenuStore()
+const authStore = useAuthStore()
 const { menus } = storeToRefs(menuStore)
+
+// 사용자 표시명: user.name → user.username → 기본값
+const displayName = computed(() => {
+  const u = authStore.user
+  return u?.name ?? u?.username ?? t('common.memberFallback')
+})
+
+async function onLogin(): Promise<void> {
+  await router.push({ name: 'login' })
+}
+
+async function onLogout(): Promise<void> {
+  await authStore.logout()
+  await router.push('/')
+}
 
 const mobileOpen = ref(false)
 

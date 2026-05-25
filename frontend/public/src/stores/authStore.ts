@@ -36,6 +36,12 @@ export const useAuthStore = defineStore('auth', () => {
     _persist()
   }
 
+  async function register(email: string, password: string, name: string): Promise<void> {
+    const res = await authApi.register({ email, password, name })
+    token.value = res.accessToken
+    _persist()
+  }
+
   async function logout(): Promise<void> {
     try {
       await authApi.logout()
@@ -68,6 +74,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     initFromStorage,
     login,
+    register,
     logout,
     refresh,
     loadUser,

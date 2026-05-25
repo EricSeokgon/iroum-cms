@@ -64,6 +64,7 @@ const routes: RouteRecordRaw[] = [
   // 점검 + 에러 라우트 (PublicLayout 미적용)
   { path: '/maintenance', name: 'maintenance', component: () => import('@/views/MaintenanceView.vue'), meta: { title: 'route.maintenance', noLayout: true } },
   { path: '/login', name: 'login', component: () => import('@/views/LoginView.vue'), meta: { title: 'route.login', noLayout: true } },
+  { path: '/register', name: 'register', component: () => import('@/views/RegisterView.vue'), meta: { title: 'route.register', noLayout: true } },
   { path: '/error/403', name: 'forbidden', component: () => import('@/views/errors/ForbiddenView.vue'), meta: { title: 'route.error.forbidden', noLayout: true } },
   { path: '/error/500', name: 'server-error', component: () => import('@/views/errors/ServerErrorView.vue'), meta: { title: 'route.error.serverError', noLayout: true } },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue'), meta: { title: 'route.error.notFound' } },

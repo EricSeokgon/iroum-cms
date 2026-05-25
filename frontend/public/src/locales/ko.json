@@ -30,7 +30,10 @@
     "attachments": "첨부파일",
     "next": "다음 글",
     "prev": "이전 글",
-    "loginRequired": "로그인이 필요합니다"
+    "loginRequired": "로그인이 필요합니다",
+    "login": "로그인",
+    "logout": "로그아웃",
+    "memberFallback": "회원"
   },
   "notice": {
     "list": "공지사항",
@@ -312,6 +315,7 @@
     "search": "검색 결과",
     "sitemap": "사이트맵",
     "login": "로그인",
+    "register": "회원가입",
     "maintenance": "점검 안내",
     "error": {
       "forbidden": "권한 없음",
@@ -326,7 +330,28 @@
     "sitemap": "사이트맵"
   },
   "login": {
-    "title": "로그인"
+    "title": "로그인",
+    "email": "이메일",
+    "password": "비밀번호",
+    "submit": "로그인",
+    "noAccount": "계정이 없으신가요?",
+    "register": "회원가입",
+    "error": "이메일 또는 비밀번호가 올바르지 않습니다."
+  },
+  "register": {
+    "title": "회원가입",
+    "email": "이메일",
+    "password": "비밀번호",
+    "passwordConfirm": "비밀번호 확인",
+    "name": "이름",
+    "submit": "가입하기",
+    "hasAccount": "이미 계정이 있으신가요?",
+    "login": "로그인",
+    "error": {
+      "duplicate": "이미 사용 중인 이메일입니다.",
+      "general": "회원가입 중 오류가 발생했습니다.",
+      "passwordMismatch": "비밀번호가 일치하지 않습니다."
+    }
   },
   "maintenance": {
     "title": "점검 중입니다",
