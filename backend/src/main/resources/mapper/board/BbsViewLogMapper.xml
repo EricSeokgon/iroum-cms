@@ -19,18 +19,23 @@
 
     <!--
         중복 조회 확인 (1시간 이내).
-        로그인 사용자: userId 기준, 비로그인: ipHash 기준
+        로그인 사용자: userId 기준, 비로그인: ipHash 기준.
+        PostgreSQL은 JDBC null 파라미터의 타입을 추론하지 못하므로
+        MyBatis <choose>로 분기하여 null 비교 파라미터 자체를 제거한다.
     -->
     <select id="existsRecentView" resultType="boolean">
         SELECT EXISTS(
             SELECT 1 FROM bbs_view_log
             WHERE post_id = #{postId}
               AND viewed_at > NOW() - INTERVAL '1 hour'
-              AND (
-                  (#{userId} IS NOT NULL AND user_id = #{userId})
-                  OR
-                  (#{userId} IS NULL AND ip_hash = #{ipHash})
-              )
+              <choose>
+                <when test="userId != null">
+                  AND user_id = #{userId}
+                </when>
+                <otherwise>
+                  AND ip_hash = #{ipHash}
+                </otherwise>
+              </choose>
         )
     </select>
 

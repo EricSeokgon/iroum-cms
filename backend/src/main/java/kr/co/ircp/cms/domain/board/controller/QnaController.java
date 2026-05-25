@@ -35,9 +35,8 @@ public class QnaController {
 
     private final QnaService qnaService;
 
-    /** GET /api/v1/qnas — Q&A 목록 페이징 (인증 필수). */
+    /** GET /api/v1/qnas — Q&A 목록 페이징 (공개; 비공개 글은 본인·관리자만 노출). */
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<QnaSummary>> listQnas(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean isPrivate,
@@ -52,9 +51,8 @@ public class QnaController {
         return ResponseEntity.ok(qnaService.listQnas(status, isPrivate, keyword, page, size, requesterId, isAdmin));
     }
 
-    /** GET /api/v1/qnas/{id} — Q&A 단건 조회 (인증 필수). */
+    /** GET /api/v1/qnas/{id} — Q&A 단건 조회 (공개; 비공개 글은 본인·관리자만 허용). */
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<QnaDetail> getQna(
             @PathVariable Long id,
             @AuthenticationPrincipal JwtPrincipal principal,
