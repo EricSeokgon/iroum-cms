@@ -2,8 +2,10 @@ package kr.co.ircp.cms.domain.auth.service;
 
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
+import kr.co.ircp.cms.domain.auth.dto.PublicRegisterRequest;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
+import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordPolicyViolationException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
@@ -112,4 +114,21 @@ public interface AuthService {
      */
     void confirmPasswordReset(String verifiedToken, String newPassword)
             throws InvalidVerifiedTokenException, PasswordPolicyViolationException, PasswordReuseException;
+
+    /**
+     * 공개 사이트(시민 사용자) 회원가입.
+     *
+     * <p>외부 비회원이 호출하는 자가 가입(self-registration) 엔드포인트.
+     * 가입 즉시 MEMBER 역할이 부여되고 access/refresh 토큰이 함께 발급된다.
+     * 비밀번호는 BCrypt 해싱 후 저장하고 이메일은 PII 암호화 + HMAC 인덱스 규약을 따른다.
+     *
+     * @param request   이메일·비밀번호·이름
+     * @param ipAddress 클라이언트 IP
+     * @param userAgent 클라이언트 User-Agent
+     * @return Access Token + Refresh Token (관리자 로그인과 동일 형식)
+     * @throws DuplicateUserException         이메일이 이미 가입된 경우
+     * @throws PasswordPolicyViolationException 비밀번호 정책 위반
+     */
+    LoginOutcome registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent)
+            throws DuplicateUserException, PasswordPolicyViolationException;
 }

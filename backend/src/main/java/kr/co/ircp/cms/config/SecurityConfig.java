@@ -113,6 +113,8 @@ public class SecurityConfig {
                 // info(LOW-17): 환경 정보 노출 방지 (management.info.env.enabled=false 와 함께)
                 // backupStatus(LOW-18): 백업 상태 정보는 운영 민감 정보로 ADMIN 전용
                 // metrics/prometheus/loggers(LOW-19): 내부 메트릭/로거 정보 ADMIN 전용
+                // 안전망: 미처리 예외가 Tomcat /error 로 dispatch 될 때 anonymous 접근 허용
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .requestMatchers(
@@ -120,6 +122,8 @@ public class SecurityConfig {
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/logout",
+                    // 공개 사이트 시민 회원가입 (anonymous)
+                    "/api/v1/auth/register",
                     // REQ-AUTH-017 — 본인인증 및 비밀번호 재설정 (anonymous)
                     "/api/v1/auth/verify/request",
                     "/api/v1/auth/verify/confirm",
@@ -141,6 +145,12 @@ public class SecurityConfig {
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,
                     "/api/v1/faqs/**"
+                ).permitAll()
+                // REQ-BOARD-008: Q&A 목록·단건 공개 조회 (비공개 글은 서비스 레이어에서 접근 제어)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/qnas",
+                    "/api/v1/qnas/**"
                 ).permitAll()
                 // REQ-BOARD-012: 발간자료 공개 조회 허용 (목록·카테고리·단건)
                 .requestMatchers(

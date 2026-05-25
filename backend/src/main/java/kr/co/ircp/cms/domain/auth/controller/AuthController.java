@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.auth.dto.PasswordResetConfirmDto;
 import kr.co.ircp.cms.domain.auth.dto.PasswordResetConfirmResponse;
 import kr.co.ircp.cms.domain.auth.dto.PasswordResetRequestDto;
 import kr.co.ircp.cms.domain.auth.dto.PasswordResetRequestResponse;
+import kr.co.ircp.cms.domain.auth.dto.PublicRegisterRequest;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmRequest;
 import kr.co.ircp.cms.domain.auth.dto.VerifyConfirmResponse;
@@ -73,6 +74,29 @@ public class AuthController {
 
         ResponseCookie refreshCookie = buildRefreshCookie(outcome.refreshToken());
         return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .body(outcome.response());
+    }
+
+    /**
+     * POST /api/v1/auth/register — 공개 사이트(시민) 회원가입.
+     *
+     * <p>관리자 콘솔의 {@code POST /api/v1/users} (SUPER_ADMIN 전용) 와 달리 anonymous 호출 가능.
+     * 가입 즉시 MEMBER 역할이 부여되고 access/refresh 토큰이 함께 발급되며,
+     * refresh 토큰은 HttpOnly Secure SameSite=Strict 쿠키로 내려간다.
+     * 이미 가입된 이메일이면 409, 비밀번호 정책 위반이면 400 을 반환한다.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<LoginResponse> register(
+            @Valid @RequestBody PublicRegisterRequest request,
+            HttpServletRequest httpRequest) {
+        String ipAddress = httpRequest.getRemoteAddr();
+        String userAgent = resolveUserAgent(httpRequest);
+
+        AuthService.LoginOutcome outcome = authService.registerPublicUser(request, ipAddress, userAgent);
+
+        ResponseCookie refreshCookie = buildRefreshCookie(outcome.refreshToken());
+        return ResponseEntity.status(201)
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
                 .body(outcome.response());
     }

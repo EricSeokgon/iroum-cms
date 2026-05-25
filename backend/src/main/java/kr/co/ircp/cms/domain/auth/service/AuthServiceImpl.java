@@ -4,6 +4,7 @@ import kr.co.ircp.cms.config.JwtProperties;
 import kr.co.ircp.cms.domain.audit.annotation.AuditLog;
 import kr.co.ircp.cms.domain.auth.dto.LoginRequest;
 import kr.co.ircp.cms.domain.auth.dto.LoginResponse;
+import kr.co.ircp.cms.domain.auth.dto.PublicRegisterRequest;
 import kr.co.ircp.cms.domain.auth.dto.RefreshResult;
 import kr.co.ircp.cms.domain.auth.entity.LoginHistory;
 import kr.co.ircp.cms.domain.auth.entity.RefreshToken;
@@ -14,6 +15,7 @@ import kr.co.ircp.cms.domain.auth.dto.VerifyRequestRequest;
 import kr.co.ircp.cms.domain.auth.entity.VerificationPurpose;
 import kr.co.ircp.cms.domain.auth.entity.VerificationRequest;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
+import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidCredentialsException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
@@ -27,6 +29,7 @@ import kr.co.ircp.cms.domain.auth.repository.UserMapper;
 import kr.co.ircp.cms.domain.auth.service.PermissionService;
 import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
+import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -461,6 +464,92 @@ public class AuthServiceImpl implements AuthService {
 
         // 8. 완료 안내 이메일 비동기 발송
         emailService.sendPasswordResetNotice(vr.getTarget());
+    }
+
+    /**
+     * 공개 사이트 회원가입.
+     *
+     * <p>비회원의 자가 가입 흐름:
+     * username/email 중복 확인 → 비밀번호 정책 검증 → BCrypt 해싱 → 이메일 PII 암호화/HMAC
+     * → users 삽입 → MEMBER 역할 부여 → access/refresh 토큰 발급.
+     *
+     * <p>관리자 콘솔 경로(POST /api/v1/users)와 달리 권한 부여자(grantedBy)가 존재하지 않아
+     * insertRole 호출 시 self-grant 형태로 user.getId() 를 grantedBy 로 전달한다.
+     */
+    @AuditLog(action = "REGISTER", entityType = "User", severity = "INFO", captureArgs = false)
+    @Override
+    @Transactional
+    public LoginOutcome registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent) {
+        Instant now = Instant.now();
+
+        // 1. 중복 검사 — 이 엔드포인트는 email 을 곧 username 으로 사용한다.
+        //    REQ-AUTH-006 컨벤션에 따라 username/email_hmac 두 컬럼 모두 충돌 여부를 검사한다.
+        if (userMapper.existsByUsername(request.email())) {
+            throw new DuplicateUserException("email", request.email());
+        }
+        String emailHmac = emailEncryptionService.computeHmac(request.email());
+        if (userMapper.existsByEmailHmac(emailHmac)) {
+            throw new DuplicateUserException("email", request.email());
+        }
+
+        // 2. 비밀번호 정책 검증 (8자, 3종 이상 조합 — PasswordPolicyService 규약)
+        passwordPolicyService.validate(request.password());
+        String hashed = passwordPolicyService.hash(request.password());
+
+        // 3. SPEC-CMS-SECURITY-PII-001 — 이메일 AES-256-GCM 암호화 + HMAC 인덱스
+        EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(request.email());
+
+        // 4. 사용자 INSERT — username = email (공개 사이트 가입자 컨벤션)
+        User user = User.builder()
+                .username(request.email())
+                .email(request.email())
+                .passwordHash(hashed)
+                .name(request.name())
+                .status(UserStatus.ACTIVE)
+                .emailEncrypted(encryptedEmail.ciphertext())
+                .emailIv(encryptedEmail.iv())
+                .emailTag(encryptedEmail.tag())
+                .emailKeyVersion(encryptedEmail.keyVersion())
+                .emailHmac(emailHmac)
+                .build();
+        userMapper.insert(user);
+
+        // 5. MEMBER 역할 부여 (V36 시드).
+        //    self-registration 이므로 grantedBy 는 본인 ID 를 사용한다.
+        userMapper.insertRole(user.getId(), "MEMBER", user.getId(), now);
+
+        // 6. 토큰 발급 — 관리자 로그인과 동일한 형식으로 access + refresh 발급.
+        Set<String> userRoles = userMapper.findRoleCodesByUserId(user.getId());
+        Set<String> userPermissions = permissionService.findEffectivePermissionsForUser(user.getId());
+        String accessToken = jwtTokenProvider.generateAccessToken(
+                user.getId(), user.getUsername(), userRoles, userPermissions);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(user.getId());
+
+        // 7. Refresh Token 저장 (해시) — login() 와 동일 규약.
+        Instant refreshExpires = now.plus(jwtProperties.refreshTokenTtl());
+        refreshTokenMapper.insert(RefreshToken.builder()
+                .tokenHash(sha256Hex(refreshToken))
+                .userId(user.getId())
+                .expiresAt(refreshExpires)
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .createdAt(now)
+                .build());
+
+        // 8. 가입 시점은 자동 로그인 성공으로 간주 → login_history 에도 적재.
+        loginHistoryMapper.insert(LoginHistory.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .ipAddress(ipAddress)
+                .userAgent(userAgent)
+                .success(true)
+                .createdAt(now)
+                .build());
+
+        long expiresInSeconds = jwtProperties.accessTokenTtl().toSeconds();
+        return new LoginOutcome(
+                new LoginResponse(accessToken, expiresInSeconds, "Bearer"),
+                refreshToken);
     }
 
     /**
