@@ -16,7 +16,7 @@ export const useSearchStore = defineStore('search', () => {
     isLoading.value = true
     try {
       const response = await searchApi.search({ q, type, page: 0, size: 20 })
-      results.value = response.results
+      results.value = response.content
       totalCount.value = response.totalElements
     } catch {
       results.value = []
