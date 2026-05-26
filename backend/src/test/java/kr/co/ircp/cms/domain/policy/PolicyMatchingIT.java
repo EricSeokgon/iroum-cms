@@ -96,10 +96,10 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
     class Programs {
 
         @Test
-        @DisplayName("REQ-POLICY-001: GET /programs (비인증) → 401")
+        @DisplayName("REQ-POLICY-001: GET /programs (비인증) → 200 (공개 API, SecurityConfig permitAll)")
         void listPrograms_withoutAuth_returnsUnauthorized() throws Exception {
             mockMvc.perform(get("/api/v1/policy/programs"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isOk());
         }
 
         @Test

@@ -957,15 +957,14 @@ class AuthorizationMatrixExpandIT {
 
         // §A.4 Step 2 합계: 2 endpoint × 3 시나리오 = 6 AC
 
-        // ─── 3. GET /api/v1/qnas — isAuthenticated() (Step 3, 401/200만 — 403 N/A) ──
+        // ─── 3. GET /api/v1/qnas — 공개 API (토큰 불필요) ──
 
-        /** AC-AME-001-A4-7: Qna 목록 조회 — 토큰 부재 → 401. */
+        /** AC-AME-001-A4-7: Qna 목록 조회 — 토큰 부재 → 200 (공개 API). */
         @Test
-        @DisplayName("AC-AME-001-A4-7: GET /api/v1/qnas — Authorization 헤더 부재 + 401")
+        @DisplayName("AC-AME-001-A4-7: GET /api/v1/qnas — Authorization 헤더 부재 + 200 (공개 API)")
         void qnaList_unauthorized_whenNoToken() throws Exception {
             mockMvc.perform(get("/api/v1/qnas"))
-                    .andExpect(status().isUnauthorized())
-                    .andExpect(jsonPath("$.code").value("AUTH_REQUIRED"));
+                    .andExpect(status().isOk());
         }
 
         /**

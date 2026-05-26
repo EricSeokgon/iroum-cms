@@ -81,8 +81,12 @@ public class AsyncConfig {
      * SPEC-CMS-AI-001 — AiPredictionLogService#logAsync → AiPredictionLogMapper.insert.
      * ML 응답 경로(예측 결과 반환)에 로그 적재 지연/실패가 영향을 주지 않도록 분리.
      * 큐 포화 시 DiscardPolicy로 로그 유실 허용(예측 응답 우선).
+     *
+     * <p>@ConditionalOnMissingBean — IT 환경에서 AiMatchItTestConfig/RagItTestConfig가
+     * SyncTaskExecutor로 override하는 패턴을 허용한다 (auditExecutor 패턴 준용).
      */
     @Bean(name = "aiLogExecutor")
+    @ConditionalOnMissingBean(name = "aiLogExecutor")
     public Executor aiLogExecutor(
             @Value("${ai.async.core-pool-size:2}") int corePoolSize,
             @Value("${ai.async.max-pool-size:4}") int maxPoolSize,

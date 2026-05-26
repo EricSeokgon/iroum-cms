@@ -446,14 +446,14 @@ class AuthorizationMatrixExpand4IT {
 
         // ── GET /api/v1/qnas ──
         @Test
-        @DisplayName("AC-AME4-A1-25: GET /api/v1/qnas — Authorization 부재 + 401")
-        void qnaList_unauthenticated_returns401() throws Exception {
+        @DisplayName("AC-AME4-A1-25: GET /api/v1/qnas — Authorization 부재 + 200 (공개 API)")
+        void qnaList_unauthenticated_returns200() throws Exception {
             mockMvc.perform(get("/api/v1/qnas"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isOk());
         }
 
         @Test
-        @DisplayName("AC-AME4-A1-26: GET /api/v1/qnas — 인증 보유 + 401/403 아님 (isAuthenticated 통과)")
+        @DisplayName("AC-AME4-A1-26: GET /api/v1/qnas — 인증 보유 + 401/403 아님 (공개 API)")
         void qnaList_authenticated_passesAuthz() throws Exception {
             givenValidToken(Set.of("USER"), Set.of());
             assertAuthzPassed(get("/api/v1/qnas")
@@ -462,10 +462,10 @@ class AuthorizationMatrixExpand4IT {
 
         // ── GET /api/v1/qnas/{id} ──
         @Test
-        @DisplayName("AC-AME4-A1-27: GET /api/v1/qnas/{id} — Authorization 부재 + 401")
-        void qnaGet_unauthenticated_returns401() throws Exception {
+        @DisplayName("AC-AME4-A1-27: GET /api/v1/qnas/{id} — Authorization 부재 + 404 (공개 API, id=1 미존재)")
+        void qnaGet_unauthenticated_notRestricted() throws Exception {
             mockMvc.perform(get("/api/v1/qnas/1"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isNotFound());
         }
 
         @Test

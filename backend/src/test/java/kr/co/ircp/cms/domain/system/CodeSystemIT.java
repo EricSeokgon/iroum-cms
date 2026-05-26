@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>인증 모델: SYSTEM:CODE:READ + SYSTEM:CODE:WRITE 권한 보유 ADMIN.
  */
 // @MX:NOTE: [AUTO] CodeSystemIT — SPEC-CMS-005 §D 공통코드 IT (SYSTEM:CODE:WRITE 권한 패턴)
-// @MX:NOTE: [AUTO] SPEC-CMS-005 §D-1 SPEC 명세는 /codes/groups이나 실제 구현은 /code-groups (컨트롤러 경로 차이)
+// @MX:NOTE: [AUTO] SPEC-CMS-005 §D-1 컨트롤러 경로 /api/v1/system/codes/groups (CodeGroupController)
 // @MX:SPEC: SPEC-CMS-005#REQ-SYSTEM-004-D
 @AutoConfigureMockMvc
 @DisplayName("공통코드 관리 IT (SPEC-CMS-005 §D)")
@@ -76,7 +76,7 @@ class CodeSystemIT extends AbstractIntegrationTest {
     class GroupCrud {
 
         @Test
-        @DisplayName("REQ-SYSTEM-004-D-1 — POST /code-groups 정상 생성 201")
+        @DisplayName("REQ-SYSTEM-004-D-1 — POST /codes/groups 정상 생성 201")
         void create_group_returns201() throws Exception {
             String groupCode = "GENDER-" + uid();
             String body = """
@@ -86,7 +86,7 @@ class CodeSystemIT extends AbstractIntegrationTest {
                       "description": "성별 공통코드"
                     }
                     """.formatted(groupCode);
-            mockMvc.perform(post("/api/v1/system/code-groups")
+            mockMvc.perform(post("/api/v1/system/codes/groups")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -108,7 +108,8 @@ class CodeSystemIT extends AbstractIntegrationTest {
             insertCode(groupCode, "M", "남성", 1, "ACTIVE");
 
             // 3) DELETE → 성공해서는 안 됨 (200/204 외 상태)
-            mockMvc.perform(delete("/api/v1/system/code-groups/" + groupId)
+            // @DeleteMapping("/{code}") — groupCode(String) 을 경로변수로 사용
+            mockMvc.perform(delete("/api/v1/system/codes/groups/" + groupCode)
                             .header("Authorization", TOKEN))
                     .andExpect(result -> {
                         int s = result.getResponse().getStatus();
