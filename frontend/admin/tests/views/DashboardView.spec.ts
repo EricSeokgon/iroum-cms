@@ -3,8 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import { createTestingPinia } from '@pinia/testing'
+import ElementPlus from 'element-plus'
+import ko from '@/locales/ko.json'
+import en from '@/locales/en.json'
 
-// apiClient mock — useApi composable에서 사용
 vi.mock('@iroum/shared/api/client', () => ({
   apiClient: {
     get: vi.fn(),
@@ -14,82 +16,88 @@ vi.mock('@iroum/shared/api/client', () => ({
   registerAuthHooks: vi.fn(),
 }))
 
+vi.mock('@/api/system', () => ({
+  dashboard: {
+    kpi: vi.fn(),
+    trends: vi.fn(),
+    topPages: vi.fn(),
+  },
+  stats: {},
+  accessLogs: {},
+  codeGroups: {},
+  codes: {},
+  settings: {},
+  maintenance: {},
+  auditLogs: {},
+}))
+
 import DashboardView from '@/views/DashboardView.vue'
-import { apiClient } from '@iroum/shared/api/client'
+import { dashboard } from '@/api/system'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'ko',
   fallbackLocale: 'en',
-  messages: {
-    ko: {
-      dashboard: {
-        title: '대시보드',
-        userCount: '총 사용자',
-        todayLogin: '오늘 로그인',
-        systemStatus: '시스템 상태',
-        recentActivity: '최근 활동',
-        comingSoon: '준비 중',
-        statusError: '오류',
-      },
-      health: { error: '서버 상태 오류' },
-    },
-    en: {},
-  },
+  messages: { ko, en },
 })
+
+const mockKpi = {
+  today_visits: 1500,
+  today_unique: 900,
+  today_page_views: 4200,
+  today_signups: 12,
+  error_rate_24h: 0.01,
+  avg_response_ms_24h: 250,
+  locked_accounts: 0,
+  audit_log_24h_count: 100,
+  audit_log_critical_24h_count: 0,
+  health_status: 'HEALTHY' as const,
+}
 
 function mountView() {
   return mount(DashboardView, {
-    global: { plugins: [i18n, createTestingPinia({ createSpy: vi.fn })] },
+    global: { plugins: [i18n, ElementPlus, createTestingPinia({ createSpy: vi.fn })] },
   })
 }
 
 describe('DashboardView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(dashboard.kpi).mockResolvedValue({ data: mockKpi } as never)
   })
 
   it('마운트되며 제목을 표시한다', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { status: 'UP', version: '1.0' } } as never)
     const wrapper = mountView()
     await flushPromises()
     expect(wrapper.text()).toContain('대시보드')
   })
 
-  it('4개의 요약 카드를 렌더링한다', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { status: 'UP', version: '1.0' } } as never)
+  it('KPI 섹션 카드가 렌더링된다', async () => {
     const wrapper = mountView()
     await flushPromises()
-    // userCount, todayLogin, systemStatus, recentActivity
-    expect(wrapper.text()).toContain('총 사용자')
-    expect(wrapper.text()).toContain('오늘 로그인')
+    expect(wrapper.text()).toContain('오늘 현황')
     expect(wrapper.text()).toContain('시스템 상태')
-    expect(wrapper.text()).toContain('최근 활동')
+    expect(wrapper.text()).toContain('오늘 방문수')
   })
 
-  it('health API 응답 UP 시 상태를 표시한다', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { status: 'UP', version: '1.0.0' } } as never)
+  it('HEALTHY 상태 시 정상이 표시된다', async () => {
     const wrapper = mountView()
     await flushPromises()
-    expect(wrapper.text()).toContain('UP')
-    expect(wrapper.text()).toContain('1.0.0')
+    expect(wrapper.text()).toContain('정상')
   })
 
-  it('health API 실패 시 오류 alert를 노출한다', async () => {
-    vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('Network'))
+  it('health API 실패 시 오류 메시지를 노출한다', async () => {
+    vi.mocked(dashboard.kpi).mockRejectedValueOnce(new Error('Network'))
     const wrapper = mountView()
     await flushPromises()
-    // 에러 alert 또는 statusError 텍스트
     expect(
-      wrapper.find('[role="alert"]').exists() || wrapper.text().includes('오류'),
+      wrapper.find('[role="alert"]').exists() || wrapper.text().includes('불러오지 못했습니다'),
     ).toBe(true)
   })
 
-  it('준비 중 placeholder가 일부 카드에 노출된다', async () => {
-    vi.mocked(apiClient.get).mockResolvedValueOnce({ data: { status: 'UP', version: '1.0' } } as never)
+  it('빠른 메뉴가 노출된다', async () => {
     const wrapper = mountView()
     await flushPromises()
-    // 사용자 수/오늘 로그인/최근 활동 카드 placeholder
-    expect(wrapper.text()).toContain('준비 중')
+    expect(wrapper.text()).toContain('빠른 메뉴')
   })
 })

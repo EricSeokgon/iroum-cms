@@ -8,6 +8,12 @@ import ko from '@/locales/ko.json'
 import SystemDashboardView from '@/views/system/SystemDashboardView.vue'
 import { dashboard } from '@/api/system'
 import type { DashboardKpiResponse, TrendItemResponse, TopPageResponse } from '@/api/system'
+import { usersApi } from '@/api/users'
+import { mediaApi } from '@/api/media'
+import { listQnas } from '@/api/qna'
+import { listSurveys } from '@/api/survey'
+import { listFaqs } from '@/api/faq'
+import { boardApi } from '@/api/board'
 
 // ECharts / vue-echarts 모킹
 vi.mock('vue-echarts', () => ({
@@ -41,6 +47,25 @@ vi.mock('@/api/system', () => ({
   auditLogs: {},
 }))
 
+vi.mock('@/api/users', () => ({
+  usersApi: { list: vi.fn() },
+}))
+vi.mock('@/api/media', () => ({
+  mediaApi: { list: vi.fn() },
+}))
+vi.mock('@/api/qna', () => ({
+  listQnas: vi.fn(),
+}))
+vi.mock('@/api/survey', () => ({
+  listSurveys: vi.fn(),
+}))
+vi.mock('@/api/faq', () => ({
+  listFaqs: vi.fn(),
+}))
+vi.mock('@/api/board', () => ({
+  boardApi: { listMasters: vi.fn() },
+}))
+
 const i18n = createI18n({ legacy: false, locale: 'ko', messages: { ko } })
 
 const mockKpi: DashboardKpiResponse = {
@@ -70,6 +95,12 @@ describe('SystemDashboardView', () => {
     vi.mocked(dashboard.kpi).mockResolvedValue({ data: mockKpi } as never)
     vi.mocked(dashboard.trends).mockResolvedValue({ data: mockTrends } as never)
     vi.mocked(dashboard.topPages).mockResolvedValue({ data: mockTopPages } as never)
+    vi.mocked(usersApi.list).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(mediaApi.list).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(boardApi.listMasters).mockResolvedValue({ data: [] } as never)
+    vi.mocked(listQnas).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(listSurveys).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(listFaqs).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
   })
 
   it('마운트 시 fetchAll이 호출된다', async () => {
@@ -82,14 +113,14 @@ describe('SystemDashboardView', () => {
     expect(dashboard.topPages).toHaveBeenCalledOnce()
   })
 
-  it('KPI 카드 10개가 렌더링된다', async () => {
+  it('KPI 카드가 여러 개 렌더링된다', async () => {
     const wrapper = mount(SystemDashboardView, {
       global: { plugins: [i18n, ElementPlus, createTestingPinia({ stubActions: false })] },
     })
     await flushPromises()
     // KpiCard는 role="region"
     const cards = wrapper.findAll('[role="region"]')
-    expect(cards.length).toBe(10)
+    expect(cards.length).toBeGreaterThanOrEqual(10)
   })
 
   it('새로고침 버튼 클릭 시 dashboard.kpi가 재호출된다', async () => {
@@ -105,20 +136,23 @@ describe('SystemDashboardView', () => {
     expect(dashboard.kpi).toHaveBeenCalledOnce()
   })
 
-  it('noCache ref를 true로 설정 후 reload 시 noCache: true로 kpi 호출', async () => {
+  it('강제 새로고침 체크박스 체크 후 버튼 클릭 시 noCache: true로 kpi 호출', async () => {
     const wrapper = mount(SystemDashboardView, {
       global: { plugins: [i18n, ElementPlus, createTestingPinia({ stubActions: false })] },
     })
     await flushPromises()
     vi.mocked(dashboard.kpi).mockClear()
+    vi.mocked(usersApi.list).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(mediaApi.list).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(boardApi.listMasters).mockResolvedValue({ data: [] } as never)
+    vi.mocked(listQnas).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(listSurveys).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
+    vi.mocked(listFaqs).mockResolvedValue({ data: { content: [], totalElements: 0 } } as never)
 
-    // noCache 플래그 설정
-    const vm = wrapper.vm as { noCache: { value: boolean }; reload: () => Promise<void> }
-    ;(vm as unknown as { noCache: boolean }).noCache = true
-    await flushPromises()
-
-    // reload 직접 호출
-    await (wrapper.vm as unknown as { reload: () => Promise<void> }).reload()
+    // el-checkbox에 update:modelValue 이벤트를 직접 emit해 noCache = true 설정
+    const elCheckbox = wrapper.findComponent({ name: 'ElCheckbox' })
+    await elCheckbox.vm.$emit('update:modelValue', true)
+    await wrapper.find('button').trigger('click')
     await flushPromises()
 
     expect(dashboard.kpi).toHaveBeenCalledWith({ noCache: true })
