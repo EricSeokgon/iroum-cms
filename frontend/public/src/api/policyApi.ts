@@ -104,6 +104,16 @@ export interface RagFeedbackRequest {
   feedback: RagFeedbackValue
 }
 
+// REQ-POLICY-004 — 채널·카테고리별 알림 구독 관리
+export type SubscriptionChannel = 'EMAIL' | 'KAKAO' | 'SMS' | 'INAPP'
+export type SubscriptionCategory = 'POLICY_MATCH' | 'ANNOUNCEMENT' | 'REMINDER' | 'MARKETING'
+
+export interface SubscriptionEntry {
+  channel: SubscriptionChannel
+  category: SubscriptionCategory
+  optedIn: boolean
+}
+
 // 백엔드 PolicyProgramSummary → 프론트 PolicySummary 매핑용 내부 타입
 interface RawProgramSummary {
   id: number
@@ -178,5 +188,17 @@ export const policyApi = {
   // SPEC-CMS-AI-003 — RAG 답변 만족도 피드백 (HELPFUL/UNHELPFUL)
   ragFeedback(req: RagFeedbackRequest): Promise<void> {
     return apiClient.post('/ai/rag/feedback', req).then(() => undefined)
+  },
+  // REQ-POLICY-004 — 내 알림 구독 조회 (인증 필요)
+  mySubscriptions(userId: number): Promise<SubscriptionEntry[]> {
+    return apiClient
+      .get<SubscriptionEntry[]>('/policy/subscriptions/me', { params: { userId } })
+      .then((r) => r.data)
+  },
+  // REQ-POLICY-004 — 내 알림 구독 일괄 업데이트 (인증 필요)
+  updateSubscriptions(userId: number, entries: SubscriptionEntry[]): Promise<void> {
+    return apiClient
+      .put('/policy/subscriptions/me', { entries }, { params: { userId } })
+      .then(() => undefined)
   },
 }

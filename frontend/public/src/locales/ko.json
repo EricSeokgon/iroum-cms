@@ -33,6 +33,7 @@
     "loginRequired": "로그인이 필요합니다",
     "login": "로그인",
     "logout": "로그아웃",
+    "register": "회원가입",
     "memberFallback": "회원"
   },
   "notice": {
@@ -279,6 +280,26 @@
     "ko": "한국어",
     "en": "English",
     "toggle": "언어 변경"
+  },
+  "subscription": {
+    "title": "알림 구독 설정",
+    "description": "채널별 알림 수신 여부를 설정하세요",
+    "categoryLabel": "구독 유형",
+    "save": "저장",
+    "saveSuccess": "구독 설정이 저장되었습니다",
+    "saveError": "저장 중 오류가 발생했습니다",
+    "channel": {
+      "EMAIL": "이메일",
+      "KAKAO": "카카오",
+      "SMS": "SMS",
+      "INAPP": "앱 알림"
+    },
+    "category": {
+      "POLICY_MATCH": "정책 매칭",
+      "ANNOUNCEMENT": "공지사항",
+      "REMINDER": "리마인더",
+      "MARKETING": "마케팅 정보"
+    }
   },
   "me": {
     "title": "내 정보",

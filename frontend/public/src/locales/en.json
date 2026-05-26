@@ -33,6 +33,7 @@
     "loginRequired": "Login required",
     "login": "Sign in",
     "logout": "Sign out",
+    "register": "Sign up",
     "memberFallback": "Member"
   },
   "notice": {
@@ -279,6 +280,26 @@
     "ko": "한국어",
     "en": "English",
     "toggle": "Change language"
+  },
+  "subscription": {
+    "title": "Notification Subscriptions",
+    "description": "Manage your notification preferences by channel",
+    "categoryLabel": "Category",
+    "save": "Save",
+    "saveSuccess": "Subscription settings saved",
+    "saveError": "An error occurred while saving",
+    "channel": {
+      "EMAIL": "Email",
+      "KAKAO": "Kakao",
+      "SMS": "SMS",
+      "INAPP": "In-App"
+    },
+    "category": {
+      "POLICY_MATCH": "Policy Match",
+      "ANNOUNCEMENT": "Announcements",
+      "REMINDER": "Reminders",
+      "MARKETING": "Marketing"
+    }
   },
   "me": {
     "title": "My Profile",

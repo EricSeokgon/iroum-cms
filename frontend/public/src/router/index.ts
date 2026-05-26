@@ -47,7 +47,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'policies', name: 'policy-list', component: () => import('@/views/policies/PolicyListView.vue'), meta: { title: 'route.policy.list', breadcrumb: ['route.home', 'route.policy.list'] } },
       { path: 'policies/match', name: 'policy-match', component: () => import('@/views/policies/PolicyMatchView.vue'), meta: { title: 'route.policy.match' } },
       { path: 'policies/ask', name: 'policy-rag', component: () => import('@/views/ai/PolicyRagView.vue'), meta: { title: 'route.policy.rag' } },
-      { path: 'policies/subscriptions', name: 'policy-subscription', component: stub, meta: { title: 'route.policy.subscription', requiresAuth: true } },
+      { path: 'policies/subscriptions', name: 'policy-subscription', component: () => import('@/views/policies/PolicySubscriptionView.vue'), meta: { title: 'route.policy.subscription', requiresAuth: true } },
       { path: 'policies/:id', name: 'policy-detail', component: () => import('@/views/policies/PolicyDetailView.vue'), meta: { title: 'route.policy.detail' } },
       { path: 'safety/guidelines', name: 'safety-guideline-list', component: () => import('@/views/safety/SafetyGuidelineListView.vue'), meta: { title: 'route.safety.guidelines', breadcrumb: ['route.home', 'route.safety.guidelines'] } },
       { path: 'safety/guidelines/:id', name: 'safety-guideline-detail', component: () => import('@/views/safety/SafetyGuidelineDetailView.vue'), meta: { title: 'route.safety.guideline' } },
