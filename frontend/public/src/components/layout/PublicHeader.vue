@@ -72,11 +72,15 @@
           <span :class="{ 'font-bold': localeStore.locale === 'en' }">{{ t('locale.en') }}</span>
         </button>
 
-        <!-- 인증 영역: 비인증 시 로그인 링크, 인증 시 사용자명 + 로그아웃 -->
+        <!-- 인증 영역: 비인증 시 로그인 링크, 인증 시 사용자명 + 내 정보 + 로그아웃 -->
         <template v-if="authStore.isAuthenticated">
-          <span class="hidden text-sm text-content-muted md:inline" data-testid="header-user-name">
+          <router-link
+            :to="{ name: 'me' }"
+            class="hidden text-sm text-content-muted hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600 md:inline"
+            data-testid="header-user-name"
+          >
             {{ displayName }}
-          </span>
+          </router-link>
           <button
             type="button"
             class="rounded px-2 py-1 text-sm text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"

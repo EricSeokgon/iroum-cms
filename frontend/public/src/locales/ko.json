@@ -280,6 +280,26 @@
     "en": "English",
     "toggle": "언어 변경"
   },
+  "me": {
+    "title": "내 정보",
+    "profileSection": "프로필",
+    "usernameLabel": "사용자명",
+    "nameLabel": "이름",
+    "emailLabel": "이메일",
+    "updateProfile": "저장",
+    "updateSuccess": "프로필이 수정되었습니다",
+    "updateError": "수정 중 오류가 발생했습니다",
+    "passwordSection": "비밀번호 변경",
+    "currentPassword": "현재 비밀번호",
+    "newPassword": "새 비밀번호",
+    "confirmPassword": "새 비밀번호 확인",
+    "changePassword": "비밀번호 변경",
+    "changeSuccess": "비밀번호가 변경되었습니다. 다시 로그인해 주세요.",
+    "changeError": "비밀번호 변경 중 오류가 발생했습니다",
+    "passwordMismatch": "새 비밀번호가 일치하지 않습니다",
+    "currentPasswordRequired": "현재 비밀번호를 입력해 주세요",
+    "newPasswordRequired": "새 비밀번호를 입력해 주세요"
+  },
   "route": {
     "home": "홈",
     "about": "소개",
@@ -320,6 +340,7 @@
     "sitemap": "사이트맵",
     "login": "로그인",
     "register": "회원가입",
+    "me": "내 정보",
     "maintenance": "점검 안내",
     "error": {
       "forbidden": "권한 없음",

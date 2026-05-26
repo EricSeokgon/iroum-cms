@@ -280,6 +280,26 @@
     "en": "English",
     "toggle": "Change language"
   },
+  "me": {
+    "title": "My Profile",
+    "profileSection": "Profile",
+    "usernameLabel": "Username",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "updateProfile": "Save",
+    "updateSuccess": "Profile updated successfully",
+    "updateError": "An error occurred while saving",
+    "passwordSection": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "changePassword": "Change password",
+    "changeSuccess": "Password changed. Please sign in again.",
+    "changeError": "An error occurred while changing password",
+    "passwordMismatch": "New passwords do not match",
+    "currentPasswordRequired": "Current password is required",
+    "newPasswordRequired": "New password is required"
+  },
   "route": {
     "home": "Home",
     "about": "About",
@@ -320,6 +340,7 @@
     "sitemap": "Sitemap",
     "login": "Login",
     "register": "Sign up",
+    "me": "My Profile",
     "maintenance": "Maintenance",
     "error": {
       "forbidden": "Forbidden",
