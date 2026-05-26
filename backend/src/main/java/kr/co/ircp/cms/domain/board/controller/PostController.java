@@ -72,7 +72,7 @@ public class PostController {
 
     /** POST /api/v1/board/posts — 게시글 작성 (bbsMasterId는 body의 bbsId 필드로 전달) */
     @PostMapping
-    @PreAuthorize("hasAuthority('CONTENT:WRITE') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PostDetail> createPost(
             @Valid @RequestBody PostCreateRequest request,
             @AuthenticationPrincipal JwtPrincipal principal
@@ -86,7 +86,7 @@ public class PostController {
 
     /** PUT /api/v1/board/posts/{postId} — 게시글 수정 */
     @PutMapping("/{postId}")
-    @PreAuthorize("hasAuthority('CONTENT:WRITE') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PostDetail> updatePost(
             @PathVariable Long postId,
             @Valid @RequestBody PostUpdateRequest request,
@@ -98,7 +98,7 @@ public class PostController {
 
     /** DELETE /api/v1/board/posts/{postId} — 게시글 삭제 */
     @DeleteMapping("/{postId}")
-    @PreAuthorize("hasAuthority('CONTENT:WRITE') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deletePost(
             @PathVariable Long postId,
             @AuthenticationPrincipal JwtPrincipal principal

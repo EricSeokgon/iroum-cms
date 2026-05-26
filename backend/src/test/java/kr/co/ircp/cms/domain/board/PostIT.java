@@ -84,7 +84,7 @@ class PostIT extends AbstractIntegrationTest {
                      "isNotice":false,"isSecret":false}
                     """.formatted(bbsId);
 
-            mockMvc.perform(post("/api/v1/boards/" + bbsId + "/posts")
+            mockMvc.perform(post("/api/v1/board/posts")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -108,7 +108,7 @@ class PostIT extends AbstractIntegrationTest {
                      "isNotice":false,"isSecret":false}
                     """.formatted(inactiveId);
 
-            int code = mockMvc.perform(post("/api/v1/boards/" + inactiveId + "/posts")
+            int code = mockMvc.perform(post("/api/v1/board/posts")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -132,8 +132,9 @@ class PostIT extends AbstractIntegrationTest {
             insertPost(bbsId, "글-2", false, false, adminId);
 
             givenUserToken(userId, Set.of("USER"));
-            mockMvc.perform(get("/api/v1/boards/" + bbsId + "/posts")
+            mockMvc.perform(get("/api/v1/board/posts")
                             .header("Authorization", TOKEN)
+                            .param("bbsId", String.valueOf(bbsId))
                             .param("page", "0")
                             .param("size", "20"))
                     .andExpect(status().isOk())
@@ -147,7 +148,7 @@ class PostIT extends AbstractIntegrationTest {
             long postId = insertPost(bbsId, "조회수 테스트", false, false, adminId);
 
             givenUserToken(userId, Set.of("USER"));
-            mockMvc.perform(get("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            mockMvc.perform(get("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN)
                             .param("ipHash", "test-ip-" + suffix))
                     .andExpect(status().isOk())
@@ -178,7 +179,7 @@ class PostIT extends AbstractIntegrationTest {
                      "isNotice":false,"isSecret":false,"editReason":"오타 수정"}
                     """;
 
-            mockMvc.perform(put("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            mockMvc.perform(put("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -192,7 +193,7 @@ class PostIT extends AbstractIntegrationTest {
             long postId = insertPost(bbsId, "삭제대상", false, false, userId);
 
             givenUserToken(userId, Set.of("USER"));
-            mockMvc.perform(delete("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            mockMvc.perform(delete("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isNoContent());
         }
@@ -203,12 +204,12 @@ class PostIT extends AbstractIntegrationTest {
             long postId = insertPost(bbsId, "삭제후조회", false, false, userId);
 
             givenUserToken(userId, Set.of("USER"));
-            mockMvc.perform(delete("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            mockMvc.perform(delete("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isNoContent());
 
             // 삭제된 게시글 조회 → 404
-            mockMvc.perform(get("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            mockMvc.perform(get("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN)
                             .param("ipHash", "x"))
                     .andExpect(status().isNotFound())
@@ -231,7 +232,7 @@ class PostIT extends AbstractIntegrationTest {
             long postId = insertPost(bbsId, "비공개 글", false, true, userId);
 
             givenUserToken(anotherUserId, Set.of("USER"));
-            int code = mockMvc.perform(get("/api/v1/boards/" + bbsId + "/posts/" + postId)
+            int code = mockMvc.perform(get("/api/v1/board/posts/" + postId)
                             .header("Authorization", TOKEN)
                             .param("ipHash", "x"))
                     .andReturn().getResponse().getStatus();
@@ -255,7 +256,7 @@ class PostIT extends AbstractIntegrationTest {
                     {"bbsMasterId":%d,"contentHtml":"<p>본문</p>","isNotice":false,"isSecret":false}
                     """.formatted(bbsId);
 
-            mockMvc.perform(post("/api/v1/boards/" + bbsId + "/posts")
+            mockMvc.perform(post("/api/v1/board/posts")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -277,8 +278,9 @@ class PostIT extends AbstractIntegrationTest {
                     Instant.now().plusSeconds(3600), adminId);
 
             givenUserToken(userId, Set.of("USER"));
-            mockMvc.perform(get("/api/v1/boards/" + bbsId + "/posts")
+            mockMvc.perform(get("/api/v1/board/posts")
                             .header("Authorization", TOKEN)
+                            .param("bbsId", String.valueOf(bbsId))
                             .param("page", "0").param("size", "50"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.content").isArray());

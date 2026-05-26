@@ -93,7 +93,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                     }
                     """.formatted(code);
 
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -112,7 +112,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                      "allowAnonymous":false,"allowSecret":false,"pageSize":20}
                     """.formatted(suffix);
 
-            int status = mockMvc.perform(post("/api/v1/boards")
+            int status = mockMvc.perform(post("/api/v1/board/masters")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
                     .andReturn().getResponse().getStatus();
@@ -136,7 +136,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
             // 1차 생성
             createOk(code, "NORMAL", 10240, 20);
             // 2차 동일 code → 409
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(createBody(code, "NORMAL", 10240, 20)))
@@ -164,7 +164,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                      "allowAnonymous":false,"allowSecret":false,"pageSize":20}
                     """.formatted(suffix);
 
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -191,7 +191,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                      "allowAnonymous":false,"allowSecret":false,"pageSize":20}
                     """.formatted(suffix);
 
-            mockMvc.perform(post("/api/v1/boards")
+            mockMvc.perform(post("/api/v1/board/masters")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(body))
@@ -222,7 +222,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                      "code":"changed","type":"FAQ","status":"ACTIVE"}
                     """;
 
-            mockMvc.perform(put("/api/v1/boards/" + boardId)
+            mockMvc.perform(put("/api/v1/board/masters/" + boardId)
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(putBody))
@@ -248,12 +248,12 @@ class BbsMasterIT extends AbstractIntegrationTest {
             String code = "del_" + suffix;
             long boardId = createOkReturnId(code, "NORMAL", 10240, 20);
 
-            mockMvc.perform(delete("/api/v1/boards/" + boardId)
+            mockMvc.perform(delete("/api/v1/board/masters/" + boardId)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isNoContent());
 
             // 삭제 후 GET 조회 → 404 (BBS_MASTER_NOT_FOUND)
-            mockMvc.perform(get("/api/v1/boards/" + boardId)
+            mockMvc.perform(get("/api/v1/board/masters/" + boardId)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("BOARD_NOT_FOUND"));
@@ -279,7 +279,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
             givenUserToken(userId, Set.of("USER"));
             String commentBody = "{\"content\":\"댓글 시도\"}";
 
-            mockMvc.perform(post("/api/v1/boards/" + boardId + "/posts/" + postId + "/comments")
+            mockMvc.perform(post("/api/v1/board/posts/" + postId + "/comments")
                             .header("Authorization", TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(commentBody))
@@ -301,7 +301,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
             String code = "get_" + suffix;
             long id = createOkReturnId(code, "NORMAL", 10240, 20);
 
-            mockMvc.perform(get("/api/v1/boards/" + id)
+            mockMvc.perform(get("/api/v1/board/masters/" + id)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
@@ -315,7 +315,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
             String code = "getc_" + suffix;
             createOk(code, "NORMAL", 10240, 20);
 
-            mockMvc.perform(get("/api/v1/boards/code/" + code)
+            mockMvc.perform(get("/api/v1/board/masters/code/" + code)
                             .header("Authorization", TOKEN))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value(code));
@@ -350,7 +350,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
     }
 
     private void createOk(String code, String type, long sizeKb, int pageSize) throws Exception {
-        mockMvc.perform(post("/api/v1/boards")
+        mockMvc.perform(post("/api/v1/board/masters")
                         .header("Authorization", TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(createBody(code, type, sizeKb, pageSize)))
@@ -371,7 +371,7 @@ class BbsMasterIT extends AbstractIntegrationTest {
                  "useAttachment":true,"maxAttachmentCount":5,"maxAttachmentSizeKb":1024,
                  "allowAnonymous":false,"allowSecret":false,"pageSize":20}
                 """.formatted(code, code, type, useComment);
-        mockMvc.perform(post("/api/v1/boards")
+        mockMvc.perform(post("/api/v1/board/masters")
                         .header("Authorization", TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
