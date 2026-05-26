@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.auth.controller;
 
 import jakarta.validation.Valid;
+import java.util.Map;
 import kr.co.ircp.cms.domain.auth.dto.QnaNotificationPreferenceRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
@@ -49,6 +50,18 @@ public class MeController {
     public UserSelf update(@Valid @RequestBody UserSelfUpdateRequest req,
                            @AuthenticationPrincipal JwtPrincipal principal) {
         return userService.updateMe(principal.userId(), req);
+    }
+
+    /**
+     * Q&A 답변 알림 수신 설정 조회.
+     *
+     * <p>REQ-BOARD-014-D-4: EMAIL 채널 수신 여부 반환.
+     */
+    @GetMapping("/notifications/preferences")
+    public ResponseEntity<Map<String, Object>> getNotificationPreferences(
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        boolean emailEnabled = qnaNotificationService.isEmailEnabled(principal.userId());
+        return ResponseEntity.ok(Map.of("qnaAnswer", Map.of("email", emailEnabled)));
     }
 
     /**

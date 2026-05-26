@@ -14,4 +14,7 @@ public interface QnaNotificationService {
 
     /** Q&A 답변 EMAIL 채널 옵트아웃 등록·해제. */
     void updateEmailOptout(Long userId, boolean optout);
+
+    /** Q&A 답변 EMAIL 채널 수신 여부 조회 (true = 수신). */
+    boolean isEmailEnabled(Long userId);
 }

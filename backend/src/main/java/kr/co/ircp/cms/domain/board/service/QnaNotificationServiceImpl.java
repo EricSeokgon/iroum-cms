@@ -81,6 +81,12 @@ public class QnaNotificationServiceImpl implements QnaNotificationService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isEmailEnabled(Long userId) {
+        return !optoutMapper.existsByUserAndChannel(userId, "EMAIL");
+    }
+
     private void sendChannel(Long qnaId, Long recipientId, Long answererId, String channel) {
         // 멱등성 보장: 이미 PENDING 또는 SENT인 로그가 있으면 DB unique index가 차단
         QnaNotificationLog item = QnaNotificationLog.builder()

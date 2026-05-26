@@ -32,6 +32,17 @@ export const meApi = {
   },
 
   /**
+   * Q&A 답변 알림 이메일 수신 설정 조회
+   * GET /api/v1/me/notifications/preferences
+   * 권한: 인증된 모든 사용자 (자기 설정)
+   */
+  getQnaNotificationPreference(): Promise<{ qnaAnswer: { email: boolean } }> {
+    return apiClient.get<{ qnaAnswer: { email: boolean } }>(
+      '/me/notifications/preferences',
+    ).then((r) => r.data)
+  },
+
+  /**
    * Q&A 답변 알림 이메일 수신 설정 변경
    * PUT /api/v1/me/notifications/preferences
    * 권한: 인증된 모든 사용자 (자기 설정)

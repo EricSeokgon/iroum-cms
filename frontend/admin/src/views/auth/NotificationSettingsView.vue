@@ -33,22 +33,24 @@
 </template>
 
 <script setup lang="ts">
-// @MX:NOTE: [AUTO] Q&A 답변 알림 이메일 수신 설정 — 현재 설정 GET 엔드포인트 미구현으로 초기값 true 가정
-
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { meApi } from '@/api/me'
 
 const { t } = useI18n()
 
-// 현재 설정 GET 엔드포인트가 없으므로 초기값 true 가정
 const qnaAnswerEmail = ref<boolean>(true)
 
-/**
- * Q&A 답변 이메일 알림 설정 토글 핸들러
- * 실패 시 이전 상태로 복구하고 에러 메시지 표시
- */
+onMounted(async () => {
+  try {
+    const pref = await meApi.getQnaNotificationPreference()
+    qnaAnswerEmail.value = pref.qnaAnswer.email
+  } catch {
+    // 조회 실패 시 기본값 true 유지
+  }
+})
+
 async function onToggleQnaAnswerEmail(value: string | number | boolean): Promise<void> {
   const next = Boolean(value)
   const previous = !next
@@ -56,7 +58,6 @@ async function onToggleQnaAnswerEmail(value: string | number | boolean): Promise
     await meApi.updateQnaNotificationPreference(next)
     ElMessage.success(t('notifications.saved'))
   } catch {
-    // 실패 시 스위치 상태 복구
     qnaAnswerEmail.value = previous
     ElMessage.error(t('common.error.network'))
   }
