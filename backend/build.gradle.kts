@@ -40,8 +40,14 @@ val mybatisStarterVersion = "3.0.4"
 val jjwtVersion = "0.12.7"
 val springdocVersion = "2.8.17"
 val testcontainersVersion = "1.20.4"
+// Spring Cloud 2025.0.x (Northfields) — Spring Boot 3.5.x 호환 (SPEC-CMS-SECURITY-PII-KMS-001 Vault Transit)
+val springCloudVersion = "2025.0.2"
 
 dependencies {
+    // ─── Spring Cloud BOM (SPEC-CMS-SECURITY-PII-KMS-001) ───────────────────
+    // Spring Cloud 2025.0.x = Spring Boot 3.5.x 라인. Vault, Config 등 모듈 버전 통합 관리.
+    implementation(platform("org.springframework.cloud:spring-cloud-dependencies:$springCloudVersion"))
+
     // ─── Spring Boot Starters ──────────────────────────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -155,6 +161,14 @@ dependencies {
 
     // LocalStack — KMS 통합 테스트용 (Docker 가용 시)
     testImplementation("org.testcontainers:localstack:$testcontainersVersion")
+
+    // ─── Spring Cloud Vault (SPEC-CMS-SECURITY-PII-KMS-001) ──────────────────
+    // VaultTransitPiiKeyVault — HashiCorp Vault Transit 기반 DEK/HMAC 키 복호화 어댑터
+    // BOM(spring-cloud-dependencies)에서 버전 통합 관리.
+    implementation("org.springframework.cloud:spring-cloud-starter-vault-config")
+
+    // Testcontainers Vault — Vault Transit 통합 테스트용 (Docker 가용 시)
+    testImplementation("org.testcontainers:vault:$testcontainersVersion")
 }
 
 // ─── 빌드 설정 ────────────────────────────────────────────────────────────
