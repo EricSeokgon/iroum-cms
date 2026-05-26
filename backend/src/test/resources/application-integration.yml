@@ -1,4 +1,9 @@
 spring:
+  cloud:
+    vault:
+      # SPEC-CMS-SECURITY-PII-KMS-001: Vault는 VaultTransitPiiKeyVaultIT에서만 Testcontainers로 기동.
+      # 나머지 IT 는 Vault 없이 실행되므로 VaultAutoConfiguration을 비활성화해 컨텍스트 실패를 방지한다.
+      enabled: false
   # SPEC-CMS-SECURITY-PII-FOLLOWUP-001 회귀 처리 (2026-05-11):
   # IntegrationAsyncConfig.auditExecutor가 운영 AsyncConfig.auditExecutor를 의도적으로 override
   # (PII 감사 IT 결정성을 위해 Async → Sync 변경). Spring Boot 3.5.9 기본 정책은 override 비허용

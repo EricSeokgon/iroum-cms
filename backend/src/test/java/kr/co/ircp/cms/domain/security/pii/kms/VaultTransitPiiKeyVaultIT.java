@@ -49,6 +49,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 // @MX:SPEC: SPEC-CMS-SECURITY-PII-KMS-001
 @SpringBootTest(properties = {
         "pii.keyvault.provider=vault-transit",
+        // application-integration.yml 의 spring.cloud.vault.enabled=false 를 오버라이드.
+        // VaultTransitPiiKeyVaultIT 는 Testcontainers Vault 를 직접 기동하므로 활성화 필요.
+        "spring.cloud.vault.enabled=true",
         "spring.cloud.vault.fail-fast=true",
         "spring.cloud.vault.config.lifecycle.enabled=false",
         // 시크릿/구성 백엔드는 사용하지 않음 — Transit API 만 호출하면 충분하다.
