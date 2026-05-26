@@ -3,7 +3,7 @@
  * 권한 카탈로그 그룹화, 체크박스 토글, readonly 비활성화를 검증합니다
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createI18n } from 'vue-i18n'
 import ElementPlus from 'element-plus'

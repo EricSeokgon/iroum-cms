@@ -100,7 +100,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { accessLogs } from '@/api/system'
-import type { AccessLogResponse, AccessLogPageResponse } from '@/api/system'
+import type { AccessLogResponse } from '@/api/system'
 
 const { t } = useI18n()
 

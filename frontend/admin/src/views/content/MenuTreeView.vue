@@ -24,7 +24,7 @@
           role="tree"
           empty-text=""
         >
-          <template #default="{ node, data }">
+          <template #default="{ data }">
             <span class="flex items-center gap-1.5 text-sm" :class="!data.isVisible ? 'text-gray-400' : ''">
               <span>{{ data.name }}</span>
               <el-tag v-if="!data.isVisible" size="small" type="info">{{ t('content.menu.hidden') }}</el-tag>

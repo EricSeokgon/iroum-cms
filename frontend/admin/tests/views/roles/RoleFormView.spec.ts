@@ -26,7 +26,7 @@ vi.mock('../../../src/api/roles', () => ({
 import { rolesApi, permissionsApi } from '../../../src/api/roles'
 
 const mockCreate = vi.mocked(rolesApi.create)
-const mockUpdate = vi.mocked(rolesApi.update)
+const _mockUpdate = vi.mocked(rolesApi.update)
 const mockDetail = vi.mocked(rolesApi.detail)
 const mockPermList = vi.mocked(permissionsApi.list)
 

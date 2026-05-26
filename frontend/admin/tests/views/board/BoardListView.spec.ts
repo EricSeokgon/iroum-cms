@@ -95,7 +95,7 @@ describe('BoardListView', () => {
   })
 
   it('마운트 시 게시판 목록을 로드한다', async () => {
-    const wrapper = buildWrapper()
+    buildWrapper()
     await new Promise((r) => setTimeout(r, 50))
     expect(mockListMasters).toHaveBeenCalledTimes(1)
   })

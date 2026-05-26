@@ -6,7 +6,6 @@ import { createI18n } from 'vue-i18n'
 import ElementPlus from 'element-plus'
 import ko from '@/locales/ko.json'
 import MenuTreeView from '@/views/content/MenuTreeView.vue'
-import { menus } from '@/api/content'
 import type { MenuTreeNode } from '@/api/content'
 
 // API mock
@@ -153,7 +152,7 @@ describe('MenuTreeView', () => {
     }
 
     // allowDrop 함수 직접 호출
-    const allowDrop = (vm as { allowDrop?: Function }).allowDrop
+    const allowDrop = (vm as { allowDrop?: (...args: unknown[]) => unknown }).allowDrop
     if (allowDrop) {
       // depth 5인 노드에 inner drop은 거부
       const result = allowDrop({}, { data: { depth: 5 } }, 'inner')

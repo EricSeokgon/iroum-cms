@@ -1,5 +1,5 @@
 // ForgotPasswordView 테스트 — REQ-AUTH-017 비밀번호 재설정(이메일 OTP)
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHashHistory } from 'vue-router'

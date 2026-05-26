@@ -35,7 +35,7 @@ vi.mock('../../../src/views/users/UserFormView.vue', () => ({
 import { usersApi } from '../../../src/api/users'
 
 const mockList = vi.mocked(usersApi.list)
-const mockUnlock = vi.mocked(usersApi.unlock)
+const _mockUnlock = vi.mocked(usersApi.unlock)
 const mockDelete = vi.mocked(usersApi.delete)
 
 const mockUsers: UserSummary[] = [

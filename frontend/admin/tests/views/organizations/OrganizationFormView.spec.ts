@@ -22,7 +22,7 @@ vi.mock('../../../src/api/organizations', () => ({
 import { organizationsApi } from '../../../src/api/organizations'
 
 const mockCreate = vi.mocked(organizationsApi.create)
-const mockDetail = vi.mocked(organizationsApi.detail)
+const _mockDetail = vi.mocked(organizationsApi.detail)
 
 const i18n = createI18n({
   legacy: false,
