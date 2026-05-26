@@ -18,12 +18,15 @@ function makeI18n() {
 }
 
 const sampleItem: SearchResultItem = {
-  id: 1,
-  type: 'POST',
+  docType: 'POST',
+  docId: 1,
   title: '안전 가이드 안내',
   snippet: '안전 <mark>가이드</mark>를 확인하세요',
+  highlight: '',
+  rank: 1,
+  domain: 'board',
   url: '/notices/1',
-  score: 0.95,
+  createdAt: '2026-04-15T09:00:00Z',
 }
 
 describe('SearchResultCard — D-02 mark 하이라이트', () => {

@@ -24,14 +24,12 @@ function _warnIframeOnce(): void {
     if (window.top !== window.self) {
       // 운영(prod) 환경에서도 1회만 콘솔 경고 (CSP/디버그 흔적용)
       // 메시지는 영문으로 — 보안 도구 로그 수집 호환성 확보
-      // eslint-disable-next-line no-console
       console.warn(
         '[security] Public SPA is embedded in an iframe; token storage in localStorage may be exposed to framing attacks.',
       )
     }
   } catch {
     // 크로스 오리진 프레임 접근 시 SecurityError 발생 가능 — 그 자체가 iframe 임베드 신호
-    // eslint-disable-next-line no-console
     console.warn(
       '[security] Public SPA appears to be cross-origin iframed; storage isolation cannot be verified.',
     )
@@ -42,7 +40,6 @@ function _warnDevOnce(): void {
   if (_devUsageWarned) return
   _devUsageWarned = true
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.info(
       '[security] tokenSecurity wrapper active. HIGH-10 mitigation: localStorage usage will migrate to HttpOnly cookie in future backend work.',
     )

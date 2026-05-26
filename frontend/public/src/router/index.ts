@@ -9,7 +9,6 @@ import PublicLayout from '@/layouts/PublicLayout.vue'
 
 // @MX:NOTE: [AUTO] vue-router type augmentation — meta 필드 타입 안전성 보장
 declare module 'vue-router' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface RouteMeta {
     title?: string
     requiresAuth?: boolean

@@ -165,6 +165,39 @@
     "noAttachments": "No attachments",
     "selectAtLeastOne": "Select at least one attachment"
   },
+  "about": {
+    "title": "About",
+    "subtitle": "Introducing the organization that operates iroum-cms",
+    "mission": {
+      "title": "Mission",
+      "description": "We build a digital public service environment where citizens and businesses can safely and conveniently use public data and information."
+    },
+    "vision": {
+      "title": "Vision",
+      "description": "We lead data-driven administrative innovation and grow into a transparent and trusted public digital platform."
+    },
+    "values": {
+      "title": "Core Values",
+      "transparency": "Transparency",
+      "transparencyDesc": "Fair and open information disclosure",
+      "innovation": "Innovation",
+      "innovationDesc": "Leading adoption of digital technology",
+      "safety": "Safety",
+      "safetyDesc": "Providing a safe service environment",
+      "service": "Service",
+      "serviceDesc": "Citizen-centered administrative services"
+    },
+    "org": {
+      "title": "Organization Chart"
+    },
+    "contact": {
+      "title": "Contact",
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "hours": "Business Hours"
+    }
+  },
   "home": {
     "title": "Welcome to iroum-cms",
     "subtitle": "Search for information and use our services.",

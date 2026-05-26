@@ -87,10 +87,10 @@ async function runSearch(): Promise<void> {
     const res = await searchApi.search({
       q: query.value,
       type: currentType.value,
-      page: 1,
+      page: 0,
       size: 20,
     })
-    results.value = res.content ?? []
+    results.value = (res as unknown as { results?: SearchResultItem[] }).results ?? res.content ?? []
     totalCount.value = res.totalElements
     searchLogId.value = res.searchLogId ?? null
     if (res.byDomainFacets) facets.value = res.byDomainFacets

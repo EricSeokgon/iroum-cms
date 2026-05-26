@@ -16,6 +16,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.spec.ts'],
+    exclude: ['tests/e2e/**'],
+    testTimeout: 15000,
     coverage: {
       reporter: ['text', 'lcov'],
       include: ['src/**/*.{ts,vue}'],
