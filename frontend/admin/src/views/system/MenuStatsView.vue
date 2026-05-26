@@ -39,7 +39,12 @@
         style="width: 100%"
       >
         <el-table-column type="index" label="순위" width="70" align="center" />
-        <el-table-column prop="page_url" label="페이지 URL" min-width="280" show-overflow-tooltip />
+        <el-table-column prop="menu_name" label="메뉴명" width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.menu_name ?? '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="page_url" label="페이지 URL" min-width="240" show-overflow-tooltip />
         <el-table-column prop="visit_count" label="방문수" width="110" align="right" sortable>
           <template #default="{ row }">
             {{ row.visit_count.toLocaleString() }}

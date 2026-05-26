@@ -86,15 +86,23 @@
             {{ t('common.logout') }}
           </button>
         </template>
-        <button
-          v-else
-          type="button"
-          class="rounded px-2 py-1 text-sm text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"
-          data-testid="header-login"
-          @click="onLogin"
-        >
-          {{ t('common.login') }}
-        </button>
+        <template v-else>
+          <button
+            type="button"
+            class="rounded px-2 py-1 text-sm text-content-DEFAULT hover:text-primary-600 focus-visible:outline-2 focus-visible:outline-primary-600"
+            data-testid="header-login"
+            @click="onLogin"
+          >
+            {{ t('common.login') }}
+          </button>
+          <router-link
+            to="/register"
+            class="rounded px-2 py-1 text-sm font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-primary-600"
+            data-testid="header-register"
+          >
+            {{ t('common.register') }}
+          </router-link>
+        </template>
 
         <!-- 모바일 햄버거 -->
         <button

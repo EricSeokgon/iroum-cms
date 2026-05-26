@@ -37,4 +37,7 @@ public interface PopupMapper {
     int update(Popup popup);
 
     int deleteById(@Param("id") Long id);
+
+    /** 팝업 활성/비활성 상태 변경 */
+    int updateStatus(@Param("id") Long id, @Param("status") String status);
 }

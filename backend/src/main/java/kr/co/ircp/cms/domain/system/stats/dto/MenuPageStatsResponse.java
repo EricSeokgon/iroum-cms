@@ -16,6 +16,7 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class MenuPageStatsResponse {
     private String pageUrl;
+    private String menuName;
     private Long visitCount;
     private Long uniqueVisitors;
     private Long avgResponseMs;

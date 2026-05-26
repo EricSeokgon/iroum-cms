@@ -28,6 +28,12 @@ public interface PopupService {
     List<PopupResponse> getPopupsBySite(Long siteId);
 
     /**
+     * 팝업 활성/비활성 토글.
+     * REQ-CONTENT-008-D: status ACTIVE ↔ INACTIVE 전환
+     */
+    PopupResponse setActive(Long id, boolean active);
+
+    /**
      * 활성 팝업 목록 조회 (공개 API).
      * REQ-CONTENT-008-D-2: 노출 시간 윈도우 + 상위 5개 우선 + display_priority DESC
      */

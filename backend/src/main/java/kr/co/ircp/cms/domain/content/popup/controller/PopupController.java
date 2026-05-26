@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -73,6 +74,19 @@ public class PopupController {
             @PathVariable Long id,
             @Valid @RequestBody PopupRequest request) {
         return ResponseEntity.ok(popupService.updatePopup(id, request));
+    }
+
+    /**
+     * 팝업 활성/비활성 토글.
+     * PATCH /api/v1/content/popups/{id}/active
+     */
+    @PatchMapping("/{id}/active")
+    @PreAuthorize("hasAuthority('CONTENT:WRITE')")
+    public ResponseEntity<PopupResponse> setActive(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Boolean> body) {
+        boolean isActive = Boolean.TRUE.equals(body.get("isActive"));
+        return ResponseEntity.ok(popupService.setActive(id, isActive));
     }
 
     /**

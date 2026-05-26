@@ -13,8 +13,11 @@ public record PopupResponse(
         Long id,
         Long siteId,
         String title,
+        String name,
         String contentHtml,
         String position,
+        Integer xOffset,
+        Integer yOffset,
         Integer width,
         Integer height,
         Instant showFrom,
@@ -24,6 +27,7 @@ public record PopupResponse(
         String targetType,
         List<String> targetRoleCodes,
         String status,
+        boolean isActive,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -32,8 +36,11 @@ public record PopupResponse(
                 popup.getId(),
                 popup.getSiteId(),
                 popup.getTitle(),
+                popup.getTitle(),
                 popup.getContentHtml(),
                 popup.getPosition(),
+                popup.getXOffset(),
+                popup.getYOffset(),
                 popup.getWidth(),
                 popup.getHeight(),
                 popup.getShowFrom(),
@@ -43,6 +50,7 @@ public record PopupResponse(
                 popup.getTargetType(),
                 popup.getTargetRoleCodes(),
                 popup.getStatus(),
+                "ACTIVE".equals(popup.getStatus()),
                 popup.getCreatedAt(),
                 popup.getUpdatedAt()
         );

@@ -141,6 +141,21 @@ public class PopupServiceImpl implements PopupService {
     }
 
     /**
+     * 팝업 활성/비활성 토글.
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "popupActive", allEntries = true)
+    public PopupResponse setActive(Long id, boolean active) {
+        Popup popup = popupMapper.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("팝업을 찾을 수 없습니다. id=" + id));
+        String newStatus = active ? "ACTIVE" : "INACTIVE";
+        popupMapper.updateStatus(id, newStatus);
+        popup.setStatus(newStatus);
+        return PopupResponse.from(popup);
+    }
+
+    /**
      * 사이트별 전체 팝업 목록 (관리자용).
      */
     @Override

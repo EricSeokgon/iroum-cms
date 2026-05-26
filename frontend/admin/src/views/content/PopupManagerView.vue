@@ -14,7 +14,7 @@
       :aria-label="t('content.popup.title')"
     >
       <caption class="sr-only">{{ t('content.popup.title') }}</caption>
-      <el-table-column prop="name" :label="t('content.popup.field.name')" min-width="160" />
+      <el-table-column prop="title" :label="t('content.popup.field.name')" min-width="160" />
       <el-table-column :label="t('content.popup.field.position')" width="130">
         <template #default="{ row }">
           <el-tag size="small" type="info">{{ row.position }}</el-tag>
@@ -235,11 +235,11 @@ function openCreate(): void {
 function openEdit(row: PopupResponse): void {
   editingId.value = row.id
   form.value = {
-    name: row.name,
+    name: row.title ?? row.name,
     contentHtml: row.contentHtml,
     position: row.position,
-    posX: row.posX ?? 0,
-    posY: row.posY ?? 0,
+    posX: row.xOffset ?? row.posX ?? 0,
+    posY: row.yOffset ?? row.posY ?? 0,
     width: row.width,
     showFrom: row.showFrom ? new Date(row.showFrom) : null,
     showUntil: row.showUntil ? new Date(row.showUntil) : null,
@@ -258,14 +258,14 @@ async function save(): Promise<void> {
   try {
     const payload = {
       siteId,
-      name: form.value.name,
+      title: form.value.name,
       contentHtml: form.value.contentHtml,
       position: form.value.position,
-      posX: form.value.position === 'CUSTOM' ? form.value.posX : undefined,
-      posY: form.value.position === 'CUSTOM' ? form.value.posY : undefined,
+      xOffset: form.value.position === 'CUSTOM' ? form.value.posX : undefined,
+      yOffset: form.value.position === 'CUSTOM' ? form.value.posY : undefined,
       width: form.value.width,
       showFrom: form.value.showFrom?.toISOString() ?? new Date().toISOString(),
-      showUntil: form.value.showUntil?.toISOString() ?? undefined,
+      showUntil: form.value.showUntil?.toISOString() ?? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       targetType: form.value.targetType,
       targetRoleCodes: form.value.targetType === 'ROLE' ? form.value.targetRoleCodes : undefined,
     }

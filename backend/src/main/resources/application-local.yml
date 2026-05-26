@@ -34,6 +34,10 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
+  cloud:
+    vault:
+      enabled: false
+
 logging:
   level:
     root: DEBUG

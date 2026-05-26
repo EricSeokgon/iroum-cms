@@ -219,6 +219,7 @@ export const dashboard = {
 
 export interface MenuPageStatsResponse {
   page_url: string
+  menu_name?: string
   visit_count: number
   unique_visitors: number
   avg_response_ms: number
@@ -278,7 +279,7 @@ export const codeGroups = {
 /** 공통 코드 */
 export const codes = {
   list(groupCode: string) {
-    return apiClient.get<CodeResponse[]>(`${BASE}/codes`, { params: { group_code: groupCode } })
+    return apiClient.get<CodeResponse[]>(`${BASE}/codes`, { params: { groupCode } })
   },
   bulk(groupCodes: string[]) {
     return apiClient.get<Record<string, CodeResponse[]>>(`${BASE}/codes/bulk`, {
