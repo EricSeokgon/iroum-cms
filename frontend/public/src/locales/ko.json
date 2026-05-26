@@ -73,7 +73,11 @@
     "titlePlaceholder": "제목을 입력하세요",
     "contentPlaceholder": "문의 내용을 입력하세요 (10자 이상)",
     "titleRequired": "제목을 입력해 주세요",
-    "contentRequired": "내용을 10자 이상 입력해 주세요"
+    "contentRequired": "내용을 10자 이상 입력해 주세요",
+    "myTitle": "내 질의 목록",
+    "myEmpty": "작성한 질의가 없습니다",
+    "statusAll": "전체 상태",
+    "searchPlaceholder": "제목 또는 내용 검색"
   },
   "attachment": {
     "permissionError": "권한이 없습니다",

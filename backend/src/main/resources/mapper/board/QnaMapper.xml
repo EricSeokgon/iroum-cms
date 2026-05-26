@@ -74,8 +74,12 @@
             AND (title ILIKE '%' || #{keyword} || '%'
                  OR question_text ILIKE '%' || #{keyword} || '%')
         </if>
+        <!-- mine=true: 본인 작성 Q&A만 조회 -->
+        <if test="mine and requesterId != null">
+            AND questioner_id = #{requesterId}
+        </if>
         <!-- 비공개 항목은 본인 또는 관리자만 조회 가능 -->
-        <if test="!isAdmin">
+        <if test="!isAdmin and !mine">
             AND (is_private = false
                 <if test="requesterId != null">
                     OR questioner_id = #{requesterId}
@@ -100,7 +104,12 @@
             AND (title ILIKE '%' || #{keyword} || '%'
                  OR question_text ILIKE '%' || #{keyword} || '%')
         </if>
-        <if test="!isAdmin">
+        <!-- mine=true: 본인 작성 Q&A만 조회 -->
+        <if test="mine and requesterId != null">
+            AND questioner_id = #{requesterId}
+        </if>
+        <!-- 비공개 항목은 본인 또는 관리자만 조회 가능 -->
+        <if test="!isAdmin and !mine">
             AND (is_private = false
                 <if test="requesterId != null">
                     OR questioner_id = #{requesterId}

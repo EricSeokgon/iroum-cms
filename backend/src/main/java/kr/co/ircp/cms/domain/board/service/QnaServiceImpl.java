@@ -42,11 +42,12 @@ public class QnaServiceImpl implements QnaService {
             int page,
             int size,
             Long requesterId,
-            boolean isAdmin
+            boolean isAdmin,
+            boolean mine
     ) {
         int offset = page * size;
-        List<Qna> qnas = qnaMapper.findWithFilters(status, isPrivate, requesterId, isAdmin, keyword, offset, size);
-        long total = qnaMapper.countWithFilters(status, isPrivate, requesterId, isAdmin, keyword);
+        List<Qna> qnas = qnaMapper.findWithFilters(status, isPrivate, requesterId, isAdmin, keyword, mine, offset, size);
+        long total = qnaMapper.countWithFilters(status, isPrivate, requesterId, isAdmin, keyword, mine);
         List<QnaSummary> content = qnas.stream().map(this::toSummary).toList();
         return PageResponse.of(content, page, size, total);
     }

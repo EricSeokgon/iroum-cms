@@ -38,7 +38,7 @@ const routes: RouteRecordRaw[] = [
       { path: 'qnas', name: 'qna-list', component: () => import('@/views/qnas/QnaListView.vue'), meta: { title: 'route.qna.list', breadcrumb: ['route.home', 'route.qna.list'] } },
       { path: 'qnas/new', name: 'qna-create', component: () => import('@/views/qnas/QnaCreateView.vue'), meta: { title: 'route.qna.create', requiresAuth: true } },
       { path: 'qnas/:id', name: 'qna-detail', component: () => import('@/views/qnas/QnaDetailView.vue'), meta: { title: 'route.qna.detail' } },
-      { path: 'me/qnas', name: 'my-qna', component: stub, meta: { title: 'route.qna.mine', requiresAuth: true } },
+      { path: 'me/qnas', name: 'my-qna', component: () => import('@/views/qnas/MyQnaListView.vue'), meta: { title: 'route.qna.mine', requiresAuth: true } },
       { path: 'publications', name: 'publication-list', component: () => import('@/views/publications/PublicationListView.vue'), meta: { title: 'route.publication.list', breadcrumb: ['route.home', 'route.publication.list'] } },
       { path: 'publications/:id', name: 'publication-detail', component: () => import('@/views/publications/PublicationDetailView.vue'), meta: { title: 'route.publication.detail' } },
 

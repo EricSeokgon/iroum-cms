@@ -12,7 +12,7 @@ import kr.co.ircp.cms.domain.board.dto.QnaSummary;
  */
 public interface QnaService {
 
-    /** Q&A 목록 페이징 조회 (비공개 항목은 본인/관리자만). */
+    /** Q&A 목록 페이징 조회 (비공개 항목은 본인/관리자만; mine=true면 본인 작성 Q&A만). */
     PageResponse<QnaSummary> listQnas(
             String status,
             Boolean isPrivate,
@@ -20,7 +20,8 @@ public interface QnaService {
             int page,
             int size,
             Long requesterId,
-            boolean isAdmin
+            boolean isAdmin,
+            boolean mine
     );
 
     /** Q&A 단건 조회 (비공개 + 미권한 시 NotFound로 위장). */

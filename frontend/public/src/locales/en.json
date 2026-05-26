@@ -73,7 +73,11 @@
     "titlePlaceholder": "Enter title",
     "contentPlaceholder": "Enter your question (at least 10 characters)",
     "titleRequired": "Please enter a title",
-    "contentRequired": "Content must be at least 10 characters"
+    "contentRequired": "Content must be at least 10 characters",
+    "myTitle": "My Q&A",
+    "myEmpty": "You have not submitted any questions yet",
+    "statusAll": "All statuses",
+    "searchPlaceholder": "Search by title or content"
   },
   "attachment": {
     "permissionError": "Permission denied",

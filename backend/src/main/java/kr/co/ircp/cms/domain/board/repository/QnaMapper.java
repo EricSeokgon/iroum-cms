@@ -35,6 +35,7 @@ public interface QnaMapper {
     /**
      * 필터 기반 페이징 조회.
      * 비공개(isPrivate=true) 항목은 questioner 본인 또는 관리자만 조회 가능.
+     * mine=true 이면 requesterId 기준 본인 작성 Q&A만 조회.
      */
     List<Qna> findWithFilters(
             @Param("status") String status,
@@ -42,6 +43,7 @@ public interface QnaMapper {
             @Param("requesterId") Long requesterId,
             @Param("isAdmin") boolean isAdmin,
             @Param("keyword") String keyword,
+            @Param("mine") boolean mine,
             @Param("offset") int offset,
             @Param("size") int size
     );
@@ -52,7 +54,8 @@ public interface QnaMapper {
             @Param("isPrivate") Boolean isPrivate,
             @Param("requesterId") Long requesterId,
             @Param("isAdmin") boolean isAdmin,
-            @Param("keyword") String keyword
+            @Param("keyword") String keyword,
+            @Param("mine") boolean mine
     );
 
     /** 답변 등록 (status를 ANSWERED로 변경, answered_at을 NOW()로 설정) */
