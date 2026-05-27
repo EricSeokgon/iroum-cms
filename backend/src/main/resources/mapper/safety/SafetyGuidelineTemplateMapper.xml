@@ -62,6 +62,24 @@
         ORDER BY name ASC
     </select>
 
+    <select id="findPublishedPaged" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template
+        WHERE status = 'PUBLISHED'
+        <if test="industryCode != null">
+            AND #{industryCode} = ANY(applicable_industry_codes)
+        </if>
+        ORDER BY name ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countPublished" resultType="long">
+        SELECT COUNT(*) FROM safety_guideline_template
+        WHERE status = 'PUBLISHED'
+        <if test="industryCode != null">
+            AND #{industryCode} = ANY(applicable_industry_codes)
+        </if>
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO safety_guideline_template
             (code, name, description, applicable_industry_codes, applicable_grades,

@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.safety.controller;
 
+import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.safety.dto.GuidelineDetailResponse;
 import kr.co.ircp.cms.domain.safety.dto.GuidelineSummaryResponse;
 import kr.co.ircp.cms.domain.safety.entity.SafetyChecklistItem;
@@ -29,13 +30,17 @@ public class SafetyGuidelineController {
     private final SafetyChecklistItemMapper checklistMapper;
 
     @GetMapping
-    public ResponseEntity<List<GuidelineSummaryResponse>> list(
-            @RequestParam(required = false) String industryCode) {
-        List<GuidelineSummaryResponse> result = templateMapper.findPublished(industryCode)
+    public ResponseEntity<PageResponse<GuidelineSummaryResponse>> list(
+            @RequestParam(required = false) String industryCode,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        int offset = page * size;
+        List<GuidelineSummaryResponse> content = templateMapper.findPublishedPaged(industryCode, offset, size)
                 .stream()
                 .map(GuidelineSummaryResponse::from)
                 .toList();
-        return ResponseEntity.ok(result);
+        long total = templateMapper.countPublished(industryCode);
+        return ResponseEntity.ok(PageResponse.of(content, page, size, total));
     }
 
     @GetMapping("/{id}")

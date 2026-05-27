@@ -38,8 +38,15 @@ public interface SafetyGuidelineTemplateMapper {
     int archivePublishedByCode(@Param("code") String code);
 
     /**
-     * REQ-PUBLIC-SAFETY-001: PUBLISHED 상태 템플릿 공개 조회.
+     * REQ-PUBLIC-SAFETY-001: PUBLISHED 상태 템플릿 공개 조회 (페이징).
      * industryCode null이면 전체 반환.
      */
     List<SafetyGuidelineTemplate> findPublished(@Param("industryCode") String industryCode);
+
+    List<SafetyGuidelineTemplate> findPublishedPaged(
+            @Param("industryCode") String industryCode,
+            @Param("offset") int offset,
+            @Param("limit") int limit);
+
+    long countPublished(@Param("industryCode") String industryCode);
 }
