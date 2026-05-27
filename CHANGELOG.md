@@ -11,6 +11,117 @@
 
 ---
 
+## [1.7.0] - 2026-05-27
+
+### Added
+
+- **공개 사이트 시민 회원가입 API** (`AuthController`, `AuthServiceImpl`, `PublicRegisterRequest.java`)
+  - `POST /api/v1/auth/register` 엔드포인트 구현 (anonymous 허용)
+  - 중복 검사 → 비밀번호 정책 → PII 암호화 → users INSERT → MEMBER 역할 부여 → 토큰 발급
+  - V36 마이그레이션: MEMBER 역할 시드 (커밋 98d2447)
+
+- **안전정보 공개 API** (`SafetyGuidelineController`, `GuidelineTemplateMapper`)
+  - `GET /api/v1/safety/guidelines` — 공개 가이드라인 목록·상세 엔드포인트 (인증 불필요)
+  - `GET /api/v1/safety/incidents` — 공개 사고사례 목록 엔드포인트 공개 접근 허용
+  - `GuidelineSummaryResponse`, `GuidelineDetailResponse` DTO 추가 (커밋 18fd1f2)
+
+- **알림 수신 설정 GET 엔드포인트** (`MeController`, `QnaNotificationService`)
+  - `GET /api/v1/me/notifications/preferences` — 현재 이메일 수신 여부 반환
+  - 어드민 `meApi.getQnaNotificationPreference()` 추가 및 `NotificationSettingsView` onMounted 연동 (커밋 5c40863)
+
+- **내 Q&A 목록 API** (`QnaController`, `QnaMapper`)
+  - `GET /api/v1/qnas?mine=true` — 로그인 사용자 본인 Q&A만 조회
+  - `QnaMapper.xml` mine=true 시 `questioner_id` 조건 분기 추가 (커밋 82d36ff)
+
+- **HashiCorp Vault Transit PII 키 볼트 어댑터** (`VaultTransitPiiKeyVault.java`, SPEC-CMS-SECURITY-PII-KMS-001)
+  - Spring Cloud Vault `VaultTemplate.opsForTransit().decrypt()` 기반 어댑터 구현
+  - `@ConditionalOnProperty` vault-transit 조건부 활성화
+  - `ConcurrentHashMap` 부팅 시 1회 로딩, fail-fast (Vault 미가용 시 `PiiKeyVaultException` 부팅 차단)
+  - Testcontainers vault:1.17 통합 테스트 3 AC, 단위 테스트 4 GREEN (커밋 2a9e532)
+
+- **공개 프론트엔드 완성** (회원가입·로그인·내 정보·내 Q&A·정책 알림 구독)
+  - `RegisterView.vue`: 이메일/이름/비밀번호 입력, 409 중복·비밀번호 불일치 오류 분기
+  - `MeView.vue`: 프로필 표시·수정 + 비밀번호 변경 폼, 변경 후 자동 로그아웃
+  - `MyQnaListView.vue`: mine=true로 본인 Q&A만 조회, 상태 필터 제공
+  - `PolicySubscriptionView.vue`: 채널×카테고리 구독 체크박스 그리드
+  - `PublicHeader`: 인증 시 사용자명+로그아웃, 비인증 시 로그인 버튼 표시
+  - (커밋 1cdd396, b464efb, 82d36ff, 70dee61)
+
+- **공개 프론트엔드 API 매핑 및 페이지 완성** (커밋 a4da59e)
+  - `noticeApi`, `policyApi`, `faqApi` 백엔드 응답 타입 매핑 추가
+  - `FaqView` 아코디언 펼칠 때 답변 lazy 로드
+  - `AboutView` 기관소개 페이지 신규 생성
+
+- **관리자 프론트엔드 기능 추가**
+  - `TiptapEditor` 이미지 업로드 연동 (`uploadImage` prop, 툴바 추가) (커밋 c23bdf4)
+  - FAQ `answerHtml`, Q&A `answerInput`, 발간자료 `contentHtml` TiptapEditor 교체
+  - FAQ 답변 HTML 조회: 편집 다이얼로그 열기 전 `getFaq()` 호출로 `answerHtml` 정확히 로드
+  - Q&A 답변 수정: ANSWERED 상태에서도 관리자 답변 수정 가능 (커밋 4f993d1)
+  - 팝업 활성/비활성 PATCH 엔드포인트 추가 (`PopupController`, `PopupMapper`) (커밋 8c96b2d)
+  - 메뉴별 방문 통계에 메뉴명 컬럼 추가 (`MenuStatsView`, `MenuPageStatsResponse`)
+
+- **미디어 컬렉션 상세 편집** (`MediaCollectionView.vue`, `media.ts`, SPEC-CMS-003 연계)
+  - `getCollection`, `addToCollection`, `removeFromCollection`, `deleteCollection` API 4개 추가
+  - 상세 편집 다이얼로그: 아이템 그리드 + 제거 버튼 + 삭제 popconfirm
+  - 미디어 피커 다이얼로그: 검색 + 다중 선택 + 일괄 추가 (커밋 0e0625a)
+
+- **Tiptap WYSIWYG 에디터 통합** (`TiptapEditor.vue`, SPEC-CMS-003)
+  - StarterKit + Underline + Link + Image + Table 확장
+  - 한국어 aria-label 툴바 19개 요소, WCAG AA 4.5:1 포커스 인디케이터
+  - v-model HTML 문자열 바인딩, 외부값 변경 시 무한루프 방지 watch (커밋 906abf4)
+
+- **DB 마이그레이션 추가**
+  - V37: 사고사례 테스트 시드 8건 (건설·제조·화학·물류·전기 업종별 FATAL/SEVERE/MINOR)
+  - V38: 안전 가이드라인 템플릿 5건 + 체크리스트 36건 시드 (커밋 5489ac8)
+
+- **공개 프론트엔드 ESLint 9 flat config + Vitest 커버리지 품질 게이트** (커밋 e4b04ad)
+
+### Fixed
+
+- **Q&A 공개 조회 허용** (`QnaController`, `SecurityConfig`)
+  - `@PreAuthorize("isAuthenticated()")` 제거, `GET /api/v1/qnas/**` permitAll 추가
+  - `BbsViewLogMapper`: PostgreSQL JDBC null 파라미터 타입 추론 실패 수정 — MyBatis `<choose>` 분기로 null 비교 파라미터 제거 (커밋 ef0a350)
+
+- **안전 가이드라인 공개 API PageResponse 반환** (`SafetyGuidelineController`)
+  - 목록 API 단건 반환 → `PageResponse` 형식 통일 (커밋 1b32261)
+
+- **PostController 권한 완화 및 관련 IT URL 수정** (커밋 d2a1eaf)
+  - 공개 게시물 조회 시 불필요 권한 요구 제거
+  - 관련 통합 테스트 URL 경로 수정
+
+- **Spring Cloud Vault 자동 설정 IT 컨텍스트 로딩 실패** (커밋 fdacf16)
+  - `application-local.yml` Spring Cloud Vault 비활성화 설정 추가로 로컬 IT 환경 컨텍스트 로드 정상화
+
+- **관리자 프론트엔드 버그 수정**
+  - 공통코드 조회 파라미터 `group_code` → `groupCode` 수정 (`system.ts`) (커밋 8c96b2d)
+  - 팝업 목록 필드 매핑 오류 수정 (`PopupManagerView`)
+  - `PopupResponse` `isActive` 파생 필드 추가
+  - ESLint flat config 적용 및 미사용 변수 정리 (커밋 b4de1f6)
+
+- **공개 프론트엔드 API 경로 수정** (커밋 acc9e6e)
+  - 여러 API 호출 경로를 실제 백엔드 경로로 수정
+
+- **통합/단위 테스트 5+4건 실패 수정** (커밋 b48cfcd)
+
+### Changed
+
+- **관리자 프론트엔드 버전 0.1.2 → 0.1.3** (커밋 8497293)
+
+- **미디어 갤러리·대시보드 위젯 공개 허용** (`SecurityConfig`)
+  - `GET /api/v1/media`, `GET /api/v1/dashboard/widgets/**` permitAll 추가 (커밋 18fd1f2)
+
+### Tests
+
+- **백엔드 테스트 baseline 갱신 — 336건 전체 PASS** (커밋 ee9446f)
+  - `QnaControllerTest`, `QnaServiceTest`: mine 파라미터 추가
+  - `PopupControllerTest`: `PopupResponse` 생성자 필드 추가 (name, yOffset, height, isActive)
+  - `SafetyManagementIT`: 공개 API 변경에 따른 기대값 401→200
+  - `MigrationOrderIT`: V37/V38 추가로 기대 마이그레이션 수 35→37
+  - `AuthorizationCoverageArchTest`: QnaController close/delete 추가로 baseline 112→113
+  - `DashboardView·SystemDashboardView` 테스트 API 모킹 정합성 확보 (커밋 bbb972b)
+
+---
+
 ## [1.6.3] - 2026-05-21
 
 ### Changed
