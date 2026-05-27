@@ -51,13 +51,14 @@ test.describe('역할/권한 매트릭스', () => {
   test('/roles 진입 시 role-matrix 가 노출된다', async ({ page }) => {
     // SPA 내부 router push 로 이동 (page.goto 는 full reload → Pinia 상태 손실)
     await page.getByRole('menuitem', { name: /역할|Roles/ }).first().click()
-    await page.waitForURL('**/roles')
+    // URL 함수로 pathname 만 검사 — glob/정규식은 ?redirect=/roles 쿼리 스트링도 매칭하므로 사용 금지
+    await page.waitForURL((url) => new URL(url).pathname === '/roles')
     await expect(page.getByTestId('role-matrix')).toBeVisible()
   })
 
   test('페이지 타이틀이 "역할/권한 관리 | iroum-cms 관리자" 로 설정된다', async ({ page }) => {
     await page.getByRole('menuitem', { name: /역할|Roles/ }).first().click()
-    await page.waitForURL('**/roles')
+    await page.waitForURL((url) => new URL(url).pathname === '/roles')
     await expect(page).toHaveTitle('역할/권한 관리 | iroum-cms 관리자')
   })
 })

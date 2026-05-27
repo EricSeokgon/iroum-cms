@@ -38,23 +38,34 @@ test.describe('정책 매칭 (PolicyMatchView)', () => {
     await page.getByTestId('match-employees-input').fill('10')
     await page.getByTestId('match-region-input').fill('서울')
 
+    // 403 리다이렉트 방지: /ai/policy-match 200 mock 등록
+    await page.route('**/ai/policy-match', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ matches: [], totalCount: 0 }),
+      }),
+    )
+
     // POST 요청 수신 대기 (waitForRequest 는 제출과 병렬)
     const requestPromise = page.waitForRequest(
-      (req) => req.url().includes('/policies/match') && req.method() === 'POST',
+      (req) => req.url().includes('/ai/policy-match') && req.method() === 'POST',
       { timeout: 10_000 },
     )
     await page.getByTestId('match-submit').click()
     const request = await requestPromise
 
-    // 요청 body 가 5개 필드를 포함해야 한다 (PolicyMatchForm.vue line 138-148)
+    // 요청 body 가 AiPolicyMatchRequest 구조를 따라야 한다
     const body = request.postDataJSON() as Record<string, unknown> | null
     expect(body).not.toBeNull()
     expect(body).toMatchObject({
-      industry: '제조업',
-      capitalAmount: 100000000,
-      revenueAmount: 500000000,
-      employeeCount: 10,
-      region: '서울',
+      companyProfile: {
+        ksic_code: '제조업',
+        annual_revenue: 500000000,
+        employee_count: 10,
+        region_code: '서울',
+      },
+      topK: 10,
     })
   })
 

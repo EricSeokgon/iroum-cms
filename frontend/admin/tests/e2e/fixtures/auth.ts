@@ -36,6 +36,19 @@ export const MOCK_JWT = `eyJhbGciOiJIUzI1NiJ9.${MOCK_PAYLOAD_B64URL}.mock-signat
 export const MOCK_LOGIN_RESPONSE = {
   accessToken: MOCK_JWT,
   expiresInSeconds: 3600,
+  tokenType: 'Bearer',
+}
+
+/**
+ * /api/v1/auth/refresh mock 응답 페이로드 (shared/types/api.ts RefreshResult 구조)
+ * LoginResponse 와 필드명이 다름 — accessExpiresInSeconds 사용.
+ * client.ts 인터셉터는 res.data.accessExpiresInSeconds 를 읽으므로 반드시 이 구조를 사용해야 함.
+ */
+export const MOCK_REFRESH_RESPONSE = {
+  accessToken: MOCK_JWT,
+  newRefreshToken: 'mock-refresh-token',
+  accessExpiresInSeconds: 3600,
+  refreshExpiresInSeconds: 86400,
 }
 
 /** loginAsSuperAdmin 에서 사용하는 폼 입력값 (실제 인증은 mock 응답이 처리) */
@@ -90,8 +103,15 @@ export async function mockLogoutApi(page: Page): Promise<void> {
  *   3) #username / #password 채우기
  *   4) button[type="submit"] 클릭
  *   5) 라우터가 /dashboard 로 이동할 때까지 대기
+ *   6) /api/v1/auth/refresh mock 등록 (대시보드 API 호출용)
  *
  * 호출 후 useAuthStore.isAuthenticated == true, user.roleCodes == ['SUPER_ADMIN'] 보장.
+ *
+ * @MX:NOTE: [AUTO] refresh mock을 /dashboard 도달 이후에 등록하는 이유:
+ *   로그인 페이지 초기화 중 일부 API가 401을 반환하면 client.ts 인터셉터가 refresh를 시도한다.
+ *   refresh mock이 이미 등록되어 있으면 refresh 성공 → isAuthenticated=true →
+ *   router가 /login 에서 /dashboard로 리다이렉트 → #username 엘리먼트 미노출.
+ *   따라서 /dashboard 진입 확인 후에만 refresh를 mock 해야 한다.
  */
 export async function loginAsSuperAdmin(page: Page): Promise<void> {
   await mockLoginApi(page)
@@ -100,6 +120,16 @@ export async function loginAsSuperAdmin(page: Page): Promise<void> {
   await page.fill('#password', MOCK_CREDENTIALS.password)
   await page.click('button[type="submit"]')
   await page.waitForURL('**/dashboard')
+  // 대시보드 초기 API 호출 중 401 → refresh 시도에 대비한 mock.
+  // /login 진입 전에 등록하면 로그인 페이지 init의 401이 refresh 성공으로 처리되어
+  // isAuthenticated=true가 되어 /dashboard로 리다이렉트되므로, 반드시 /dashboard 도달 후 등록.
+  await page.route('**/api/v1/auth/refresh', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MOCK_REFRESH_RESPONSE),
+    })
+  })
 }
 
 /**
