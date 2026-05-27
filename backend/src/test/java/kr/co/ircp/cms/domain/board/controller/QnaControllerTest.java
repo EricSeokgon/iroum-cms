@@ -89,7 +89,7 @@ class QnaControllerTest {
                 1L, "비밀번호 분실 문의", 10L, "PENDING", false, Instant.now()
         );
         PageResponse<QnaSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
-        when(qnaService.listQnas(any(), any(), any(), anyInt(), anyInt(), any(), anyBoolean()))
+        when(qnaService.listQnas(any(), any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean()))
                 .thenReturn(page);
 
         // when & then

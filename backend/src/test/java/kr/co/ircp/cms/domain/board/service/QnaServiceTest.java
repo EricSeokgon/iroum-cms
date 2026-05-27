@@ -80,14 +80,14 @@ class QnaServiceTest {
     void listQnas_returnsPageResponse() {
         // arrange — page=2, size=10이면 offset=20
         List<Qna> qnas = List.of(stubQna(1L, 100L, false, "PENDING"));
-        when(qnaMapper.findWithFilters(eq("PENDING"), eq(false), eq(100L), eq(false), eq("배송"), eq(20), eq(10)))
+        when(qnaMapper.findWithFilters(eq("PENDING"), eq(false), eq(100L), eq(false), eq("배송"), eq(false), eq(20), eq(10)))
                 .thenReturn(qnas);
-        when(qnaMapper.countWithFilters(eq("PENDING"), eq(false), eq(100L), eq(false), eq("배송")))
+        when(qnaMapper.countWithFilters(eq("PENDING"), eq(false), eq(100L), eq(false), eq("배송"), eq(false)))
                 .thenReturn(1L);
 
         // act
         PageResponse<QnaSummary> result = qnaService.listQnas(
-                "PENDING", false, "배송", 2, 10, 100L, false
+                "PENDING", false, "배송", 2, 10, 100L, false, false
         );
 
         // assert
@@ -95,8 +95,8 @@ class QnaServiceTest {
         assertThat(result.page()).isEqualTo(2);
         assertThat(result.size()).isEqualTo(10);
         assertThat(result.totalElements()).isEqualTo(1L);
-        verify(qnaMapper).findWithFilters("PENDING", false, 100L, false, "배송", 20, 10);
-        verify(qnaMapper).countWithFilters("PENDING", false, 100L, false, "배송");
+        verify(qnaMapper).findWithFilters("PENDING", false, 100L, false, "배송", false, 20, 10);
+        verify(qnaMapper).countWithFilters("PENDING", false, 100L, false, "배송", false);
     }
 
     // ──────────────────────────────────────────────

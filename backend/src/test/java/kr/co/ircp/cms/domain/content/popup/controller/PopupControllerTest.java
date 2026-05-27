@@ -56,10 +56,10 @@ class PopupControllerTest {
 
     private static PopupResponse samplePopup(Long id) {
         return new PopupResponse(
-                id, 1L, "팝업 제목", "<p>HTML</p>", "CENTER", 400, 300,
+                id, 1L, "팝업 제목", "팝업 제목", "<p>HTML</p>", "CENTER", 400, null, 300, null,
                 Instant.now().minus(1, ChronoUnit.HOURS),
                 Instant.now().plus(1, ChronoUnit.DAYS),
-                false, 1, "ALL", List.of(), "ACTIVE",
+                false, 1, "ALL", List.of("ALL"), "ACTIVE", true,
                 Instant.now(), Instant.now()
         );
     }

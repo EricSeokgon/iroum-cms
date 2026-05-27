@@ -87,10 +87,10 @@ class SafetyManagementIT extends AbstractIntegrationTest {
     class IncidentCrud {
 
         @Test
-        @DisplayName("REQ-SAFETY-001-D-5 — GET /incidents 인증 없이 호출 시 401")
-        void list_withoutAuth_returns401() throws Exception {
+        @DisplayName("REQ-SAFETY-001-D-5 — GET /incidents 인증 없이 공개 접근 시 200 (공개 API)")
+        void list_withoutAuth_returnsOk() throws Exception {
             mockMvc.perform(get("/api/v1/safety/incidents"))
-                    .andExpect(status().isUnauthorized());
+                    .andExpect(status().isOk());
         }
 
         @Test
