@@ -6,7 +6,7 @@
     class="border-b border-gray-200 px-2 py-4 hover:bg-surface-muted focus-within:bg-surface-muted"
     data-testid="incident-card"
   >
-    <h3 class="text-base font-semibold text-content-DEFAULT">{{ incident.title }}</h3>
+    <h3 class="text-base font-semibold text-content-DEFAULT">{{ incident.title ?? incident.summary }}</h3>
     <dl class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-content-muted">
       <div class="flex items-center gap-1">
         <dt class="sr-only">{{ t('safety.industryCode') }}</dt>

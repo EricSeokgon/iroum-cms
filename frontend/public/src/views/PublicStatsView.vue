@@ -38,18 +38,11 @@ const widgets = ref<WidgetData[]>([])
 const loading = ref(false)
 const error = ref(false)
 
-// @MX:NOTE: [AUTO] public-stats widget 은 단일 또는 다중 위젯 응답 모두 허용
 async function loadStats(): Promise<void> {
   loading.value = true
   error.value = false
   try {
-    const res = await statsApi.widget('public-stats')
-    // 위젯이 배열을 포함하는 경우 (data: WidgetData[]) 또는 단일 위젯
-    if (Array.isArray(res.data) && res.data.every((d) => d && typeof d === 'object' && 'code' in d)) {
-      widgets.value = res.data as WidgetData[]
-    } else {
-      widgets.value = [res]
-    }
+    widgets.value = await statsApi.publicWidgets()
   } catch {
     error.value = true
     widgets.value = []

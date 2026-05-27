@@ -234,6 +234,23 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/admin/ai/**").hasRole("ADMIN")
                 // SPEC-CMS-AI-001 — AI 예측/시뮬레이션은 인증 사용자 전용
                 .requestMatchers("/api/v1/ai/**").authenticated()
+                // SPEC-CMS-006 REQ-SAFE-001: 안전 가이드라인·사고사례 공개 조회 허용
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/safety/guidelines/**",
+                    "/api/v1/safety/incidents",
+                    "/api/v1/safety/incidents/**"
+                ).permitAll()
+                // REQ-MEDIA-PUBLIC: 미디어 갤러리 공개 조회 허용 (업로드·고아 관리는 아래에서 별도 제한)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/media"
+                ).permitAll()
+                // REQ-STATS-PUBLIC: 공개 대시보드 위젯 데이터 조회 허용 (PublicStatsView 사용)
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/dashboard/widgets/**"
+                ).permitAll()
                 // REQ-MEDIA-004-D-1: 미디어 업로드 EDITOR+ 전용 (DEPT_ADMIN/ADMIN 포함, SUPER_ADMIN은 RoleHierarchy 자동 승격)
                 .requestMatchers(
                     org.springframework.http.HttpMethod.POST,

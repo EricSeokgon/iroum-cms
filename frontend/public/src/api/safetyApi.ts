@@ -18,10 +18,16 @@ export interface SafetyGuidelineDetail extends SafetyGuidelineSummary {
 
 export interface SafetyIncidentSummary {
   id: number
-  title: string
+  title?: string
   industryCode: string
+  incidentType?: string
+  severity?: string
   occurredAt: string
+  casualties?: number
+  location?: string
   summary: string
+  status?: string
+  sourceType?: string
 }
 
 export interface SafetyListParams {
@@ -29,6 +35,8 @@ export interface SafetyListParams {
   size?: number
   industryCode?: string
   processCode?: string
+  incidentType?: string
+  severity?: string
 }
 
 export const safetyApi = {
@@ -42,7 +50,7 @@ export const safetyApi = {
   },
   incidents(params: SafetyListParams = {}): Promise<PageResponse<SafetyIncidentSummary>> {
     return apiClient
-      .get<PageResponse<SafetyIncidentSummary>>('/safety/accident-cases', { params })
+      .get<PageResponse<SafetyIncidentSummary>>('/safety/incidents', { params })
       .then((r) => r.data)
   },
 }

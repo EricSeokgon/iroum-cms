@@ -53,6 +53,15 @@
         LIMIT 1
     </select>
 
+    <select id="findPublished" resultMap="templateResultMap">
+        SELECT <include refid="selectColumns"/> FROM safety_guideline_template
+        WHERE status = 'PUBLISHED'
+        <if test="industryCode != null">
+            AND #{industryCode} = ANY(applicable_industry_codes)
+        </if>
+        ORDER BY name ASC
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO safety_guideline_template
             (code, name, description, applicable_industry_codes, applicable_grades,

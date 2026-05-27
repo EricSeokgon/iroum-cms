@@ -17,9 +17,6 @@ declare module 'vue-router' {
   }
 }
 
-// Stub view loader — Phase 0에서는 모든 페이지가 동일 stub. Phase 1~4에서 각 View로 교체.
-const stub = () => import('@/views/_StubView.vue')
-
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
