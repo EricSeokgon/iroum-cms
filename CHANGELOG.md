@@ -11,6 +11,81 @@
 
 ---
 
+## [2.0.0] - 2026-05-29
+
+### 주요 이정표
+
+**전체 35개 SPEC 완료 달성 — AI/ML 기능 + 공개 사이트 + 보안 강화 3대 축**
+
+### Added
+
+- **AI/ML 기능 완성** (SPEC-CMS-AI-001~003)
+  - **성장단계 예측** (`GET /api/v1/ai/growth-stage`): SEED/STARTUP/GROWTH/EXPANSION/MATURITY 5단계 예측
+  - **경영위험 스코어링** (`GET /api/v1/ai/risk-score`): GREEN/YELLOW/ORANGE/RED 4등급 위험도 평가
+  - **가상 시뮬레이션** (`POST /api/v1/ai/simulation/start`): 매출·직원수 기반 결정적 프로젝션 + PDF 보고서 생성
+  - **정책 매칭 하이브리드** (`POST /api/v1/ai/policy-match`): 규칙 점수(40%) + 시맨틱 점수(60%) 가중 결합, Top-K 추천
+  - **RAG 질의응답** (`POST /api/v1/ai/rag/query`): pgvector cosine 유사도 검색 + FTS 재랭킹 + LLM 생성형 답변, 환각 가드
+  - **알고리즘 품질 모니터링**: 모델 메트릭·드리프트 경보·재학습 큐 (10개 ADMIN 엔드포인트)
+  - **DB 마이그레이션 V27~V33**: 예측 로그·시뮬레이션 세션·모델 메트릭·재학습 큐·정책 임베딩·RAG 쿼리 로그 테이블
+  - **Python FastAPI ML 마이크로서비스** (SPEC-CMS-ML-SERVICE-001): 7개 엔드포인트, sentence-transformers 384차원 임베딩, CircuitBreaker 폴백
+
+- **공개 사이트 프론트엔드 완성** (SPEC-CMS-PUBLIC-001)
+  - **시민 회원가입·로그인** (`POST /api/v1/auth/register`): 이메일·이름·비밀번호 입력, 409 중복·비밀번호 불일치 오류 처리
+  - **내 정보 관리**: 프로필 표시·수정 + 비밀번호 변경 폼 (변경 후 자동 로그아웃)
+  - **내 Q&A 목록**: mine=true로 본인 Q&A만 조회, 상태 필터 제공
+  - **정책 알림 구독**: 채널×카테고리 구독 체크박스 그리드
+  - **공개 게시판 조회**: 공지·FAQ·Q&A 전체 화면 + 검색(6탭) + 통계 위젯(ECharts)
+  - **안전 가이드라인 공개**: `GET /api/v1/safety/guidelines` 공개 엔드포인트 (인증 불필요)
+  - **Vue 3 SPA 완성**: 30개 라우트 + 3개 가드 + KWCAG 2.2 AA 접근성 + i18n(ko/en) + 224건 E2E 테스트
+  - **PublicHeader 인증 표시**: 인증 시 사용자명+로그아웃, 비인증 시 로그인 버튼
+
+- **보안 강화 완성** (SPEC-CMS-SECURITY 전종)
+  - **PII 암호화** (SPEC-CMS-SECURITY-PII-001): users.email AES-256-GCM 암호화 + HMAC-SHA256 lookup
+  - **PII 접근 제어** (SPEC-CMS-SECURITY-PII-002): admin email partial 검색 차단 + API 응답 마스킹 + 접근 감사
+  - **PII 마스킹** (SPEC-CMS-SECURITY-PII-MASKING-001): Logback 전체 로그 마스킹 + MDC SHA-256 prefix
+  - **권한 매트릭스 IT 완성** (SPEC-CMS-SECURITY-AUTHZ 전종): 114 endpoint × 3 시나리오 = 342 AC GREEN
+  - **HashiCorp Vault Transit PII 어댑터** (SPEC-CMS-SECURITY-PII-KMS-001): `@ConditionalOnProperty` vault-transit 조건부 활성화
+  - **보안 헤더** (CSP, HSTS, X-Frame-Options, Referrer-Policy) + Rate Limiter IP 기반 차단
+  - **MIME magic byte 검증** + Open Redirect 방지 + DOMPurify XSS 차단 (모든 v-html 영역)
+
+- **E2E 테스트 완성**
+  - **관리자 SPA**: 20건 Playwright 시나리오 PASS (로그인·인증가드·대시보드·사용자·역할·공지·에러·KWCAG)
+  - **시민 SPA**: 36건 E2E 테스트 PASS (홈·공지·FAQ·검색·정책매칭·에러페이지·KWCAG)
+  - **CI 자동화**: 백엔드 미기동 시 자동 스킵, playwright-report 아티팩트 업로드
+
+- **테스트 커버리지 강화**
+  - 백엔드: 336건 전체 GREEN (PII-002 AC-009-3 GREEN) + 1963건 단위 테스트 0 실패
+  - 통합 테스트: JaCoCo integrationTest 통합 + check 태스크 의존성 추가
+  - 권한 매트릭스: ArchUnit 자동 검출 (31 권한 어휘 + 114 endpoint baseline)
+
+### Changed
+
+- **관리자 프론트엔드**: 0.1.2 → 0.1.3 (Tiptap WYSIWYG 에디터·팝업 토글·공통코드 조회 버그 수정)
+- **공개 프론트엔드 API**: noticeApi, policyApi, faqApi 백엔드 응답 타입 매핑 추가
+- **DB 마이그레이션**: V27(soft-delete) → V38(안전 가이드라인 시드)
+
+### Fixed
+
+- **Q&A 공개 조회**: `@PreAuthorize("isAuthenticated()")` 제거 → permitAll 추가
+- **안전 가이드라인 공개 API**: 단건 반환 → `PageResponse` 형식 통일
+- **Spring Cloud Vault IT**: application-local.yml vault-transit 비활성화로 컨텍스트 로딩 정상화
+- **테스트 회귀 51건**: 응답 코드(AUTH_FORBIDDEN → ACCESS_DENIED) + @Valid 우선순위 + controller Security 정합
+
+### Security
+
+- **PIPA 제29조 안전성 확보**: AES-256-GCM 암호화 + HMAC lookup + PII 접근 감사
+- **OWASP A01 (권한 제어)**: HTTP 매트릭스 IT + 메소드 레벨 @PreAuthorize 회귀 검출
+- **OWASP A03/A04/A05/A09**: Injection 제거 + 보안 헤더 + 로그 PII 마스킹
+
+### Tests
+
+- 백엔드 테스트 336건 PASS (PII-FOLLOWUP-001~005 AC 8/8 GREEN)
+- 관리자 E2E 20건 PASS (Playwright + axe-core KWCAG AA)
+- 시민 E2E 36건 PASS (권한 분기·에러 처리·접근성 검증)
+- 권한 매트릭스 IT 확장: AUTHZ-IT-EXPAND-001/002/003/004 누적 340+ AC
+
+---
+
 ## [1.7.0] - 2026-05-27
 
 ### Added
@@ -1074,7 +1149,11 @@
 | **SPEC-CMS-TEST-INFRA-RECONFIG-001** | JaCoCo + check + CI integrationTest 통합 (5/7 C2 잔여 갭 3건 해소) — **Implemented (1차) 2026-05-11** |
 | **SPEC-CMS-DATA-QUALITY-JOB-CLARIFY-001** | 5/7 코드 리뷰 C3 — DataQualityCheckJobTest 의미 명확화 |
 
-[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/EricSeokgon/iroum-cms/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.7.0...v2.0.0
+[1.7.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.3...v1.7.0
+[1.6.3]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.2...v1.6.3
+[1.6.2]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/EricSeokgon/iroum-cms/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/EricSeokgon/iroum-cms/compare/v1.4.0...v1.5.0
