@@ -255,3 +255,11 @@ deploy/data/
 # 프론트엔드 워크스페이스 런타임 산출물 (로컬 전용)
 frontend/admin/.moai/
 
+# 워크스페이스별 .moai 런타임 산출물 (로컬 전용)
+deploy/.moai/
+ml-service/.moai/
+
+# 루트 .moai 런타임 로그/백업
+.moai/backups/
+.moai/reports/session-*.md
+
