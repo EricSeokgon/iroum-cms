@@ -76,6 +76,15 @@ test.describe('정책 매칭 (PolicyMatchView)', () => {
     await page.getByTestId('match-industry-input').fill('IT')
     await page.getByTestId('match-region-input').fill('서울')
 
+    // 403 리다이렉트 방지: 실제 /ai/policy-match 엔드포인트를 200으로 모킹
+    await page.route('**/ai/policy-match', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ items: [], degraded: false }),
+      }),
+    )
+
     await page.getByTestId('match-submit').click()
 
     // 응답에 따라 results / ErrorState / EmptyState 중 하나가 표시된다
@@ -92,9 +101,9 @@ test.describe('정책 매칭 (PolicyMatchView)', () => {
   test('E3: requiresAuth=false 라우트 → 401 응답에서도 /login 리다이렉트 없음', async ({
     page,
   }) => {
-    // 페이지를 먼저 로드한 후 API 호출만 401 로 모킹 (페이지 라우트 가로채기 회피)
-    // 패턴 `**/api/**/policies/match` 로 백엔드 API 만 매칭하여 SPA 라우트(/policies/match) 와 분리
-    await page.route('**/api/**/policies/match', (route) =>
+    // 실제 AI 정책 매칭 엔드포인트(/ai/policy-match)를 401로 모킹
+    // 이전 패턴 `/api/**/policies/match`는 실제 URL `/ai/policy-match`와 불일치
+    await page.route('**/ai/policy-match', (route) =>
       route.fulfill({
         status: 401,
         contentType: 'application/json',
