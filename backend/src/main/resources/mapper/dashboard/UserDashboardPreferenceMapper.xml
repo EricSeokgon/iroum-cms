@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-DASHBOARD-PERSONALIZE-001 §7 user_dashboard_preference MyBatis 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.preference.repository.UserDashboardPreferenceMapper">
+
+    <resultMap id="prefMap"
+               type="kr.co.ircp.cms.domain.dashboard.preference.entity.UserDashboardPreference">
+        <id property="userId" column="user_id"/>
+        <result property="hiddenWidgetInstanceIds" column="hidden_widget_instance_ids"/>
+        <result property="theme" column="theme"/>
+        <result property="density" column="density"/>
+        <result property="fontScale" column="font_scale"/>
+        <result property="colorPalettePreference" column="color_palette_preference"/>
+        <result property="sidebarCollapsed" column="sidebar_collapsed"/>
+        <result property="schemaVersion" column="schema_version"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="prefMap">
+        SELECT user_id,
+               hidden_widget_instance_ids::text AS hidden_widget_instance_ids,
+               theme,
+               density,
+               font_scale,
+               color_palette_preference,
+               sidebar_collapsed,
+               schema_version,
+               created_at,
+               updated_at
+        FROM user_dashboard_preference
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="upsertDefaults">
+        INSERT INTO user_dashboard_preference (user_id)
+        VALUES (#{userId})
+        ON CONFLICT (user_id) DO NOTHING
+    </insert>
+
+    <update id="patch">
+        UPDATE user_dashboard_preference
+        SET
+            theme = COALESCE(#{theme}, theme),
+            density = COALESCE(#{density}, density),
+            font_scale = COALESCE(#{fontScale}, font_scale),
+            color_palette_preference = COALESCE(#{colorPalettePreference}, color_palette_preference),
+            sidebar_collapsed = COALESCE(#{sidebarCollapsed}, sidebar_collapsed),
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+        <if test="expectedUpdatedAt != null">
+            AND updated_at = #{expectedUpdatedAt}
+        </if>
+    </update>
+
+    <update id="updateHiddenWidgetInstanceIds">
+        UPDATE user_dashboard_preference
+        SET hidden_widget_instance_ids = #{hiddenJson}::jsonb,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+
+    <update id="resetStyleToDefault">
+        UPDATE user_dashboard_preference
+        SET theme = 'SYSTEM',
+            density = 'NORMAL',
+            font_scale = 1.00,
+            color_palette_preference = 'DEFAULT',
+            sidebar_collapsed = FALSE,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
+</mapper>

@@ -69,6 +69,7 @@ import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
 import kr.co.ircp.cms.domain.dashboard.exception.SavedViewNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetDeptMismatchException;
+import kr.co.ircp.cms.domain.dashboard.preference.exception.PreferenceConflictException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleConflictException;
 import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleNotFoundException;
 import kr.co.ircp.cms.domain.policy.matching.exception.CompanyMatchInputNotFoundException;
@@ -1215,6 +1216,22 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Bad Request");
         detail.setProperty("code", "INVALID_ARGUMENT");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-DASHBOARD-PERSONALIZE-001 — 개인화 SPEC 예외 ─────────────────
+
+    /**
+     * 사용자 환경설정 / 레이아웃 위치의 낙관적 잠금 충돌 → 409 Conflict.
+     *
+     * <p>REQ-DP-002-4 / REQ-DP-003-5 — 다른 탭에서 동일 사용자의 preference 또는
+     * layout positions 가 먼저 갱신된 경우.
+     */
+    @ExceptionHandler(PreferenceConflictException.class)
+    public ProblemDetail handlePreferenceConflict(PreferenceConflictException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Preference Conflict");
+        detail.setProperty("code", "PREFERENCE_CONFLICT");
         return detail;
     }
 }

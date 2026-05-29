@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-DASHBOARD-PERSONALIZE-001 §7 REQ-DP-003-2: position 부분 갱신 전용 매퍼.
+     SPEC-CMS-008 DashboardLayoutMapper 미수정 보장을 위해 별도 namespace 로 격리. -->
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.preference.repository.LayoutPositionMapper">
+
+    <update id="updatePosition">
+        UPDATE dashboard_layout_widget
+        SET position = #{positionJson}::jsonb
+        WHERE layout_id = #{layoutId}
+          AND instance_id = #{instanceId}
+    </update>
+
+    <update id="touchLayoutUpdatedAt">
+        UPDATE dashboard_layout
+        SET updated_at = NOW()
+        WHERE id = #{layoutId}
+    </update>
+</mapper>
