@@ -135,7 +135,7 @@
     </el-dialog>
 
     <!-- 개인화 설정 패널 -->
-    <DashboardPreferencePanel v-model:visible="prefDrawerVisible" />
+    <DashboardPreferencePanel v-model="prefDrawerVisible" />
 
     <!-- 내보내기 다이얼로그 -->
     <el-dialog v-model="exportDialogVisible" title="대시보드 내보내기" width="480px">

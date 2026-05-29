@@ -89,9 +89,16 @@ async function handleReset(): Promise<void> {
   }
 }
 
-// ── 숨김 위젯 관리 (현재 layoutId 만) ───────────────────────────────────
+// ── 숨김 위젯 관리 ───────────────────────────────────────────────────────
+// layoutId 미선택 시 전체 레이아웃 합산 표시 (REQ-DP-002-3)
 const hiddenInstances = computed<string[]>(() => {
-  if (props.layoutId == null) return []
+  if (props.layoutId == null) {
+    const all: string[] = []
+    for (const list of Object.values(store.preference.hidden_widget_instance_ids)) {
+      if (Array.isArray(list)) all.push(...list)
+    }
+    return all
+  }
   const list = store.preference.hidden_widget_instance_ids[String(props.layoutId)]
   return Array.isArray(list) ? list : []
 })
@@ -106,9 +113,16 @@ async function unhide(instanceId: string): Promise<void> {
 }
 
 async function showAll(): Promise<void> {
-  if (props.layoutId == null) return
   try {
-    await store.showAllWidgets(props.layoutId)
+    if (props.layoutId == null) {
+      // 레이아웃 미선택 시 모든 레이아웃에 대해 show-all 호출
+      const layoutIds = Object.keys(store.preference.hidden_widget_instance_ids)
+      for (const lid of layoutIds) {
+        await store.showAllWidgets(Number(lid))
+      }
+    } else {
+      await store.showAllWidgets(props.layoutId)
+    }
     ElMessage.success('모든 위젯이 표시됩니다.')
   } catch (e) {
     ElMessage.error(`모든 위젯 표시 실패: ${e instanceof Error ? e.message : String(e)}`)
