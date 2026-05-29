@@ -11,6 +11,29 @@
 
 ---
 
+## [2.1.0] - 2026-05-29
+
+### Added
+
+- **대시보드 개인화 설정** (`DashboardPreferenceStore`, `DashboardPreferencePanel.vue`, SPEC-CMS-DASHBOARD-PERSONALIZE-001)
+  - `GET/PATCH /api/v1/dashboard/preference` 엔드포인트 연동 — 테마·밀도·폰트 크기·색상 팔레트·사이드바 접힘 여부 저장
+  - `DashboardPreferencePanel.vue` 슬라이드오버 패널: Element Plus 컴포넌트 기반 UI (커밋 ba26f74)
+  - `useDashboardPreferenceApply()` 컴포저블: `<html data-theme="dark|light">` 속성 자동 반영 (커밋 738a075)
+  - `DashboardPreferenceStore` Pinia 스토어: `fetch()`, `setTheme()`, `toggleVisibility()`, `showAllWidgets()`, `reset()` 액션
+  - 디바운스 300ms 자동 저장 — 설정 변경 즉시 반영, 네트워크 요청 최소화
+  - `hidden_widget_instance_ids` 레이아웃별 위젯 숨김 관리, `layoutId` 미선택 시 전체 레이아웃 합산 표시
+  - Playwright E2E 3건 (AC-DP-001 테마, AC-DP-002 위젯 숨김, AC-DP-003 초기화) GREEN (커밋 8ddebea)
+
+### Fixed
+
+- **`DashboardMainView` 설정 패널 열림 버그** (`DashboardMainView.vue`)
+  - `v-model:visible` → `v-model` 수정: `DashboardPreferencePanel`이 `modelValue` prop을 사용하므로 `v-model:visible`은 `visible` prop을 바인딩하여 패널이 열리지 않던 문제 해결 (커밋 738a075)
+
+- **`DashboardPreferencePanel` 위젯 숨김 목록 미표시 버그**
+  - `layoutId` prop 미전달 시 `hiddenInstances`가 항상 빈 배열 반환하던 문제 — 전체 레이아웃 키를 순회해 합산하도록 수정 (커밋 738a075)
+
+---
+
 ## [1.7.0] - 2026-05-27
 
 ### Added
