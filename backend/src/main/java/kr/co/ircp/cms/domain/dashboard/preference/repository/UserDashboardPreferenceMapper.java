@@ -58,4 +58,11 @@ public interface UserDashboardPreferenceMapper {
      * REQ-DP-002-5: 스타일 5종을 DEFAULT 로 초기화 (hidden 은 보존).
      */
     int resetStyleToDefault(@Param("userId") Long userId);
+
+    /**
+     * 레이아웃 삭제 시 모든 사용자 preference 에서 해당 layoutId 키를 제거.
+     *
+     * <p>DashboardLayoutServiceImpl.delete() 에서 트랜잭션 내 호출.
+     */
+    int cleanupForLayout(@Param("layoutId") Long layoutId);
 }

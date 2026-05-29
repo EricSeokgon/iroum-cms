@@ -26,6 +26,8 @@
         <el-button :icon="Download" size="small" @click="openExport">내보내기</el-button>
         <!-- 새로고침 -->
         <el-button :icon="Refresh" size="small" @click="loadAll">새로고침</el-button>
+        <!-- 개인화 설정 -->
+        <el-button :icon="Setting" size="small" @click="prefDrawerVisible = true">개인화 설정</el-button>
       </div>
     </div>
 
@@ -132,6 +134,9 @@
       </template>
     </el-dialog>
 
+    <!-- 개인화 설정 패널 -->
+    <DashboardPreferencePanel v-model:visible="prefDrawerVisible" />
+
     <!-- 내보내기 다이얼로그 -->
     <el-dialog v-model="exportDialogVisible" title="대시보드 내보내기" width="480px">
       <el-form label-width="100px">
@@ -159,7 +164,7 @@
 import { ref, reactive, computed, onMounted, watch, h, defineComponent } from 'vue'
 import type { Component, PropType } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Star, Download, Refresh } from '@element-plus/icons-vue'
+import { Star, Download, Refresh, Setting } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
@@ -173,6 +178,8 @@ import {
   DatasetComponent,
 } from 'echarts/components'
 import { useDashboardStore } from '@/stores/dashboardStore'
+import { useDashboardPreferenceStore } from '@/stores/dashboardPreferenceStore'
+import DashboardPreferencePanel from '@/views/dashboard/DashboardPreferencePanel.vue'
 import type {
   WidgetResponse,
   WidgetDataResponse,
@@ -197,6 +204,9 @@ use([
 ])
 
 const store = useDashboardStore()
+const prefStore = useDashboardPreferenceStore()
+
+const prefDrawerVisible = ref(false)
 
 const filter = reactive<DashboardFilterState>({
   period: '7d',
@@ -642,7 +652,7 @@ function buildChartOption(widget: WidgetResponse, data: WidgetDataResponse | und
 
 // ── 라이프사이클 ────────────────────────────────────────────────────────────
 onMounted(async () => {
-  await Promise.all([loadAll(), store.fetchViews()])
+  await Promise.all([loadAll(), store.fetchViews(), prefStore.fetch()])
 })
 
 // 필터 변경 시 자동 재로드 비활성 — 명시적 "적용" 버튼만 트리거

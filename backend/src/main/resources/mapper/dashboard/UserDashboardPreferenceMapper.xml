@@ -71,4 +71,12 @@
             updated_at = NOW()
         WHERE user_id = #{userId}
     </update>
+
+    <!-- 레이아웃 삭제 시 해당 layoutId 키를 모든 사용자 hidden JSON 에서 제거 -->
+    <update id="cleanupForLayout">
+        UPDATE user_dashboard_preference
+        SET hidden_widget_instance_ids = hidden_widget_instance_ids - #{layoutId}::text,
+            updated_at = NOW()
+        WHERE hidden_widget_instance_ids ? #{layoutId}::text
+    </update>
 </mapper>

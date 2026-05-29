@@ -356,6 +356,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
+import { useDashboardPreferenceApply } from '@/composables/useDashboardPreferenceApply'
 
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: string
@@ -375,6 +376,9 @@ function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string
   if (permission === 'ROLE:READ' && roles.includes('DEPT_ADMIN')) return true
   return false
 }
+
+// 테마/밀도/폰트 스케일 CSS 변수를 <html>에 반응형으로 적용 (REQ-DP-002)
+useDashboardPreferenceApply()
 
 const { t, locale } = useI18n()
 const route = useRoute()

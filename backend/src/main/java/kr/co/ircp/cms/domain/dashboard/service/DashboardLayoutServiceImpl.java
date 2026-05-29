@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayout;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayoutWidget;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardWidget;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.preference.repository.UserDashboardPreferenceMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class DashboardLayoutServiceImpl implements DashboardLayoutService {
 
     private final DashboardLayoutMapper layoutMapper;
     private final DashboardWidgetMapper widgetMapper;
+    private final UserDashboardPreferenceMapper userDashboardPreferenceMapper;
 
     @Override
     @Transactional
@@ -155,6 +157,8 @@ public class DashboardLayoutServiceImpl implements DashboardLayoutService {
         if (!l.getOwnerId().equals(ownerId)) {
             throw new SecurityException("레이아웃 소유자가 아닙니다. id=" + id);
         }
+        // 레이아웃 삭제 전 모든 사용자 hidden 설정에서 해당 레이아웃 키 제거 (REQ-DP-002-5)
+        userDashboardPreferenceMapper.cleanupForLayout(id);
         layoutMapper.deleteLayout(id);
     }
 
