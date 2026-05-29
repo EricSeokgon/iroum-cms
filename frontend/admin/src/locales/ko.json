@@ -1755,5 +1755,52 @@
       "clickCount": "클릭 수",
       "ctr": "CTR"
     }
+  },
+  "notificationCenter": {
+    "title": "알림 센터",
+    "subtitle": "시스템 알림과 운영 알림을 한 곳에서 관리합니다.",
+    "markAllRead": "모두 읽음 처리",
+    "empty": "받은 알림이 없습니다",
+    "filter": {
+      "status": "상태",
+      "statusPlaceholder": "상태 선택",
+      "severity": "심각도",
+      "severityPlaceholder": "심각도 선택",
+      "period": "기간",
+      "from": "시작일",
+      "to": "종료일",
+      "reset": "필터 초기화"
+    },
+    "column": {
+      "severity": "심각도",
+      "title": "제목",
+      "type": "유형",
+      "status": "상태",
+      "createdAt": "수신 시각",
+      "actions": "액션"
+    },
+    "action": {
+      "markRead": "읽음",
+      "archive": "보관"
+    },
+    "confirm": {
+      "markAllReadTitle": "전체 읽음 처리",
+      "markAllReadMessage": "현재 필터에 해당하는 미읽음 알림을 모두 읽음 처리합니다. 계속하시겠습니까?"
+    },
+    "toast": {
+      "markReadSuccess": "읽음 처리되었습니다",
+      "markReadError": "읽음 처리에 실패했습니다",
+      "archiveSuccess": "보관되었습니다",
+      "archiveError": "보관에 실패했습니다",
+      "markAllReadSuccess": "{count}개 알림을 읽음 처리했습니다",
+      "markAllReadError": "일괄 읽음 처리에 실패했습니다",
+      "noRefResource": "이동 가능한 리소스가 없습니다"
+    },
+    "live": {
+      "loaded": "알림 {count}개를 불러왔습니다"
+    },
+    "badge": {
+      "ariaLabel": "미읽음 알림 {count}개"
+    }
   }
 }

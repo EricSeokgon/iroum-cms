@@ -132,6 +132,13 @@ const router = createRouter({
           component: () => import('@/views/auth/NotificationSettingsView.vue'),
           meta: { title: '알림 설정' },
         },
+        // SPEC-CMS-NOTIFICATION-CENTER-001 — 관리자 알림 센터
+        {
+          path: 'notification-center',
+          name: 'notification-center',
+          component: () => import('@/views/notifications/NotificationCenterView.vue'),
+          meta: { title: '알림 센터' },
+        },
         // ── 미디어 라우트 (SPEC-CMS-MEDIA-001) ───────────────────────────────
         {
           path: 'media',

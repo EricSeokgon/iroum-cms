@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-NOTIFICATION-CENTER-001 — 관리자 알림 받은편지함 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.notification.admin.repository.AdminNotificationMapper">
+
+    <resultMap id="adminNotificationResultMap"
+               type="kr.co.ircp.cms.domain.notification.admin.entity.AdminNotification">
+        <id     property="id"            column="id"/>
+        <result property="adminUserId"   column="admin_user_id"/>
+        <result property="type"          column="type"/>
+        <result property="severity"      column="severity"/>
+        <result property="title"         column="title"/>
+        <result property="body"          column="body"/>
+        <result property="refType"       column="ref_type"/>
+        <result property="refId"         column="ref_id"/>
+        <result property="status"        column="status"/>
+        <result property="readAt"        column="read_at"/>
+        <result property="archivedAt"    column="archived_at"/>
+        <result property="createdAt"     column="created_at"/>
+    </resultMap>
+
+    <sql id="filterWhere">
+        WHERE admin_user_id = #{adminUserId}
+        <if test="statusList != null and statusList.size() > 0">
+            AND status IN
+            <foreach collection="statusList" item="s" open="(" close=")" separator=",">
+                #{s}
+            </foreach>
+        </if>
+        <if test="severityList != null and severityList.size() > 0">
+            AND severity IN
+            <foreach collection="severityList" item="s" open="(" close=")" separator=",">
+                #{s}
+            </foreach>
+        </if>
+        <if test="typeList != null and typeList.size() > 0">
+            AND type IN
+            <foreach collection="typeList" item="t" open="(" close=")" separator=",">
+                #{t}
+            </foreach>
+        </if>
+        <if test="from != null">AND created_at &gt;= #{from}</if>
+        <if test="to != null">AND created_at &lt; #{to}</if>
+    </sql>
+
+    <select id="findFiltered" resultMap="adminNotificationResultMap">
+        SELECT * FROM admin_notification
+        <include refid="filterWhere"/>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countFiltered" resultType="long">
+        SELECT COUNT(*) FROM admin_notification
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="countUnread" resultType="long">
+        SELECT COUNT(*) FROM admin_notification
+        WHERE admin_user_id = #{adminUserId} AND status = 'UNREAD'
+    </select>
+
+    <select id="findByIdAndUser" resultMap="adminNotificationResultMap">
+        SELECT * FROM admin_notification
+        WHERE id = #{id} AND admin_user_id = #{adminUserId}
+    </select>
+
+    <update id="markRead">
+        UPDATE admin_notification
+        SET status  = 'READ',
+            read_at = COALESCE(read_at, NOW())
+        WHERE id = #{id}
+          AND admin_user_id = #{adminUserId}
+          AND status = 'UNREAD'
+    </update>
+
+    <update id="markAllRead">
+        UPDATE admin_notification
+        SET status  = 'READ',
+            read_at = NOW()
+        WHERE admin_user_id = #{adminUserId}
+          AND status = 'UNREAD'
+        <if test="severityList != null and severityList.size() > 0">
+            AND severity IN
+            <foreach collection="severityList" item="s" open="(" close=")" separator=",">
+                #{s}
+            </foreach>
+        </if>
+        <if test="typeList != null and typeList.size() > 0">
+            AND type IN
+            <foreach collection="typeList" item="t" open="(" close=")" separator=",">
+                #{t}
+            </foreach>
+        </if>
+    </update>
+
+    <update id="markArchived">
+        UPDATE admin_notification
+        SET status      = 'ARCHIVED',
+            archived_at = NOW(),
+            read_at     = COALESCE(read_at, NOW())
+        WHERE id = #{id}
+          AND admin_user_id = #{adminUserId}
+          AND status &lt;&gt; 'ARCHIVED'
+    </update>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO admin_notification
+            (admin_user_id, type, severity, title, body, ref_type, ref_id, status)
+        VALUES
+            (#{adminUserId},
+             #{type},
+             COALESCE(#{severity}, 'INFO'),
+             #{title},
+             #{body},
+             #{refType},
+             #{refId},
+             COALESCE(#{status}, 'UNREAD'))
+    </insert>
+
+</mapper>

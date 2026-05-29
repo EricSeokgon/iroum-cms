@@ -1234,4 +1234,19 @@ public class GlobalExceptionHandler {
         detail.setProperty("code", "PREFERENCE_CONFLICT");
         return detail;
     }
+
+    /**
+     * 관리자 알림 미존재 또는 권한 없음 → 403 Forbidden.
+     *
+     * <p>SPEC-CMS-NOTIFICATION-CENTER-001 REQ-NC-010 — 본인 소유가 아닌 알림
+     * id 호출 시도는 enumeration 방지를 위해 단일 응답으로 통합.
+     */
+    @ExceptionHandler(kr.co.ircp.cms.domain.notification.admin.exception.AdminNotificationNotFoundException.class)
+    public ProblemDetail handleAdminNotificationNotFound(
+            kr.co.ircp.cms.domain.notification.admin.exception.AdminNotificationNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Admin Notification Not Found");
+        detail.setProperty("code", "ADMIN_NOTIFICATION_NOT_FOUND");
+        return detail;
+    }
 }

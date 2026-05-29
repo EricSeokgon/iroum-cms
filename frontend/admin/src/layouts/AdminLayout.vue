@@ -290,6 +290,24 @@
         <h1 class="text-base font-semibold text-gray-800">{{ pageTitle }}</h1>
 
         <div class="flex items-center gap-4">
+          <!-- SPEC-CMS-NOTIFICATION-CENTER-001 REQ-NC-006 — 미읽음 알림 헤더 배지 -->
+          <button
+            type="button"
+            class="relative flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-600 hover:bg-gray-100"
+            :aria-label="t('notificationCenter.badge.ariaLabel', { count: notificationStore.unreadCount })"
+            data-testid="notification-bell"
+            @click="goToNotificationCenter"
+          >
+            <el-icon><i-ep-bell /></el-icon>
+            <span
+              v-if="notificationStore.unreadCount > 0"
+              class="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold leading-4 text-white"
+              data-testid="notification-badge"
+            >
+              {{ notificationStore.unreadBadge }}
+            </span>
+          </button>
+
           <!-- 언어 전환 -->
           <el-select
             v-model="currentLocale"
@@ -357,6 +375,9 @@ import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
 import { useDashboardPreferenceApply } from '@/composables/useDashboardPreferenceApply'
+// SPEC-CMS-NOTIFICATION-CENTER-001 — 헤더 배지·30초 폴링
+import { useNotificationCenterStore } from '@/stores/notificationCenter'
+import { useUnreadCountPolling } from '@/composables/useUnreadCountPolling'
 
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: string
@@ -379,6 +400,14 @@ function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string
 
 // 테마/밀도/폰트 스케일 CSS 변수를 <html>에 반응형으로 적용 (REQ-DP-002)
 useDashboardPreferenceApply()
+
+// SPEC-CMS-NOTIFICATION-CENTER-001 REQ-NC-006/009 — 헤더 배지 + 30초 폴링
+const notificationStore = useNotificationCenterStore()
+useUnreadCountPolling()
+
+function goToNotificationCenter(): void {
+  router.push({ name: 'notification-center' })
+}
 
 const { t, locale } = useI18n()
 const route = useRoute()

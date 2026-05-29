@@ -1692,5 +1692,52 @@
       "clickCount": "Clicks",
       "ctr": "CTR"
     }
+  },
+  "notificationCenter": {
+    "title": "Notification Center",
+    "subtitle": "Manage all system and operational notifications in one place.",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "filter": {
+      "status": "Status",
+      "statusPlaceholder": "Select status",
+      "severity": "Severity",
+      "severityPlaceholder": "Select severity",
+      "period": "Period",
+      "from": "From",
+      "to": "To",
+      "reset": "Reset filters"
+    },
+    "column": {
+      "severity": "Severity",
+      "title": "Title",
+      "type": "Type",
+      "status": "Status",
+      "createdAt": "Received at",
+      "actions": "Actions"
+    },
+    "action": {
+      "markRead": "Mark read",
+      "archive": "Archive"
+    },
+    "confirm": {
+      "markAllReadTitle": "Mark all as read",
+      "markAllReadMessage": "All unread notifications matching the current filter will be marked as read. Continue?"
+    },
+    "toast": {
+      "markReadSuccess": "Marked as read",
+      "markReadError": "Failed to mark as read",
+      "archiveSuccess": "Archived",
+      "archiveError": "Failed to archive",
+      "markAllReadSuccess": "Marked {count} notifications as read",
+      "markAllReadError": "Failed to mark all as read",
+      "noRefResource": "No linked resource"
+    },
+    "live": {
+      "loaded": "Loaded {count} notifications"
+    },
+    "badge": {
+      "ariaLabel": "{count} unread notifications"
+    }
   }
 }
