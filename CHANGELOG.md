@@ -11,6 +11,32 @@
 
 ---
 
+## [2.2.0] - 2026-06-01
+
+### Added
+
+- **관리자 알림 센터** (`AdminNotificationController`, `NotificationCenterView.vue`, SPEC-CMS-NOTIFICATION-CENTER-001)
+  - **DB 스키마**: `admin_notification` 테이블 신규 (V40 마이그레이션) — severity (INFO/WARN/ERROR), status (UNREAD/READ/ARCHIVED), ref_type/ref_id 딥링크 컬럼, 부분 인덱스 3개 (커밋 cb856e1)
+  - **백엔드 REST API** 5개 엔드포인트:
+    - `GET /api/v1/admin/notifications` — 페이지네이션·필터(severity/status/date) 목록 조회
+    - `GET /api/v1/admin/notifications/unread-count` — 미읽음 수 배지 데이터
+    - `PATCH /api/v1/admin/notifications/{id}/read` — 개별 읽음 처리 (멱등)
+    - `PATCH /api/v1/admin/notifications/read-all` — 일괄 읽음 처리 (필터 선택 적용)
+    - `PATCH /api/v1/admin/notifications/{id}/archive` — 보관 처리 (UNREAD→ARCHIVED 직접 전이 지원)
+  - **백엔드 레이어**: `AdminNotification.java` 엔티티, `AdminNotificationDto.java` (목록/상세/미읽음 수 응답), `AdminNotificationMapper.java` + `AdminNotificationMapper.xml` (MyBatis), `AdminNotificationService.java`, `AdminNotificationNotFoundException.java`, `GlobalExceptionHandler.java` 수정 (커밋 cb856e1)
+  - **프론트엔드**: `adminNotifications.ts` API 클라이언트, `notificationCenter.ts` Pinia 스토어 (fetch/markRead/markAllRead/archive/setFilter/fetchUnreadCount 액션) (커밋 cb856e1)
+  - **30초 폴링**: `useUnreadCountPolling.ts` 컴포저블 — 탭 비활성(visibilityState='hidden') 시 폴링 일시 중지, 탭 복귀 시 즉시 1회 호출 후 재개
+  - **딥링크 라우팅**: `notificationDeepLink.ts` — ref_type (POST/COMMENT/POLICY_PROGRAM/NOTIFICATION_SEND/INTEGRATION_LOG) → 관리자 라우트 매핑
+  - **NotificationCenterView.vue**: severity 다중 선택 필터, status 라디오, 날짜 범위 필터, "모두 읽음" 버튼, 빈 상태 일러스트
+  - **헤더 배지**: `AdminLayout.vue` 종 아이콘에 미읽음 수 배지 (0개 시 미표시, 99+개 이상 '99+' 표시)
+  - **라우트**: `/admin/notifications` 신규 등록 (`router/index.ts`)
+  - **i18n**: `ko.json` / `en.json` 알림 관련 키 추가 (severity/type/status 표시명, 필터·버튼·빈 상태 라벨)
+  - **접근성**: `aria-live="polite"` 신규 알림 통지, 헤더 배지 `aria-label="미읽음 알림 N개"` 동적 갱신 (KWCAG 2.2 AA)
+  - **단위 테스트**: `notificationCenter.spec.ts` 8/8 GREEN, `notificationDeepLink.spec.ts` 8/8 GREEN (총 16건) (커밋 cb856e1)
+  - SPEC 상태 Implemented 갱신 (커밋 b581ee6)
+
+---
+
 ## [2.1.0] - 2026-05-29
 
 ### Added
