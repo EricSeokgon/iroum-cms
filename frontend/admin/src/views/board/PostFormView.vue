@@ -21,6 +21,8 @@
         label-width="100px"
         :aria-label="isEdit ? t('board.posts.edit') : t('board.posts.write')"
       >
+        <el-tabs v-model="activeTab" class="mb-2">
+          <el-tab-pane label="한국어" name="ko">
         <!-- 제목 -->
         <el-form-item :label="t('board.posts.field.title')" prop="title">
           <el-input
@@ -86,6 +88,43 @@
             </template>
           </el-upload>
         </el-form-item>
+          </el-tab-pane>
+
+          <!-- English 번역 탭 (선택) -->
+          <el-tab-pane label="English" name="en">
+            <div class="space-y-4">
+              <div>
+                <label class="mb-1 block text-sm text-gray-600">Title (English)</label>
+                <el-input
+                  v-model="enTitle"
+                  placeholder="English title (optional)"
+                  maxlength="500"
+                  show-word-limit
+                  aria-label="English title"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-sm text-gray-600">Content (English)</label>
+                <el-input
+                  v-model="enContentHtml"
+                  type="textarea"
+                  :rows="10"
+                  placeholder="English content (optional)"
+                  aria-label="English content"
+                />
+              </div>
+              <el-button
+                v-if="isEdit && hasEnTranslation"
+                type="danger"
+                plain
+                size="small"
+                @click="deleteEnTranslation"
+              >
+                영어 번역 삭제
+              </el-button>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
 
         <!-- 저장 버튼 -->
         <el-form-item>
@@ -110,7 +149,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules, UploadFile, UploadRawFile } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
@@ -130,6 +169,12 @@ const auth = useAuthStore()
 const formRef = ref<FormInstance>()
 const saving = ref(false)
 const fileList = ref<UploadFile[]>([])
+
+// 다국어 번역 (English) 상태 — SPEC-CMS-NOTICE-I18N-001
+const activeTab = ref('ko')
+const enTitle = ref('')
+const enContentHtml = ref('')
+const hasEnTranslation = ref(false)
 
 const isEdit = computed(() => Boolean(props.id))
 const isAdmin = computed(() =>
@@ -165,6 +210,52 @@ async function loadPost(): Promise<void> {
   } catch {
     ElMessage.error(t('board.posts.error.loadFailed'))
   }
+  await loadEnTranslation()
+}
+
+// 편집 모드에서 기존 영어 번역을 불러와 English 탭을 채운다.
+async function loadEnTranslation(): Promise<void> {
+  if (!props.id) return
+  try {
+    const res = await boardApi.getTranslation(Number(props.id), 'en')
+    enTitle.value = res.data.title
+    enContentHtml.value = res.data.contentHtml ?? ''
+    hasEnTranslation.value = true
+  } catch {
+    // 번역 없음(404) 또는 조회 실패는 무시 — 영어 번역은 선택 사항
+    hasEnTranslation.value = false
+  }
+}
+
+// 영어 번역 저장 (제목이 입력된 경우에만 upsert)
+async function saveEnTranslation(postId: number): Promise<void> {
+  if (!enTitle.value.trim()) return
+  await boardApi.upsertTranslation(postId, {
+    language: 'en',
+    title: enTitle.value,
+    contentHtml: enContentHtml.value || undefined,
+  })
+  hasEnTranslation.value = true
+}
+
+async function deleteEnTranslation(): Promise<void> {
+  if (!props.id) return
+  try {
+    await ElMessageBox.confirm('영어 번역을 삭제하시겠습니까?', '확인', {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  try {
+    await boardApi.deleteTranslation(Number(props.id), 'en')
+    enTitle.value = ''
+    enContentHtml.value = ''
+    hasEnTranslation.value = false
+    ElMessage.success('영어 번역이 삭제되었습니다.')
+  } catch {
+    ElMessage.error(t('board.posts.error.saveFailed'))
+  }
 }
 
 // @MX:WARN: [AUTO] 파일 업로드 비동기 처리 — 각 파일 독립적으로 업로드
@@ -196,6 +287,7 @@ async function handleSave(): Promise<void> {
         categoryCode: form.categoryCode || undefined,
         isNotice: form.isNotice,
       })
+      await saveEnTranslation(Number(props.id))
       ElMessage.success(t('board.posts.success.updated'))
       router.push({ name: 'board-post-detail', params: { id: props.id } })
     } else {
@@ -205,6 +297,7 @@ async function handleSave(): Promise<void> {
         categoryCode: form.categoryCode || undefined,
         isNotice: form.isNotice,
       })
+      await saveEnTranslation(res.data.id)
       ElMessage.success(t('board.posts.success.created'))
       router.push({ name: 'board-post-detail', params: { id: res.data.id } })
     }

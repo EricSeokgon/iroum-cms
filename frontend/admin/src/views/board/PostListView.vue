@@ -94,6 +94,16 @@
               {{ t('board.posts.notice') }}
             </el-tag>
             <span class="truncate">{{ row.title }}</span>
+            <!-- 영어 번역 보유 배지 (공지 게시판) — SPEC-CMS-NOTICE-I18N-001 -->
+            <el-tag
+              v-if="translatedPostIds.has(row.id)"
+              type="success"
+              size="small"
+              class="ml-1"
+              aria-label="English translation available"
+            >
+              EN
+            </el-tag>
           </div>
         </template>
       </el-table-column>
@@ -172,6 +182,9 @@ const searchQuery = ref('')
 const sortOrder = ref('createdAt,desc')
 const liveAnnouncement = ref('')
 
+// 영어 번역을 보유한 게시글 ID 집합 (공지 게시판에서만 조회) — SPEC-CMS-NOTICE-I18N-001
+const translatedPostIds = ref(new Set<number>())
+
 // @MX:ANCHOR: [AUTO] loadPosts — onMounted, 페이지네이션, 검색 변경 시 호출
 // @MX:REASON: fan_in >= 3: 마운트, 페이지 변경, 검색 버튼, 정렬 변경에서 공통 호출
 async function loadPosts(): Promise<void> {
@@ -187,11 +200,30 @@ async function loadPosts(): Promise<void> {
     posts.value = res.data.content
     totalElements.value = res.data.totalElements
     liveAnnouncement.value = t('board.posts.resultCount', { count: res.data.totalElements })
+    await loadTranslationBadges()
   } catch {
     ElMessage.error(t('board.posts.error.loadFailed'))
   } finally {
     loading.value = false
   }
+}
+
+// @MX:WARN: [AUTO] 공지 게시판 목록의 게시글별 번역 여부를 병렬 조회 — SPEC-CMS-NOTICE-I18N-001
+// @MX:REASON: Promise.allSettled로 개별 실패를 격리, 일부 조회 실패가 목록 표시를 막지 않도록 함
+async function loadTranslationBadges(): Promise<void> {
+  translatedPostIds.value = new Set<number>()
+  if (boardMaster.value?.type !== 'NOTICE') return
+
+  const results = await Promise.allSettled(
+    posts.value.map((p) => boardApi.listTranslations(p.id).then((res) => ({ id: p.id, res }))),
+  )
+  const ids = new Set<number>()
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value.res.data.length > 0) {
+      ids.add(r.value.id)
+    }
+  }
+  translatedPostIds.value = ids
 }
 
 async function loadBoardMaster(): Promise<void> {
@@ -226,8 +258,8 @@ function formatDate(iso: string): string {
   })
 }
 
-onMounted(() => {
-  loadBoardMaster()
-  loadPosts()
+onMounted(async () => {
+  await loadBoardMaster()
+  await loadPosts()
 })
 </script>

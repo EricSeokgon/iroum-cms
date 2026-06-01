@@ -20,6 +20,24 @@ import type {
 
 const BASE = '/board'
 
+// @MX:NOTE: [AUTO] 공지 다국어 번역 요청/응답 타입 — SPEC-CMS-NOTICE-I18N-001
+export interface PostTranslationRequest {
+  language: string
+  title: string
+  contentHtml?: string
+  contentText?: string
+}
+
+export interface PostTranslationResponse {
+  id: number
+  postId: number
+  language: string
+  title: string
+  contentHtml?: string
+  contentText?: string
+  updatedAt: string
+}
+
 export const boardApi = {
   // ── 게시판 마스터 ──────────────────────────────────────────────────────────
 
@@ -79,6 +97,28 @@ export const boardApi = {
   /** DELETE /api/v1/board/posts/{id} */
   deletePost(id: number): Promise<void> {
     return apiClient.delete(`${BASE}/posts/${id}`)
+  },
+
+  // ── 게시글 다국어 번역 (SPEC-CMS-NOTICE-I18N-001) ──────────────────────────
+
+  /** PUT /api/v1/board/posts/{id}/translations — 번역 생성/수정 */
+  upsertTranslation(postId: number, req: PostTranslationRequest): Promise<{ data: PostTranslationResponse }> {
+    return apiClient.put(`${BASE}/posts/${postId}/translations`, req)
+  },
+
+  /** GET /api/v1/board/posts/{id}/translations/{lang} — 특정 언어 번역 조회 */
+  getTranslation(postId: number, language: string): Promise<{ data: PostTranslationResponse }> {
+    return apiClient.get(`${BASE}/posts/${postId}/translations/${language}`)
+  },
+
+  /** GET /api/v1/board/posts/{id}/translations — 번역 목록 조회 */
+  listTranslations(postId: number): Promise<{ data: PostTranslationResponse[] }> {
+    return apiClient.get(`${BASE}/posts/${postId}/translations`)
+  },
+
+  /** DELETE /api/v1/board/posts/{id}/translations/{lang} — 번역 삭제 */
+  deleteTranslation(postId: number, language: string): Promise<void> {
+    return apiClient.delete(`${BASE}/posts/${postId}/translations/${language}`)
   },
 
   // ── 댓글 ──────────────────────────────────────────────────────────────────
