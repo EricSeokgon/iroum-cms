@@ -53,8 +53,31 @@
       </el-select>
     </div>
 
+    <!-- 일괄 상태 변경 툴바 -->
+    <div
+      v-if="selectedUsers.length > 0"
+      class="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2"
+    >
+      <span class="text-sm font-medium text-blue-700">{{ selectedUsers.length }}명 선택됨</span>
+      <el-select v-model="bulkTargetStatus" size="small" style="width: 140px" placeholder="변경할 상태">
+        <el-option label="활성화 (ACTIVE)" value="ACTIVE" />
+        <el-option label="비활성화 (INACTIVE)" value="INACTIVE" />
+        <el-option label="잠금 (LOCKED)" value="LOCKED" />
+      </el-select>
+      <el-button
+        type="primary"
+        size="small"
+        :disabled="!bulkTargetStatus"
+        @click="executeBulkStatusChange"
+      >
+        일괄 변경
+      </el-button>
+      <el-button size="small" @click="clearSelection">선택 해제</el-button>
+    </div>
+
     <!-- 사용자 테이블 -->
     <el-table
+      ref="tableRef"
       v-loading="loading"
       :data="users"
       stripe
@@ -63,7 +86,9 @@
       class="w-full"
       data-testid="user-list-table"
       @sort-change="onSortChange"
+      @selection-change="handleSelectionChange"
     >
+      <el-table-column type="selection" width="50" />
       <el-table-column
         prop="username"
         :label="t('users.field.username')"
@@ -246,6 +271,11 @@ const showForm = ref(false)
 const formMode = ref<'create' | 'edit'>('create')
 const selectedUser = ref<UserSummary | null>(null)
 
+// 일괄 상태 변경 상태 (SPEC-CMS-USER-BULK-STATUS-001)
+const selectedUsers = ref<UserSummary[]>([])
+const bulkTargetStatus = ref('')
+const tableRef = ref()
+
 // 검색어 디바운스 (300ms)
 const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -311,6 +341,45 @@ function openEditForm(user: UserSummary): void {
 
 function onUserSaved(): void {
   showForm.value = false
+  loadUsers()
+}
+
+// ── 일괄 상태 변경 (SPEC-CMS-USER-BULK-STATUS-001) ──────────────────────────────
+
+function handleSelectionChange(selection: UserSummary[]): void {
+  if (selection.length > 100) {
+    ElMessage.warning('최대 100건만 선택 가능합니다')
+    tableRef.value?.clearSelection()
+    return
+  }
+  selectedUsers.value = selection
+}
+
+function clearSelection(): void {
+  tableRef.value?.clearSelection()
+  selectedUsers.value = []
+  bulkTargetStatus.value = ''
+}
+
+async function executeBulkStatusChange(): Promise<void> {
+  if (!bulkTargetStatus.value) return
+  try {
+    await ElMessageBox.confirm(
+      `선택한 ${selectedUsers.value.length}명의 계정 상태를 '${bulkTargetStatus.value}'(으)로 변경합니다.`,
+      '일괄 상태 변경',
+      { type: 'warning', confirmButtonText: '변경', cancelButtonText: '취소' },
+    )
+  } catch {
+    return // 사용자 취소
+  }
+  const ids = selectedUsers.value.map((u) => u.id)
+  const { data } = await usersApi.bulkUpdateStatus(ids, bulkTargetStatus.value)
+  const msg =
+    data.failureCount > 0
+      ? `${data.successCount}명 성공, ${data.failureCount}명 실패`
+      : `${data.successCount}명의 상태가 변경되었습니다`
+  ElMessage.success(msg)
+  clearSelection()
   loadUsers()
 }
 

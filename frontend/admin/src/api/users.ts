@@ -22,6 +22,12 @@ export interface UserListParams {
   organizationId?: number
 }
 
+export interface BulkStatusResult {
+  successCount: number
+  failureCount: number
+  failures: Array<{ userId: number; reason: string }>
+}
+
 export const usersApi = {
   /** 사용자 목록 조회 — GET /api/v1/users */
   list(params: UserListParams = {}) {
@@ -70,5 +76,10 @@ export const usersApi = {
   /** 비밀번호 강제 초기화 — POST /api/v1/users/{id}/reset-password */
   resetPassword(id: number, newPassword: string) {
     return apiClient.post<void>(`/users/${id}/reset-password`, { newPassword })
+  },
+
+  /** 사용자 일괄 상태 변경 — PATCH /api/v1/users/bulk-status (REQ-UBS-003) */
+  bulkUpdateStatus(userIds: number[], targetStatus: string) {
+    return apiClient.patch<BulkStatusResult>('/users/bulk-status', { userIds, targetStatus })
   },
 }
