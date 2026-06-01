@@ -11,6 +11,28 @@
 
 ---
 
+## [2.5.0] - 2026-06-01
+
+### Added
+
+- **공지사항 다국어 지원 (i18n)** (`PostTranslationController.java`, `PostFormView.vue`, SPEC-CMS-NOTICE-I18N-001)
+  - **DB 스키마**: `bbs_post_i18n` 테이블 신규 (V41 마이그레이션) — `post_id`, `language`, `title`, `content_html`, `content_text`, `updated_at` 컬럼 (커밋 2ecc4d8)
+  - **백엔드 번역 CRUD API** (`/api/v1/board/posts/{postId}/translations`):
+    - `GET /translations` — 전체 번역 목록 조회 (CONTENT_ADMIN+ 권한)
+    - `PUT /translations` — 번역 등록/수정 upsert (CONTENT_ADMIN+ 권한)
+    - `GET /translations/{language}` — 단건 번역 조회
+    - `DELETE /translations/{language}` — 번역 삭제 (SUPER_ADMIN 전용) (커밋 2ecc4d8)
+  - **`?lang` 파라미터 지원** (`PostController.java`) — `GET /api/v1/board/posts/{postId}?lang=en` 요청 시 번역 존재하면 en 버전 오버레이, 없으면 ko 원본 반환 + `Content-Language` 응답 헤더 (커밋 2ecc4d8)
+  - **`PostService.upsertTranslation()` / `getTranslation()` / `deleteTranslation()` / `listTranslations()`** — `BbsPostI18nMapper`를 통한 번역 CRUD 서비스 메서드 (커밋 2ecc4d8)
+  - **`PostFormView.vue` 언어 탭** — `el-tabs` 한국어(필수)/English(선택) 탭, 영어 번역 저장·삭제 버튼 (커밋 9c8864e)
+  - **`PostListView.vue` EN 배지** — 번역 존재 시 목록 행에 EN 뱃지 표시 (커밋 9c8864e)
+  - **`boardApi` 번역 함수** (`frontend/admin/src/api/board.ts`) — `upsertTranslation`, `deleteTranslation`, `getTranslation`, `listTranslations` 신규 (커밋 9c8864e)
+  - **단위 테스트**: 백엔드 Mockito 기반 `PostTranslationServiceTest.java` + 프론트엔드 3건 GREEN (`tests/api/postTranslation.spec.ts`, AC-NI-003/AC-NI-008)
+
+> **알려진 제한 사항**: 게시글 목록 API(`?lang=en`)는 현재 한국어 원본 목록을 반환합니다. 목록 번역 오버레이는 후속 작업으로 진행 예정입니다.
+
+---
+
 ## [2.4.0] - 2026-06-01
 
 ### Added

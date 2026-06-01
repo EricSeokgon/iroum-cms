@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTICE-I18N-001
 version: 0.1.0
-status: Draft
+status: Implemented
 created: 2026-06-01
 updated: 2026-06-01
 author: manager-spec
