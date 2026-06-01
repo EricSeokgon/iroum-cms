@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTIFICATION-CENTER-001
-version: 0.2.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-05-29
 updated: 2026-06-01
 author: manager-spec
@@ -19,6 +19,7 @@ issue_number: TBD
 
 ## HISTORY
 
+- v0.3 / 2026-06-01 / expert-testing / e2e: Playwright E2E 11건 GREEN (AC-NC-006/007/008). 경로 /notification-center, camelCase DTO, i18n 문자열 실구현 기반 검증. status: Tested.
 - v0.2 / 2026-06-01 / manager-docs / sync: CHANGELOG v2.2.0 반영. 단위 테스트 16건 GREEN 확인. 배포 전 E2E 테스트 필요.
 - v0.1 / 2026-05-29 / manager-spec / 신규 작성. SPEC-CMS-007 이 구축한 발송 인프라(`notification_dispatch_schedule`/`notification_dispatch_target`/`notification_send`) 와 SPEC-CMS-004 의 `notification_template` 위에 **관리자 단일 화면 알림 허브** 를 정의. 관리자 헤더 배지·통합 목록·필터·읽음/보관·리소스 딥링크·30초 폴링 미읽음 갱신 8개 신규 REQ. 데이터 모델은 `user_notification_inbox` (V35) 와 동일한 패턴의 신규 `admin_notification` 테이블 (V40) 단일 마이그레이션. 발송 인프라(SPEC-CMS-007) 는 변경 없음.
 
