@@ -11,6 +11,30 @@
 
 ---
 
+## [2.3.0] - 2026-06-01
+
+### Added
+
+- **감사 로그 화면** (`auditLog.ts`, `AuditLogView.vue`, SPEC-CMS-AUDIT-LOG-VIEW-001)
+  - **Pinia 스토어** (`frontend/admin/src/stores/auditLog.ts`) 신규 — `fetchLogs`, `fetchCritical`, `applyFilter`, `resetFilter`, `exportCsv`, `dismissCritical` 액션 (커밋 e4bb9ec)
+  - **AuditLogView.vue 완성** — 기존 스텁을 스토어에 연결, 다중 선택 action/severity 필터, actorId 필터, 세션 단위 CRITICAL 패널 dismiss, 페이지 크기 선택기(20/50/100), 행 클릭 상세 드로어(before/after JSON), 빈 상태 화면, CSV 내보내기 (커밋 e4bb9ec + 3cfaf73)
+  - **단위 테스트** (`frontend/admin/tests/stores/auditLog.spec.ts`) 신규 — 9건 전체 GREEN (커밋 3cfaf73)
+  - **i18n 키 추가** (`frontend/admin/src/locales/ko.json`, `en.json`) — `filter.actorId`, `criticalPanel.dismiss`, `empty`, `pageSize` 등 (커밋 e4bb9ec)
+  - **기존 API 재사용**: `api/system.ts` auditLogs 변경 없음
+
+> **알려진 제한 사항**: 백엔드 action/severity 필터가 단일 값만 지원하므로, 프론트엔드 다중 선택 시 첫 번째 선택값만 전송됩니다. 백엔드 다중 값 지원은 별도 후속 작업으로 진행 예정입니다.
+
+---
+
+## [2.2.1] - 2026-06-01
+
+### Added
+
+- **알림 센터 Playwright E2E 테스트** (`frontend/admin/tests/e2e/notification-center.spec.ts`, SPEC-CMS-NOTIFICATION-CENTER-001)
+  - AC-NC-006 / AC-NC-007 / AC-NC-008 시나리오 11건 전체 GREEN (커밋 044d0c7)
+
+---
+
 ## [2.2.0] - 2026-06-01
 
 ### Added
