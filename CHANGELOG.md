@@ -11,6 +11,21 @@
 
 ---
 
+## [2.4.0] - 2026-06-01
+
+### Added
+
+- **사용자 일괄 상태 변경** (`BulkStatusRequest.java`, `BulkStatusResult.java`, `UserListView.vue`, SPEC-CMS-USER-BULK-STATUS-001)
+  - **`PATCH /api/v1/users/bulk-status` 엔드포인트** — SUPER_ADMIN/DEPT_ADMIN 권한, 최대 100건, 부분 실패 허용 (커밋 ca356e8)
+  - **백엔드 DTO**: `BulkStatusRequest.java` (userIds 최대 100건 + targetStatus), `BulkStatusResult.java` (successCount/failureCount/failures 목록)
+  - **`UserServiceImpl.bulkUpdateStatus()`** — 건별 독립 처리(한 건 실패 시 나머지 계속 진행), SUPER_ADMIN만 DELETED 전환 가능, LOCKED→ACTIVE 전환은 기존 unlock 로직 재사용, DELETED 전환은 softDelete 적용 (커밋 ca356e8)
+  - **`UserController.java`** — `PATCH /api/v1/users/bulk-status` 라우트 등록 (커밋 ca356e8)
+  - **`UserListView.vue` UI** — `el-table-column type="selection"` 체크박스 다중선택, 일괄 작업 툴바 (선택 수 표시 + 상태 셀렉터 + 변경/해제 버튼), `executeBulkStatusChange` 핸들러: ElMessageBox 확인 다이얼로그 + ElMessage 결과 토스트, 최대 100건 초과 시 경고 (커밋 97f6e26)
+  - **`usersApi.bulkUpdateStatus()`** — `src/api/users.ts` API 함수 신규 + `BulkStatusResult` 인터페이스 정의 (커밋 97f6e26)
+  - **단위 테스트**: 백엔드 Mockito 6건 GREEN (`BulkUpdateStatusTest.java`) + 프론트엔드 2건 GREEN (`tests/api/usersBulkStatus.spec.ts`, AC-UBS-003/AC-UBS-006) (커밋 8b57c5d)
+
+---
+
 ## [2.3.0] - 2026-06-01
 
 ### Added
