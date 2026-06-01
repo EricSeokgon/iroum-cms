@@ -36,15 +36,18 @@ public class PostController {
 
     private final PostService postService;
 
-    /** GET /api/v1/board/posts?bbsId=X&page=0&size=20 — 게시글 목록 페이징 조회 */
+    /** GET /api/v1/board/posts?bbsId=X&page=0&size=20&lang=ko — 게시글 목록 페이징 조회 */
     @GetMapping
     public ResponseEntity<PageResponse<PostSummary>> listPosts(
             @RequestParam Long bbsId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String sort
+            @RequestParam(required = false) String sort,
+            @RequestParam(value = "lang", defaultValue = "ko") String lang
     ) {
+        // SPEC-CMS-NOTICE-I18N-001: lang 파라미터. ko 원본은 bbs_post에서 직접 반환.
+        // en 등 번역 목록 오버레이는 후속 작업 — 현재는 ko 원본 목록 반환.
         return ResponseEntity.ok(postService.listPosts(bbsId, page, size));
     }
 
@@ -59,15 +62,40 @@ public class PostController {
         return ResponseEntity.ok(postService.searchPosts(bbsId, keyword, page, size));
     }
 
-    /** GET /api/v1/board/posts/{postId} — 게시글 단건 상세 조회 */
+    /** GET /api/v1/board/posts/{postId}?lang=ko — 게시글 단건 상세 조회 */
     @GetMapping("/{postId}")
     public ResponseEntity<PostDetail> getPost(
             @PathVariable Long postId,
             @AuthenticationPrincipal JwtPrincipal principal,
-            @RequestParam(required = false) String ipHash
+            @RequestParam(required = false) String ipHash,
+            @RequestParam(value = "lang", defaultValue = "ko") String lang
     ) {
         Long userId = principal != null ? principal.userId() : null;
-        return ResponseEntity.ok(postService.getPost(postId, userId, ipHash));
+        PostDetail detail = postService.getPost(postId, userId, ipHash);
+
+        // SPEC-CMS-NOTICE-I18N-001: lang=en이고 번역이 존재하면 en 버전 오버레이.
+        // ko(원본) 또는 번역 부재 시 원본 반환 + Content-Language: ko.
+        if (!"ko".equals(lang)) {
+            var translation = postService.getTranslation(postId, lang);
+            if (translation.isPresent()) {
+                var t = translation.get();
+                PostDetail localized = new PostDetail(
+                        detail.id(), detail.bbsMasterId(), detail.bbsMasterCode(),
+                        detail.useComment(), t.title(), t.contentHtml(),
+                        detail.authorId(), detail.authorName(),
+                        detail.isNotice(), detail.noticeFrom(), detail.noticeUntil(),
+                        detail.isSecret(), detail.viewCount(), detail.commentCount(),
+                        detail.status(), detail.metadata(), detail.attachments(),
+                        detail.createdAt(), detail.updatedAt()
+                );
+                return ResponseEntity.ok()
+                        .header("Content-Language", lang)
+                        .body(localized);
+            }
+        }
+        return ResponseEntity.ok()
+                .header("Content-Language", "ko")
+                .body(detail);
     }
 
     /** POST /api/v1/board/posts — 게시글 작성 (bbsMasterId는 body의 bbsId 필드로 전달) */

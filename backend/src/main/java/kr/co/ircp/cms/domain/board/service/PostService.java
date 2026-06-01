@@ -4,7 +4,12 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
+import kr.co.ircp.cms.domain.board.dto.PostTranslationRequest;
+import kr.co.ircp.cms.domain.board.dto.PostTranslationResponse;
 import kr.co.ircp.cms.domain.board.dto.PostUpdateRequest;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * 게시글 서비스 인터페이스.
@@ -39,4 +44,18 @@ public interface PostService {
 
     /** 게시글 삭제 (소프트 삭제) */
     void deletePost(Long id, Long requesterId);
+
+    // ─── SPEC-CMS-NOTICE-I18N-001: 다국어 번역 ─────────────────────────────────
+
+    /** 번역 등록/수정 (upsert). postId 존재 검증 후 저장. */
+    PostTranslationResponse upsertTranslation(Long postId, PostTranslationRequest req);
+
+    /** 단건 번역 조회. 없으면 empty. */
+    Optional<PostTranslationResponse> getTranslation(Long postId, String language);
+
+    /** 게시글의 전체 번역 목록 조회. */
+    List<PostTranslationResponse> listTranslations(Long postId);
+
+    /** 번역 삭제. */
+    void deleteTranslation(Long postId, String language);
 }

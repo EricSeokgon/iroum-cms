@@ -5,15 +5,19 @@ import kr.co.ircp.cms.domain.board.dto.AttachmentSummary;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
+import kr.co.ircp.cms.domain.board.dto.PostTranslationRequest;
+import kr.co.ircp.cms.domain.board.dto.PostTranslationResponse;
 import kr.co.ircp.cms.domain.board.dto.PostUpdateRequest;
 import kr.co.ircp.cms.domain.board.entity.BbsMaster;
 import kr.co.ircp.cms.domain.board.entity.BbsPost;
 import kr.co.ircp.cms.domain.board.entity.BbsPostHistory;
+import kr.co.ircp.cms.domain.board.entity.BbsPostI18n;
 import kr.co.ircp.cms.domain.board.entity.BbsViewLog;
 import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper;
+import kr.co.ircp.cms.domain.board.repository.BbsPostI18nMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
@@ -24,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -42,6 +47,7 @@ public class PostServiceImpl implements PostService {
     private final BbsPostMapper bbsPostMapper;
     private final BbsPostHistoryMapper bbsPostHistoryMapper;
     private final BbsViewLogMapper bbsViewLogMapper;
+    private final BbsPostI18nMapper bbsPostI18nMapper;
     private final HtmlSanitizer htmlSanitizer;
     private final AuthorizationGuard authorizationGuard;
 
@@ -200,6 +206,55 @@ public class PostServiceImpl implements PostService {
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 삭제 허용
         authorizationGuard.ensureOwnerOrAdmin(existing.getAuthorId(), requesterId, "게시글 삭제 권한이 없습니다.");
         bbsPostMapper.deleteById(id);
+    }
+
+    // ─── SPEC-CMS-NOTICE-I18N-001: 다국어 번역 ─────────────────────────────────
+
+    @Override
+    @Transactional
+    public PostTranslationResponse upsertTranslation(Long postId, PostTranslationRequest req) {
+        // 원본 게시글 존재 검증
+        bbsPostMapper.findById(postId)
+                .orElseThrow(() -> new PostNotFoundException(postId));
+
+        // SPEC-CMS-SECURITY-XSS — RICH_TEXT 콘텐츠 Jsoup sanitize 적용
+        String sanitizedHtml = req.contentHtml() != null
+                ? htmlSanitizer.sanitize(req.contentHtml()) : null;
+        String contentText = req.contentText() != null
+                ? req.contentText() : stripHtml(sanitizedHtml);
+
+        BbsPostI18n entity = BbsPostI18n.builder()
+                .postId(postId)
+                .language(req.language())
+                .title(req.title())
+                .contentHtml(sanitizedHtml)
+                .contentText(contentText)
+                .build();
+        bbsPostI18nMapper.upsert(entity);
+
+        // upsert 후 정규 상태(updated_at 등) 재조회하여 반환
+        return bbsPostI18nMapper.findByPostIdAndLang(postId, req.language())
+                .map(PostTranslationResponse::from)
+                .orElse(PostTranslationResponse.from(entity));
+    }
+
+    @Override
+    public Optional<PostTranslationResponse> getTranslation(Long postId, String language) {
+        return bbsPostI18nMapper.findByPostIdAndLang(postId, language)
+                .map(PostTranslationResponse::from);
+    }
+
+    @Override
+    public List<PostTranslationResponse> listTranslations(Long postId) {
+        return bbsPostI18nMapper.findByPostId(postId).stream()
+                .map(PostTranslationResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void deleteTranslation(Long postId, String language) {
+        bbsPostI18nMapper.deleteByPostIdAndLang(postId, language);
     }
 
     // ─── 헬퍼 ────────────────────────────────────────────────────────────────

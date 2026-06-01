@@ -47,6 +47,7 @@ class PostServiceTest {
     @Mock private BbsPostMapper bbsPostMapper;
     @Mock private BbsPostHistoryMapper bbsPostHistoryMapper;
     @Mock private BbsViewLogMapper bbsViewLogMapper;
+    @Mock private kr.co.ircp.cms.domain.board.repository.BbsPostI18nMapper bbsPostI18nMapper;
 
     private PostService postService;
     private final HtmlSanitizer htmlSanitizer = new HtmlSanitizer();
@@ -54,7 +55,8 @@ class PostServiceTest {
     @BeforeEach
     void setUp() {
         postService = new PostServiceImpl(
-                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper, htmlSanitizer,
+                bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper,
+                bbsPostI18nMapper, htmlSanitizer,
                 new AuthorizationGuard()
         );
     }

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    게시글 다국어 번역 매퍼 XML.
+    SPEC-CMS-NOTICE-I18N-001: bbs_post_i18n CRUD + UPSERT
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsPostI18nMapper">
+
+    <resultMap id="bbsPostI18nResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPostI18n">
+        <id property="id" column="id"/>
+        <result property="postId" column="post_id"/>
+        <result property="language" column="language"/>
+        <result property="title" column="title"/>
+        <result property="contentHtml" column="content_html"/>
+        <result property="contentText" column="content_text"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByPostIdAndLang" resultMap="bbsPostI18nResultMap">
+        SELECT id, post_id, language, title, content_html, content_text, updated_at
+        FROM bbs_post_i18n
+        WHERE post_id = #{postId} AND language = #{language}
+    </select>
+
+    <select id="findByPostId" resultMap="bbsPostI18nResultMap">
+        SELECT id, post_id, language, title, content_html, content_text, updated_at
+        FROM bbs_post_i18n
+        WHERE post_id = #{postId}
+        ORDER BY language
+    </select>
+
+    <insert id="upsert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_post_i18n (post_id, language, title, content_html, content_text, updated_at)
+        VALUES (#{postId}, #{language}, #{title}, #{contentHtml}, #{contentText}, NOW())
+        ON CONFLICT (post_id, language) DO UPDATE
+        SET title = EXCLUDED.title,
+            content_html = EXCLUDED.content_html,
+            content_text = EXCLUDED.content_text,
+            updated_at = NOW()
+    </insert>
+
+    <delete id="deleteByPostIdAndLang">
+        DELETE FROM bbs_post_i18n
+        WHERE post_id = #{postId} AND language = #{language}
+    </delete>
+
+</mapper>
