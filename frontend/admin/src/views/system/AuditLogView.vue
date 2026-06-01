@@ -1,20 +1,30 @@
 <template>
-  <!-- 통합 감사 로그 — SPEC-CMS-005 Bundle D REQ-SYS-007-D -->
+  <!-- 통합 감사 로그 — SPEC-CMS-AUDIT-LOG-VIEW-001 -->
   <div>
-    <!-- CRITICAL 알림 패널 -->
+    <!-- REQ-AL-003: CRITICAL 알림 패널 (세션 닫힘 가능) -->
     <el-card
-      v-if="criticalLogs.length > 0"
+      v-if="store.criticalLogs.length > 0 && !store.criticalDismissed"
       class="mb-4 border-red-200"
       shadow="never"
     >
       <template #header>
-        <span class="text-sm font-semibold text-red-700">
-          {{ t('system.auditLog.criticalPanel.title') }} ({{ criticalLogs.length }})
-        </span>
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-red-700">
+            {{ t('system.auditLog.criticalPanel.title') }} ({{ store.criticalLogs.length }})
+          </span>
+          <el-button
+            link
+            size="small"
+            type="danger"
+            @click="store.dismissCritical()"
+          >
+            {{ t('system.auditLog.criticalPanel.dismiss') }}
+          </el-button>
+        </div>
       </template>
       <div class="space-y-1 max-h-32 overflow-auto">
         <div
-          v-for="log in criticalLogs"
+          v-for="log in store.criticalLogs"
           :key="log.id"
           class="flex items-center gap-2 text-xs text-red-700"
         >
@@ -28,12 +38,12 @@
 
     <div class="mb-4 flex items-center justify-between">
       <h2 class="text-xl font-semibold text-gray-800">{{ t('system.auditLog.title') }}</h2>
-      <el-button @click="exportCsv" :loading="exporting">
+      <el-button @click="onExport" :loading="exporting">
         {{ t('system.auditLog.exportCsv') }}
       </el-button>
     </div>
 
-    <!-- 검색 필터 -->
+    <!-- REQ-AL-002: 검색 필터 -->
     <el-card class="mb-4" shadow="never">
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div>
@@ -52,13 +62,27 @@
         </div>
         <div>
           <p class="mb-1 text-xs text-gray-500">{{ t('system.auditLog.filter.action') }}</p>
-          <el-select v-model="filterAction" clearable size="small" style="width: 100%">
+          <el-select
+            v-model="filterAction"
+            multiple
+            collapse-tags
+            clearable
+            size="small"
+            style="width: 100%"
+          >
             <el-option v-for="a in actionOptions" :key="a" :label="a" :value="a" />
           </el-select>
         </div>
         <div>
           <p class="mb-1 text-xs text-gray-500">{{ t('system.auditLog.filter.severity') }}</p>
-          <el-select v-model="filterSeverity" clearable size="small" style="width: 100%">
+          <el-select
+            v-model="filterSeverity"
+            multiple
+            collapse-tags
+            clearable
+            size="small"
+            style="width: 100%"
+          >
             <el-option label="INFO" value="INFO" />
             <el-option label="WARN" value="WARN" />
             <el-option label="CRITICAL" value="CRITICAL" />
@@ -72,22 +96,28 @@
           </el-select>
         </div>
         <div>
-          <p class="mb-1 text-xs text-gray-500">{{ t('system.auditLog.filter.entityType') }}</p>
-          <el-input v-model="filterEntityType" clearable size="small" />
+          <p class="mb-1 text-xs text-gray-500">{{ t('system.auditLog.filter.actorId') }}</p>
+          <el-input
+            v-model.number="filterActorId"
+            type="number"
+            clearable
+            size="small"
+          />
         </div>
       </div>
       <div class="mt-3 flex justify-end gap-2">
-        <el-button size="small" @click="resetFilter">{{ t('common.reset') }}</el-button>
-        <el-button size="small" type="primary" @click="search">{{ t('common.search') }}</el-button>
+        <el-button size="small" @click="onReset">{{ t('common.reset') }}</el-button>
+        <el-button size="small" type="primary" @click="onSearch">{{ t('common.search') }}</el-button>
       </div>
     </el-card>
 
-    <!-- 테이블 -->
-    <el-card shadow="never" v-loading="loading">
+    <!-- REQ-AL-001 / REQ-AL-009: 테이블 + 로딩 + 빈 상태 -->
+    <el-card shadow="never" v-loading="store.loading">
       <el-table
-        :data="rows"
+        :data="store.logs"
         stripe
         row-class-name="cursor-pointer"
+        :empty-text="t('system.auditLog.empty')"
         @row-click="openDetail"
       >
         <el-table-column prop="event_time" :label="t('system.auditLog.col.eventTime')" width="180">
@@ -115,18 +145,20 @@
         </el-table-column>
       </el-table>
 
+      <!-- REQ-AL-006: 페이지네이션 + 페이지 크기 선택 -->
       <el-pagination
-        v-model:current-page="page"
-        v-model:page-size="size"
-        :total="total"
+        v-model:current-page="currentPage"
+        v-model:page-size="currentSize"
+        :total="store.total"
         layout="prev, pager, next, sizes"
         :page-sizes="[20, 50, 100]"
         class="mt-4 justify-end"
-        @change="search"
+        @current-change="onPageChange"
+        @size-change="onSizeChange"
       />
     </el-card>
 
-    <!-- 상세 다이얼로그 -->
+    <!-- REQ-AL-004: 상세 다이얼로그 (before/after JSON) -->
     <el-dialog
       v-model="detailVisible"
       :title="t('system.auditLog.detail.title')"
@@ -162,100 +194,89 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { auditLogs } from '@/api/system'
+import { useAuditLogStore } from '@/stores/auditLog'
 import type { AuditLogResponse, AuditAction, AuditSeverity, AuditResult } from '@/api/system'
 
 const { t } = useI18n()
+const store = useAuditLogStore()
 
-const rows = ref<AuditLogResponse[]>([])
-const criticalLogs = ref<AuditLogResponse[]>([])
-const loading = ref(false)
 const exporting = ref(false)
-const page = ref(1)
-const size = ref(20)
-const total = ref(0)
-
-const dateRange = ref<[string, string] | null>(null)
-const filterAction = ref<AuditAction | ''>('')
-const filterSeverity = ref<AuditSeverity | ''>('')
-const filterResult = ref<AuditResult | ''>('')
-const filterEntityType = ref('')
-
 const detailVisible = ref(false)
 const selected = ref<AuditLogResponse | null>(null)
+
+// 화면 입력 바인딩 (검색 버튼 클릭 시 store.applyFilter 로 반영)
+const dateRange = ref<[string, string] | null>(null)
+const filterAction = ref<AuditAction[]>([])
+const filterSeverity = ref<AuditSeverity[]>([])
+const filterResult = ref<AuditResult | ''>('')
+const filterActorId = ref<number | null>(null)
+
+// 페이지네이션 양방향 바인딩 (store 와 동기화)
+const currentPage = computed({
+  get: () => store.page,
+  set: (v: number) => { store.page = v },
+})
+const currentSize = computed({
+  get: () => store.size,
+  set: (v: number) => { store.size = v },
+})
 
 const actionOptions: AuditAction[] = [
   'CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT',
   'PERMISSION_CHANGE', 'EXPORT', 'VIEW_SENSITIVE',
 ]
 
-function buildFilter() {
-  return {
-    fromTime: dateRange.value?.[0],   // 백엔드 파라미터 이름
-    toTime: dateRange.value?.[1],     // 백엔드 파라미터 이름
-    action: filterAction.value || undefined,
-    severity: filterSeverity.value || undefined,
-    result: filterResult.value || undefined,
-    entity_type: filterEntityType.value || undefined,
-    page: page.value,   // 백엔드는 1-based
-    size: size.value,
-  }
+async function onSearch(): Promise<void> {
+  await store.applyFilter({
+    action: filterAction.value,
+    severity: filterSeverity.value,
+    result: filterResult.value,
+    fromTime: dateRange.value?.[0] ?? '',
+    toTime: dateRange.value?.[1] ?? '',
+    actorId: filterActorId.value,
+  })
+  notifyError()
 }
 
-async function search(): Promise<void> {
-  loading.value = true
-  try {
-    const res = await auditLogs.search(buildFilter())
-    rows.value = res.data.items
-    total.value = res.data.total
-  } catch {
-    ElMessage.error(t('common.loadError'))
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadCritical(): Promise<void> {
-  try {
-    const res = await auditLogs.critical()
-    criticalLogs.value = res.data
-  } catch { /* 조용히 무시 */ }
-}
-
-function resetFilter(): void {
+async function onReset(): Promise<void> {
   dateRange.value = null
-  filterAction.value = ''
-  filterSeverity.value = ''
+  filterAction.value = []
+  filterSeverity.value = []
   filterResult.value = ''
-  filterEntityType.value = ''
-  page.value = 1
-  search()
+  filterActorId.value = null
+  await store.resetFilter()
+  notifyError()
 }
 
-async function exportCsv(): Promise<void> {
+async function onPageChange(p: number): Promise<void> {
+  await store.changePage(p)
+  notifyError()
+}
+
+async function onSizeChange(s: number): Promise<void> {
+  await store.changeSize(s)
+  notifyError()
+}
+
+async function onExport(): Promise<void> {
   exporting.value = true
   try {
-    const res = await auditLogs.exportCsv({
-      from: dateRange.value?.[0],
-      to: dateRange.value?.[1],
-      action: filterAction.value || undefined,
-      severity: filterSeverity.value || undefined,
-      result: filterResult.value || undefined,
-      entity_type: filterEntityType.value || undefined,
-    })
-    const url = URL.createObjectURL(res.data)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `audit-logs-${Date.now()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    await store.exportCsv()
   } catch {
+    // REQ-AL-011 — 내보내기 실패 토스트
     ElMessage.error(t('common.exportError'))
   } finally {
     exporting.value = false
+  }
+}
+
+/** REQ-AL-011 — store.error 가 설정되면 사용자에게 토스트로 알린다. */
+function notifyError(): void {
+  if (store.error) {
+    ElMessage.error(t('common.loadError'))
   }
 }
 
@@ -278,6 +299,7 @@ function severityType(severity: AuditSeverity): 'info' | 'warning' | 'danger' {
 }
 
 onMounted(async () => {
-  await Promise.all([search(), loadCritical()])
+  await Promise.all([store.fetchLogs(), store.fetchCritical()])
+  notifyError()
 })
 </script>
