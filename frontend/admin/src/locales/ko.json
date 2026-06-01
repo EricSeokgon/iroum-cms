@@ -338,8 +338,11 @@
         "action": "액션",
         "severity": "중요도",
         "result": "결과",
-        "entityType": "엔티티 유형"
+        "entityType": "엔티티 유형",
+        "actorId": "행위자 ID"
       },
+      "empty": "감사 로그가 없습니다",
+      "pageSize": "페이지 크기",
       "col": {
         "eventTime": "발생 시각",
         "actor": "행위자",
@@ -361,7 +364,8 @@
         "after": "변경 후"
       },
       "criticalPanel": {
-        "title": "미해결 CRITICAL 이벤트"
+        "title": "미해결 CRITICAL 이벤트",
+        "dismiss": "닫기"
       }
     }
   },

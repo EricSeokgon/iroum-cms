@@ -338,8 +338,11 @@
         "action": "Action",
         "severity": "Severity",
         "result": "Result",
-        "entityType": "Entity Type"
+        "entityType": "Entity Type",
+        "actorId": "Actor ID"
       },
+      "empty": "No audit logs",
+      "pageSize": "Page Size",
       "col": {
         "eventTime": "Event Time",
         "actor": "Actor",
@@ -361,7 +364,8 @@
         "after": "After"
       },
       "criticalPanel": {
-        "title": "Unresolved Critical Events"
+        "title": "Unresolved Critical Events",
+        "dismiss": "Dismiss"
       }
     }
   },
