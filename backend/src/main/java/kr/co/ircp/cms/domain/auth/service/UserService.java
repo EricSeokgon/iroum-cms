@@ -1,5 +1,8 @@
 package kr.co.ircp.cms.domain.auth.service;
 
+import java.util.List;
+
+import kr.co.ircp.cms.domain.auth.dto.BulkStatusResult;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -144,4 +147,26 @@ public interface UserService {
      * @return 수정 후 UserSelf
      */
     UserSelf updateMe(long currentUserId, UserSelfUpdateRequest req);
+
+    /**
+     * 사용자 일괄 상태 변경 (SUPER_ADMIN, DEPT_ADMIN).
+     *
+     * <p>SPEC-CMS-USER-BULK-STATUS-001 — 최대 100건을 한 번에 처리하며 부분 실패를 허용한다.
+     * 각 사용자는 독립적으로 처리되어 일부가 실패해도 나머지는 변경된다.
+     *
+     * <ul>
+     *   <li>존재하지 않는 id → 실패</li>
+     *   <li>DELETED 상태 사용자 → 변경 불가, 실패</li>
+     *   <li>targetStatus=DELETED 이면서 actorRole != SUPER_ADMIN → 실패</li>
+     *   <li>LOCKED → ACTIVE 전환은 잠금 해제 로직(fail_count·locked_until 리셋) 수행</li>
+     * </ul>
+     *
+     * @param userIds      대상 사용자 PK 목록 (1~100건)
+     * @param targetStatus 목표 상태 문자열 (ACTIVE/INACTIVE/LOCKED/DELETED)
+     * @param actorId      처리자 식별자 (userId 문자열)
+     * @param actorRole    처리자 역할 (DELETED 전환 권한 판단에 사용)
+     * @return 성공·실패 건수와 실패 상세 목록
+     * @throws IllegalArgumentException targetStatus가 유효한 UserStatus 값이 아닌 경우
+     */
+    BulkStatusResult bulkUpdateStatus(List<Long> userIds, String targetStatus, String actorId, String actorRole);
 }

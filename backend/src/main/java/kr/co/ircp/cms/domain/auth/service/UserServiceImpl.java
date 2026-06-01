@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.auth.service;
 
 import kr.co.ircp.cms.domain.audit.annotation.AuditLog;
 import kr.co.ircp.cms.domain.auth.annotation.PersonalDataAccess;
+import kr.co.ircp.cms.domain.auth.dto.BulkStatusResult;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -324,6 +326,61 @@ public class UserServiceImpl implements UserService {
         userMapper.update(patchBuilder.build());
 
         return getMe(currentUserId);
+    }
+
+    // @MX:ANCHOR: [AUTO] bulkUpdateStatus — 사용자 일괄 상태 변경 핵심 로직
+    // @MX:REASON: UserController.bulkUpdateStatus, 테스트, 향후 배치 작업 등 다수 호출 (fan_in >= 3)
+    // @MX:SPEC: SPEC-CMS-USER-BULK-STATUS-001
+    @Override
+    @Transactional
+    @AuditLog(action = "UPDATE", entityType = "User", severity = "WARN")
+    public BulkStatusResult bulkUpdateStatus(List<Long> userIds, String targetStatus,
+                                             String actorId, String actorRole) {
+        // 요청 단위 검증: 유효하지 않은 targetStatus 는 전체 요청 실패 (fail-fast)
+        UserStatus target;
+        try {
+            target = UserStatus.valueOf(targetStatus);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("유효하지 않은 상태 값입니다: " + targetStatus);
+        }
+
+        boolean isSuperAdmin = "SUPER_ADMIN".equals(actorRole);
+        Instant now = Instant.now();
+
+        List<BulkStatusResult.FailureDetail> failures = new ArrayList<>();
+        int successCount = 0;
+
+        // 각 사용자는 독립적으로 처리 — 부분 실패 허용 (한 건 실패가 나머지를 막지 않음)
+        for (Long userId : userIds) {
+            User user = userMapper.findById(userId).orElse(null);
+            if (user == null) {
+                failures.add(new BulkStatusResult.FailureDetail(userId, "사용자를 찾을 수 없습니다"));
+                continue;
+            }
+            if (user.getStatus() == UserStatus.DELETED) {
+                failures.add(new BulkStatusResult.FailureDetail(userId, "DELETED 상태는 변경할 수 없습니다"));
+                continue;
+            }
+            if (target == UserStatus.DELETED && !isSuperAdmin) {
+                failures.add(new BulkStatusResult.FailureDetail(userId,
+                        "SUPER_ADMIN만 DELETED로 변경할 수 있습니다"));
+                continue;
+            }
+
+            if (target == UserStatus.DELETED) {
+                // 소프트 삭제: status='DELETED' + deleted_at 동시 갱신 (조회 일관성 유지)
+                userMapper.softDelete(userId, now);
+            } else if (user.getStatus() == UserStatus.LOCKED && target == UserStatus.ACTIVE) {
+                // 잠금 해제: status=ACTIVE + fail_count·locked_until 리셋
+                userMapper.unlock(userId, now);
+            } else {
+                // 일반 상태 전환: status 컬럼만 COALESCE 패치
+                userMapper.update(User.builder().id(userId).status(target).build());
+            }
+            successCount++;
+        }
+
+        return new BulkStatusResult(successCount, failures.size(), failures);
     }
 
     // ─── 내부 변환 헬퍼 ───────────────────────────────────────────

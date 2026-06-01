@@ -1,7 +1,10 @@
 package kr.co.ircp.cms.domain.auth.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import kr.co.ircp.cms.domain.auth.dto.AdminPasswordResetRequest;
+import kr.co.ircp.cms.domain.auth.dto.BulkStatusRequest;
+import kr.co.ircp.cms.domain.auth.dto.BulkStatusResult;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.dto.UserCreateRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserDetail;
@@ -12,11 +15,13 @@ import kr.co.ircp.cms.domain.auth.service.UserService;
 import kr.co.ircp.cms.domain.auth.validation.NoEmailWildcard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -150,5 +155,27 @@ public class UserController {
                               @Valid @RequestBody AdminPasswordResetRequest req,
                               @AuthenticationPrincipal JwtPrincipal principal) {
         userService.adminResetPassword(id, req.newPassword(), principal.userId());
+    }
+
+    /**
+     * 사용자 일괄 상태 변경 (최대 100건).
+     *
+     * <p>SPEC-CMS-USER-BULK-STATUS-001 — 부분 실패 허용.
+     * 권한: SUPER_ADMIN, DEPT_ADMIN. DELETED 전환은 SUPER_ADMIN만 가능(서비스 계층 검증).
+     */
+    @Operation(summary = "사용자 일괄 상태 변경 (최대 100건)")
+    @PatchMapping("/bulk-status")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'DEPT_ADMIN')")
+    public ResponseEntity<BulkStatusResult> bulkUpdateStatus(
+            @Validated @RequestBody BulkStatusRequest req,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        // DELETED 전환 권한 판단용 actorRole — SUPER_ADMIN 보유 시 우선 적용
+        String actorRole = principal.roles().contains("SUPER_ADMIN")
+                ? "SUPER_ADMIN"
+                : principal.roles().stream().findFirst().orElse("UNKNOWN");
+        BulkStatusResult result = userService.bulkUpdateStatus(
+                req.userIds(), req.targetStatus(),
+                String.valueOf(principal.userId()), actorRole);
+        return ResponseEntity.ok(result);
     }
 }
