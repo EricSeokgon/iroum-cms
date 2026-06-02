@@ -59,6 +59,20 @@ const localDensity = ref<Density>(store.preference.density)
 const localFontScale = ref<FontScale>(store.preference.font_scale as FontScale)
 const localPalette = ref<ColorPalettePreference>(store.preference.color_palette_preference)
 const localSidebar = ref<boolean>(store.preference.sidebar_collapsed)
+// SPEC-CMS-DASHBOARD-REFRESH-001: 자동 새로고침 주기(초). 0 == 꺼짐(store 의 null 에 대응)
+// el-option 은 null 값을 허용하지 않으므로 UI 에서는 0 을 "끄기" 센티넬로 사용한다.
+const REFRESH_OFF = 0
+const localRefreshInterval = ref<number>(store.preference.refresh_interval_seconds ?? REFRESH_OFF)
+
+// 자동 새로고침 선택 옵션 (REQ-REFRESH-001)
+const refreshIntervalOptions: Array<{ label: string; value: number }> = [
+  { label: '끄기', value: REFRESH_OFF },
+  { label: '30초', value: 30 },
+  { label: '1분', value: 60 },
+  { label: '5분', value: 300 },
+  { label: '15분', value: 900 },
+  { label: '30분', value: 1800 },
+]
 
 watch(
   () => store.preference,
@@ -68,6 +82,7 @@ watch(
     localFontScale.value = p.font_scale as FontScale
     localPalette.value = p.color_palette_preference
     localSidebar.value = p.sidebar_collapsed
+    localRefreshInterval.value = p.refresh_interval_seconds ?? REFRESH_OFF
   },
   { deep: true },
 )
@@ -79,6 +94,19 @@ watch(localPalette, (v) => debouncePatch(() => store.setColorPalette(v)))
 watch(localSidebar, (v) =>
   debouncePatch(() => store.update({ sidebar_collapsed: v })),
 )
+
+// SPEC-CMS-DASHBOARD-REFRESH-001: 선택 즉시 저장 (debounce 불필요한 단발 선택)
+// UI 센티넬 0(끄기) 을 store 계약상 null 로 변환하여 전달
+// el-radio-group @change 는 string | number | boolean | undefined 를 emit 하므로 number 로 정규화
+function onRefreshIntervalChange(value: string | number | boolean | undefined): void {
+  const num = Number(value)
+  const seconds = num === REFRESH_OFF ? null : num
+  store.setRefreshInterval(seconds).catch((e) => {
+    ElMessage.error(
+      `새로고침 설정 저장 실패: ${e instanceof Error ? e.message : String(e)}`,
+    )
+  })
+}
 
 async function handleReset(): Promise<void> {
   try {
@@ -135,6 +163,9 @@ onMounted(() => {
     void store.fetch()
   }
 })
+
+// 단위 테스트에서 핸들러/로컬 상태/옵션 직접 접근용 (el-drawer teleport DOM 조작 회피)
+defineExpose({ onRefreshIntervalChange, localRefreshInterval, refreshIntervalOptions })
 </script>
 
 <template>
@@ -193,6 +224,24 @@ onMounted(() => {
       <!-- 사이드바 -->
       <ElFormItem label="사이드바 접기">
         <ElSwitch v-model="localSidebar" aria-label="사이드바 접힘 토글" />
+      </ElFormItem>
+
+      <!-- 자동 새로고침 — SPEC-CMS-DASHBOARD-REFRESH-001 -->
+      <ElFormItem label="자동 새로고침">
+        <ElRadioGroup
+          v-model="localRefreshInterval"
+          aria-label="자동 새로고침 주기 선택"
+          data-testid="refresh-interval-select"
+          @change="onRefreshIntervalChange"
+        >
+          <ElRadioButton
+            v-for="opt in refreshIntervalOptions"
+            :key="String(opt.value)"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </ElRadioButton>
+        </ElRadioGroup>
       </ElFormItem>
 
       <ElDivider />

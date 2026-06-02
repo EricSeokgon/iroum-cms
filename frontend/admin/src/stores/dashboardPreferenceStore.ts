@@ -23,6 +23,7 @@ const DEFAULT_PREFERENCE: DashboardPreferenceResponse = {
   font_scale: 1.0,
   color_palette_preference: 'DEFAULT',
   sidebar_collapsed: false,
+  refresh_interval_seconds: null,
   schema_version: 1,
   updated_at: '',
 }
@@ -84,6 +85,9 @@ export const useDashboardPreferenceStore = defineStore('dashboardPreference', ()
         : {}),
       ...(req.sidebar_collapsed !== undefined
         ? { sidebar_collapsed: req.sidebar_collapsed }
+        : {}),
+      ...(req.has_refresh_interval_seconds === true
+        ? { refresh_interval_seconds: req.refresh_interval_seconds ?? null }
         : {}),
     }
     try {
@@ -167,6 +171,14 @@ export const useDashboardPreferenceStore = defineStore('dashboardPreference', ()
     return update({ color_palette_preference: palette })
   }
 
+  /** SPEC-CMS-DASHBOARD-REFRESH-001: 자동 새로고침 주기 설정 (null=끄기) */
+  function setRefreshInterval(seconds: number | null) {
+    return update({
+      refresh_interval_seconds: seconds,
+      has_refresh_interval_seconds: true,
+    })
+  }
+
   return {
     // state
     preference,
@@ -186,5 +198,6 @@ export const useDashboardPreferenceStore = defineStore('dashboardPreference', ()
     setDensity,
     setFontScale,
     setColorPalette,
+    setRefreshInterval,
   }
 })

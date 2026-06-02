@@ -20,6 +20,8 @@ export interface DashboardPreferenceResponse {
   font_scale: number
   color_palette_preference: ColorPalettePreference
   sidebar_collapsed: boolean
+  /** SPEC-CMS-DASHBOARD-REFRESH-001: 자동 새로고침 주기(초). null 이면 꺼짐 */
+  refresh_interval_seconds: number | null
   schema_version: number
   updated_at: string
 }
@@ -30,6 +32,10 @@ export interface DashboardPreferenceUpdateRequest {
   font_scale?: FontScale
   color_palette_preference?: ColorPalettePreference
   sidebar_collapsed?: boolean
+  /** SPEC-CMS-DASHBOARD-REFRESH-001: 자동 새로고침 주기(초) 또는 null(꺼짐) */
+  refresh_interval_seconds?: number | null
+  /** refresh_interval_seconds 를 갱신 대상에 포함할지 여부 (null 명시 갱신 구분용) */
+  has_refresh_interval_seconds?: boolean
   /** REQ-DP-002-4 낙관적 잠금 (옵션). 응답의 updated_at 을 그대로 전달 */
   expected_updated_at?: string
 }

@@ -24,6 +24,12 @@
         <el-button :icon="Star" size="small" @click="openSaveView">뷰 저장</el-button>
         <!-- 내보내기 -->
         <el-button :icon="Download" size="small" @click="openExport">내보내기</el-button>
+        <!-- 자동 새로고침 인디케이터 (SPEC-CMS-DASHBOARD-REFRESH-001) -->
+        <DashboardRefreshIndicator
+          :seconds-remaining="secondsRemaining"
+          :interval-seconds="prefStore.preference.refresh_interval_seconds"
+          @refresh="forceRefresh"
+        />
         <!-- 새로고침 -->
         <el-button :icon="Refresh" size="small" @click="loadAll">새로고침</el-button>
         <!-- 개인화 설정 -->
@@ -179,7 +185,9 @@ import {
 } from 'echarts/components'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { useDashboardPreferenceStore } from '@/stores/dashboardPreferenceStore'
+import { useDashboardAutoRefresh } from '@/composables/useDashboardAutoRefresh'
 import DashboardPreferencePanel from '@/views/dashboard/DashboardPreferencePanel.vue'
+import DashboardRefreshIndicator from '@/components/dashboard/DashboardRefreshIndicator.vue'
 import type {
   WidgetResponse,
   WidgetDataResponse,
@@ -649,6 +657,32 @@ function buildChartOption(widget: WidgetResponse, data: WidgetDataResponse | und
       return {}
   }
 }
+
+// ── 자동 새로고침 (SPEC-CMS-DASHBOARD-REFRESH-001) ───────────────────────────
+// SPEC §7.2: 숨김 위젯(hidden_widget_instance_ids)은 갱신 대상에서 제외
+// DashboardMainView 레벨에서는 widget.id → hidden 맵에서 instance_id 로 근사 검사
+// (레이아웃 컨텍스트 없이 가능한 최선; 정확한 instance_id 필터는 DashboardGridLayout 에서)
+function isWidgetHidden(widgetId: number): boolean {
+  const hiddenMap = prefStore.preference.hidden_widget_instance_ids
+  return Object.values(hiddenMap).some(ids => ids.includes(String(widgetId)))
+}
+
+const refreshIntervalSeconds = computed(() => prefStore.preference.refresh_interval_seconds ?? null)
+
+async function onAutoRefreshTick(): Promise<void> {
+  // REQ-REFRESH-002-1: 전체 페이지 리로드 금지, 위젯 데이터만 재페치
+  // REQ-REFRESH-002-2: 숨김 위젯 제외
+  // REQ-REFRESH-002-3: 일부 실패가 다른 위젯 갱신을 중단하지 않음 (Promise.allSettled)
+  const visibleIds = activeWidgets.value
+    .filter(w => !isWidgetHidden(w.id))
+    .map(w => w.id)
+  await Promise.allSettled(visibleIds.map(id => loadWidgetData(id)))
+}
+
+const { secondsRemaining, forceRefresh } = useDashboardAutoRefresh(
+  refreshIntervalSeconds,
+  onAutoRefreshTick,
+)
 
 // ── 라이프사이클 ────────────────────────────────────────────────────────────
 onMounted(async () => {
