@@ -48,6 +48,9 @@ public class UserDashboardPreference {
 
     private boolean sidebarCollapsed;
 
+    /** SPEC-CMS-DASHBOARD-REFRESH-001: 자동 새로고침 주기(초). null=OFF. 허용값: 30/60/300/900/1800 */
+    private Integer refreshIntervalSeconds;
+
     private short schemaVersion;
 
     private Instant createdAt;

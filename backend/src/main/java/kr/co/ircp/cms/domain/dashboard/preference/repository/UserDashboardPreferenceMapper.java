@@ -41,6 +41,8 @@ public interface UserDashboardPreferenceMapper {
             @Param("fontScale") BigDecimal fontScale,
             @Param("colorPalettePreference") String colorPalettePreference,
             @Param("sidebarCollapsed") Boolean sidebarCollapsed,
+            @Param("refreshIntervalSeconds") Integer refreshIntervalSeconds,
+            @Param("hasRefreshIntervalSeconds") Boolean hasRefreshIntervalSeconds,
             @Param("expectedUpdatedAt") Instant expectedUpdatedAt
     );
 

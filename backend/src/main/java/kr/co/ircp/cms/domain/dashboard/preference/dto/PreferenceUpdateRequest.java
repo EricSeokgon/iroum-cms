@@ -37,6 +37,15 @@ public record PreferenceUpdateRequest(
         @JsonProperty("sidebar_collapsed")
         Boolean sidebarCollapsed,
 
+        // SPEC-CMS-DASHBOARD-REFRESH-001: 새로고침 주기(초). null = OFF, 비전송 = 변경 없음.
+        // 허용값 검증(30/60/300/900/1800 또는 null)은 서비스 화이트리스트에서 수행한다.
+        @JsonProperty("refresh_interval_seconds")
+        Integer refreshIntervalSeconds,
+
+        // true 일 때만 refresh_interval_seconds 를 실제 적용 (null = OFF 표현을 허용하기 위한 presence flag).
+        @JsonProperty("has_refresh_interval_seconds")
+        Boolean hasRefreshIntervalSeconds,
+
         @JsonProperty("expected_updated_at")
         Instant expectedUpdatedAt
 ) {
