@@ -232,11 +232,12 @@ const editForm = ref<{
 }>({
   altText: '',
   description: '',
-  licenseType: 'ALL_RIGHTS_RESERVED',
+  licenseType: 'PROPRIETARY',
 })
 
+// 백엔드 LicenseType enum과 동기화된 라이선스 유형 목록
 const licenseOptions: LicenseType[] = [
-  'ALL_RIGHTS_RESERVED', 'CC_BY', 'CC_BY_SA', 'CC_BY_NC', 'CC0', 'PUBLIC_DOMAIN',
+  'CC0', 'CC_BY', 'CC_BY_NC', 'PROPRIETARY', 'INTERNAL',
 ]
 
 // @MX:ANCHOR: [AUTO] loadAsset — onMounted, handleSave 후 재로드 시 호출

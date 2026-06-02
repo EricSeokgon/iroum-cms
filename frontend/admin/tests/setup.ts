@@ -30,26 +30,36 @@ class IntersectionObserverMock {
   globalThis as unknown as { IntersectionObserver: typeof IntersectionObserverMock }
 ).IntersectionObserver = IntersectionObserverMock
 
-// 3) window.matchMedia polyfill — el-config-provider 등에서 참조
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query: string) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-})
+// 3+4) vi.fn() 기반 polyfill 설치 — matchMedia / scrollTo
+// @MX:NOTE: afterEach 의 vi.restoreAllMocks() 가 이 vi.fn() mock 구현을 비워버려
+//   두 번째 테스트부터 Element Plus 마운트 시 matchMedia(...).addEventListener 호출이
+//   crash 한다(사전 존재 결함). 따라서 beforeEach 에서 매 테스트마다 재설치한다.
+function installViFnPolyfills(): void {
+  // window.matchMedia polyfill — el-config-provider 등에서 참조
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  })
 
-// 4) scrollTo polyfill
-Object.defineProperty(window, 'scrollTo', {
-  writable: true,
-  value: vi.fn(),
-})
+  // scrollTo polyfill
+  Object.defineProperty(window, 'scrollTo', {
+    writable: true,
+    configurable: true,
+    value: vi.fn(),
+  })
+}
+
+installViFnPolyfills()
 
 // 5) Element Plus 일부 컴포넌트가 의존하는 getComputedStyle 보정
 const originalGetComputedStyle = window.getComputedStyle
@@ -85,6 +95,8 @@ config.global.stubs = {
 beforeEach(() => {
   // 각 테스트마다 mock 상태 초기화
   vi.clearAllMocks()
+  // restoreAllMocks 로 비워진 vi.fn() polyfill 재설치 (matchMedia/scrollTo)
+  installViFnPolyfills()
 })
 
 afterEach(() => {

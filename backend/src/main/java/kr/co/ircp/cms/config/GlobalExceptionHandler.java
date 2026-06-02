@@ -873,6 +873,23 @@ public class GlobalExceptionHandler {
         return detail;
     }
 
+    /**
+     * 도메인 서비스 소유권 위반 → 403 Forbidden.
+     *
+     * <p>대시보드 레이아웃·저장된 뷰 등에서 본인 소유가 아닌 리소스 변경 시도 시
+     * 서비스 계층이 던지는 {@link SecurityException}을 표준 403 ProblemDetail 로 매핑한다.
+     * 핸들러가 없으면 미처리 예외가 500 으로 전파되므로 인가 위반의 의미가 왜곡된다(REQ-DP-003-4).
+     */
+    // @MX:NOTE: [AUTO] SecurityException 핸들러 — 서비스 계층 소유권 검증 실패를 403 으로 표준화
+    // @MX:REASON: 전용 핸들러 부재 시 인가 위반(SecurityException)이 500 으로 전파되어 보안 정합성·테스트(AC-DP-003-3)가 깨짐. 코드는 ACCESS_DENIED 로 통일.
+    @ExceptionHandler(SecurityException.class)
+    public ProblemDetail handleSecurityException(SecurityException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("Forbidden");
+        detail.setProperty("code", "ACCESS_DENIED");
+        return detail;
+    }
+
     // ─── REQ-SEARCH-001~009 통합 검색 예외 (SPEC-CMS-010) ──────────────────────
 
     /** 검색 쿼리 길이 초과 → 400. REQ-SEARCH-001 / REQ-SEARCH-005 */

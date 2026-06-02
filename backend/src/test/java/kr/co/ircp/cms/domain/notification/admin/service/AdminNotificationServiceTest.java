@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.notification.admin.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
@@ -98,9 +99,9 @@ class AdminNotificationServiceTest {
         assertThat(p.get("adminUserId")).isEqualTo(ADMIN_ID);
         assertThat(p.get("offset")).isEqualTo(60);
         assertThat(p.get("size")).isEqualTo(30);
-        assertThat((List<?>) p.get("statusList")).containsExactly("UNREAD", "READ");
-        assertThat((List<?>) p.get("severityList")).containsExactly("ERROR");
-        assertThat((List<?>) p.get("typeList")).containsExactly("INTEGRATION_ERROR");
+        assertThat(p.get("statusList")).asInstanceOf(list(String.class)).containsExactly("UNREAD", "READ");
+        assertThat(p.get("severityList")).asInstanceOf(list(String.class)).containsExactly("ERROR");
+        assertThat(p.get("typeList")).asInstanceOf(list(String.class)).containsExactly("INTEGRATION_ERROR");
     }
 
     @Test
@@ -182,7 +183,7 @@ class AdminNotificationServiceTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
         verify(mapper).markAllRead(captor.capture());
-        assertThat((List<?>) captor.getValue().get("severityList")).containsExactly("ERROR");
+        assertThat(captor.getValue().get("severityList")).asInstanceOf(list(String.class)).containsExactly("ERROR");
     }
 
     // ─── REQ-NC-004 / AC-NC-004 ────────────────────────────────────────────

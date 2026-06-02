@@ -45,6 +45,7 @@
     "@playwright/test": "^1.48.0",
     "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/coverage-v8": "^2.1.9",
     "@vue/eslint-config-typescript": "^14.1.4",
     "@vue/test-utils": "^2.4.6",
     "@vue/tsconfig": "^0.5.1",
