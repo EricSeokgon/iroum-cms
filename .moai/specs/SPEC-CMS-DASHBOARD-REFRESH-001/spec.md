@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-DASHBOARD-REFRESH-001
-version: 0.1.0
-status: Draft
+version: 1.0.0
+status: Completed
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 author: manager-spec
 priority: P2
 parent: SPEC-CMS-DASHBOARD-PERSONALIZE-001 v0.1
@@ -345,3 +345,18 @@ GET 응답 예시 (신규 필드만 발췌):
 | AC-DR-008 | "지금 새로고침" 클릭 시 즉시 갱신 후 카운트다운이 재설정된다 | REQ-REFRESH-003-2 |
 | AC-DR-009 | 탭이 비가시가 되면 타이머가 일시정지되어 백그라운드 호출이 없다 | REQ-REFRESH-004-1 |
 | AC-DR-010 | 탭이 가시로 복귀하면 타이머가 재개되고, 주기 경과 시 1회 즉시 갱신된다 | REQ-REFRESH-004-2 |
+
+---
+
+## 17. 구현 요약 (Implementation Notes)
+
+- 구현 완료일: 2026-06-02
+- 브랜치: `feature/SPEC-CMS-DASHBOARD-REFRESH-001`
+- 커밋 수: 5개 (V42 마이그레이션, 백엔드, 백엔드 테스트, 프론트엔드, SPEC 아티팩트)
+- 모든 AC(AC-DR-001 ~ AC-DR-010) 구현 완료
+
+### SPEC vs 구현 차이점
+
+1. **i18n 키 미적용**: 기존 DashboardPreferencePanel이 vue-i18n 미사용(하드코딩 한국어) 패턴이므로 동일 패턴 적용. i18n 키 추가는 전체 dashboard 모듈 i18n 도입 시 일괄 처리 예정.
+2. **el-radio-group 사용**: el-select의 null 값 처리 제한으로 el-radio-group 사용 (기존 패널의 4개 컨트롤과 동일 패턴). 사용자 경험 동일.
+3. **숨김 위젯 필터**: DashboardMainView 레벨에서 layout_id 없이 widget.id로 근사 검사. 정확한 instance_id 필터는 레이아웃 컨텍스트를 가진 DashboardGridLayout에서 처리 예정.
