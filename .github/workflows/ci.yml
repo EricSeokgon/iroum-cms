@@ -115,7 +115,7 @@ jobs:
 
       - name: Test ${{ matrix.app }} (Vitest)
         working-directory: frontend
-        run: pnpm -F @iroum-cms/${{ matrix.app }} test --reporter=verbose --coverage
+        run: pnpm -F @iroum-cms/${{ matrix.app }} exec vitest run --reporter=verbose --coverage
 
       - name: Upload Coverage
         uses: actions/upload-artifact@v4
