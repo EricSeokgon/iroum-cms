@@ -146,7 +146,8 @@ function onLayoutUpdated(
   newLayout: Array<{ i: string | number; x: number; y: number; w: number; h: number }>,
 ): void {
   gridLayout.value = newLayout.map((g) => ({
-    i: g.i,
+    // grid-layout-plus 는 i 를 string|number 로 넘기지만 내부 모델은 string 사용
+    i: String(g.i),
     x: g.x,
     y: g.y,
     w: g.w,

@@ -258,6 +258,7 @@ async function save(): Promise<void> {
   try {
     const payload = {
       siteId,
+      name: form.value.name,
       title: form.value.name,
       contentHtml: form.value.contentHtml,
       position: form.value.position,

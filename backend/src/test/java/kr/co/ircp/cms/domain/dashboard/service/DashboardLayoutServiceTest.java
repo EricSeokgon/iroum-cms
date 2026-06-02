@@ -5,6 +5,7 @@ import kr.co.ircp.cms.domain.dashboard.dto.LayoutResponse;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayout;
 import kr.co.ircp.cms.domain.dashboard.entity.DashboardLayoutWidget;
 import kr.co.ircp.cms.domain.dashboard.exception.DashboardLayoutNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.preference.repository.UserDashboardPreferenceMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,12 +42,13 @@ class DashboardLayoutServiceTest {
 
     @Mock private DashboardLayoutMapper layoutMapper;
     @Mock private DashboardWidgetMapper widgetMapper;
+    @Mock private UserDashboardPreferenceMapper userDashboardPreferenceMapper;
 
     private DashboardLayoutServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DashboardLayoutServiceImpl(layoutMapper, widgetMapper);
+        service = new DashboardLayoutServiceImpl(layoutMapper, widgetMapper, userDashboardPreferenceMapper);
     }
 
     private DashboardLayout sampleLayout(Long id, Long ownerId, String name) {
