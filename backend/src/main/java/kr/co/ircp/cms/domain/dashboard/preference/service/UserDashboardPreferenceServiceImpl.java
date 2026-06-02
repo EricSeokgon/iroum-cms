@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * SPEC-CMS-DASHBOARD-PERSONALIZE-001 — UserDashboardPreferenceService 구현.
@@ -37,6 +38,9 @@ public class UserDashboardPreferenceServiceImpl implements UserDashboardPreferen
             new TypeReference<>() {
             };
 
+    // REQ-REFRESH-001-2: 허용 새로고침 주기(초) 화이트리스트 — DB CHECK 제약과 이중 방어.
+    private static final Set<Integer> ALLOWED_INTERVALS = Set.of(30, 60, 300, 900, 1800);
+
     private final UserDashboardPreferenceMapper mapper;
 
     @Override
@@ -56,6 +60,15 @@ public class UserDashboardPreferenceServiceImpl implements UserDashboardPreferen
     @Transactional
     public PreferenceResponse update(Long userId, PreferenceUpdateRequest req) {
         ensureExists(userId);
+        // REQ-REFRESH-001-2: 적용 의도(presence flag)가 있고 값이 null 이 아닐 때만 화이트리스트 검증.
+        // null 은 OFF 를 의미하므로 허용 — 검증 대상에서 제외한다.
+        if (Boolean.TRUE.equals(req.hasRefreshIntervalSeconds())
+                && req.refreshIntervalSeconds() != null
+                && !ALLOWED_INTERVALS.contains(req.refreshIntervalSeconds())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "refresh_interval_seconds 허용값: 30, 60, 300, 900, 1800 또는 null(OFF)");
+        }
         int updated = mapper.patch(
                 userId,
                 req.theme(),
@@ -63,6 +76,8 @@ public class UserDashboardPreferenceServiceImpl implements UserDashboardPreferen
                 req.fontScale(),
                 req.colorPalettePreference(),
                 req.sidebarCollapsed(),
+                req.refreshIntervalSeconds(),
+                req.hasRefreshIntervalSeconds(),
                 req.expectedUpdatedAt()
         );
         if (updated == 0) {

@@ -26,6 +26,7 @@ public record PreferenceResponse(
         @JsonProperty("font_scale") BigDecimal fontScale,
         @JsonProperty("color_palette_preference") String colorPalettePreference,
         @JsonProperty("sidebar_collapsed") boolean sidebarCollapsed,
+        @JsonProperty("refresh_interval_seconds") Integer refreshIntervalSeconds,
         @JsonProperty("schema_version") short schemaVersion,
         @JsonProperty("updated_at") Instant updatedAt
 ) {
@@ -42,6 +43,7 @@ public record PreferenceResponse(
                 e.getFontScale(),
                 e.getColorPalettePreference(),
                 e.isSidebarCollapsed(),
+                e.getRefreshIntervalSeconds(),
                 e.getSchemaVersion(),
                 e.getUpdatedAt()
         );

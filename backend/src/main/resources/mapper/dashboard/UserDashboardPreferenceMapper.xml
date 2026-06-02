@@ -13,6 +13,7 @@
         <result property="fontScale" column="font_scale"/>
         <result property="colorPalettePreference" column="color_palette_preference"/>
         <result property="sidebarCollapsed" column="sidebar_collapsed"/>
+        <result property="refreshIntervalSeconds" column="refresh_interval_seconds"/>
         <result property="schemaVersion" column="schema_version"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
@@ -26,6 +27,7 @@
                font_scale,
                color_palette_preference,
                sidebar_collapsed,
+               refresh_interval_seconds,
                schema_version,
                created_at,
                updated_at
@@ -47,6 +49,10 @@
             font_scale = COALESCE(#{fontScale}, font_scale),
             color_palette_preference = COALESCE(#{colorPalettePreference}, color_palette_preference),
             sidebar_collapsed = COALESCE(#{sidebarCollapsed}, sidebar_collapsed),
+            <!-- SPEC-CMS-DASHBOARD-REFRESH-001: presence flag 가 true 일 때만 적용 (null = OFF 표현 허용) -->
+            <if test="hasRefreshIntervalSeconds == true">
+                refresh_interval_seconds = #{refreshIntervalSeconds},
+            </if>
             updated_at = NOW()
         WHERE user_id = #{userId}
         <if test="expectedUpdatedAt != null">

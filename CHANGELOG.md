@@ -11,6 +11,22 @@
 
 ---
 
+## [2.6.0] - 2026-06-02
+
+### Added
+
+- **대시보드 자동 새로고침 주기 개인화** (`useDashboardAutoRefresh.ts`, `DashboardRefreshIndicator.vue`, SPEC-CMS-DASHBOARD-REFRESH-001)
+  - **DB 스키마**: `user_dashboard_preference.refresh_interval_seconds INT DEFAULT NULL` 컬럼 추가 (V42 마이그레이션) — CHECK 제약으로 허용값(30/60/300/900/1800) 강제
+  - **백엔드**: `PreferenceUpdateRequest`에 presence flag 패턴 (`hasRefreshIntervalSeconds`) 추가로 null(OFF) vs 필드 미전송 모호성 해결. 기존 `PATCH /api/v1/dashboard/preference` 엔드포인트 재사용 (신규 엔드포인트 0개)
+  - **서비스 검증**: 허용값 화이트리스트(30,60,300,900,1800) + DB CHECK 이중 방어 — 비허용값 요청 시 400 반환
+  - **`useDashboardAutoRefresh` 컴포저블** (`frontend/admin/src/composables/useDashboardAutoRefresh.ts`) — Page Visibility API 기반 탭 비가시 시 일시정지/재개, 언마운트 시 타이머·이벤트리스너 정리, 비가시 중 주기 경과 시 즉시 갱신
+  - **`DashboardRefreshIndicator` 컴포넌트** — 카운트다운(초) 표시 + "지금 새로고침" 수동 트리거
+  - **`DashboardPreferencePanel.vue`** — 자동 새로고침 주기 선택 라디오 그룹 추가 (끄기/30초/1분/5분/15분/30분)
+  - **`DashboardMainView.vue`** — 컴포저블 + 인디케이터 헤더 영역 연결 완료. 위젯 부분 갱신 시 `Promise.allSettled` 사용으로 일부 실패가 다른 위젯에 영향 없음
+  - **단위/통합 테스트**: 백엔드 15건(ServiceTest 11+4, IT 2+MigrationOrderIT 1) + 프론트엔드 22건 GREEN
+
+---
+
 ## [2.5.0] - 2026-06-01
 
 ### Added

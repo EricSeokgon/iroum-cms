@@ -294,6 +294,48 @@ class UserDashboardPreferenceIT extends AbstractIntegrationTest {
     }
 
     // =================================================================================
+    // §D-2 PATCH /preference 새로고침 주기 (SPEC-CMS-DASHBOARD-REFRESH-001)
+    // =================================================================================
+    @Nested
+    @DisplayName("§D-2 자동 새로고침 주기")
+    class RefreshInterval {
+
+        @Test
+        @DisplayName("REQ-REFRESH-001-1: PATCH 300 + has_flag=true → GET 시 300 반환 (V42 컬럼 존재)")
+        void save_and_retrieve_refreshInterval() throws Exception {
+            givenValidToken(userId, Set.of("EDITOR"));
+            mockMvc.perform(get("/api/v1/dashboard/preference")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)).andExpect(status().isOk());
+
+            mockMvc.perform(patch("/api/v1/dashboard/preference")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"refresh_interval_seconds\":300,\"has_refresh_interval_seconds\":true}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.refresh_interval_seconds").value(300));
+
+            mockMvc.perform(get("/api/v1/dashboard/preference")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.refresh_interval_seconds").value(300));
+        }
+
+        @Test
+        @DisplayName("REQ-REFRESH-001-2: 허용 외 값(10) + has_flag=true → 400 Bad Request")
+        void reject_refreshInterval_outsideAllowedSet() throws Exception {
+            givenValidToken(userId, Set.of("EDITOR"));
+            mockMvc.perform(get("/api/v1/dashboard/preference")
+                    .header("Authorization", "Bearer " + VALID_TOKEN)).andExpect(status().isOk());
+
+            mockMvc.perform(patch("/api/v1/dashboard/preference")
+                            .header("Authorization", "Bearer " + VALID_TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"refresh_interval_seconds\":10,\"has_refresh_interval_seconds\":true}"))
+                    .andExpect(status().isBadRequest());
+        }
+    }
+
+    // =================================================================================
     // §E 인증 가드
     // =================================================================================
     @Test
