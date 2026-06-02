@@ -15,7 +15,6 @@ vi.mock('@/api/dashboardPreference', () => ({
 }))
 
 import DashboardPreferencePanel from '@/views/dashboard/DashboardPreferencePanel.vue'
-import { dashboardPreferenceApi } from '@/api/dashboardPreference'
 import { useDashboardPreferenceStore } from '@/stores/dashboardPreferenceStore'
 
 const PREF_BASE = {
