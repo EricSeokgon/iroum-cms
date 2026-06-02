@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -101,32 +102,105 @@ class UserDashboardPreferenceServiceTest {
     @DisplayName("AC-DP-API-2: PATCH 시 변경된 필드만 갱신, 나머지는 보존")
     void update_partialPatch_appliesOnlyProvidedFields() {
         when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
-        when(mapper.patch(eq(USER_ID), eq("DARK"), any(), any(), any(), any(), any()))
+        when(mapper.patch(eq(USER_ID), eq("DARK"), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(1);
 
         PreferenceUpdateRequest req = new PreferenceUpdateRequest(
-                "DARK", null, null, null, null, null);
+                "DARK", null, null, null, null, null, null, null);
 
         service.update(USER_ID, req);
 
         verify(mapper).patch(
-                eq(USER_ID), eq("DARK"), eq(null), eq(null), eq(null), eq(null), eq(null));
+                eq(USER_ID), eq("DARK"), eq(null), eq(null), eq(null), eq(null),
+                eq(null), eq(null), eq(null));
     }
 
     @Test
     @DisplayName("REQ-DP-003-5: PATCH 시 낙관적 잠금 충돌이면 PreferenceConflictException 발생")
     void update_throwsConflict_whenOptimisticLockMismatches() {
         when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
-        when(mapper.patch(eq(USER_ID), any(), any(), any(), any(), any(),
+        when(mapper.patch(eq(USER_ID), any(), any(), any(), any(), any(), any(), any(),
                 eq(Instant.parse("2020-01-01T00:00:00Z"))))
                 .thenReturn(0);   // 0 행 갱신 → 충돌
 
         PreferenceUpdateRequest req = new PreferenceUpdateRequest(
-                "DARK", null, null, null, null,
+                "DARK", null, null, null, null, null, null,
                 Instant.parse("2020-01-01T00:00:00Z"));
 
         assertThatThrownBy(() -> service.update(USER_ID, req))
                 .isInstanceOf(PreferenceConflictException.class);
+    }
+
+    // ── SPEC-CMS-DASHBOARD-REFRESH-001 새로고침 주기 ──────────────────────────
+
+    @Test
+    @DisplayName("REQ-REFRESH-001-1: has_flag=true 이면 refresh 주기를 patch 에 전달한다")
+    void update_setsRefreshInterval_whenHasFlagTrue() {
+        when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
+        when(mapper.patch(eq(USER_ID), any(), any(), any(), any(), any(),
+                eq(300), eq(true), any()))
+                .thenReturn(1);
+
+        PreferenceUpdateRequest req = new PreferenceUpdateRequest(
+                null, null, null, null, null, 300, true, null);
+
+        service.update(USER_ID, req);
+
+        verify(mapper).patch(
+                eq(USER_ID), any(), any(), any(), any(), any(),
+                eq(300), eq(true), any());
+    }
+
+    @Test
+    @DisplayName("REQ-REFRESH-001-1: has_flag 가 null/false 이면 refresh 필드는 그대로 전달(미적용)")
+    void update_doesNotApplyRefreshInterval_whenHasFlagFalse() {
+        when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
+        when(mapper.patch(eq(USER_ID), eq("DARK"), any(), any(), any(), any(),
+                any(), any(), any()))
+                .thenReturn(1);
+
+        // refresh 값은 600 이지만 has_flag 가 null → XML <if> 에서 미적용
+        PreferenceUpdateRequest req = new PreferenceUpdateRequest(
+                "DARK", null, null, null, null, 600, null, null);
+
+        service.update(USER_ID, req);
+
+        // 화이트리스트 검증을 통과해야 한다 (has_flag 가 null 이므로 600 이어도 예외 없음).
+        verify(mapper).patch(
+                eq(USER_ID), eq("DARK"), any(), any(), any(), any(),
+                eq(600), eq(null), any());
+    }
+
+    @Test
+    @DisplayName("REQ-REFRESH-001-2: 허용 외 값(10) + has_flag=true → 400 BadRequest")
+    void update_rejectsInvalidRefreshInterval() {
+        when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
+
+        PreferenceUpdateRequest req = new PreferenceUpdateRequest(
+                null, null, null, null, null, 10, true, null);
+
+        assertThatThrownBy(() -> service.update(USER_ID, req))
+                .isInstanceOf(ResponseStatusException.class);
+        verify(mapper, never()).patch(any(), any(), any(), any(), any(), any(),
+                any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("REQ-REFRESH-001-3: has_flag=true + null 값(OFF)은 허용되어 patch 에 전달된다")
+    void update_allowsNullRefreshInterval_whenHasFlagTrue() {
+        when(mapper.findByUserId(USER_ID)).thenReturn(Optional.of(defaults()));
+        when(mapper.patch(eq(USER_ID), any(), any(), any(), any(), any(),
+                eq(null), eq(true), any()))
+                .thenReturn(1);
+
+        PreferenceUpdateRequest req = new PreferenceUpdateRequest(
+                null, null, null, null, null, null, true, null);
+
+        service.update(USER_ID, req);
+
+        verify(mapper).patch(
+                eq(USER_ID), any(), any(), any(), any(), any(),
+                eq(null), eq(true), any());
     }
 
     // ── REQ-DP-002-5 reset ───────────────────────────────────────────────────
