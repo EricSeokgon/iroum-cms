@@ -5,7 +5,6 @@ import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -106,30 +105,27 @@ class AuthorizationCoverageArchTest {
      * <p>운영 @PreAuthorize 어노테이션이 추가/제거되면 카운트 변경 → RED.
      * 의도적 변경 시 본 baseline + IT 시나리오를 함께 갱신해야 함.
      */
-    // @MX:WARN: [AUTO] 일시 격리 — 운영 @PreAuthorize 124건 vs baseline 113건 (인가 IT 커버리지 없이 추가된 엔드포인트 11건)
-    // @MX:REASON: 기존 보안 부채(대시보드 새로고침 기능과 무관). baseline 기계적 상향은 회귀 가드를 무력화하므로 금지.
-    //   인가 IT 시나리오 복원은 SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 진행 후 본 @Disabled 제거.
-    @Disabled("SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005: 신규 11개 엔드포인트 인가 IT 커버리지 복원 후 재활성화")
+    // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
+    //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 113, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 124, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 RUN 시점 운영 @PreAuthorize 메소드 레벨 113건
-        // QnaController GET /api/v1/qnas, GET /api/v1/qnas/{id} → 공개 API로 변경 (114→112)
-        // QnaController close/delete 추가 (112→113)
-        // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 5개 컨트롤러)는
-        // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 Step 2에서 별도 처리.
+        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 124건
+        // (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 113→124, +11 카운트 증가).
+        // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 컨트롤러)는
+        // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 권한 어휘 검증으로 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
-        // AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신할 것.
+        // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(113)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(124)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
-                        "AuthorizationMatrixExpandIT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(113L);
+                        "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
+                .isEqualTo(124L);
     }
 
     // =================================================================================
@@ -145,21 +141,20 @@ class AuthorizationCoverageArchTest {
      * baseline: 110 unique endpoint (AUTHZ-MATRIX-001 6 + AUTHZ-IT-EXPAND-001 29 + AUTHZ-IT-EXPAND-002 19
      * + AUTHZ-IT-EXPAND-003 34 + AUTHZ-IT-EXPAND-004 22).
      */
-    // @MX:WARN: [AUTO] 일시 격리 — AC-AAD-001-1과 동일 보안 부채(인가 IT 커버리지 미복원)
-    // @MX:REASON: SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 IT 시나리오 + baseline 동시 복원 후 재활성화.
-    @Disabled("SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005: 신규 11개 엔드포인트 인가 IT 커버리지 복원 후 재활성화")
+    // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 110→138 (Expand5IT 미커버 28 endpoint 추가) 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (110 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (138 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
         assertThat(itEndpoints)
                 .as("IT @DisplayName에서 추출된 unique endpoint(METHOD+path) 개수가 변경되었습니다. " +
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
-                        "AuthorizationMatrixExpand3IT 또는 AuthorizationMatrixExpand4IT에서 시나리오 추가/제거가 발생했습니다. " +
-                        "본 baseline(110)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에서 " +
+                        "시나리오 추가/제거가 발생했습니다. " +
+                        "본 baseline(138)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(110);
+                .hasSize(138);
     }
 
     /**
@@ -168,11 +163,9 @@ class AuthorizationCoverageArchTest {
      * <p>baseline 110 endpoint (운영 @PreAuthorize 중 IT 검증 대상) ↔ IT @DisplayName 추출 set 정확 일치 검증.
      * 누락(missingFromIt) 또는 추가(extraInIt) 발생 시 RED + 어떤 endpoint가 변동되었는지 메시지 출력.
      */
-    // @MX:WARN: [AUTO] 일시 격리 — AC-AAD-001-1과 동일 보안 부채(인가 IT 커버리지 미복원)
-    // @MX:REASON: SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 IT 시나리오 + baseline 동시 복원 후 재활성화.
-    @Disabled("SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005: 신규 11개 엔드포인트 인가 IT 커버리지 복원 후 재활성화")
+    // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — baseline 138 endpoint 정확 매칭 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-002-1: 110 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    @DisplayName("AC-AAD-002-1: 138 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
     void it_endpointSet_matchesBaseline88() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
@@ -188,10 +181,10 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 110 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                .as("baseline 138 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
-                        "AuthorizationMatrixExpand3IT 또는 AuthorizationMatrixExpand4IT에 해당 시나리오가 제거되었습니다. " +
-                        "회귀 검토 필요.", missingFromIt)
+                        "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에 " +
+                        "해당 시나리오가 제거되었습니다. 회귀 검토 필요.", missingFromIt)
                 .isEmpty();
 
         assertThat(extraInIt)
@@ -573,7 +566,44 @@ class AuthorizationCoverageArchTest {
                 "PATCH /api/v1/content/templates/{id}/status",
                 // §A.3 AuthSystemDomain 2 (Role list class-level + CacheAdmin stats)
                 "GET /api/v1/roles",
-                "GET /api/v1/dashboard/cache/stats"
+                "GET /api/v1/dashboard/cache/stats",
+
+                // ─── AUTHZ-IT-EXPAND-005 28 endpoint (IT 미커버 운영 메서드 레벨 @PreAuthorize 복원) ───
+                // 메서드 레벨 카운트 113→124(+11)이나 IT set 차집합은 28 — 기존 113 시점에도 IT 미커버였던
+                // 엔드포인트 포함. AuthorizationMatrixExpand5IT에 401/403 인가 시나리오 추가.
+                // §A BoardDomain (PostController isAuthenticated 3 + PostTranslationController role 4 = 7)
+                "POST /api/v1/board/posts",
+                "PUT /api/v1/board/posts/{id}",
+                "DELETE /api/v1/board/posts/{id}",
+                "GET /api/v1/board/posts/{id}/translations",
+                "GET /api/v1/board/posts/{id}/translations/{id}",
+                "PUT /api/v1/board/posts/{id}/translations",
+                "DELETE /api/v1/board/posts/{id}/translations/{id}",
+                // §B ContentDomain (Seo 2 + ContentRead 5 + PopupActive 1 = 8)
+                "POST /api/v1/content/seo/redirects",
+                "DELETE /api/v1/content/seo/redirects/{id}",
+                "GET /api/v1/content/banners/groups",
+                "GET /api/v1/content/i18n/list",
+                "GET /api/v1/content/pages",
+                "GET /api/v1/content/popups",
+                "GET /api/v1/content/templates/{id}",
+                "PATCH /api/v1/content/popups/{id}/active",
+                // §C SystemDomain (Dashboard 2 + Stats 2 + Setting 1 = 5)
+                "GET /api/v1/system/dashboard/trends",
+                "GET /api/v1/system/dashboard/top-pages",
+                "GET /api/v1/system/stats/visitors",
+                "GET /api/v1/system/stats/menu-pages",
+                "GET /api/v1/system/settings/{id}",
+                // §D AuthUserDomain (UserController role 2)
+                "POST /api/v1/users/{id}/reset-password",
+                "PATCH /api/v1/users/bulk-status",
+                // §E DashboardPreferenceDomain (isAuthenticated 6)
+                "GET /api/v1/dashboard/preference",
+                "PATCH /api/v1/dashboard/preference",
+                "POST /api/v1/dashboard/preference/reset",
+                "PATCH /api/v1/dashboard/preference/widgets/{id}/hidden",
+                "POST /api/v1/dashboard/preference/widgets/{id}/show-all",
+                "PATCH /api/v1/dashboard/layouts/{id}/positions"
         );
     }
 }
