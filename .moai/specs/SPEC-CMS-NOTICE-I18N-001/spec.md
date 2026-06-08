@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-NOTICE-I18N-001
-version: 0.1.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-09
 author: manager-spec
 priority: P2
 parent: SPEC-CMS-008
@@ -17,6 +17,8 @@ issue_number: TBD
 
 ## HISTORY
 
+- 2026-06-09 (v0.3.0): Tested. CI GREEN (origin/main 6dc5e24) — 백엔드/프론트엔드 구현 완료. CHANGELOG v2.5.0 동기화 완료.
+- 2026-06-01 (v0.2.0): Implemented. 백엔드 bbs_post_i18n 테이블 마이그레이션 및 API, 프론트엔드 다국어 등록/조회 UI 구현 완료.
 - 2026-06-01 (v0.1.0): Draft 작성. 공지(NOTICE) 게시글의 한국어(ko)+영어(en) 다국어 등록/조회 요구사항 정의. `bbs_post_i18n` 신규 분리 테이블 접근법 채택.
 
 ---
