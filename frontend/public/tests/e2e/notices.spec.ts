@@ -6,9 +6,11 @@
 // 카테고리 옵션: EVENT / NEWS / GENERAL (NoticeListView.vue line 33-36)
 import { test, expect } from '@playwright/test'
 import { clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('공지 목록 (NoticeListView)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 

@@ -6,9 +6,11 @@
 // 셀렉터: faq-list, faq-header-{idx}, faq-panel-{idx}, faq-category-select, faq-keyword-input
 import { test, expect } from '@playwright/test'
 import { clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('FAQ 화면 (FaqView)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 

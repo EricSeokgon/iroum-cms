@@ -1,5 +1,6 @@
 // SPEC-CMS-DASHBOARD-PERSONALIZE-001 — DashboardPreferencePanel 단위 테스트
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 
@@ -57,12 +58,14 @@ describe('DashboardPreferencePanel — SPEC-CMS-DASHBOARD-PERSONALIZE-001', () =
     expect(store).toBeDefined()
   })
 
-  it('AC-DP-001-2: 숨김 위젯 태그를 layout 별로 렌더링한다', () => {
+  it('AC-DP-001-2: 숨김 위젯 태그를 layout 별로 렌더링한다', async () => {
     setupStoreWith(PREF_BASE)
     const wrapper = mount(DashboardPreferencePanel, {
       props: { modelValue: true, layoutId: 1 },
       attachTo: document.body,
     })
+    // ElDrawer 는 teleport 로 body 에 렌더링되므로 DOM 반영을 위해 한 틱 대기
+    await nextTick()
     // ElDrawer 는 body 에 teleport 되므로 document 에서 검색
     const list = document.querySelector('[data-testid="hidden-widget-list"]')
     expect(list?.textContent ?? '').toContain('w-pv-001')
@@ -79,6 +82,7 @@ describe('DashboardPreferencePanel — SPEC-CMS-DASHBOARD-PERSONALIZE-001', () =
       props: { modelValue: true, layoutId: 1 },
       attachTo: document.body,
     })
+    await nextTick()
     const btn = document.querySelector('[data-testid="show-all-button"]') as HTMLButtonElement
     btn?.click()
     await Promise.resolve()
@@ -94,6 +98,7 @@ describe('DashboardPreferencePanel — SPEC-CMS-DASHBOARD-PERSONALIZE-001', () =
       props: { modelValue: true, layoutId: 1 },
       attachTo: document.body,
     })
+    await nextTick()
     const btn = document.querySelector('[data-testid="reset-button"]') as HTMLButtonElement
     btn?.click()
     await Promise.resolve()

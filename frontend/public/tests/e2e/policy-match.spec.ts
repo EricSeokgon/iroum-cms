@@ -10,9 +10,11 @@
 //   라우트 메타: requiresAuth=false → 401 시 /login 리다이렉트 없음 (axios 인터셉터)
 import { test, expect } from '@playwright/test'
 import { clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('정책 매칭 (PolicyMatchView)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 
