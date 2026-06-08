@@ -9,9 +9,11 @@
 //   /:pathMatch(.*)* → NotFoundView (data-testid="not-found-view")
 import { test, expect } from '@playwright/test'
 import { clearAuth, buildLoginRedirectUrl } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('에러 페이지 (NotFoundView / ForbiddenView / ServerErrorView / MaintenanceView)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 

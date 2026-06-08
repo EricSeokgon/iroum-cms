@@ -8,9 +8,11 @@
 //   결과: data-testid="search-result-list" (결과 있을 때) / search-empty-tip (빈 결과)
 import { test, expect } from '@playwright/test'
 import { clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('통합 검색 (SearchResultView + SearchFilterTabs)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 

@@ -16,6 +16,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { loginAs, clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 // 색상 대비는 jsdom 한계 / 시각 회귀 영역으로 분리 — 본 spec 에서는 critical 위반만 검증
 const AXE_DISABLED_RULES = ['color-contrast']
@@ -29,6 +30,7 @@ async function runAxe(page: Page) {
 
 test.describe('스킵 네비게이션 (REQ-E2E-012)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 
@@ -74,6 +76,7 @@ test.describe('스킵 네비게이션 (REQ-E2E-012)', () => {
 
 test.describe('폼 에러 ARIA (REQ-E2E-013)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     // QnaCreateView 는 requiresAuth=true 라우트 — 토큰 주입 필수
     await loginAs(page, { token: 'e2e-a11y-test-token' })
   })
@@ -103,6 +106,7 @@ test.describe('폼 에러 ARIA (REQ-E2E-013)', () => {
 
 test.describe('axe-core 자동 접근성 검사 (critical 위반 0)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 

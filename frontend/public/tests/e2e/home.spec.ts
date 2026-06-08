@@ -6,9 +6,11 @@
 // 셀렉터: home-hero / home-search-form / home-search-input / home-notices-section / home-quicklinks
 import { test, expect } from '@playwright/test'
 import { clearAuth } from './fixtures/auth'
+import { mockAllApis } from './fixtures/api-mocks'
 
 test.describe('홈 페이지 (HomeView)', () => {
   test.beforeEach(async ({ page }) => {
+    await mockAllApis(page)
     await clearAuth(page)
   })
 
