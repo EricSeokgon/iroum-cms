@@ -5,8 +5,6 @@ import { setActivePinia, createPinia } from 'pinia'
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { createI18n } from 'vue-i18n'
 import ElementPlus from 'element-plus'
-import axios from 'axios'
-
 // apiClient mock
 vi.mock('@iroum/shared/api/client', () => ({
   apiClient: {
@@ -82,7 +80,7 @@ describe('LoginView', () => {
   it('401 응답 시 에러 메시지를 표시한다', async () => {
     const auth = useAuthStore()
     vi.spyOn(auth, 'login').mockRejectedValueOnce(
-      Object.assign(axios.create().get('/'), {
+      Object.assign(new Error('Unauthorized'), {
         isAxiosError: true,
         response: {
           status: 401,
