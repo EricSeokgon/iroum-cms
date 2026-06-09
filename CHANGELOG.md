@@ -11,6 +11,25 @@
 
 ---
 
+## [2.6.1] - 2026-06-09
+
+### Fixed
+
+- **백엔드 IT Spring 컨텍스트 로드 복구** (`MlServiceClientTestStub.java`, `MailTestStubConfig.java`, SPEC-CMS-TEST-INFRA-CONTEXT-RESTORE-001)
+  - 근본 원인: `MlServiceClient`(`@Profile("!test")`)와 `JavaMailSender`(`spring.mail.host` 부재)가 CI test 프로파일에서 미생성 → `@SpringBootTest` 컨텍스트 로드 실패 (349/2007 테스트 연쇄 실패)
+  - `MlServiceClientTestStub` — `@Profile("test") @Primary @Component` test stub (실제 ML 서비스 미호출, 빈 stub 응답 반환)
+  - `MailTestStubConfig` — `@Profile("test") @TestConfiguration` stub (JavaMailSender NoOpMailSender 등록)
+  - 운영 프로파일 동작 불변 확인 (두 stub 모두 `@Profile("test")` 스코프 한정) (커밋 54c3d01, d9e8a26)
+  - CI GREEN 확인: origin/main 6dc5e24 — 349건 컨텍스트 연쇄 실패 해소
+
+- **신규 엔드포인트 인가 IT 커버리지 복원** (`AuthorizationMatrixExpand5IT.java`, `AuthorizationCoverageArchTest.java`, SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005)
+  - `AuthorizationMatrixExpand5IT` 신설 — IT 미커버 운영 `@PreAuthorize` 엔드포인트 28건의 401/403 인가 시나리오 88건 추가 (BoardDomain/ContentDomain/SystemDomain/AuthUserDomain/DashboardPreferenceDomain 분류)
+  - `AuthorizationCoverageArchTest` baseline 의도적 갱신: 메서드 카운트 113→124 (+11), IT endpoint set 110→138 (+28)
+  - `@Disabled` 격리 3개 메서드 재활성화: `operational_preAuthorize_baselineCount`, `it_displayName_endpointBaselineCount`, `it_endpointSet_matchesBaseline88` — 4개 메서드 모두 GREEN
+  - CI GREEN 확인: origin/main 6dc5e24 (커밋 6dc5e24)
+
+---
+
 ## [2.6.0] - 2026-06-02
 
 ### Added
