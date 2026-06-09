@@ -46,9 +46,8 @@ public class PostController {
             @RequestParam(required = false) String sort,
             @RequestParam(value = "lang", defaultValue = "ko") String lang
     ) {
-        // SPEC-CMS-NOTICE-I18N-001: lang 파라미터. ko 원본은 bbs_post에서 직접 반환.
-        // en 등 번역 목록 오버레이는 후속 작업 — 현재는 ko 원본 목록 반환.
-        return ResponseEntity.ok(postService.listPosts(bbsId, page, size));
+        // SPEC-CMS-NOTICE-I18N-002: lang 파라미터를 서비스에 전달하여 번역 목록 오버레이 활성화.
+        return ResponseEntity.ok(postService.listPosts(bbsId, page, size, lang));
     }
 
     /** GET /api/v1/board/posts/search?bbsId=X&keyword=Y — 게시글 전문검색 */

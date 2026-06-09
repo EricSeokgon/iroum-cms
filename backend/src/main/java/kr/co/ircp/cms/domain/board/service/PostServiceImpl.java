@@ -52,11 +52,12 @@ public class PostServiceImpl implements PostService {
     private final AuthorizationGuard authorizationGuard;
 
     @Override
-    public PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size) {
+    public PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size, String lang) {
         bbsMasterMapper.findById(bbsMasterId)
                 .orElseThrow(() -> new BbsMasterNotFoundException(bbsMasterId));
         int offset = page * size;
-        List<BbsPost> posts = bbsPostMapper.findByBbsMasterIdPaged(bbsMasterId, offset, size);
+        // SPEC-CMS-NOTICE-I18N-002: lang 전달 → LEFT JOIN으로 번역 제목 오버레이.
+        List<BbsPost> posts = bbsPostMapper.findByBbsMasterIdPaged(bbsMasterId, offset, size, lang);
         long total = bbsPostMapper.countByBbsMasterId(bbsMasterId);
         List<PostSummary> content = posts.stream()
                 .map(this::toSummary)
@@ -260,12 +261,15 @@ public class PostServiceImpl implements PostService {
     // ─── 헬퍼 ────────────────────────────────────────────────────────────────
 
     private PostSummary toSummary(BbsPost p) {
+        // SPEC-CMS-NOTICE-I18N-002: language 필드는 mapper LEFT JOIN 결과에서 채워짐.
+        // lang='ko'이거나 번역 없을 때 null → 'ko' 기본값 처리.
+        String language = p.getLanguage() != null ? p.getLanguage() : "ko";
         return new PostSummary(
                 p.getId(), p.getBbsId(), null,
                 p.getTitle(), p.getAuthorId(), p.getAuthorName(),
                 p.isNotice(), p.isSecret(),
                 p.getViewCount(), p.getCommentCount(), p.getAttachmentCount(),
-                p.getCreatedAt()
+                p.getCreatedAt(), language
         );
     }
 

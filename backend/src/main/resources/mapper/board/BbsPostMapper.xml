@@ -33,14 +33,33 @@
         <result property="deletedAt" column="deleted_at"/>
     </resultMap>
 
-    <select id="findByBbsMasterIdPaged" resultMap="bbsPostResultMap">
-        SELECT id, bbs_id, title, content_html, content_text, category_code,
-               author_id, author_name, is_notice, notice_from, notice_until, is_secret,
-               view_count, like_count, comment_count, attachment_count,
-               status, published_at, created_at, updated_at, deleted_at
-        FROM bbs_post
-        WHERE bbs_id = #{bbsMasterId} AND deleted_at IS NULL
-        ORDER BY is_notice DESC, id DESC
+    <!--
+        SPEC-CMS-NOTICE-I18N-002: i18n 오버레이용 resultMap.
+        bbsPostResultMap 을 재사용하고 language 컬럼만 추가 매핑.
+    -->
+    <resultMap id="bbsPostI18nResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPost"
+               extends="bbsPostResultMap">
+        <result property="language" column="language"/>
+    </resultMap>
+
+    <!--
+        SPEC-CMS-NOTICE-I18N-002: lang 파라미터에 따라 bbs_post_i18n 번역을 LEFT JOIN으로 오버레이.
+        - lang='ko'(기본): i18n 조인 없이 원본 제목 반환, language='ko' 고정.
+        - lang='en'(번역): COALESCE(i18n.title, p.title)로 번역 제목 우선 반환,
+          language 는 번역 존재 여부에 따라 'en' 또는 'ko'.
+    -->
+    <select id="findByBbsMasterIdPaged" resultMap="bbsPostI18nResultMap">
+        SELECT p.id, p.bbs_id, p.content_html, p.content_text, p.category_code,
+               p.author_id, p.author_name, p.is_notice, p.notice_from, p.notice_until, p.is_secret,
+               p.view_count, p.like_count, p.comment_count, p.attachment_count,
+               p.status, p.published_at, p.created_at, p.updated_at, p.deleted_at,
+               COALESCE(i18n.title, p.title) AS title,
+               CASE WHEN i18n.title IS NOT NULL THEN #{lang} ELSE 'ko' END AS language
+        FROM bbs_post p
+        LEFT JOIN bbs_post_i18n i18n
+               ON i18n.post_id = p.id AND i18n.language = #{lang} AND #{lang} != 'ko'
+        WHERE p.bbs_id = #{bbsMasterId} AND p.deleted_at IS NULL
+        ORDER BY p.is_notice DESC, p.id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 

@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTICE-I18N-002
 version: 0.1.0
-status: Draft
+status: Implemented
 created: 2026-06-09
 updated: 2026-06-09
 author: MoAI

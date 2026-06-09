@@ -21,8 +21,8 @@ import java.util.Optional;
  */
 public interface PostService {
 
-    /** 게시글 목록 페이징 조회 */
-    PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size);
+    /** SPEC-CMS-NOTICE-I18N-002: lang 파라미터로 번역 오버레이 제목 조회 지원. */
+    PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size, String lang);
 
     /** 게시글 전문검색 페이징 조회 */
     PageResponse<PostSummary> searchPosts(Long bbsMasterId, String keyword, int page, int size);
