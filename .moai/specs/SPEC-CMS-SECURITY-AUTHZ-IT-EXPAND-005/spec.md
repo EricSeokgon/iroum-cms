@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005
-version: 0.1.0
-status: Draft
+version: 0.2.0
+status: Implemented
 created: 2026-06-02
-updated: 2026-06-02
+updated: 2026-06-09
 author: MoAI
 priority: P1
 parent: SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001
@@ -21,6 +21,7 @@ issue_number: TBD
 ## HISTORY
 
 - v0.1 / 2026-06-02 / MoAI / CI baseline 복구 작업 중 `AuthorizationCoverageArchTest`가 운영 `@PreAuthorize` 메서드 124건 vs baseline 113건(차이 11건)을 검출. 신규 엔드포인트가 인가 IT 시나리오(401/403 검증) 없이 추가된 보안 테스트 커버리지 갭. arch 테스트 3개 메서드를 `@Disabled`로 일시 격리하고 본 SPEC으로 복원을 추적. 격리된 메서드 재활성화가 완료 기준.
+- v0.2 / 2026-06-09 / MoAI / Implemented (PR #6, commit 6dc5e24). `AuthorizationMatrixExpand5IT` 신설(88 @DisplayName 시나리오, BoardDomain/ContentDomain/SystemDomain/AuthUserDomain/DashboardPreferenceDomain 분류)로 IT 미커버 운영 @PreAuthorize 엔드포인트 28건의 401/403 인가 시나리오 추가. `AuthorizationCoverageArchTest` baseline 의도적 갱신: 메서드 레벨 카운트 113→124(+11), IT endpoint set 110→138(차집합 +28 — 메서드 카운트 증가분과 다른 것은 113 시점에도 IT 미커버였던 기존 엔드포인트 포함). `@Disabled` 3개 메서드(operational_preAuthorize_baselineCount / it_displayName_endpointBaselineCount / it_endpointSet_matchesBaseline88) 재활성화 완료, 4개 메서드 전부 GREEN 검증.
 
 ---
 
@@ -57,11 +58,11 @@ issue_number: TBD
 
 ## 4. 완료 기준 (Acceptance)
 
-- [ ] baseline 113 → 124 차이 11개 엔드포인트 전수 식별
-- [ ] 각 엔드포인트 401/403 인가 IT 시나리오 추가
-- [ ] `AuthorizationCoverageArchTest`의 baseline(카운트 + endpoint set) 의도적 갱신
-- [ ] 격리된 3개 메서드의 `@Disabled` 제거 후 4개 메서드 모두 GREEN
-- [ ] 표준 CI 환경에서 `./gradlew build` 통과 확인
+- [x] baseline 113 → 124 차이 식별 — 메서드 레벨 카운트 +11, IT endpoint set 차집합 +28 (113 시점 미커버 포함)
+- [x] 각 엔드포인트 401/403 인가 IT 시나리오 추가 (`AuthorizationMatrixExpand5IT` 88 @DisplayName)
+- [x] `AuthorizationCoverageArchTest`의 baseline(카운트 124 + endpoint set 138) 의도적 갱신
+- [x] 격리된 3개 메서드의 `@Disabled` 제거 후 4개 메서드 모두 GREEN
+- [x] 표준 CI 환경에서 `./gradlew build` 통과 확인 (PR #6 머지)
 
 ## 5. 참고
 
