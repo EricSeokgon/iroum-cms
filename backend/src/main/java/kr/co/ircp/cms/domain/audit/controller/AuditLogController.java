@@ -45,9 +45,9 @@ public class AuditLogController {
     @Operation(summary = "감사 로그 목록 조회 (동적 필터 + 페이징)")
     @GetMapping
     public ResponseEntity<AuditLogSearchResponse> search(
-            @RequestParam(required = false) String action,
+            @RequestParam(required = false) List<String> action,
             @RequestParam(value = "entity_type", required = false) String entityType,
-            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) List<String> severity,
             @RequestParam(required = false) String result,
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String fromTime,
@@ -105,9 +105,9 @@ public class AuditLogController {
     @Operation(summary = "감사 로그 CSV 내보내기 (커서 스트리밍)")
     @GetMapping("/export")
     public ResponseEntity<StreamingResponseBody> export(
-            @RequestParam(required = false) String action,
+            @RequestParam(required = false) List<String> action,
             @RequestParam(value = "entity_type", required = false) String entityType,
-            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) List<String> severity,
             @RequestParam(required = false) String result,
             @RequestParam(required = false) Long actorId,
             @RequestParam(required = false) String fromTime,
