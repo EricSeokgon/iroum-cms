@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-TEST-INFRA-CONTEXT-RESTORE-001
-version: 0.3.0
-status: Tested
+version: 0.4.0
+status: Completed
 created: 2026-06-02
 updated: 2026-06-09
 author: MoAI
@@ -19,6 +19,7 @@ issue_number: TBD
 
 ## HISTORY
 
+- 2026-06-09 (v0.4.0): Completed. CHANGELOG v2.6.1 Sync 완료 — 테스트 인프라 컨텍스트 복구 항목 등재.
 - 2026-06-09 (v0.3.0): Tested. CI GREEN (origin/main 6dc5e24) — @SpringBootTest 컨텍스트 로드 정상화. 349개 컨텍스트 연쇄 실패 해소 확인.
 - 2026-06-09 (v0.2.0): Implemented. 근본 원인: `MlServiceClient`(`@Profile("!test")`) + `JavaMailSender`(`spring.mail.host` 부재) 두 빈이 CI test 프로파일에서 미생성. 해결: `MlServiceClientTestStub` + `MailTestStubConfig` `@Profile("test")` 스텁 2건 추가(커밋 `54c3d01`, main 병합 2026-06-05). `@SpringBootTest` 컨텍스트 로드 정상화 확인.
 - v0.1 / 2026-06-02 / MoAI / main CI baseline 복구(fix/ci-baseline-failures, PR #4) 중 발견. 백엔드 테스트 컴파일 복구 후 `@SpringBootTest` 기반 IT가 CI에서 Spring `ApplicationContext` 로드에 실패(2007개 중 349개 실패). 근본 원인: `NoSuchBeanDefinitionException: kr.co.ircp.cms.infra.ml.MlServiceClient`. 로컬 Testcontainers 환경에선 통과하나 CI 환경에서 빈 미생성. 대시보드 새로고침 기능과 무관한 사전 존재 부채로, 전용 SPEC으로 분리 추적.
