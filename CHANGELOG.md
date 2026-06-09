@@ -9,6 +9,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- **공지/게시글 목록 i18n 번역 오버레이** (`BbsPostMapper.java`, `BbsPostMapper.xml`, `PostSummary.java`, SPEC-CMS-NOTICE-I18N-002)
+  - **`BbsPost` 엔티티**: `titleEn`, `titleJa` 필드 추가 (PostgreSQL `jsonb` 컬럼 기반 다국어 제목 저장)
+  - **`BbsPostMapper.xml`**: `resultMap`에 다국어 제목 필드 매핑, 목록 쿼리 LEFT JOIN `bbs_post_i18n` 추가 — `Accept-Language` 기반 언어 선택 지원
+  - **`PostController`**: `Accept-Language` 헤더 파싱 → 요청 로케일 추출 후 `PostService`에 전달
+  - **`PostService` / `PostServiceImpl`**: 목록 조회 메서드에 `language` 파라미터 추가, 번역 존재 시 제목 오버레이 적용
+  - **`PostSummary` DTO**: `titleEn`, `titleJa` 필드 추가 — 목록 API 응답에 번역 제목 포함
+  - **`PostI18nIT`**: Testcontainers 기반 통합 테스트 신설 — 번역 오버레이, 원본 폴백, Accept-Language 처리 AC 전체 GREEN
+  - CHANGELOG v2.5.0 알려진 제한 사항(게시글 목록 `?lang=en` 한국어 반환) 해소
+
 ---
 
 ## [2.6.1] - 2026-06-09
