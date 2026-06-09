@@ -17,11 +17,12 @@ import java.util.Optional;
 @Mapper
 public interface BbsPostMapper {
 
-    /** 게시글 목록 페이징 조회 */
+    /** 게시글 목록 페이징 조회. SPEC-CMS-NOTICE-I18N-002: lang 파라미터로 번역 오버레이 지원. */
     List<BbsPost> findByBbsMasterIdPaged(
             @Param("bbsMasterId") Long bbsMasterId,
             @Param("offset") int offset,
-            @Param("limit") int limit
+            @Param("limit") int limit,
+            @Param("lang") String lang
     );
 
     /** 전문검색 (TSVECTOR) 페이징 조회 */

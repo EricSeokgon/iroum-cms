@@ -81,11 +81,11 @@ class PostServiceTest {
     @DisplayName("게시글 목록 페이징 — 결과 반환")
     void listPosts_paged_returnsPage() {
         when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
-        when(bbsPostMapper.findByBbsMasterIdPaged(eq(1L), eq(0), eq(20)))
+        when(bbsPostMapper.findByBbsMasterIdPaged(eq(1L), eq(0), eq(20), eq("ko")))
                 .thenReturn(List.of(stubPost(1L, 1L)));
         when(bbsPostMapper.countByBbsMasterId(1L)).thenReturn(1L);
 
-        PageResponse<?> result = postService.listPosts(1L, 0, 20);
+        PageResponse<?> result = postService.listPosts(1L, 0, 20, "ko");
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1L);

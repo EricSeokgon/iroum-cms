@@ -58,10 +58,10 @@ class PostControllerTest {
     void listPosts_returns200WithPage() throws Exception {
         PostSummary summary = new PostSummary(
                 1L, 1L, "NOTICE", "공지 제목", 10L, "관리자",
-                false, false, 0L, 0L, 0L, Instant.now()
+                false, false, 0L, 0L, 0L, Instant.now(), "ko"
         );
         PageResponse<PostSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
-        when(postService.listPosts(anyLong(), anyInt(), anyInt())).thenReturn(page);
+        when(postService.listPosts(anyLong(), anyInt(), anyInt(), anyString())).thenReturn(page);
 
         // PostController는 /api/v1/board/posts 매핑이며 bbsId를 쿼리 파라미터로 받음
         mockMvc.perform(get("/api/v1/board/posts")

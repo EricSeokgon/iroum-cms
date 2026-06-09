@@ -18,6 +18,8 @@ public record PostSummary(
         long viewCount,
         long commentCount,
         long attachmentCount,
-        Instant createdAt
+        Instant createdAt,
+        // SPEC-CMS-NOTICE-I18N-002: 응답 항목별 실제 언어 코드 ('ko' 또는 'en').
+        String language
 ) {
 }

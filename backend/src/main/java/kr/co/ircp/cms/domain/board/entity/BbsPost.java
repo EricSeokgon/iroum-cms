@@ -44,4 +44,7 @@ public class BbsPost {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;
+
+    // SPEC-CMS-NOTICE-I18N-002: LEFT JOIN bbs_post_i18n 결과에서 채워지는 필드. DB 컬럼 없음.
+    private String language;
 }
