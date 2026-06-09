@@ -108,24 +108,27 @@ class AuthorizationCoverageArchTest {
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
     //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 124, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 126, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 124건
+        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 126건
         // (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 113→124, +11 카운트 증가).
+        // (SPEC-CMS-POST-SCHEDULE-001 — 124→126, PostController schedule/cancelSchedule 2개 endpoint 추가.
+        //  두 endpoint 는 기존 게시글 쓰기와 동일한 isAuthenticated() 정책이며 PostIT 의 예약 발행 시나리오
+        //  (AC-PS-001/006/007/010, 토큰 기반 200/404/409)에서 인가 거동을 검증한다.)
         // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 컨트롤러)는
         // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 권한 어휘 검증으로 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(124)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(126)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(124L);
+                .isEqualTo(126L);
     }
 
     // =================================================================================

@@ -990,8 +990,20 @@
         "isNoticeLabel": "Pin as notice",
         "categoryCode": "Category",
         "categoryPlaceholder": "Category (optional)",
-        "attachments": "Attachments"
+        "attachments": "Attachments",
+        "publishMode": "Publish mode",
+        "scheduledAt": "Scheduled publish time",
+        "scheduledAtPlaceholder": "Select date and time to publish"
       },
+      "publishMode": {
+        "now": "Publish now",
+        "schedule": "Schedule"
+      },
+      "status": {
+        "scheduled": "Scheduled"
+      },
+      "cancelSchedule": "Cancel schedule",
+      "cancelScheduleConfirm": "Cancel the scheduled publication and revert to draft?",
       "confirm": {
         "delete": "Delete this post? This action cannot be undone."
       },
@@ -1005,13 +1017,16 @@
         "fileLimit": "You can attach up to 5 files",
         "titleRequired": "Please enter a title",
         "titleLength": "Title must be 500 characters or less",
-        "contentRequired": "Please enter content"
+        "contentRequired": "Please enter content",
+        "scheduledAtRequired": "Please select a scheduled publish time."
       },
       "success": {
         "created": "Post created successfully",
         "updated": "Post updated successfully",
         "deleted": "Post deleted successfully",
-        "uploaded": "uploaded"
+        "uploaded": "uploaded",
+        "scheduled": "Scheduled publication set.",
+        "scheduleCancelled": "Schedule cancelled."
       }
     },
     "comments": {

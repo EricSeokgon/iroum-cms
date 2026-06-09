@@ -40,6 +40,7 @@ import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.PostScheduleConflictException;
 import kr.co.ircp.cms.domain.board.exception.PublicationNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.SurveyNotFoundException;
@@ -511,6 +512,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Post Not Found");
         detail.setProperty("code", "POST_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 게시글 예약/취소 상태 전이 충돌 → HTTP 409 Conflict.
+     *
+     * <p>SPEC-CMS-POST-SCHEDULE-001 REQ-POST-SCHEDULE-004-2 / 007-2 —
+     * 비SCHEDULED 게시글 취소 또는 DELETED 게시글 예약 시도.
+     */
+    @ExceptionHandler(PostScheduleConflictException.class)
+    public ProblemDetail handlePostScheduleConflict(PostScheduleConflictException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Post Schedule Conflict");
+        detail.setProperty("code", "POST_SCHEDULE_CONFLICT");
         return detail;
     }
 

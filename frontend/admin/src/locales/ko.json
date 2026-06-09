@@ -989,8 +989,20 @@
         "isNoticeLabel": "상단 공지로 설정",
         "categoryCode": "카테고리",
         "categoryPlaceholder": "카테고리 (선택)",
-        "attachments": "첨부파일"
+        "attachments": "첨부파일",
+        "publishMode": "발행 방식",
+        "scheduledAt": "예약 발행 일시",
+        "scheduledAtPlaceholder": "발행할 날짜·시간을 선택하세요"
       },
+      "publishMode": {
+        "now": "즉시 발행",
+        "schedule": "예약 발행"
+      },
+      "status": {
+        "scheduled": "예약"
+      },
+      "cancelSchedule": "예약 취소",
+      "cancelScheduleConfirm": "예약 발행을 취소하고 임시저장으로 되돌리시겠습니까?",
       "confirm": {
         "delete": "게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
       },
@@ -1004,13 +1016,16 @@
         "fileLimit": "최대 5개 파일까지 첨부 가능합니다",
         "titleRequired": "제목을 입력해 주세요",
         "titleLength": "제목은 500자 이하여야 합니다",
-        "contentRequired": "본문을 입력해 주세요"
+        "contentRequired": "본문을 입력해 주세요",
+        "scheduledAtRequired": "예약 발행 일시를 선택하세요."
       },
       "success": {
         "created": "게시글이 등록되었습니다",
         "updated": "게시글이 수정되었습니다",
         "deleted": "게시글이 삭제되었습니다",
-        "uploaded": "업로드되었습니다"
+        "uploaded": "업로드되었습니다",
+        "scheduled": "예약 발행이 설정되었습니다.",
+        "scheduleCancelled": "예약이 취소되었습니다."
       }
     },
     "comments": {

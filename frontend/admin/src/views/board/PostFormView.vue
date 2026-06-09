@@ -49,6 +49,43 @@
           </el-checkbox>
         </el-form-item>
 
+        <!-- 발행 방식: 즉시 / 예약 (SPEC-CMS-POST-SCHEDULE-001) -->
+        <el-form-item :label="t('board.posts.field.publishMode')" prop="publishMode">
+          <el-radio-group
+            v-model="publishMode"
+            :aria-label="t('board.posts.field.publishMode')"
+          >
+            <el-radio value="NOW">{{ t('board.posts.publishMode.now') }}</el-radio>
+            <el-radio value="SCHEDULE">{{ t('board.posts.publishMode.schedule') }}</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- 예약 발행 일시 picker (예약 선택 시) -->
+        <el-form-item
+          v-if="publishMode === 'SCHEDULE'"
+          :label="t('board.posts.field.scheduledAt')"
+          prop="scheduledAt"
+        >
+          <el-date-picker
+            v-model="scheduledAt"
+            type="datetime"
+            :placeholder="t('board.posts.field.scheduledAtPlaceholder')"
+            :disabled-date="disablePastDate"
+            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            :aria-label="t('board.posts.field.scheduledAt')"
+          />
+          <el-button
+            v-if="isEdit && isScheduled"
+            type="warning"
+            plain
+            size="small"
+            class="ml-2"
+            @click="handleCancelSchedule"
+          >
+            {{ t('board.posts.cancelSchedule') }}
+          </el-button>
+        </el-form-item>
+
         <!-- 카테고리 (옵션) -->
         <el-form-item :label="t('board.posts.field.categoryCode')" prop="categoryCode">
           <el-input
@@ -176,6 +213,16 @@ const enTitle = ref('')
 const enContentHtml = ref('')
 const hasEnTranslation = ref(false)
 
+// 예약 발행 상태 — SPEC-CMS-POST-SCHEDULE-001
+const publishMode = ref<'NOW' | 'SCHEDULE'>('NOW')
+const scheduledAt = ref<string>('')
+const isScheduled = ref(false)
+
+// 과거 날짜 선택 차단 (오늘 이전 비활성화)
+function disablePastDate(date: Date): boolean {
+  return date.getTime() < Date.now() - 24 * 60 * 60 * 1000
+}
+
 const isEdit = computed(() => Boolean(props.id))
 const isAdmin = computed(() =>
   auth.user?.roleCodes?.includes('SUPER_ADMIN') || auth.user?.roleCodes?.includes('DEPT_ADMIN'),
@@ -207,6 +254,12 @@ async function loadPost(): Promise<void> {
     form.contentHtml = p.contentHtml
     form.categoryCode = p.categoryCode ?? ''
     form.isNotice = p.isNotice
+    // 예약 상태로 로드되면 picker 초기값 + 예약 모드 표시 (REQ-POST-SCHEDULE-006-2)
+    if (p.status === 'SCHEDULED' && p.scheduledAt) {
+      publishMode.value = 'SCHEDULE'
+      scheduledAt.value = p.scheduledAt
+      isScheduled.value = true
+    }
   } catch {
     ElMessage.error(t('board.posts.error.loadFailed'))
   }
@@ -278,8 +331,15 @@ async function handleSave(): Promise<void> {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
 
+  // 예약 발행 선택 시 일시 필수 검증 (SPEC-CMS-POST-SCHEDULE-001)
+  if (publishMode.value === 'SCHEDULE' && !scheduledAt.value) {
+    ElMessage.warning(t('board.posts.error.scheduledAtRequired'))
+    return
+  }
+
   saving.value = true
   try {
+    let postId: number
     if (isEdit.value && props.id) {
       await boardApi.updatePost(Number(props.id), {
         title: form.title,
@@ -288,8 +348,7 @@ async function handleSave(): Promise<void> {
         isNotice: form.isNotice,
       })
       await saveEnTranslation(Number(props.id))
-      ElMessage.success(t('board.posts.success.updated'))
-      router.push({ name: 'board-post-detail', params: { id: props.id } })
+      postId = Number(props.id)
     } else {
       const res = await boardApi.createPost(Number(props.bbsId), {
         title: form.title,
@@ -298,13 +357,42 @@ async function handleSave(): Promise<void> {
         isNotice: form.isNotice,
       })
       await saveEnTranslation(res.data.id)
-      ElMessage.success(t('board.posts.success.created'))
-      router.push({ name: 'board-post-detail', params: { id: res.data.id } })
+      postId = res.data.id
     }
+
+    // 예약 발행 선택 시 schedule API 호출 (REQ-POST-SCHEDULE-006-1)
+    if (publishMode.value === 'SCHEDULE') {
+      await boardApi.schedulePost(postId, scheduledAt.value)
+      ElMessage.success(t('board.posts.success.scheduled'))
+    } else {
+      ElMessage.success(isEdit.value ? t('board.posts.success.updated') : t('board.posts.success.created'))
+    }
+    router.push({ name: 'board-post-detail', params: { id: postId } })
   } catch {
     ElMessage.error(t('board.posts.error.saveFailed'))
   } finally {
     saving.value = false
+  }
+}
+
+// 예약 취소 → DRAFT 복귀 (REQ-POST-SCHEDULE-006-2)
+async function handleCancelSchedule(): Promise<void> {
+  if (!props.id) return
+  try {
+    await ElMessageBox.confirm(t('board.posts.cancelScheduleConfirm'), t('common.confirm'), {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  try {
+    await boardApi.cancelSchedule(Number(props.id))
+    publishMode.value = 'NOW'
+    scheduledAt.value = ''
+    isScheduled.value = false
+    ElMessage.success(t('board.posts.success.scheduleCancelled'))
+  } catch {
+    ElMessage.error(t('board.posts.error.saveFailed'))
   }
 }
 

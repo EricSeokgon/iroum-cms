@@ -5,6 +5,7 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
+import kr.co.ircp.cms.domain.board.dto.PostScheduleRequest;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
 import kr.co.ircp.cms.domain.board.dto.PostUpdateRequest;
 import kr.co.ircp.cms.domain.board.service.PostService;
@@ -134,5 +135,24 @@ public class PostController {
         Long requesterId = principal != null ? principal.userId() : null;
         postService.deletePost(postId, requesterId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ─── SPEC-CMS-POST-SCHEDULE-001: 예약 발행 ──────────────────────────────────
+
+    /** POST /api/v1/board/posts/{postId}/schedule — 게시글 예약 발행 */
+    @PostMapping("/{postId}/schedule")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PostDetail> schedulePost(
+            @PathVariable Long postId,
+            @Valid @RequestBody PostScheduleRequest request
+    ) {
+        return ResponseEntity.ok(postService.schedulePost(postId, request));
+    }
+
+    /** DELETE /api/v1/board/posts/{postId}/schedule — 예약 취소(→DRAFT) */
+    @DeleteMapping("/{postId}/schedule")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PostDetail> cancelSchedule(@PathVariable Long postId) {
+        return ResponseEntity.ok(postService.cancelSchedule(postId));
     }
 }

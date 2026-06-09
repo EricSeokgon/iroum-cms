@@ -3,6 +3,7 @@ package kr.co.ircp.cms.domain.board.service;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
+import kr.co.ircp.cms.domain.board.dto.PostScheduleRequest;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
 import kr.co.ircp.cms.domain.board.dto.PostTranslationRequest;
 import kr.co.ircp.cms.domain.board.dto.PostTranslationResponse;
@@ -44,6 +45,20 @@ public interface PostService {
 
     /** 게시글 삭제 (소프트 삭제) */
     void deletePost(Long id, Long requesterId);
+
+    // ─── SPEC-CMS-POST-SCHEDULE-001: 예약 발행 ──────────────────────────────────
+
+    /**
+     * 게시글 예약 발행. scheduledAt > now 검증 후 status=SCHEDULED 로 전환.
+     * REQ-POST-SCHEDULE-001 / 002 / 007
+     */
+    PostDetail schedulePost(Long id, PostScheduleRequest request);
+
+    /**
+     * 게시글 예약 취소. SCHEDULED → DRAFT 복귀, scheduled_at=NULL.
+     * REQ-POST-SCHEDULE-004
+     */
+    PostDetail cancelSchedule(Long id);
 
     // ─── SPEC-CMS-NOTICE-I18N-001: 다국어 번역 ─────────────────────────────────
 
