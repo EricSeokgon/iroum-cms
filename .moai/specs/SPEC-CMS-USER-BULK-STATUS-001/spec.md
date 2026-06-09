@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-USER-BULK-STATUS-001
-version: 0.2.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-09
 author: manager-spec
 priority: P1
 parent: SPEC-CMS-002
@@ -17,6 +17,7 @@ issue_number: TBD
 
 ## HISTORY
 
+- 2026-06-09 (v0.3.0): Tested. CI GREEN (origin/main 6dc5e24) — 백엔드 Docker BUILD PASS, 프론트엔드 2/2 GREEN. CHANGELOG v2.4.0 동기화 완료.
 - 2026-06-01 (v0.2.0): Implemented. 백엔드 Docker BUILD PASS (6 Mockito 테스트 GREEN), 프론트엔드 단위 테스트 2/2 GREEN. JwtPrincipal.roles() Set 기반으로 actorRole 도출. 기존 AdminNotificationServiceTest·DashboardLayoutServiceTest 컴파일 오류 사전 존재 확인됨.
 - 2026-06-01 (v0.1.0): Draft 작성. 관리자가 사용자 목록에서 다수를 선택하여 계정 상태를 일괄 변경하는 기능 정의. 기존 개별 사용자 CRUD(SPEC-CMS-002) 및 감사 로그(SPEC-CMS-005) 인프라 재사용 기반.
 

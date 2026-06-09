@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-AUDIT-LOG-VIEW-001
-version: 0.2.0
-status: Implemented
+version: 0.3.0
+status: Tested
 created: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-09
 author: manager-spec
 priority: P1
 parent: SPEC-CMS-005 v0.2.1
@@ -17,6 +17,7 @@ issue_number: TBD
 
 ## HISTORY
 
+- 2026-06-09 (v0.3.0): Tested. CI GREEN (origin/main 6dc5e24) — 단위 테스트 9/9, 전체 71/71 GREEN. CHANGELOG v2.3.0 동기화 완료.
 - 2026-06-01 (v0.2.0): Implemented. TDD 완료 — 단위 테스트 9/9 GREEN (전체 71/71 GREEN). 주의: 백엔드 action/severity 필터가 단일값만 지원, 프론트 멀티셀렉트 첫 번째 값만 전송 (백엔드 확장 필요시 SPEC-CMS-005 업데이트 필요).
 - 2026-06-01 (v0.1.0): Draft 작성. SPEC-CMS-005 백엔드 API를 소비하는 프론트엔드 조회 화면 정의. 신규 DB 마이그레이션 없음, Vue 3 + Pinia 인프라 재사용.
 
