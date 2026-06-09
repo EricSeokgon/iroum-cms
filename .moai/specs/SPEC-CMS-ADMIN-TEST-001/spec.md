@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-ADMIN-TEST-001
-version: 0.2.0
-status: Tested
+version: 0.3.0
+status: Completed
 created: 2026-05-14
 updated: 2026-05-14
 author: ircp

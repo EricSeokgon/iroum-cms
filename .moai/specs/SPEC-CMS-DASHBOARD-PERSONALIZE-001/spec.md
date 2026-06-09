@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-DASHBOARD-PERSONALIZE-001
-version: 0.1.0
-status: Tested
+version: 0.2.0
+status: Completed
 created: 2026-05-29
 updated: 2026-05-29
 author: manager-spec
