@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-PUBLIC-001
-version: 0.3.0
-status: Tested
+version: 0.4.0
+status: Completed
 created: 2026-05-14
 updated: 2026-05-14
 author: manager-spec

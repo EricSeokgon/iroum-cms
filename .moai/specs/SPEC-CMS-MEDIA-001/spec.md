@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-MEDIA-001
-version: 0.5.0
-status: Tested
+version: 0.6.0
+status: Completed
 created: 2026-04-29
 updated: 2026-05-13
 author: manager-spec

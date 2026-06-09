@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTIFICATION-CENTER-001
-version: 0.3.0
-status: Tested
+version: 0.4.0
+status: Completed
 created: 2026-05-29
 updated: 2026-06-01
 author: manager-spec

@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-ML-SERVICE-001
-version: v0.1
-status: Tested
+version: 0.2.0
+status: Completed
 created: 2026-05-19
 updated: 2026-05-20
 author: manager-spec (MoAI)

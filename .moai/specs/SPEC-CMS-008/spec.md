@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-008
-version: 0.5.0
-status: Tested
+version: 0.6.0
+status: Completed
 created: 2026-04-29
 updated: 2026-05-13
 author: manager-spec
@@ -24,6 +24,7 @@ issue_number: TBD
 
 ## HISTORY
 
+- 2026-06-09 (v0.6.0): Completed. CI GREEN (origin/main 6dc5e24). CHANGELOG 동기화 완료. SPEC 생애주기 종료.
 - v0.1 / 2026-04-29 / manager-spec / 신규 작성. RFP SFR-009/013 충족을 위한 위젯·대시보드·차트·필터·캐시·내보내기 6개 부모 REQ 정의. SPEC-CMS-005 v0.2.1 의 `kpi_definition`/`kpi_value` 모델을 데이터 소스로 활용하고, 시각화 + 사용자 맞춤 대시보드 + 비동기 엑셀 스트리밍 레이어를 본 SPEC 에서 신규 정의.
 - v0.4 / 2026-04-29 / MoAI orchestrator / Spring Boot 3.5.9 + 운영 결정 통합 (SPEC-CMS-001 v0.4 §20 부록 참조). 구현 대기 상태. 본문은 변경 없이 헤더·HISTORY만 갱신.
 - v0.5 / 2026-05-13 / MoAI orchestrator / Run+Sync 완료: IT 5종(Widget/Layout/SavedView/Cache/Export) + 프론트 스토어 33 AC + Vue 뷰 3종 20 AC. 운영 결함 4건 수정(readOnly TX, @AuthenticationPrincipal SpEL, A-5 silent 필터, A-8 DEPT_ADMIN 부서 제한). @Disabled 5건 전부 해제. Status: Tested.

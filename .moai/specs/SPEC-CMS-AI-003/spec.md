@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-AI-003
-version: v0.3
-status: Tested
+version: 0.4.0
+status: Completed
 created: 2026-05-18
 updated: 2026-05-19
 author: manager-spec (MoAI)
