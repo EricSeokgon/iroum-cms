@@ -11,6 +11,12 @@
 
 ### Added
 
+- **댓글 모더레이션 관리자 API** (`CommentAdminController`, `CommentAdminServiceImpl`, `BbsCommentMapper`, `CommentManagementView.vue`, SPEC-CMS-COMMENT-MODERATE-001)
+  - **백엔드**: `GET /api/v1/admin/comments` — 전체 게시판 댓글 목록 조회 (boardId/status/keyword 필터 + 페이징). `PATCH /api/v1/admin/comments/{id}/status` — VISIBLE/HIDDEN 상태 변경. `DELETE /api/v1/admin/comments/{id}` — 소프트 삭제 (idempotent)
+  - **`BbsCommentMapper`**: `listForAdmin`, `countForAdmin`, `findStatusById`, `updateCommentStatus`, `findAdminSummaryById`, `adminSoftDelete` 6개 쿼리 추가. MyBatis `<constructor>` resultMap으로 `CommentAdminSummary` record 직접 매핑
+  - **`GlobalExceptionHandler`**: `CommentModerationException` → 400 Bad Request 핸들러 추가. DELETED 댓글 상태 변경 시도 방어
+  - **프론트엔드**: `CommentManagementView.vue` Element Plus 테이블 (게시판/상태/키워드 필터, 상태 뱃지, 액션 버튼, 페이지네이션). `/board/comments` 라우터 등록. ko/en i18n `board.comments.admin.*` 키 추가
+  - **IT**: `CommentAdminControllerIT` 12/12 GREEN — AC-CMTM-001~006 전체 커버
 - **감사 로그 action/severity 다중값 필터** (`AuditLogController.java`, `AuditLogMapper.java`, `AuditLogMapper.xml`, `auditLog.ts`, SPEC-CMS-AUDIT-LOG-MULTI-FILTER-001)
   - **백엔드**: `AuditLogController.search` / `export` 메서드의 `action`, `severity` 파라미터를 `String` → `List<String>`으로 확장. Spring MVC 반복 파라미터(`?action=CREATE&action=UPDATE`) 자동 바인딩
   - **`AuditLogMapper`**: `search`, `countSearch`, `searchForExport` 3개 메서드의 `@Param` 시그니처를 `List<String>`으로 일괄 변경
