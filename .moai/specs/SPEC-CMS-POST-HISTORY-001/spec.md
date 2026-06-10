@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-POST-HISTORY-001
 version: 0.1.0
-status: Draft
+status: Completed
 created: 2026-06-10
 updated: 2026-06-10
 author: manager-spec
