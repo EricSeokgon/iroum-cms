@@ -18,6 +18,12 @@
   - **프론트엔드**: `AuditLogFilter.action?`, `.severity?` 타입을 단일값에서 배열(`AuditAction[]`, `AuditSeverity[]`)로 변경. `buildFilter()` 전체 배열 전송 (첫 번째 값 절단 제거). `client.ts` `paramsSerializer: { indexes: null }` 추가로 반복 파라미터 직렬화
   - **IT**: `AuditLogMultiFilterIT` 신설 — `postgres:16-alpine` Testcontainers, AC-ALF-001~004 5건 전체 GREEN
   - CHANGELOG v2.5.0 알려진 제한 사항(백엔드 단일값 필터 제약) 해소
+- **게시글 버전 히스토리 뷰어**: `GET /api/v1/board/posts/{postId}/history` 페이지네이션 API + 관리자 UI 히스토리 탭 (SPEC-CMS-POST-HISTORY-001)
+- **게시글 예약 발행**: `POST /api/v1/board/posts/{postId}/schedule` API + `PostPublishJob` 배치 잡(1분 주기) + 관리자 폼 예약 picker (SPEC-CMS-POST-SCHEDULE-001)
+
+### Fixed
+
+- **게시글/공지 목록 API `?lang=en` 파라미터 처리** — 영어 제목 반환 (SPEC-CMS-NOTICE-I18N-002)
 
 ---
 
