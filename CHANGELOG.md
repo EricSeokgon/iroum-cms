@@ -11,6 +11,13 @@
 
 ### Added
 
+- **발간자료 카테고리 관리자 CRUD** (`PublicationCategoryAdminController`, `PublicationCategoryAdminServiceImpl`, `PublicationCategoryManagerView.vue`, SPEC-CMS-PUB-CAT-001)
+  - **백엔드**: `GET /api/v1/admin/publication-categories` (INACTIVE 포함 전체 트리). `POST` — 루트/자식 카테고리 생성(201). `PUT /{id}` — 이름/정렬/상태 수정(200). `DELETE /{id}` — 리프 삭제(204). 하위 카테고리 존재 또는 연결된 발간자료 존재 시 409 Conflict
+  - **DB 트리거 대응**: `trg_pub_cat_depth`가 `depth`를 자동 계산 → INSERT 시 depth 컬럼 제외, 저장 후 `findById` 재조회로 depth 반영
+  - **`PublicationCategoryMapper`**: `insert`, `update`, `deleteById`, `existsByCode`, `findAllForAdmin`, `countChildren`, `countLinkedPublications` 7개 메서드 추가
+  - **`GlobalExceptionHandler`**: `PublicationCategoryConflictException` → 409 Conflict 핸들러 등록
+  - **프론트엔드**: `PublicationCategoryManagerView.vue` — depth-first 평탄화 트리 테이블, 생성/수정 다이얼로그, 삭제 확인. `/board/publication-categories` 라우터 등록. ko/en i18n `board.publicationCategories.*` 키 추가
+  - **IT**: `PublicationCategoryAdminControllerIT` AC-PCA-001~005 전체 GREEN
 - **댓글 모더레이션 관리자 API** (`CommentAdminController`, `CommentAdminServiceImpl`, `BbsCommentMapper`, `CommentManagementView.vue`, SPEC-CMS-COMMENT-MODERATE-001)
   - **백엔드**: `GET /api/v1/admin/comments` — 전체 게시판 댓글 목록 조회 (boardId/status/keyword 필터 + 페이징). `PATCH /api/v1/admin/comments/{id}/status` — VISIBLE/HIDDEN 상태 변경. `DELETE /api/v1/admin/comments/{id}` — 소프트 삭제 (idempotent)
   - **`BbsCommentMapper`**: `listForAdmin`, `countForAdmin`, `findStatusById`, `updateCommentStatus`, `findAdminSummaryById`, `adminSoftDelete` 6개 쿼리 추가. MyBatis `<constructor>` resultMap으로 `CommentAdminSummary` record 직접 매핑
