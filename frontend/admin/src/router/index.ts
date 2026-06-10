@@ -201,6 +201,13 @@ const router = createRouter({
           component: () => import('@/views/board/CommentManagementView.vue'),
           meta: { title: '댓글 관리', requiresAuth: true },
         },
+        // ── Q&A 모더레이션 (SPEC-CMS-QNA-MODERATE-001) ─────────────────────
+        {
+          path: 'board/qnas/management',
+          name: 'board-qnas-management',
+          component: () => import('@/views/board/QnaManagementView.vue'),
+          meta: { title: 'Q&A 모더레이션', requiresAuth: true },
+        },
         // ── 발간자료 카테고리 관리 (SPEC-CMS-PUB-CAT-001) ──────────────────
         {
           path: 'board/publication-categories',

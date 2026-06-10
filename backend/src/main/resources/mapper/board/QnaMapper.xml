@@ -136,4 +136,30 @@
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
 
+    <!-- SPEC-CMS-QNA-MODERATE-001: 어드민 전용 목록 (HIDDEN·비공개 포함) -->
+    <select id="listForAdmin" resultMap="qnaResultMap">
+        SELECT * FROM qna
+        WHERE deleted_at IS NULL
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND title ILIKE '%' || #{keyword} || '%'
+        </if>
+        ORDER BY id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <!-- SPEC-CMS-QNA-MODERATE-001: 어드민 전용 카운트 -->
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*) FROM qna
+        WHERE deleted_at IS NULL
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND title ILIKE '%' || #{keyword} || '%'
+        </if>
+    </select>
+
 </mapper>
