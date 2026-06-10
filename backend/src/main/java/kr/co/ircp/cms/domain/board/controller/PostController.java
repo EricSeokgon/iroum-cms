@@ -5,9 +5,12 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
+import kr.co.ircp.cms.domain.board.dto.PostHistoryDetail;
+import kr.co.ircp.cms.domain.board.dto.PostHistoryItem;
 import kr.co.ircp.cms.domain.board.dto.PostScheduleRequest;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
 import kr.co.ircp.cms.domain.board.dto.PostUpdateRequest;
+import kr.co.ircp.cms.domain.board.service.PostHistoryService;
 import kr.co.ircp.cms.domain.board.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +39,7 @@ import java.net.URI;
 public class PostController {
 
     private final PostService postService;
+    private final PostHistoryService postHistoryService;
 
     /** GET /api/v1/board/posts?bbsId=X&page=0&size=20&lang=ko — 게시글 목록 페이징 조회 */
     @GetMapping
@@ -153,5 +157,31 @@ public class PostController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PostDetail> cancelSchedule(@PathVariable Long postId) {
         return ResponseEntity.ok(postService.cancelSchedule(postId));
+    }
+
+    // ─── SPEC-CMS-POST-HISTORY-001: 버전 히스토리 (read-only) ────────────────────
+    //
+    // 본 GET 엔드포인트는 listPosts/getPost와 동일하게 메소드 레벨 @PreAuthorize 없이
+    // SecurityConfig HTTP 레벨 인증 정책(.anyRequest().authenticated())으로 보호된다
+    // (REQ-PH-006 — 비인증 접근은 HTTP 레이어에서 401/403). 인가 매트릭스 회귀는
+    // AUTHZ-MATRIX IT 레이어에서 검증한다.
+
+    /** GET /api/v1/board/posts/{postId}/history?page=0&size=20 — 버전 히스토리 페이징 목록 */
+    @GetMapping("/{postId}/history")
+    public ResponseEntity<PageResponse<PostHistoryItem>> getPostHistory(
+            @PathVariable Long postId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(postHistoryService.getHistory(postId, page, size));
+    }
+
+    /** GET /api/v1/board/posts/{postId}/history/{version} — 특정 버전 단건 본문 */
+    @GetMapping("/{postId}/history/{version}")
+    public ResponseEntity<PostHistoryDetail> getPostVersion(
+            @PathVariable Long postId,
+            @PathVariable int version
+    ) {
+        return ResponseEntity.ok(postHistoryService.getVersion(postId, version));
     }
 }

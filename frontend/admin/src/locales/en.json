@@ -1004,6 +1004,20 @@
       },
       "cancelSchedule": "Cancel schedule",
       "cancelScheduleConfirm": "Cancel the scheduled publication and revert to draft?",
+      "postHistory": {
+        "tab": "Version History",
+        "content": "Post content",
+        "empty": "No edit history",
+        "unknownEditor": "Unknown",
+        "loadFailed": "Failed to load version history",
+        "versionContent": "Version {version} content",
+        "field": {
+          "version": "Version",
+          "editor": "Editor",
+          "editedAt": "Edited at",
+          "editReason": "Edit reason"
+        }
+      },
       "confirm": {
         "delete": "Delete this post? This action cannot be undone."
       },

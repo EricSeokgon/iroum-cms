@@ -8,6 +8,8 @@ import type {
   PostDetail,
   PostCreateRequest,
   PostUpdateRequest,
+  PostHistoryItem,
+  PostHistoryDetail,
   CommentSummary,
   CommentCreateRequest,
   AttachmentSummary,
@@ -109,6 +111,18 @@ export const boardApi = {
   /** DELETE /api/v1/board/posts/{id}/schedule — 예약 취소(→DRAFT) */
   cancelSchedule(id: number): Promise<{ data: PostDetail }> {
     return apiClient.delete(`${BASE}/posts/${id}/schedule`)
+  },
+
+  // ── 게시글 버전 히스토리 (SPEC-CMS-POST-HISTORY-001, read-only) ────────────
+
+  /** GET /api/v1/board/posts/{id}/history?page=&size= — 버전 히스토리 페이징 목록 */
+  getPostHistory(postId: number, page = 0, size = 20): Promise<{ data: PageResponse<PostHistoryItem> }> {
+    return apiClient.get(`${BASE}/posts/${postId}/history`, { params: { page, size } })
+  },
+
+  /** GET /api/v1/board/posts/{id}/history/{version} — 특정 버전 단건 본문 */
+  getPostVersion(postId: number, version: number): Promise<{ data: PostHistoryDetail }> {
+    return apiClient.get(`${BASE}/posts/${postId}/history/${version}`)
   },
 
   // ── 게시글 다국어 번역 (SPEC-CMS-NOTICE-I18N-001) ──────────────────────────
