@@ -1111,6 +1111,55 @@
           "deleteFailed": "Failed to delete comment"
         }
       }
+    },
+    "publicationCategories": {
+      "title": "Publication Category Management",
+      "table": {
+        "name": "Name",
+        "code": "Code",
+        "depth": "Depth",
+        "sortOrder": "Order",
+        "status": "Status",
+        "action": "Actions"
+      },
+      "status": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "action": {
+        "create": "Add Root Category",
+        "addChild": "Add Child",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "dialog": {
+        "createTitle": "Add Category",
+        "editTitle": "Edit Category"
+      },
+      "form": {
+        "code": "Code",
+        "name": "Name",
+        "sortOrder": "Sort Order",
+        "status": "Status"
+      },
+      "confirm": {
+        "deleteTitle": "Delete Category",
+        "delete": "Delete category '{name}'?"
+      },
+      "validation": {
+        "codeRequired": "Code is required",
+        "nameRequired": "Name is required"
+      },
+      "success": {
+        "created": "Category created",
+        "updated": "Category updated",
+        "deleted": "Category deleted"
+      },
+      "error": {
+        "loadFailed": "Failed to load categories",
+        "saveFailed": "An error occurred while saving",
+        "deleteFailed": "An error occurred while deleting"
+      }
     }
   },
   "permissions": {
