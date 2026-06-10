@@ -154,4 +154,67 @@
         WHERE status = 'SCHEDULED' AND scheduled_at &lt;= NOW() AND deleted_at IS NULL
     </select>
 
+    <!-- SPEC-CMS-POST-MODERATE-001: 관리자 모더레이션 -->
+
+    <resultMap id="postAdminSummaryResultMap" type="kr.co.ircp.cms.domain.board.dto.PostAdminSummary">
+        <constructor>
+            <idArg column="id" javaType="Long"/>
+            <arg column="bbs_id" javaType="Long"/>
+            <arg column="bbs_name" javaType="String"/>
+            <arg column="title" javaType="String"/>
+            <arg column="author_id" javaType="Long"/>
+            <arg column="author_name" javaType="String"/>
+            <arg column="status" javaType="String"/>
+            <arg column="created_at" javaType="java.time.Instant"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="adminSelectColumns">
+        p.id, p.bbs_id, m.name AS bbs_name, p.title, p.author_id, p.author_name,
+        p.status, p.created_at
+    </sql>
+
+    <sql id="adminWhereFilters">
+        WHERE p.deleted_at IS NULL
+        <if test="bbsId != null">
+            AND p.bbs_id = #{bbsId}
+        </if>
+        <if test="status != null and status != ''">
+            AND p.status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND p.title ILIKE '%' || #{keyword} || '%'
+        </if>
+    </sql>
+
+    <select id="listForAdmin" resultMap="postAdminSummaryResultMap">
+        SELECT
+        <include refid="adminSelectColumns"/>
+        FROM bbs_post p
+        JOIN bbs_master m ON m.id = p.bbs_id
+        <include refid="adminWhereFilters"/>
+        ORDER BY p.id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT COUNT(*)
+        FROM bbs_post p
+        JOIN bbs_master m ON m.id = p.bbs_id
+        <include refid="adminWhereFilters"/>
+    </select>
+
+    <update id="updateStatusByAdmin">
+        UPDATE bbs_post SET status = #{status}, updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <select id="findAdminSummaryById" resultMap="postAdminSummaryResultMap">
+        SELECT
+        <include refid="adminSelectColumns"/>
+        FROM bbs_post p
+        JOIN bbs_master m ON m.id = p.bbs_id
+        WHERE p.id = #{id} AND p.deleted_at IS NULL
+    </select>
+
 </mapper>

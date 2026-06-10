@@ -1143,6 +1143,35 @@
         "restore": "복원"
       }
     },
+    "postAdmin": {
+      "title": "게시글 모더레이션",
+      "empty": "게시글이 없습니다",
+      "loaded": "{count}건 조회됨",
+      "confirmDelete": "이 게시글을 삭제하시겠습니까? 되돌릴 수 없습니다.",
+      "filter": {
+        "status": "상태",
+        "keyword": "제목 검색"
+      },
+      "field": {
+        "bbsName": "게시판",
+        "title": "제목",
+        "author": "작성자",
+        "status": "상태",
+        "createdAt": "작성일"
+      },
+      "status": {
+        "ALL": "전체",
+        "DRAFT": "임시저장",
+        "SCHEDULED": "예약",
+        "PUBLISHED": "공개",
+        "HIDDEN": "숨김",
+        "DELETED": "삭제됨"
+      },
+      "action": {
+        "hide": "숨기기",
+        "restore": "복원"
+      }
+    },
     "publicationCategories": {
       "title": "발간자료 카테고리 관리",
       "table": {

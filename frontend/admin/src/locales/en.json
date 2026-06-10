@@ -1142,6 +1142,35 @@
         "restore": "Restore"
       }
     },
+    "postAdmin": {
+      "title": "Post Moderation",
+      "empty": "No posts found",
+      "loaded": "{count} items found",
+      "confirmDelete": "Delete this post? This cannot be undone.",
+      "filter": {
+        "status": "Status",
+        "keyword": "Search by title"
+      },
+      "field": {
+        "bbsName": "Board",
+        "title": "Title",
+        "author": "Author",
+        "status": "Status",
+        "createdAt": "Date"
+      },
+      "status": {
+        "ALL": "All",
+        "DRAFT": "Draft",
+        "SCHEDULED": "Scheduled",
+        "PUBLISHED": "Published",
+        "HIDDEN": "Hidden",
+        "DELETED": "Deleted"
+      },
+      "action": {
+        "hide": "Hide",
+        "restore": "Restore"
+      }
+    },
     "publicationCategories": {
       "title": "Publication Category Management",
       "table": {
