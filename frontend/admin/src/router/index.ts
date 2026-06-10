@@ -201,6 +201,13 @@ const router = createRouter({
           component: () => import('@/views/board/CommentManagementView.vue'),
           meta: { title: '댓글 관리', requiresAuth: true },
         },
+        // ── 발간자료 카테고리 관리 (SPEC-CMS-PUB-CAT-001) ──────────────────
+        {
+          path: 'board/publication-categories',
+          name: 'board-publication-categories',
+          component: () => import('@/views/board/PublicationCategoryManagerView.vue'),
+          meta: { title: '발간자료 카테고리 관리', requiresAuth: true },
+        },
         // ── FAQ / Q&A 라우트 (SPEC-CMS-003) ────────────────────────────────
         {
           path: 'board/faqs',

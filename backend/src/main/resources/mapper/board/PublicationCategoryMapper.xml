@@ -34,4 +34,50 @@
         WHERE id = #{id}
     </select>
 
+    <!-- ── 어드민 CRUD (SPEC-CMS-PUB-CAT-001) ─────────────────────────────── -->
+
+    <!-- REQ-PCA-004: 어드민용 전체 조회 (INACTIVE 포함) -->
+    <select id="findAllForAdmin" resultMap="publicationCategoryResultMap">
+        SELECT id, code, name, parent_id, depth, sort_order, status, created_at
+        FROM publication_category
+        ORDER BY sort_order, id
+    </select>
+
+    <!-- REQ-PCA-001: code 중복 확인 -->
+    <select id="existsByCode" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM publication_category
+        WHERE code = #{code}
+    </select>
+
+    <!-- REQ-PCA-001: 카테고리 INSERT (depth = DB 트리거 자동 계산) -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO publication_category (code, name, parent_id, sort_order, status)
+        VALUES (#{code}, #{name}, #{parentId}, #{sortOrder}, COALESCE(#{status}, 'ACTIVE'))
+    </insert>
+
+    <!-- REQ-PCA-002: 카테고리 UPDATE -->
+    <update id="update">
+        UPDATE publication_category
+           SET name       = #{name},
+               sort_order = #{sortOrder},
+               status     = #{status}
+         WHERE id = #{id}
+    </update>
+
+    <!-- REQ-PCA-003: 카테고리 DELETE -->
+    <delete id="deleteById">
+        DELETE FROM publication_category WHERE id = #{id}
+    </delete>
+
+    <!-- REQ-PCA-003: 자식 카테고리 수 -->
+    <select id="countChildren" resultType="long">
+        SELECT COUNT(*) FROM publication_category WHERE parent_id = #{parentId}
+    </select>
+
+    <!-- REQ-PCA-003: 연결된 발간자료 수 -->
+    <select id="countLinkedPublications" resultType="long">
+        SELECT COUNT(*) FROM bbs_post_publication_meta WHERE publication_category_id = #{categoryId}
+    </select>
+
 </mapper>

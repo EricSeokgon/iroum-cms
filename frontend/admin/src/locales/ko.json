@@ -1112,6 +1112,55 @@
           "deleteFailed": "삭제 중 오류가 발생했습니다"
         }
       }
+    },
+    "publicationCategories": {
+      "title": "발간자료 카테고리 관리",
+      "table": {
+        "name": "카테고리명",
+        "code": "코드",
+        "depth": "깊이",
+        "sortOrder": "순서",
+        "status": "상태",
+        "action": "관리"
+      },
+      "status": {
+        "ACTIVE": "활성",
+        "INACTIVE": "비활성"
+      },
+      "action": {
+        "create": "루트 카테고리 추가",
+        "addChild": "하위 추가",
+        "edit": "수정",
+        "delete": "삭제"
+      },
+      "dialog": {
+        "createTitle": "카테고리 추가",
+        "editTitle": "카테고리 수정"
+      },
+      "form": {
+        "code": "코드",
+        "name": "카테고리명",
+        "sortOrder": "정렬 순서",
+        "status": "상태"
+      },
+      "confirm": {
+        "deleteTitle": "카테고리 삭제",
+        "delete": "'{name}' 카테고리를 삭제하시겠습니까?"
+      },
+      "validation": {
+        "codeRequired": "코드를 입력하세요",
+        "nameRequired": "카테고리명을 입력하세요"
+      },
+      "success": {
+        "created": "카테고리가 생성되었습니다",
+        "updated": "카테고리가 수정되었습니다",
+        "deleted": "카테고리가 삭제되었습니다"
+      },
+      "error": {
+        "loadFailed": "카테고리 목록을 불러오지 못했습니다",
+        "saveFailed": "저장 중 오류가 발생했습니다",
+        "deleteFailed": "삭제 중 오류가 발생했습니다"
+      }
     }
   },
   "permissions": {

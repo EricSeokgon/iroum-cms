@@ -36,6 +36,7 @@ import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.BoardAttachmentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.BoardCommentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.CommentModerationException;
+import kr.co.ircp.cms.domain.board.exception.PublicationCategoryConflictException;
 import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
@@ -563,6 +564,21 @@ public class GlobalExceptionHandler {
                 HttpStatus.BAD_REQUEST, ex.getMessage());
         detail.setTitle("Comment Moderation Error");
         detail.setProperty("code", "COMMENT_MODERATION_ERROR");
+        return detail;
+    }
+
+    /**
+     * 발간자료 카테고리 삭제 충돌 → HTTP 409 Conflict.
+     *
+     * <p>SPEC-CMS-PUB-CAT-001 REQ-PCA-003 —
+     * 자식 카테고리 또는 연결된 발간자료 존재 시.
+     */
+    @ExceptionHandler(PublicationCategoryConflictException.class)
+    public ProblemDetail handlePublicationCategoryConflict(PublicationCategoryConflictException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Publication Category Conflict");
+        detail.setProperty("code", "PUBLICATION_CATEGORY_CONFLICT");
         return detail;
     }
 
