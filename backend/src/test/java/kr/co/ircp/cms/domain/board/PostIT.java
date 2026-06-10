@@ -315,6 +315,154 @@ class PostIT extends AbstractIntegrationTest {
         }
     }
 
+    // ─── SPEC-CMS-POST-SCHEDULE-001 §예약 발행 ─────────────────────────────────
+
+    @Autowired kr.co.ircp.cms.domain.board.service.PostPublishJob postPublishJob;
+
+    @Nested
+    @DisplayName("예약 발행 (SPEC-CMS-POST-SCHEDULE-001)")
+    class ScheduledPublish {
+
+        /** AC-PS-001: 미래 시각 예약 → 200 + status=SCHEDULED, scheduled_at 저장. */
+        @Test
+        @DisplayName("AC-PS-001: POST /{id}/schedule 미래 시각 → 200 SCHEDULED + scheduled_at 영속화")
+        void schedulePost_futureTime_persistsScheduled() throws Exception {
+            long postId = insertPost(bbsId, "예약대상 " + suffix, false, false, userId);
+            givenUserToken(userId, Set.of("USER"));
+            String body = """
+                    {"scheduledAt":"%s"}
+                    """.formatted(Instant.now().plusSeconds(3600).toString());
+
+            mockMvc.perform(post("/api/v1/board/posts/" + postId + "/schedule")
+                            .header("Authorization", TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("SCHEDULED"));
+
+            Long count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM bbs_post WHERE id = ? AND status = 'SCHEDULED' " +
+                    "AND scheduled_at IS NOT NULL", Long.class, postId);
+            assert count != null && count == 1L
+                    : "예약 게시글이 SCHEDULED + scheduled_at 로 영속화되어야 함 (실제: " + count + ")";
+        }
+
+        /** AC-PS-002: 과거 시각 예약 → 400, 상태 미변경. */
+        @Test
+        @DisplayName("AC-PS-002: 과거 시각 예약 → 400, status 미변경")
+        void schedulePost_pastTime_returns400() throws Exception {
+            long postId = insertPost(bbsId, "과거예약 " + suffix, false, false, userId);
+            givenUserToken(userId, Set.of("USER"));
+            String body = """
+                    {"scheduledAt":"%s"}
+                    """.formatted(Instant.now().minusSeconds(3600).toString());
+
+            mockMvc.perform(post("/api/v1/board/posts/" + postId + "/schedule")
+                            .header("Authorization", TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+
+            String status = jdbcTemplate.queryForObject(
+                    "SELECT status FROM bbs_post WHERE id = ?", String.class, postId);
+            assert "PUBLISHED".equals(status)
+                    : "과거 예약 거부 시 status 가 변경되지 않아야 함 (실제: " + status + ")";
+        }
+
+        /** AC-PS-004: 만기 예약 게시글 배치 발행 → PUBLISHED + published_at + scheduled_at NULL. */
+        @Test
+        @DisplayName("AC-PS-004: 배치가 만기 예약 게시글을 PUBLISHED 로 전환하고 scheduled_at NULL 초기화")
+        void batchPublishesDueScheduledPosts() {
+            long postId = insertScheduledPost(bbsId, "만기예약 " + suffix,
+                    Instant.now().minusSeconds(60), userId);
+
+            postPublishJob.publishDuePosts();
+
+            var row = jdbcTemplate.queryForMap(
+                    "SELECT status, published_at, scheduled_at FROM bbs_post WHERE id = ?", postId);
+            assert "PUBLISHED".equals(row.get("status"))
+                    : "만기 예약 게시글은 PUBLISHED 로 전환되어야 함 (실제: " + row.get("status") + ")";
+            assert row.get("published_at") != null : "published_at 이 설정되어야 함";
+            assert row.get("scheduled_at") == null : "scheduled_at 이 NULL 로 초기화되어야 함";
+        }
+
+        /** AC-PS-005: 미만기 예약 게시글은 배치가 발행하지 않고 SCHEDULED 유지. */
+        @Test
+        @DisplayName("AC-PS-005: 미만기 예약 게시글은 SCHEDULED 유지")
+        void batchKeepsFutureScheduledPosts() {
+            long postId = insertScheduledPost(bbsId, "미만기예약 " + suffix,
+                    Instant.now().plusSeconds(3600), userId);
+
+            postPublishJob.publishDuePosts();
+
+            String status = jdbcTemplate.queryForObject(
+                    "SELECT status FROM bbs_post WHERE id = ?", String.class, postId);
+            assert "SCHEDULED".equals(status)
+                    : "미만기 예약 게시글은 SCHEDULED 유지되어야 함 (실제: " + status + ")";
+        }
+
+        /** AC-PS-006: 예약 취소 → DRAFT 복귀, scheduled_at NULL. */
+        @Test
+        @DisplayName("AC-PS-006: DELETE /{id}/schedule → 200 DRAFT + scheduled_at NULL")
+        void cancelSchedule_revertsToDraft() throws Exception {
+            long postId = insertScheduledPost(bbsId, "취소대상 " + suffix,
+                    Instant.now().plusSeconds(3600), userId);
+            givenUserToken(userId, Set.of("USER"));
+
+            mockMvc.perform(delete("/api/v1/board/posts/" + postId + "/schedule")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("DRAFT"));
+
+            var row = jdbcTemplate.queryForMap(
+                    "SELECT status, scheduled_at FROM bbs_post WHERE id = ?", postId);
+            assert "DRAFT".equals(row.get("status")) : "취소 시 DRAFT 로 복귀해야 함";
+            assert row.get("scheduled_at") == null : "취소 시 scheduled_at 이 NULL 이어야 함";
+        }
+
+        /** AC-PS-007: 비SCHEDULED 게시글 취소 → 409. */
+        @Test
+        @DisplayName("AC-PS-007: PUBLISHED 게시글 취소 → 409 POST_SCHEDULE_CONFLICT")
+        void cancelSchedule_notScheduled_returns409() throws Exception {
+            long postId = insertPost(bbsId, "비예약 " + suffix, false, false, userId);
+            givenUserToken(userId, Set.of("USER"));
+
+            mockMvc.perform(delete("/api/v1/board/posts/" + postId + "/schedule")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("POST_SCHEDULE_CONFLICT"));
+        }
+
+        /** AC-PS-010: 존재하지 않는 게시글 예약 → 404. */
+        @Test
+        @DisplayName("AC-PS-010: 존재하지 않는 게시글 예약 → 404 POST_NOT_FOUND")
+        void schedulePost_notFound_returns404() throws Exception {
+            givenUserToken(userId, Set.of("USER"));
+            String body = """
+                    {"scheduledAt":"%s"}
+                    """.formatted(Instant.now().plusSeconds(3600).toString());
+
+            mockMvc.perform(post("/api/v1/board/posts/999999999/schedule")
+                            .header("Authorization", TOKEN)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("POST_NOT_FOUND"));
+        }
+    }
+
+    private long insertScheduledPost(long bbsId, String title, Instant scheduledAt, long authorId) {
+        jdbcTemplate.update(
+                "INSERT INTO bbs_post (bbs_id, title, content_html, content_text, author_id, " +
+                "is_notice, is_secret, status, scheduled_at, created_at, updated_at) " +
+                "VALUES (?, ?, '<p>예약</p>', '예약', ?, false, false, 'SCHEDULED', ?, NOW(), NOW())",
+                bbsId, title, authorId, Timestamp.from(scheduledAt));
+        Long id = jdbcTemplate.queryForObject(
+                "SELECT id FROM bbs_post WHERE bbs_id = ? AND title = ? ORDER BY id DESC LIMIT 1",
+                Long.class, bbsId, title);
+        return id == null ? -1L : id;
+    }
+
     // ─── 헬퍼 ─────────────────────────────────────────────────────────────────
 
     private void givenUserToken(long id, Set<String> roles) {

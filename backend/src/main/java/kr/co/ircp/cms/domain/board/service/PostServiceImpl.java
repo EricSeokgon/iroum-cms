@@ -15,6 +15,7 @@ import kr.co.ircp.cms.domain.board.entity.BbsPostI18n;
 import kr.co.ircp.cms.domain.board.entity.BbsViewLog;
 import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
+import kr.co.ircp.cms.domain.board.exception.PostScheduleConflictException;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostHistoryMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostI18nMapper;
@@ -206,6 +207,78 @@ public class PostServiceImpl implements PostService {
         // SPEC-CMS-SECURITY-IDOR — 소유권 검증: 작성자 본인 또는 관리자만 삭제 허용
         authorizationGuard.ensureOwnerOrAdmin(existing.getAuthorId(), requesterId, "게시글 삭제 권한이 없습니다.");
         bbsPostMapper.deleteById(id);
+    }
+
+    // ─── SPEC-CMS-POST-SCHEDULE-001: 예약 발행 ──────────────────────────────────
+
+    /**
+     * 게시글 예약 발행.
+     * REQ-POST-SCHEDULE-001/002/007: scheduledAt > now 검증, DELETED 게시글 거부(409),
+     * 미존재 404. Page.schedulePage 로직 차용.
+     */
+    @Override
+    @Transactional
+    public PostDetail schedulePost(Long id, kr.co.ircp.cms.domain.board.dto.PostScheduleRequest request) {
+        BbsPost post = bbsPostMapper.findById(id)
+                .orElseThrow(() -> new PostNotFoundException(id));
+
+        // REQ-POST-SCHEDULE-007-2: DELETED 게시글은 예약 불가 (409)
+        if ("DELETED".equals(post.getStatus())) {
+            throw new PostScheduleConflictException(
+                    "삭제된 게시글은 예약할 수 없습니다. id=" + id);
+        }
+
+        // REQ-POST-SCHEDULE-002-1: scheduledAt 은 현재 시각 이후여야 함 (400)
+        if (!request.scheduledAt().isAfter(java.time.Instant.now())) {
+            throw new IllegalArgumentException(
+                    "예약 발행 시간은 현재 시각 이후여야 합니다. scheduledAt=" + request.scheduledAt());
+        }
+
+        bbsPostMapper.schedule(id, request.scheduledAt());
+        // 메모리 상 상태 갱신 후 반환 (DB 재조회 없이)
+        post.setStatus("SCHEDULED");
+        post.setScheduledAt(request.scheduledAt());
+        return toDetail(post);
+    }
+
+    /**
+     * 게시글 예약 취소.
+     * REQ-POST-SCHEDULE-004: SCHEDULED → DRAFT 복귀, scheduled_at=NULL.
+     * 비SCHEDULED 게시글 취소는 409.
+     */
+    @Override
+    @Transactional
+    public PostDetail cancelSchedule(Long id) {
+        BbsPost post = bbsPostMapper.findById(id)
+                .orElseThrow(() -> new PostNotFoundException(id));
+
+        // REQ-POST-SCHEDULE-004-2: SCHEDULED 가 아니면 취소 불가 (409)
+        if (!"SCHEDULED".equals(post.getStatus())) {
+            throw new PostScheduleConflictException(
+                    "예약 상태(SCHEDULED)인 게시글만 취소할 수 있습니다. id=" + id + ", status=" + post.getStatus());
+        }
+
+        bbsPostMapper.clearSchedule(id);
+        post.setStatus("DRAFT");
+        post.setScheduledAt(null);
+        return toDetail(post);
+    }
+
+    /** BbsPost → PostDetail 변환 (master 코드/댓글 사용 여부 조회 포함). */
+    private PostDetail toDetail(BbsPost post) {
+        BbsMaster master = bbsMasterMapper.findById(post.getBbsId()).orElse(null);
+        String masterCode = master != null ? master.getCode() : null;
+        boolean useComment = master != null && master.isUseComment();
+        return new PostDetail(
+                post.getId(), post.getBbsId(), masterCode, useComment,
+                post.getTitle(), post.getContentHtml(),
+                post.getAuthorId(), post.getAuthorName(),
+                post.isNotice(), post.getNoticeFrom(), post.getNoticeUntil(),
+                post.isSecret(), post.getViewCount(), post.getCommentCount(),
+                post.getStatus(), null,
+                Collections.emptyList(),
+                post.getCreatedAt(), post.getUpdatedAt()
+        );
     }
 
     // ─── SPEC-CMS-NOTICE-I18N-001: 다국어 번역 ─────────────────────────────────

@@ -28,6 +28,7 @@
         <result property="attachmentCount" column="attachment_count"/>
         <result property="status" column="status"/>
         <result property="publishedAt" column="published_at"/>
+        <result property="scheduledAt" column="scheduled_at"/>
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deletedAt" column="deleted_at"/>
@@ -107,5 +108,31 @@
         UPDATE bbs_post SET deleted_at = NOW(), status = 'DELETED', updated_at = NOW()
         WHERE id = #{id} AND deleted_at IS NULL
     </update>
+
+    <!-- SPEC-CMS-POST-SCHEDULE-001: 예약 발행 -->
+
+    <update id="schedule">
+        UPDATE bbs_post SET status = 'SCHEDULED', scheduled_at = #{scheduledAt}, updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="clearSchedule">
+        UPDATE bbs_post SET status = 'DRAFT', scheduled_at = NULL, updated_at = NOW()
+        WHERE id = #{id} AND deleted_at IS NULL
+    </update>
+
+    <update id="publishScheduled">
+        UPDATE bbs_post SET status = 'PUBLISHED', published_at = NOW(), scheduled_at = NULL, updated_at = NOW()
+        WHERE id = #{id} AND status = 'SCHEDULED' AND deleted_at IS NULL
+    </update>
+
+    <select id="findScheduledDue" resultMap="bbsPostResultMap">
+        SELECT id, bbs_id, title, content_html, content_text, category_code,
+               author_id, author_name, is_notice, notice_from, notice_until, is_secret,
+               view_count, like_count, comment_count, attachment_count,
+               status, published_at, scheduled_at, created_at, updated_at, deleted_at
+        FROM bbs_post
+        WHERE status = 'SCHEDULED' AND scheduled_at &lt;= NOW() AND deleted_at IS NULL
+    </select>
 
 </mapper>

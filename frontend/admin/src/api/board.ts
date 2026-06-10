@@ -99,6 +99,18 @@ export const boardApi = {
     return apiClient.delete(`${BASE}/posts/${id}`)
   },
 
+  // ── 게시글 예약 발행 (SPEC-CMS-POST-SCHEDULE-001) ───────────────────────────
+
+  /** POST /api/v1/board/posts/{id}/schedule — 예약 발행 (scheduledAt: ISO-8601) */
+  schedulePost(id: number, scheduledAt: string): Promise<{ data: PostDetail }> {
+    return apiClient.post(`${BASE}/posts/${id}/schedule`, { scheduledAt })
+  },
+
+  /** DELETE /api/v1/board/posts/{id}/schedule — 예약 취소(→DRAFT) */
+  cancelSchedule(id: number): Promise<{ data: PostDetail }> {
+    return apiClient.delete(`${BASE}/posts/${id}/schedule`)
+  },
+
   // ── 게시글 다국어 번역 (SPEC-CMS-NOTICE-I18N-001) ──────────────────────────
 
   /** PUT /api/v1/board/posts/{id}/translations — 번역 생성/수정 */

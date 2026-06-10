@@ -39,6 +39,8 @@ public class BbsPost {
     private int attachmentCount;
     private String status;
     private Instant publishedAt;
+    // SPEC-CMS-POST-SCHEDULE-001: 예약 발행 시각 (NULL=예약 없음, status=SCHEDULED 일 때만 의미)
+    private Instant scheduledAt;
     private Instant createdAt;
     private Instant updatedAt;
     private Instant deletedAt;

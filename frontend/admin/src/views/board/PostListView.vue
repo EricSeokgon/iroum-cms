@@ -93,7 +93,23 @@
             >
               {{ t('board.posts.notice') }}
             </el-tag>
+            <!-- 예약 발행 배지 — SPEC-CMS-POST-SCHEDULE-001 REQ-POST-SCHEDULE-005-1 -->
+            <el-tag
+              v-if="row.status === 'SCHEDULED'"
+              type="warning"
+              size="small"
+              :aria-label="t('board.posts.status.scheduled')"
+            >
+              {{ t('board.posts.status.scheduled') }}
+            </el-tag>
             <span class="truncate">{{ row.title }}</span>
+            <!-- 예약 시각 표시 -->
+            <span
+              v-if="row.status === 'SCHEDULED' && row.scheduledAt"
+              class="ml-1 text-xs text-amber-600"
+            >
+              ({{ formatDate(row.scheduledAt) }})
+            </span>
             <!-- 영어 번역 보유 배지 (공지 게시판) — SPEC-CMS-NOTICE-I18N-001 -->
             <el-tag
               v-if="translatedPostIds.has(row.id)"

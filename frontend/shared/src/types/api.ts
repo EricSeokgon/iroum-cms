@@ -373,7 +373,7 @@ export interface LoginHistoryEntry {
 export type BbsType = 'NORMAL' | 'NOTICE' | 'QNA' | 'FAQ' | 'GALLERY' | 'PUBLICATION' | 'SURVEY'
 
 /** 게시글 상태 */
-export type BbsPostStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'DELETED'
+export type BbsPostStatus = 'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'HIDDEN' | 'DELETED'
 
 /** 게시판 마스터 목록용 요약 DTO */
 export interface BbsMasterSummary {
@@ -419,6 +419,8 @@ export interface PostSummary {
   status: BbsPostStatus
   isNotice: boolean
   publishedAt?: string
+  /** 예약 발행 시각 (SPEC-CMS-POST-SCHEDULE-001, status=SCHEDULED 일 때) */
+  scheduledAt?: string
   createdAt: string
 }
 

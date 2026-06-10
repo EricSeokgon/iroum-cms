@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -106,6 +107,86 @@ class PostControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(5));
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-POST-SCHEDULE-001 — 예약 발행 API
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser
+    @DisplayName("POST /{postId}/schedule — 200 OK, status=SCHEDULED 반환 (AC-PS-001)")
+    void schedulePost_returns200WithScheduled() throws Exception {
+        PostDetail scheduled = new PostDetail(
+                1L, 1L, "NOTICE", false, "제목", "<p>내용</p>",
+                null, null, false, null, null, false,
+                0L, 0L, "SCHEDULED", null, List.of(),
+                Instant.now(), Instant.now()
+        );
+        when(postService.schedulePost(anyLong(), any())).thenReturn(scheduled);
+
+        String body = objectMapper.writeValueAsString(
+                new kr.co.ircp.cms.domain.board.dto.PostScheduleRequest(
+                        Instant.now().plusSeconds(3600)));
+
+        mockMvc.perform(post("/api/v1/board/posts/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("POST /{postId}/schedule — 과거 시각은 @Future 위반으로 400 (AC-PS-002)")
+    void schedulePost_pastTime_returns400() throws Exception {
+        String body = objectMapper.writeValueAsString(
+                new kr.co.ircp.cms.domain.board.dto.PostScheduleRequest(
+                        Instant.now().minusSeconds(3600)));
+
+        mockMvc.perform(post("/api/v1/board/posts/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("POST /{postId}/schedule — scheduledAt 누락은 @NotNull 위반으로 400 (AC-PS-003)")
+    void schedulePost_nullTime_returns400() throws Exception {
+        mockMvc.perform(post("/api/v1/board/posts/1/schedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("DELETE /{postId}/schedule — 200 OK, status=DRAFT 반환 (AC-PS-006)")
+    void cancelSchedule_returns200WithDraft() throws Exception {
+        PostDetail draft = new PostDetail(
+                1L, 1L, "NOTICE", false, "제목", "<p>내용</p>",
+                null, null, false, null, null, false,
+                0L, 0L, "DRAFT", null, List.of(),
+                Instant.now(), Instant.now()
+        );
+        when(postService.cancelSchedule(anyLong())).thenReturn(draft);
+
+        mockMvc.perform(delete("/api/v1/board/posts/1/schedule"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("DELETE /{postId}/schedule — 비SCHEDULED 취소는 409 (AC-PS-007)")
+    void cancelSchedule_notScheduled_returns409() throws Exception {
+        when(postService.cancelSchedule(anyLong()))
+                .thenThrow(new kr.co.ircp.cms.domain.board.exception.PostScheduleConflictException(
+                        "예약 상태가 아닙니다."));
+
+        mockMvc.perform(delete("/api/v1/board/posts/1/schedule"))
+                .andExpect(status().isConflict());
     }
 
     // ──────────────────────────────────────────────────────────────
