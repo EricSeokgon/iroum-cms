@@ -9,6 +9,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- **감사 로그 action/severity 다중값 필터** (`AuditLogController.java`, `AuditLogMapper.java`, `AuditLogMapper.xml`, `auditLog.ts`, SPEC-CMS-AUDIT-LOG-MULTI-FILTER-001)
+  - **백엔드**: `AuditLogController.search` / `export` 메서드의 `action`, `severity` 파라미터를 `String` → `List<String>`으로 확장. Spring MVC 반복 파라미터(`?action=CREATE&action=UPDATE`) 자동 바인딩
+  - **`AuditLogMapper`**: `search`, `countSearch`, `searchForExport` 3개 메서드의 `@Param` 시그니처를 `List<String>`으로 일괄 변경
+  - **`AuditLogMapper.xml`** 공통 `whereClause`: `action`/`severity` 단일 등치 조건 → 비어있지 않은 컬렉션 검사 + `<foreach> IN (...)` 절로 교체. search/count/export 3개 경로 동시 반영
+  - **프론트엔드**: `AuditLogFilter.action?`, `.severity?` 타입을 단일값에서 배열(`AuditAction[]`, `AuditSeverity[]`)로 변경. `buildFilter()` 전체 배열 전송 (첫 번째 값 절단 제거). `client.ts` `paramsSerializer: { indexes: null }` 추가로 반복 파라미터 직렬화
+  - **IT**: `AuditLogMultiFilterIT` 신설 — `postgres:16-alpine` Testcontainers, AC-ALF-001~004 5건 전체 GREEN
+  - CHANGELOG v2.5.0 알려진 제한 사항(백엔드 단일값 필터 제약) 해소
+
 ---
 
 ## [2.6.1] - 2026-06-09

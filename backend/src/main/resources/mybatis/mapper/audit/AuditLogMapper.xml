@@ -57,14 +57,16 @@
     <!-- 동적 WHERE 절 -->
     <sql id="whereClause">
         <where>
-            <if test="action != null and action != ''">
-                AND action = #{action}
+            <if test="action != null and action.size() > 0">
+                AND action IN
+                <foreach collection="action" item="a" open="(" separator="," close=")">#{a}</foreach>
             </if>
             <if test="entityType != null and entityType != ''">
                 AND entity_type = #{entityType}
             </if>
-            <if test="severity != null and severity != ''">
-                AND severity = #{severity}
+            <if test="severity != null and severity.size() > 0">
+                AND severity IN
+                <foreach collection="severity" item="s" open="(" separator="," close=")">#{s}</foreach>
             </if>
             <if test="result != null and result != ''">
                 AND result = #{result}

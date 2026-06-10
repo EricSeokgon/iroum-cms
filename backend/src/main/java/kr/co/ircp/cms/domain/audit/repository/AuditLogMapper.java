@@ -29,12 +29,12 @@ public interface AuditLogMapper {
 
     /**
      * 조건 검색 (동적 WHERE).
-     * action/entityType/severity/result/actorId/fromTime/toTime 중 null인 조건은 무시.
+     * action/severity는 다중 값 IN 필터; null이거나 빈 리스트인 조건은 무시.
      */
     List<AuditLog> search(
-            @Param("action") String action,
+            @Param("action") List<String> action,
             @Param("entityType") String entityType,
-            @Param("severity") String severity,
+            @Param("severity") List<String> severity,
             @Param("result") String result,
             @Param("actorId") Long actorId,
             @Param("fromTime") String fromTime,
@@ -45,9 +45,9 @@ public interface AuditLogMapper {
 
     /** 검색 결과 건수 */
     long countSearch(
-            @Param("action") String action,
+            @Param("action") List<String> action,
             @Param("entityType") String entityType,
-            @Param("severity") String severity,
+            @Param("severity") List<String> severity,
             @Param("result") String result,
             @Param("actorId") Long actorId,
             @Param("fromTime") String fromTime,
@@ -68,9 +68,9 @@ public interface AuditLogMapper {
      * event_time ASC 순으로 흘려보낸다.
      */
     void searchForExport(
-            @Param("action") String action,
+            @Param("action") List<String> action,
             @Param("entityType") String entityType,
-            @Param("severity") String severity,
+            @Param("severity") List<String> severity,
             @Param("result") String result,
             @Param("actorId") Long actorId,
             @Param("fromTime") String fromTime,

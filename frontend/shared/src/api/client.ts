@@ -16,6 +16,8 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
+  // Spring MVC @RequestParam List<String> 바인딩: action=A&action=B (bracket 표기 없이)
+  paramsSerializer: { indexes: null },
 })
 
 // ── 401 동시 재시도 큐 ────────────────────────────────────────────────────────

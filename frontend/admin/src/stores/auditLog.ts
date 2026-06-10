@@ -51,15 +51,15 @@ export const useAuditLogStore = defineStore('auditLog', () => {
   // ── 내부 헬퍼 ────────────────────────────────────────────────────────────
   /**
    * 화면 필터 상태를 백엔드 파라미터로 변환한다.
-   * 백엔드는 단일 값만 받으므로 다중 선택은 첫 번째 값을 전달한다.
+   * action/severity는 다중 선택 지원 — 빈 배열이면 전달하지 않는다.
    */
   function buildFilter(overrides: Partial<AuditLogFilter> = {}): AuditLogFilter {
     return {
       fromTime: filters.fromTime || undefined,
       toTime: filters.toTime || undefined,
       actor_id: filters.actorId ?? undefined,
-      action: filters.action[0] ?? undefined,
-      severity: filters.severity[0] ?? undefined,
+      action: filters.action.length > 0 ? filters.action : undefined,
+      severity: filters.severity.length > 0 ? filters.severity : undefined,
       result: filters.result || undefined,
       page: page.value,
       size: size.value,
