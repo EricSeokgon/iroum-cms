@@ -35,6 +35,7 @@ import kr.co.ircp.cms.domain.board.exception.AttachmentTooLargeException;
 import kr.co.ircp.cms.domain.board.exception.BbsMasterNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.BoardAttachmentDisabledException;
 import kr.co.ircp.cms.domain.board.exception.BoardCommentDisabledException;
+import kr.co.ircp.cms.domain.board.exception.CommentModerationException;
 import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
@@ -550,6 +551,21 @@ public class GlobalExceptionHandler {
      *
      * <p>REQ-BOARD-003 — id에 해당하는 댓글이 없거나 소프트 삭제된 경우.
      */
+    /**
+     * 댓글 모더레이션 제약 위반 → HTTP 400 Bad Request.
+     *
+     * <p>SPEC-CMS-COMMENT-MODERATE-001 REQ-CMTM-003/004 —
+     * DELETED 상태 댓글 상태 변경 시도 또는 유효하지 않은 상태값 지정.
+     */
+    @ExceptionHandler(CommentModerationException.class)
+    public ProblemDetail handleCommentModeration(CommentModerationException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Comment Moderation Error");
+        detail.setProperty("code", "COMMENT_MODERATION_ERROR");
+        return detail;
+    }
+
     @ExceptionHandler(CommentNotFoundException.class)
     public ProblemDetail handleCommentNotFound(CommentNotFoundException ex) {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(

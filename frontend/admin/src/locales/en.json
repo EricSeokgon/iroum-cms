@@ -1065,6 +1065,51 @@
       "success": {
         "created": "Comment posted",
         "deleted": "Comment deleted"
+      },
+      "admin": {
+        "title": "Comment Management",
+        "filter": {
+          "board": "Board",
+          "status": "Status",
+          "keyword": "Keyword",
+          "search": "Search",
+          "reset": "Reset"
+        },
+        "table": {
+          "id": "ID",
+          "board": "Board",
+          "post": "Post",
+          "author": "Author",
+          "content": "Content",
+          "status": "Status",
+          "createdAt": "Date"
+        },
+        "status": {
+          "ALL": "All",
+          "VISIBLE": "Visible",
+          "HIDDEN": "Hidden",
+          "DELETED": "Deleted"
+        },
+        "action": {
+          "hide": "Hide",
+          "show": "Show",
+          "delete": "Delete"
+        },
+        "confirm": {
+          "hide": "Hide this comment?",
+          "show": "Show this comment?",
+          "delete": "Delete this comment? This cannot be undone."
+        },
+        "success": {
+          "hidden": "Comment hidden",
+          "visible": "Comment made visible",
+          "deleted": "Comment deleted"
+        },
+        "error": {
+          "loadFailed": "Failed to load comments",
+          "statusChangeFailed": "Failed to change status",
+          "deleteFailed": "Failed to delete comment"
+        }
       }
     }
   },
