@@ -208,6 +208,13 @@ const router = createRouter({
           component: () => import('@/views/board/QnaManagementView.vue'),
           meta: { title: 'Q&A 모더레이션', requiresAuth: true },
         },
+        // ── 게시글 모더레이션 (SPEC-CMS-POST-MODERATE-001) ─────────────────
+        {
+          path: 'board/posts/management',
+          name: 'board-posts-management',
+          component: () => import('@/views/board/PostManagementView.vue'),
+          meta: { title: '게시글 모더레이션', requiresAuth: true },
+        },
         // ── 발간자료 카테고리 관리 (SPEC-CMS-PUB-CAT-001) ──────────────────
         {
           path: 'board/publication-categories',

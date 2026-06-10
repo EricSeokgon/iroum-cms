@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.board.repository;
 
+import kr.co.ircp.cms.domain.board.dto.PostAdminSummary;
 import kr.co.ircp.cms.domain.board.entity.BbsPost;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -70,4 +71,28 @@ public interface BbsPostMapper {
 
     /** 만기 예약 게시글 조회 (scheduled_at <= NOW() AND status='SCHEDULED' AND deleted_at IS NULL) */
     List<BbsPost> findScheduledDue();
+
+    // ─── SPEC-CMS-POST-MODERATE-001: 관리자 모더레이션 ──────────────────────────
+
+    /** 교차 게시판 게시글 목록 (관리자). bbsId/status/keyword 선택 필터 + 페이징. */
+    List<PostAdminSummary> listForAdmin(
+            @Param("bbsId") Long bbsId,
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    /** 교차 게시판 게시글 수 (관리자). */
+    long countForAdmin(
+            @Param("bbsId") Long bbsId,
+            @Param("status") String status,
+            @Param("keyword") String keyword
+    );
+
+    /** 게시글 상태 단순 변경 (관리자). */
+    int updateStatusByAdmin(@Param("id") Long id, @Param("status") String status);
+
+    /** 관리자 단건 요약 조회 (상태 변경 후 응답용). */
+    java.util.Optional<PostAdminSummary> findAdminSummaryById(@Param("id") Long id);
 }
