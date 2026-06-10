@@ -71,4 +71,18 @@ public interface QnaMapper {
             @Param("id") Long id,
             @Param("status") String status
     );
+
+    /** 어드민 전용 페이징 목록 조회 (삭제·비공개 필터 없음) */
+    List<Qna> listForAdmin(
+            @Param("status") String status,
+            @Param("keyword") String keyword,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    /** 어드민 전용 카운트 */
+    long countForAdmin(
+            @Param("status") String status,
+            @Param("keyword") String keyword
+    );
 }

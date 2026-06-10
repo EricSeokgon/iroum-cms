@@ -1112,6 +1112,36 @@
         }
       }
     },
+    "qnaAdmin": {
+      "title": "Q&A Moderation",
+      "empty": "No Q&A items found",
+      "loaded": "{count} items found",
+      "confirmDelete": "Delete this Q&A? This cannot be undone.",
+      "private": "Private",
+      "public": "Public",
+      "filter": {
+        "status": "Status",
+        "keyword": "Search by title"
+      },
+      "field": {
+        "title": "Title",
+        "questioner": "Questioner ID",
+        "isPrivate": "Visibility",
+        "status": "Status",
+        "createdAt": "Date"
+      },
+      "status": {
+        "ALL": "All",
+        "PENDING": "Pending",
+        "ANSWERED": "Answered",
+        "CLOSED": "Closed",
+        "HIDDEN": "Hidden"
+      },
+      "action": {
+        "hide": "Hide",
+        "restore": "Restore"
+      }
+    },
     "publicationCategories": {
       "title": "Publication Category Management",
       "table": {
