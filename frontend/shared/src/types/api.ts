@@ -433,6 +433,33 @@ export interface PostDetail extends PostSummary {
   updatedAt: string
 }
 
+/**
+ * 게시글 버전 히스토리 목록 항목 (경량 — 본문 제외).
+ * SPEC-CMS-POST-HISTORY-001 REQ-PH-002
+ */
+export interface PostHistoryItem {
+  id: number
+  version: number
+  /** 수정자 표시명 — 삭제 사용자/NULL이면 null (REQ-PH-003) */
+  editorName: string | null
+  editReason: string | null
+  editedAt: string
+}
+
+/**
+ * 게시글 특정 버전 단건 본문 (전체 본문 포함).
+ * SPEC-CMS-POST-HISTORY-001 REQ-PH-004
+ */
+export interface PostHistoryDetail {
+  id: number
+  version: number
+  editorName: string | null
+  editReason: string | null
+  editedAt: string
+  title: string
+  contentHtml: string
+}
+
 /** 게시글 생성 요청 */
 export interface PostCreateRequest {
   title: string

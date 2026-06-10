@@ -35,8 +35,17 @@
         </div>
       </div>
 
+      <!-- 본문 / 버전 히스토리 탭 -->
+      <el-tabs v-model="activeTab" class="mb-2">
+        <el-tab-pane :label="t('board.posts.content')" name="content" />
+        <el-tab-pane
+          :label="t('board.posts.postHistory.tab')"
+          name="history"
+        />
+      </el-tabs>
+
       <!-- 게시글 본문 카드 -->
-      <el-card class="mb-4">
+      <el-card v-show="activeTab === 'content'" class="mb-4">
         <!-- 제목 -->
         <div class="mb-3 border-b border-gray-100 pb-3">
           <div class="flex items-center gap-2">
@@ -102,8 +111,76 @@
         />
       </el-card>
 
-      <!-- 댓글 섹션 — 게시판 마스터의 useComment 허용 시에만 표시 -->
-      <PostCommentSection v-if="post.useComment" :post-id="post.id" />
+      <!-- 버전 히스토리 탭 (read-only 뷰어 — 복원/편집/삭제 컨트롤 없음, REQ-PH-010) -->
+      <div v-show="activeTab === 'history'" class="mb-4">
+        <el-empty
+          v-if="!historyLoading && historyItems.length === 0"
+          :description="t('board.posts.postHistory.empty')"
+          :image-size="100"
+        />
+        <template v-else>
+          <el-table
+            v-loading="historyLoading"
+            :data="historyItems"
+            border
+            highlight-current-row
+            :aria-label="t('board.posts.postHistory.tab')"
+            @row-click="selectVersion"
+          >
+            <el-table-column
+              prop="version"
+              :label="t('board.posts.postHistory.field.version')"
+              width="100"
+            />
+            <el-table-column :label="t('board.posts.postHistory.field.editor')">
+              <template #default="{ row }">
+                {{ row.editorName ?? t('board.posts.postHistory.unknownEditor') }}
+              </template>
+            </el-table-column>
+            <el-table-column :label="t('board.posts.postHistory.field.editedAt')" width="180">
+              <template #default="{ row }">{{ formatDate(row.editedAt) }}</template>
+            </el-table-column>
+            <el-table-column
+              prop="editReason"
+              :label="t('board.posts.postHistory.field.editReason')"
+            />
+          </el-table>
+
+          <el-pagination
+            v-if="historyTotal > historyPageSize"
+            class="mt-3 justify-end"
+            layout="prev, pager, next"
+            :total="historyTotal"
+            :page-size="historyPageSize"
+            :current-page="historyPage + 1"
+            @current-change="onHistoryPageChange"
+          />
+
+          <!-- 선택한 버전 본문 (읽기 전용) -->
+          <el-card v-if="selectedVersion" class="mt-4">
+            <template #header>
+              <span class="text-sm font-medium text-gray-700">
+                {{ t('board.posts.postHistory.versionContent', { version: selectedVersion.version }) }}
+              </span>
+            </template>
+            <h2 class="mb-3 text-lg font-semibold text-gray-900">{{ selectedVersion.title }}</h2>
+            <!-- @MX:WARN: [AUTO] v-html XSS 위험 — 백엔드 OWASP sanitize된 스냅샷만 렌더링 -->
+            <!-- @MX:REASON: content_html은 저장 시점 서버측 Sanitizer 처리 후 적재됨 (SPEC-CMS-003 §3.1) -->
+            <div
+              class="prose prose-sm max-w-none text-gray-800"
+              v-html="sanitize(selectedVersion.contentHtml)"
+              role="article"
+              :aria-label="t('board.posts.postHistory.content')"
+            />
+          </el-card>
+        </template>
+      </div>
+
+      <!-- 댓글 섹션 — 게시판 마스터의 useComment 허용 시에만 표시 (본문 탭 한정) -->
+      <PostCommentSection
+        v-if="post.useComment && activeTab === 'content'"
+        :post-id="post.id"
+      />
     </template>
 
     <!-- 404 상태 -->
@@ -117,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -126,7 +203,12 @@ import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
 import { useSafeHtml } from '@/composables/useSafeHtml'
 import PostCommentSection from '@/components/PostCommentSection.vue'
-import type { PostDetail, AttachmentSummary } from '@iroum/shared/types/api'
+import type {
+  PostDetail,
+  AttachmentSummary,
+  PostHistoryItem,
+  PostHistoryDetail,
+} from '@iroum/shared/types/api'
 
 const { sanitize } = useSafeHtml()
 
@@ -142,6 +224,16 @@ const auth = useAuthStore()
 const post = ref<PostDetail | null>(null)
 const loading = ref(false)
 const downloadingId = ref<number | null>(null)
+
+// ── 버전 히스토리 (SPEC-CMS-POST-HISTORY-001, read-only) ──────────────────────
+const activeTab = ref<'content' | 'history'>('content')
+const historyItems = ref<PostHistoryItem[]>([])
+const historyTotal = ref(0)
+const historyPage = ref(0)
+const historyPageSize = ref(20)
+const historyLoading = ref(false)
+const historyLoaded = ref(false)
+const selectedVersion = ref<PostHistoryDetail | null>(null)
 
 const canEdit = computed(() => {
   if (!post.value || !auth.user) return false
@@ -160,6 +252,42 @@ async function loadPost(): Promise<void> {
     loading.value = false
   }
 }
+
+async function loadHistory(): Promise<void> {
+  historyLoading.value = true
+  try {
+    const res = await boardApi.getPostHistory(Number(props.id), historyPage.value, historyPageSize.value)
+    historyItems.value = res.data.content
+    historyTotal.value = res.data.totalElements
+    historyLoaded.value = true
+  } catch {
+    ElMessage.error(t('board.posts.postHistory.loadFailed'))
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+async function selectVersion(row: PostHistoryItem): Promise<void> {
+  try {
+    const res = await boardApi.getPostVersion(Number(props.id), row.version)
+    selectedVersion.value = res.data
+  } catch {
+    ElMessage.error(t('board.posts.postHistory.loadFailed'))
+  }
+}
+
+function onHistoryPageChange(oneBasedPage: number): void {
+  historyPage.value = oneBasedPage - 1
+  selectedVersion.value = null
+  loadHistory()
+}
+
+// 히스토리 탭 최초 진입 시에만 목록 로드 (지연 로딩)
+watch(activeTab, (tab) => {
+  if (tab === 'history' && !historyLoaded.value) {
+    loadHistory()
+  }
+})
 
 async function downloadAttachment(att: AttachmentSummary): Promise<void> {
   downloadingId.value = att.id

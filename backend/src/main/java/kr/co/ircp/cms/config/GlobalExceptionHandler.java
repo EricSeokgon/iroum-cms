@@ -39,6 +39,7 @@ import kr.co.ircp.cms.domain.board.exception.CommentNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.DuplicateBbsCodeException;
 import kr.co.ircp.cms.domain.board.exception.FaqNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.InvalidAttachmentTypeException;
+import kr.co.ircp.cms.domain.board.exception.PostHistoryVersionNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PostNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.PostScheduleConflictException;
 import kr.co.ircp.cms.domain.board.exception.PublicationNotFoundException;
@@ -512,6 +513,20 @@ public class GlobalExceptionHandler {
                 HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Post Not Found");
         detail.setProperty("code", "POST_NOT_FOUND");
+        return detail;
+    }
+
+    /**
+     * 게시글 이력 버전 미존재 → HTTP 404 Not Found.
+     *
+     * <p>SPEC-CMS-POST-HISTORY-001 REQ-PH-005 — (postId, version) 스냅샷이 없는 경우.
+     */
+    @ExceptionHandler(PostHistoryVersionNotFoundException.class)
+    public ProblemDetail handlePostHistoryVersionNotFound(PostHistoryVersionNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Post History Version Not Found");
+        detail.setProperty("code", "POST_HISTORY_VERSION_NOT_FOUND");
         return detail;
     }
 

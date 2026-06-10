@@ -1003,6 +1003,20 @@
       },
       "cancelSchedule": "예약 취소",
       "cancelScheduleConfirm": "예약 발행을 취소하고 임시저장으로 되돌리시겠습니까?",
+      "postHistory": {
+        "tab": "버전 히스토리",
+        "content": "게시글 본문",
+        "empty": "수정 이력 없음",
+        "unknownEditor": "알 수 없음",
+        "loadFailed": "버전 이력을 불러오지 못했습니다",
+        "versionContent": "버전 {version} 본문",
+        "field": {
+          "version": "버전",
+          "editor": "편집자",
+          "editedAt": "편집 일시",
+          "editReason": "편집 사유"
+        }
+      },
       "confirm": {
         "delete": "게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
       },

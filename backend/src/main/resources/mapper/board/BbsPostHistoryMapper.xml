@@ -32,4 +32,55 @@
         VALUES (#{postId}, #{version}, #{title}, #{contentHtml}, #{editedBy}, #{editReason})
     </insert>
 
+    <!--
+        SPEC-CMS-POST-HISTORY-001: read 전용 조회.
+        editor 표시명은 users LEFT JOIN으로 확보 — edited_by가 NULL이거나 삭제 사용자면
+        editor_name이 NULL이 되어도 행은 그대로 반환된다(REQ-PH-003).
+    -->
+
+    <!-- 목록 항목(경량, content_html 제외) record 생성자 매핑 -->
+    <resultMap id="postHistoryItemMap" type="kr.co.ircp.cms.domain.board.dto.PostHistoryItem">
+        <constructor>
+            <idArg column="id"          javaType="java.lang.Long"/>
+            <arg   column="version"     javaType="int"/>
+            <arg   column="editor_name" javaType="java.lang.String"/>
+            <arg   column="edit_reason" javaType="java.lang.String"/>
+            <arg   column="edited_at"   javaType="java.time.Instant"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 단건(전체 본문 포함) record 생성자 매핑 -->
+    <resultMap id="postHistoryDetailMap" type="kr.co.ircp.cms.domain.board.dto.PostHistoryDetail">
+        <constructor>
+            <idArg column="id"           javaType="java.lang.Long"/>
+            <arg   column="version"      javaType="int"/>
+            <arg   column="editor_name"  javaType="java.lang.String"/>
+            <arg   column="edit_reason"  javaType="java.lang.String"/>
+            <arg   column="edited_at"    javaType="java.time.Instant"/>
+            <arg   column="title"        javaType="java.lang.String"/>
+            <arg   column="content_html" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findPageByPostId" resultMap="postHistoryItemMap">
+        SELECT h.id, h.version, u.name AS editor_name, h.edit_reason, h.edited_at
+        FROM bbs_post_history h
+        LEFT JOIN users u ON u.id = h.edited_by
+        WHERE h.post_id = #{postId}
+        ORDER BY h.version DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countByPostId" resultType="long">
+        SELECT COUNT(*) FROM bbs_post_history WHERE post_id = #{postId}
+    </select>
+
+    <select id="findByPostIdAndVersion" resultMap="postHistoryDetailMap">
+        SELECT h.id, h.version, u.name AS editor_name, h.edit_reason, h.edited_at,
+               h.title, h.content_html
+        FROM bbs_post_history h
+        LEFT JOIN users u ON u.id = h.edited_by
+        WHERE h.post_id = #{postId} AND h.version = #{version}
+    </select>
+
 </mapper>

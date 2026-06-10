@@ -5,7 +5,10 @@ import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.PostDetail;
+import kr.co.ircp.cms.domain.board.dto.PostHistoryDetail;
+import kr.co.ircp.cms.domain.board.dto.PostHistoryItem;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
+import kr.co.ircp.cms.domain.board.service.PostHistoryService;
 import kr.co.ircp.cms.domain.board.service.PostService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +52,9 @@ class PostControllerTest {
 
     @MockitoBean
     private PostService postService;
+
+    @MockitoBean
+    private PostHistoryService postHistoryService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -187,6 +193,67 @@ class PostControllerTest {
 
         mockMvc.perform(delete("/api/v1/board/posts/1/schedule"))
                 .andExpect(status().isConflict());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-POST-HISTORY-001 — 게시글 버전 히스토리 조회 API
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history — 200 OK, version DESC 페이징 목록 (AC-PH-001/002)")
+    void getPostHistory_returns200WithPage() throws Exception {
+        PostHistoryItem item = new PostHistoryItem(
+                20L, 2, "관리자", "오타 수정", Instant.now());
+        PageResponse<PostHistoryItem> page = PageResponse.of(List.of(item), 0, 20, 1L);
+        when(postHistoryService.getHistory(anyLong(), anyInt(), anyInt())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/board/posts/7/history")
+                        .param("page", "0")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].version").value(2))
+                .andExpect(jsonPath("$.content[0].editorName").value("관리자"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history — 이력 없으면 200 OK + 빈 목록 (AC-PH-006)")
+    void getPostHistory_noHistory_returns200Empty() throws Exception {
+        PageResponse<PostHistoryItem> empty = PageResponse.of(List.of(), 0, 20, 0L);
+        when(postHistoryService.getHistory(anyLong(), anyInt(), anyInt())).thenReturn(empty);
+
+        mockMvc.perform(get("/api/v1/board/posts/99/history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history/{version} — 200 OK, title+contentHtml 본문 (AC-PH-004)")
+    void getPostVersion_returns200WithContent() throws Exception {
+        PostHistoryDetail detail = new PostHistoryDetail(
+                10L, 1, "관리자", "최초 작성", Instant.now(),
+                "옛 제목", "<p>옛 본문</p>");
+        when(postHistoryService.getVersion(anyLong(), anyInt())).thenReturn(detail);
+
+        mockMvc.perform(get("/api/v1/board/posts/7/history/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1))
+                .andExpect(jsonPath("$.title").value("옛 제목"))
+                .andExpect(jsonPath("$.contentHtml").value("<p>옛 본문</p>"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history/{version} — 미존재 버전은 404 (AC-PH-005)")
+    void getPostVersion_unknown_returns404() throws Exception {
+        when(postHistoryService.getVersion(anyLong(), anyInt()))
+                .thenThrow(new kr.co.ircp.cms.domain.board.exception.PostHistoryVersionNotFoundException(7L, 999));
+
+        mockMvc.perform(get("/api/v1/board/posts/7/history/999"))
+                .andExpect(status().isNotFound());
     }
 
     // ──────────────────────────────────────────────────────────────
