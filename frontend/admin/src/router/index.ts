@@ -194,6 +194,13 @@ const router = createRouter({
           props: true,
           meta: { title: '게시글 수정' },
         },
+        // ── 댓글 모더레이션 (SPEC-CMS-COMMENT-MODERATE-001) ────────────────
+        {
+          path: 'board/comments',
+          name: 'board-comments',
+          component: () => import('@/views/board/CommentManagementView.vue'),
+          meta: { title: '댓글 관리', requiresAuth: true },
+        },
         // ── FAQ / Q&A 라우트 (SPEC-CMS-003) ────────────────────────────────
         {
           path: 'board/faqs',
