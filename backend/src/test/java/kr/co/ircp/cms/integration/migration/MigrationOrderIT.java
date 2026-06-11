@@ -23,10 +23,10 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V43 마이그레이션 총 42개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    // V39 (user_dashboard_preference), V40 (admin_notification), V41 (bbs_post_i18n),
-    // V42 (user_dashboard_preference_refresh_interval), V43 (bbs_post_scheduled_publish) 추가로 42개.
-    private static final int EXPECTED_MIGRATION_COUNT = 42;
+    // @MX:NOTE: [AUTO] V1~V46 마이그레이션 총 44개 (V11, V45 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // V44 (qna_hidden_constraint_fix), V46 (notification_delivery_status, SPEC-CMS-NOTIFICATION-STAT-001) 추가로 44개.
+    // V45 는 별도 미머지 PR 소속이라 본 브랜치에 부재.
+    private static final int EXPECTED_MIGRATION_COUNT = 44;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -58,6 +58,6 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
                 "22", "23", "24", "25", "26", "27", "28", "29", "30", "31",
                 "32", "33", "34", "35", "36",
-                "37", "38", "39", "40", "41", "42", "43");
+                "37", "38", "39", "40", "41", "42", "43", "44", "46");
     }
 }
