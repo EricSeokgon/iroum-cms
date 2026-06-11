@@ -31,7 +31,7 @@ import java.util.UUID;
  * ip-hash 기준 시간당 레이트리밋, 만료 세션 차단.
  */
 // @MX:NOTE: [AUTO] SimulationServiceImpl — ipHash는 호출부에서 해시된 값만 수신 (평문 IP 미수신 불변식)
-// @MX:SPEC: SPEC-CMS-AI-001
+// @MX:SPEC: SPEC-CMS-AI-001, SPEC-CMS-SIM-001
 @Service
 public class SimulationServiceImpl implements SimulationService {
 
@@ -87,6 +87,10 @@ public class SimulationServiceImpl implements SimulationService {
             throw new AiRateLimitExceededException(rateLimitPerHour);
         }
 
+        // SIM-001 — 투영 기간 정규화(3/5, 기본 3). 세션 저장·결과 echo 전용.
+        // ML PredictionRequest 는 extra=forbid 이므로 horizonYears 를 ML 요청에 넣지 않는다.
+        int horizonYears = dto.resolvedHorizonYears();
+
         SimulationRequest request = new SimulationRequest(
                 dto.ksicCode(), dto.capitalAmount(),
                 dto.foundingYear(), dto.revenueAmount());
@@ -113,6 +117,9 @@ public class SimulationServiceImpl implements SimulationService {
                 .pdfStatus("NONE")
                 .clientIpHash(ipHash)          // 평문 IP 절대 저장 금지 — 해시 값만
                 .createdAt(Instant.now())
+                .employeeCount(dto.employeeCount())   // SIM-001 — 직원 수(선택)
+                .horizonYears(horizonYears)           // SIM-001 — 투영 기간(3/5)
+                .recommendedPolicies(null)            // SIM-001 — 정책 번들 연동은 P3(차기 스프린트)
                 .build();
         sessionMapper.insert(session);
 
@@ -128,7 +135,8 @@ public class SimulationServiceImpl implements SimulationService {
                 .build());
 
         return new SimulationResultDto(
-                session.getId(), session.getPdfStatus(), projectionJson);
+                session.getId(), session.getPdfStatus(), projectionJson,
+                session.getHorizonYears(), session.getRecommendedPolicies());
     }
 
     @Override
@@ -136,7 +144,8 @@ public class SimulationServiceImpl implements SimulationService {
     public SimulationResultDto getResult(UUID sessionId) {
         AiSimulationSession session = loadActiveSession(sessionId);
         return new SimulationResultDto(
-                session.getId(), session.getPdfStatus(), session.getProjectionResult());
+                session.getId(), session.getPdfStatus(), session.getProjectionResult(),
+                session.getHorizonYears(), session.getRecommendedPolicies());
     }
 
     @Override

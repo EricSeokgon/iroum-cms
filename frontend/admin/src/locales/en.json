@@ -1925,5 +1925,44 @@
     "badge": {
       "ariaLabel": "{count} unread notifications"
     }
+  },
+  "kpi": {
+    "title": "KPI Dashboard",
+    "export": "Export to Excel",
+    "filter": {
+      "period": "Period",
+      "fromDate": "From",
+      "toDate": "To",
+      "granularity": "Granularity",
+      "kpiCode": "Metric",
+      "allKpi": "All metrics",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "granularity": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly"
+    },
+    "code": {
+      "FEATURE_USAGE_RATE": "Feature Usage Rate",
+      "FILE_DOWNLOAD_COUNT": "File Download Count",
+      "POLICY_APPLY_CONVERSION_RATE": "Policy Apply Conversion Rate"
+    },
+    "card": {
+      "vsPrevious": "vs previous period"
+    },
+    "chart": {
+      "trendTitle": "Usage & Download Trend",
+      "conversionTitle": "Policy Apply Conversion Rate (Monthly)",
+      "count": "Count",
+      "empty": "No data to display"
+    },
+    "state": {
+      "preparing": "Preparing",
+      "preparingNotice": "Data is being prepared. Policy matching statistics will appear once aggregated."
+    }
   }
 }

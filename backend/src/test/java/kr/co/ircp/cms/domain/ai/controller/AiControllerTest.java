@@ -118,7 +118,7 @@ class AiControllerTest {
     void simulationStart_returns201() throws Exception {
         UUID sid = UUID.randomUUID();
         when(simulationService.start(any(), anyString()))
-                .thenReturn(new SimulationResultDto(sid, "NONE", "{\"projection\":[]}"));
+                .thenReturn(new SimulationResultDto(sid, "NONE", "{\"projection\":[]}", 3, null));
 
         mockMvc.perform(post("/api/v1/ai/simulation/start")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -135,7 +135,7 @@ class AiControllerTest {
     void simulationGet_returns200() throws Exception {
         UUID sid = UUID.randomUUID();
         when(simulationService.getResult(sid))
-                .thenReturn(new SimulationResultDto(sid, "NONE", "{\"projection\":[]}"));
+                .thenReturn(new SimulationResultDto(sid, "NONE", "{\"projection\":[]}", 3, null));
 
         mockMvc.perform(get("/api/v1/ai/simulation/" + sid)
                         .with(SecurityMockMvcRequestPostProcessors

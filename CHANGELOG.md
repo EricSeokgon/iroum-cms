@@ -11,6 +11,25 @@
 
 ### Added
 
+- **AdminNotificationController 통합 테스트** (`AdminNotificationControllerIT`, SPEC-CMS-NC-IT-001)
+  - `AbstractIntegrationTest` 상속, `pgvector/pgvector:pg16` TestContainers 기반
+  - AC-NC-IT-001: `GET /api/v1/admin/notifications` — 200 OK + `PageResponse<AdminNotificationDto>` 구조 검증
+  - AC-NC-IT-002: `?status=UNREAD/ARCHIVED` 파라미터 필터 검증 — 본인 알림만 반환
+  - AC-NC-IT-003: `PATCH /{id}/read` — 204 No Content, DB `status=READ`, `read_at IS NOT NULL`
+  - AC-NC-IT-004: `PATCH /read-all` — 200 OK, `{"updatedCount": N}`, UNREAD 전체 READ 전환
+  - AC-NC-IT-005: `PATCH /{id}/archive` — 204 No Content, DB `status=ARCHIVED`, `archived_at IS NOT NULL`
+  - AC-NC-IT-006: `GET /unread-count` — 200 OK, `{"unreadCount": N}`
+  - AC-NC-IT-007: 권한 가드 — 비인증 401, USER 403, CONTENT_ADMIN 200
+  - AC-NC-IT-008: 사용자 격리 — 타 사용자 알림 읽음 시도 시 403 (서비스 레이어 `AdminNotificationNotFoundException` → `GlobalExceptionHandler`)
+  - 14개 테스트 케이스 전체 PASSED (BUILD SUCCESSFUL)
+
+- **플랫폼 KPI 통합 관리** (`AdminKpiController`, `KpiExportController`, `KpiAggregationServiceImpl`, `KpiQueryServiceImpl`, `KpiExportServiceImpl`, `KpiDashboardView.vue`, SPEC-CMS-KPI-001)
+  - **V45 마이그레이션**: `kpi_aggregation_mv` Materialized View + access_log 파티션 보강(2026-06/07) + `idx_audit_log_export_time` 부분 인덱스
+  - **백엔드 API**: `GET /api/v1/admin/kpi/values` (멀티필터 조회, JSONB containment), `GET /api/v1/admin/kpi/conversion-funnel`, `POST /api/v1/admin/kpi/export` (동기/비동기 SXSSFWorkbook), `GET /api/v1/admin/kpi/export/download` — 전체 `@PreAuthorize("hasRole('ADMIN')")`
+  - **서비스**: `KpiAggregationJob` — access_log → kpi_value UPSERT + kpi_value_history 아카이브. `KpiExportServiceImpl` — <10K 동기, ≥10K 비동기, >1M 멀티시트 분할
+  - **IT 테스트 24건**: `AdminKpiControllerIT` 9건, `KpiAggregationServiceImplIT` 4건, `KpiExportServiceImplIT` 9건, `KpiPerformanceIT` 2건 — AC-001~016 전체 커버
+  - **프론트엔드**: `KpiDashboardView.vue` + `KpiFilterPanel.vue` + `KpiSummaryCards.vue` + `KpiTrendChart.vue` + `KpiConversionFunnel.vue` + `kpiStore.ts` + `kpiStore.spec.ts` (18건 유닛 테스트), ko/en i18n 추가, 라우터 등록
+
 - **발간자료 카테고리 관리자 CRUD** (`PublicationCategoryAdminController`, `PublicationCategoryAdminServiceImpl`, `PublicationCategoryManagerView.vue`, SPEC-CMS-PUB-CAT-001)
   - **백엔드**: `GET /api/v1/admin/publication-categories` (INACTIVE 포함 전체 트리). `POST` — 루트/자식 카테고리 생성(201). `PUT /{id}` — 이름/정렬/상태 수정(200). `DELETE /{id}` — 리프 삭제(204). 하위 카테고리 존재 또는 연결된 발간자료 존재 시 409 Conflict
   - **DB 트리거 대응**: `trg_pub_cat_depth`가 `depth`를 자동 계산 → INSERT 시 depth 컬럼 제외, 저장 후 `findById` 재조회로 depth 반영
