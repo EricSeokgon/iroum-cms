@@ -140,6 +140,41 @@
     "questionRequired": "질문을 입력해 주세요",
     "questionTooLong": "질문은 1000자를 초과할 수 없습니다"
   },
+  "simulation": {
+    "title": "창업 시뮬레이션",
+    "subtitle": "기업 정보를 입력하면 향후 매출을 예측하고 관련 정책을 추천합니다",
+    "ksicLabel": "업종코드(KSIC)",
+    "ksicPlaceholder": "예: 62010",
+    "ksicInvalid": "업종코드는 5자리로 입력해 주세요",
+    "capitalLabel": "자본금(원)",
+    "capitalRequired": "자본금을 입력해 주세요",
+    "foundingYearLabel": "설립연도",
+    "foundingYearInvalid": "올바른 설립연도를 입력해 주세요",
+    "revenueLabel": "예상 매출(원)",
+    "revenueRequired": "예상 매출을 입력해 주세요",
+    "employeeLabel": "직원 수(선택)",
+    "horizonLabel": "투영 기간",
+    "horizon3": "3년",
+    "horizon5": "5년",
+    "submit": "시뮬레이션 시작",
+    "submitting": "분석 중...",
+    "error": "시뮬레이션 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요",
+    "resultTitle": "시뮬레이션 결과",
+    "restart": "새 시뮬레이션",
+    "horizonApplied": "{years}년 시나리오 기준",
+    "projectionTitle": "매출 투영",
+    "projectionEmpty": "투영 결과가 없습니다",
+    "colYear": "연도",
+    "colRevenue": "예상 매출",
+    "colGrowth": "성장률",
+    "won": "원",
+    "policiesTitle": "추천 정책",
+    "policiesPlaceholder": "정책 연동 준비 중입니다",
+    "pdfDownload": "PDF 다운로드",
+    "pdfDownloading": "다운로드 중...",
+    "pdfPreparing": "PDF를 준비하고 있습니다",
+    "pdfError": "PDF 다운로드에 실패했습니다. 잠시 후 다시 시도해 주세요"
+  },
   "safety": {
     "guidelines": "안전 가이드",
     "incidents": "사고사례",
@@ -349,6 +384,10 @@
       "match": "정책 매칭",
       "rag": "정책 AI 질의응답",
       "subscription": "알림 구독"
+    },
+    "simulation": {
+      "wizard": "창업 시뮬레이션",
+      "result": "시뮬레이션 결과"
     },
     "safety": {
       "guidelines": "안전 가이드",
