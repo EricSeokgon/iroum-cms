@@ -11,6 +11,13 @@
 
 ### Added
 
+- **플랫폼 KPI 통합 관리** (`AdminKpiController`, `KpiExportController`, `KpiAggregationServiceImpl`, `KpiQueryServiceImpl`, `KpiExportServiceImpl`, `KpiDashboardView.vue`, SPEC-CMS-KPI-001)
+  - **V45 마이그레이션**: `kpi_aggregation_mv` Materialized View + access_log 파티션 보강(2026-06/07) + `idx_audit_log_export_time` 부분 인덱스
+  - **백엔드 API**: `GET /api/v1/admin/kpi/values` (멀티필터 조회, JSONB containment), `GET /api/v1/admin/kpi/conversion-funnel`, `POST /api/v1/admin/kpi/export` (동기/비동기 SXSSFWorkbook), `GET /api/v1/admin/kpi/export/download` — 전체 `@PreAuthorize("hasRole('ADMIN')")`
+  - **서비스**: `KpiAggregationJob` — access_log → kpi_value UPSERT + kpi_value_history 아카이브. `KpiExportServiceImpl` — <10K 동기, ≥10K 비동기, >1M 멀티시트 분할
+  - **IT 테스트 24건**: `AdminKpiControllerIT` 9건, `KpiAggregationServiceImplIT` 4건, `KpiExportServiceImplIT` 9건, `KpiPerformanceIT` 2건 — AC-001~016 전체 커버
+  - **프론트엔드**: `KpiDashboardView.vue` + `KpiFilterPanel.vue` + `KpiSummaryCards.vue` + `KpiTrendChart.vue` + `KpiConversionFunnel.vue` + `kpiStore.ts` + `kpiStore.spec.ts` (18건 유닛 테스트), ko/en i18n 추가, 라우터 등록
+
 - **발간자료 카테고리 관리자 CRUD** (`PublicationCategoryAdminController`, `PublicationCategoryAdminServiceImpl`, `PublicationCategoryManagerView.vue`, SPEC-CMS-PUB-CAT-001)
   - **백엔드**: `GET /api/v1/admin/publication-categories` (INACTIVE 포함 전체 트리). `POST` — 루트/자식 카테고리 생성(201). `PUT /{id}` — 이름/정렬/상태 수정(200). `DELETE /{id}` — 리프 삭제(204). 하위 카테고리 존재 또는 연결된 발간자료 존재 시 409 Conflict
   - **DB 트리거 대응**: `trg_pub_cat_depth`가 `depth`를 자동 계산 → INSERT 시 depth 컬럼 제외, 저장 후 `findById` 재조회로 depth 반영

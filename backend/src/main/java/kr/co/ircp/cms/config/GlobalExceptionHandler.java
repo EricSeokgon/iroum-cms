@@ -69,6 +69,8 @@ import kr.co.ircp.cms.domain.dashboard.exception.DashboardWidgetNotFoundExceptio
 import kr.co.ircp.cms.domain.dashboard.exception.ExportAccessDeniedException;
 import kr.co.ircp.cms.domain.dashboard.exception.ExportExpiredException;
 import kr.co.ircp.cms.domain.dashboard.exception.ExportNotFoundException;
+import kr.co.ircp.cms.domain.dashboard.exception.ExportSignatureInvalidException;
+import kr.co.ircp.cms.domain.dashboard.exception.ExportSizeLimitException;
 import kr.co.ircp.cms.domain.dashboard.exception.InvalidWidgetQueryException;
 import kr.co.ircp.cms.domain.dashboard.exception.SavedViewNotFoundException;
 import kr.co.ircp.cms.domain.dashboard.exception.WidgetAccessDeniedException;
@@ -892,6 +894,24 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Export Access Denied");
         detail.setProperty("code", "EXPORT_ACCESS_DENIED");
+        return detail;
+    }
+
+    /** Export 행 수 상한 초과 → 400. SPEC-CMS-KPI-001 Phase 3 AC-010 */
+    @ExceptionHandler(ExportSizeLimitException.class)
+    public ProblemDetail handleExportSizeLimit(ExportSizeLimitException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Export Size Limit Exceeded");
+        detail.setProperty("code", "EXPORT_SIZE_LIMIT_EXCEEDED");
+        return detail;
+    }
+
+    /** Export 다운로드 서명 위조/손상 → 400. SPEC-CMS-KPI-001 Phase 3 AC-020 */
+    @ExceptionHandler(ExportSignatureInvalidException.class)
+    public ProblemDetail handleExportSignatureInvalid(ExportSignatureInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Export Signature Invalid");
+        detail.setProperty("code", "EXPORT_SIGNATURE_INVALID");
         return detail;
     }
 
