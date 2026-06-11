@@ -59,6 +59,13 @@ const router = createRouter({
           component: () => import('@/views/dashboard/ExportHistoryView.vue'),
           meta: { title: '내보내기 이력' },
         },
+        // ── KPI 대시보드 (SPEC-CMS-KPI-001) ────────────────────────────────
+        {
+          path: 'dashboard/kpi',
+          name: 'dashboard-kpi',
+          component: () => import('@/views/dashboard/KpiDashboardView.vue'),
+          meta: { title: 'KPI 대시보드' },
+        },
         {
           path: 'users',
           name: 'user-list',

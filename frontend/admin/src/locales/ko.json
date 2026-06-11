@@ -1988,5 +1988,44 @@
     "badge": {
       "ariaLabel": "미읽음 알림 {count}개"
     }
+  },
+  "kpi": {
+    "title": "KPI 대시보드",
+    "export": "Excel 내보내기",
+    "filter": {
+      "period": "기간",
+      "fromDate": "시작일",
+      "toDate": "종료일",
+      "granularity": "집계 단위",
+      "kpiCode": "지표",
+      "allKpi": "전체 지표",
+      "apply": "적용",
+      "reset": "초기화"
+    },
+    "granularity": {
+      "daily": "일별",
+      "weekly": "주별",
+      "monthly": "월별",
+      "quarterly": "분기별",
+      "yearly": "연도별"
+    },
+    "code": {
+      "FEATURE_USAGE_RATE": "기능별 이용률",
+      "FILE_DOWNLOAD_COUNT": "파일 다운로드 수",
+      "POLICY_APPLY_CONVERSION_RATE": "정책 매칭 신청 전환율"
+    },
+    "card": {
+      "vsPrevious": "이전 기간 대비"
+    },
+    "chart": {
+      "trendTitle": "이용률·다운로드 추이",
+      "conversionTitle": "정책 매칭 전환율 (월별)",
+      "count": "건수",
+      "empty": "표시할 데이터가 없습니다"
+    },
+    "state": {
+      "preparing": "준비 중",
+      "preparingNotice": "데이터 준비 중입니다. 정책 매칭 통계가 집계되면 표시됩니다."
+    }
   }
 }

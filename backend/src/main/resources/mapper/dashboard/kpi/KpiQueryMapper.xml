@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.dashboard.kpi.mapper.KpiQueryMapper">
+
+    <!-- AC-022: PII 컬럼 미선택. code/name/dimension/value/calculated_at 만 노출. -->
+    <resultMap id="kpiValueResponseMap"
+               type="kr.co.ircp.cms.domain.dashboard.kpi.dto.KpiValueResponse">
+        <constructor>
+            <arg column="kpi_code"    javaType="java.lang.String"/>
+            <arg column="kpi_name"    javaType="java.lang.String"/>
+            <arg column="dimension_json" javaType="java.lang.String"/>
+            <arg column="value"       javaType="java.math.BigDecimal"/>
+            <arg column="value_text"  javaType="java.lang.String"/>
+            <arg column="aggregated_at" javaType="java.time.LocalDateTime"/>
+            <arg column="data_state"  javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 공통 동적 WHERE: kpiCode / calculated_at 범위 / dimension containment / granularity 키 -->
+    <sql id="filterWhere">
+        <where>
+            <if test="req.kpiCode != null">
+                AND kd.code = #{req.kpiCode}
+            </if>
+            <if test="req.fromDate != null">
+                AND kv.calculated_at &gt;= #{req.fromDate}
+            </if>
+            <if test="req.toDate != null">
+                AND kv.calculated_at &lt; (#{req.toDate}::date + INTERVAL '1 day')
+            </if>
+            <if test="req.dimensionJson != null">
+                AND kv.dimension @&gt; #{req.dimensionJson}::jsonb
+            </if>
+            <if test="req.granularityKey != null">
+                AND jsonb_exists(kv.dimension, #{req.granularityKey})
+            </if>
+        </where>
+    </sql>
+
+    <select id="search" resultMap="kpiValueResponseMap">
+        SELECT kd.code            AS kpi_code,
+               kd.name            AS kpi_name,
+               kv.dimension::text AS dimension_json,
+               kv.value_numeric   AS value,
+               kv.value_text      AS value_text,
+               kv.calculated_at::timestamp AS aggregated_at,
+               'READY'            AS data_state
+        FROM kpi_value kv
+        JOIN kpi_definition kd ON kd.id = kv.kpi_id
+        <include refid="filterWhere"/>
+        ORDER BY kv.calculated_at DESC, kv.id ASC
+        LIMIT #{req.size} OFFSET #{req.offset}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM kpi_value kv
+        JOIN kpi_definition kd ON kd.id = kv.kpi_id
+        <include refid="filterWhere"/>
+    </select>
+
+    <!-- SPEC-CMS-KPI-001 Phase 3: export 용 전체 행 조회 (max_export_rows 상한). -->
+    <select id="searchForExport" resultMap="kpiValueResponseMap">
+        SELECT kd.code            AS kpi_code,
+               kd.name            AS kpi_name,
+               kv.dimension::text AS dimension_json,
+               kv.value_numeric   AS value,
+               kv.value_text      AS value_text,
+               kv.calculated_at::timestamp AS aggregated_at,
+               'READY'            AS data_state
+        FROM kpi_value kv
+        JOIN kpi_definition kd ON kd.id = kv.kpi_id
+        <include refid="filterWhere"/>
+        ORDER BY kv.calculated_at DESC, kv.id ASC
+        LIMIT #{maxRows}
+    </select>
+
+    <select id="countConversionStats" resultType="int">
+        SELECT COUNT(*)
+        FROM policy_match_stats_monthly
+        WHERE stat_month = #{statMonth}
+    </select>
+</mapper>
