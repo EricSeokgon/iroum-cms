@@ -1,10 +1,10 @@
 ---
 id: SPEC-CMS-COMMENT-MODERATE-001
 title: "댓글 관리자 모더레이션"
-status: Implemented
-version: 1.0.0
+status: Tested
+version: 1.0.1
 created_at: 2026-06-10
-updated_at: 2026-06-10
+updated_at: 2026-06-11
 ---
 
 # SPEC-CMS-COMMENT-MODERATE-001: 댓글 관리자 모더레이션
