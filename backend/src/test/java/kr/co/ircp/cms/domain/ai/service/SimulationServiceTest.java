@@ -66,7 +66,8 @@ class SimulationServiceTest {
     }
 
     private SimulationStartDto startDto() {
-        return new SimulationStartDto("J62010", 100_000_000L, 2020, null);
+        // SIM-001 — employeeCount=null, horizonYears=null(기본 3 보정)
+        return new SimulationStartDto("J62010", 100_000_000L, 2020, null, null, null);
     }
 
     private SimulationResponse mlResponse() {

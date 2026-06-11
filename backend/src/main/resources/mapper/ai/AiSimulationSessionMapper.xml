@@ -15,15 +15,21 @@
         <result property="clientIpHash" column="client_ip_hash"/>
         <result property="createdAt" column="created_at"/>
         <result property="expiresAt" column="expires_at"/>
+        <result property="employeeCount" column="employee_count"/>
+        <result property="horizonYears" column="horizon_years"/>
+        <result property="recommendedPolicies" column="recommended_policies"/>
     </resultMap>
 
     <!-- id는 DB gen_random_uuid() DEFAULT 생성, RETURNING id 를 generated key로 회수 -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
         INSERT INTO ai_simulation_session (ksic_code, capital_amount, founding_year,
-            revenue_amount, projection_result, pdf_status, client_ip_hash)
+            revenue_amount, projection_result, pdf_status, client_ip_hash,
+            employee_count, horizon_years, recommended_policies)
         VALUES (#{ksicCode}, #{capitalAmount}, #{foundingYear}, #{revenueAmount},
             <choose><when test="projectionResult != null">#{projectionResult}::jsonb</when><otherwise>NULL</otherwise></choose>,
-            COALESCE(#{pdfStatus}, 'NONE'), #{clientIpHash})
+            COALESCE(#{pdfStatus}, 'NONE'), #{clientIpHash},
+            #{employeeCount}, COALESCE(#{horizonYears}, 3),
+            <choose><when test="recommendedPolicies != null">#{recommendedPolicies}::jsonb</when><otherwise>NULL</otherwise></choose>)
     </insert>
 
     <select id="findById" resultMap="sessionResultMap">
