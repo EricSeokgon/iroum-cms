@@ -23,4 +23,13 @@
         </if>
         ORDER BY calculated_at DESC
     </select>
+
+    <!-- REQ-NS-006: 알림 건전성 KPI UPSERT (SPEC-CMS-NOTIFICATION-STAT-001) -->
+    <insert id="upsertNotificationKpi">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, calculated_at)
+        VALUES (#{kpiId}, #{dimension}::jsonb, #{valueNumeric}, NOW())
+        ON CONFLICT (kpi_id, dimension)
+        DO UPDATE SET value_numeric = EXCLUDED.value_numeric,
+                      calculated_at = EXCLUDED.calculated_at
+    </insert>
 </mapper>

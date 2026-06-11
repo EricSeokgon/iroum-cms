@@ -52,6 +52,19 @@
   - CHANGELOG v2.5.0 알려진 제한 사항(백엔드 단일값 필터 제약) 해소
 - **게시글 버전 히스토리 뷰어**: `GET /api/v1/board/posts/{postId}/history` 페이지네이션 API + 관리자 UI 히스토리 탭 (SPEC-CMS-POST-HISTORY-001)
 - **게시글 예약 발행**: `POST /api/v1/board/posts/{postId}/schedule` API + `PostPublishJob` 배치 잡(1분 주기) + 관리자 폼 예약 picker (SPEC-CMS-POST-SCHEDULE-001)
+- **알림 발송 통계 대시보드** (`NotificationStatController`, `NotificationStatServiceImpl`, `NotificationStatMapper`, `NotificationStatPanel.vue`, SPEC-CMS-NOTIFICATION-STAT-001)
+  - **DB 마이그레이션**: `V46__notification_delivery_status.sql` — `user_notification_inbox`에 `delivery_status VARCHAR(10) NULL` additive 컬럼 추가 (CONSTRAINT `chk_uni_delivery_status` IN ('SENT','FAILED','PENDING')). NULL=SENT 백필 불요
+  - **백엔드 5개 엔드포인트** (모두 `@PreAuthorize("hasAnyRole('SUPER_ADMIN','CONTENT_ADMIN','ADMIN')")`):
+    - `GET /api/v1/admin/notifications/stats/summary` — today/7일/30일 구간 발송·읽음율·미읽음·오류 수 집계
+    - `GET /api/v1/admin/notifications/stats/by-category` — type별 발송·읽음 건수 (구간 미지정 시 최근 30일 기본)
+    - `GET /api/v1/admin/notifications/stats/daily-trend` — `generate_series` gap-fill 일별 추이 (구간 상한 90일 캡 적용)
+    - `GET /api/v1/admin/notifications/stats/errors` — `delivery_status IN ('FAILED','PENDING')` 알림 페이지네이션 목록
+    - `PATCH /api/v1/admin/notifications/stats/errors/{id}/resend` — `delivery_status=SENT` 갱신 + `@AuditLog` 감사 기록
+  - **`NotificationStatMapper`** (MyBatis): LATERAL JOIN CROSS-PERIOD 요약, gap-fill `generate_series` 일별 추이, 오류 페이지네이션, delivery_status UPSERT 6개 쿼리
+  - **`KpiValueMapper#upsertNotificationKpi`**: 알림 건전성 KPI `kpi_value` ON CONFLICT UPSERT — SPEC-CMS-KPI-001 미배포 시 graceful no-op (DataAccessException catch)
+  - **데이터 소스 불변**: `user_notification_inbox`(V35) 단일 진실 원천. `admin_notification` 발송 모수 혼용 없음
+  - **프론트엔드** (`NotificationStatPanel.vue`, `notificationStatStore.ts`, `notificationStat.ts`): 요약 4카드, vue-echarts LineChart 일별 추이, 카테고리 테이블, 오류 목록 + 재발송 버튼 + el-pagination. `DashboardView.vue` additive 통합
+  - **단위 테스트**: `NotificationStatServiceTest` 9개 GREEN (getSummary, getDailyTrend_capAt90Days, getByCategory_defaultsToLast30Days, getErrors 페이지네이션, resend, refreshKpiFeed graceful degradation 등)
 
 ### Fixed
 

@@ -219,6 +219,12 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- 알림 발송 현황 (SPEC-CMS-NOTIFICATION-STAT-001) -->
+    <div class="mt-8">
+      <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400">알림 발송 현황</p>
+      <NotificationStatPanel />
+    </div>
   </div>
 </template>
 
@@ -243,6 +249,7 @@ import {
 } from '@element-plus/icons-vue'
 import { dashboard as systemDashboard } from '@/api/system'
 import type { DashboardKpiResponse } from '@/api/system'
+import NotificationStatPanel from '@/views/dashboard/NotificationStatPanel.vue'
 
 const { t } = useI18n()
 

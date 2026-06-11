@@ -21,4 +21,16 @@ public interface KpiValueMapper {
             @Param("kpiId") Long kpiId,
             @Param("dimensionFilter") String dimensionFilter
     );
+
+    /**
+     * 알림 건전성 KPI UPSERT (dimension {period, metric} 기준).
+     *
+     * <p>SPEC-CMS-NOTIFICATION-STAT-001 REQ-NS-006 — 읽음율·오류율을 kpi_value 호환 피드로 적재.
+     * uk_kpi_value(kpi_id, dimension) UNIQUE 제약 기반 ON CONFLICT DO UPDATE.
+     */
+    void upsertNotificationKpi(
+            @Param("kpiId") Long kpiId,
+            @Param("dimension") String dimension,
+            @Param("valueNumeric") java.math.BigDecimal valueNumeric
+    );
 }

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.notification.stat.repository.NotificationStatMapper">
+
+    <!--
+      SPEC-CMS-NOTIFICATION-STAT-001
+      집계 모수: user_notification_inbox(V35). admin_notification 혼용 금지(SPEC §1.1).
+      NULL delivery_status = SENT(정상 발송). 오류 = delivery_status IN ('FAILED','PENDING').
+      map-underscore-to-camel-case=true 이므로 snake_case alias → camelCase 자동 매핑.
+    -->
+
+    <!-- REQ-NS-001: 3구간 요약 통계 (today/7d/30d) -->
+    <select id="findSummary"
+            resultType="kr.co.ircp.cms.domain.notification.stat.entity.NotificationStatRow">
+        SELECT
+            t.period AS period,
+            COUNT(*) AS dispatched,
+            SUM(CASE WHEN n.is_read THEN 1 ELSE 0 END) AS read_count,
+            SUM(CASE WHEN NOT n.is_read THEN 1 ELSE 0 END) AS unread_count,
+            SUM(CASE WHEN n.delivery_status IN ('FAILED','PENDING') THEN 1 ELSE 0 END) AS error_count,
+            ROUND(
+                CASE WHEN COUNT(*) = 0 THEN 0
+                     ELSE SUM(CASE WHEN n.is_read THEN 1.0 ELSE 0 END) / COUNT(*) * 100
+                END, 2
+            ) AS read_rate
+        FROM user_notification_inbox n
+        JOIN LATERAL (VALUES
+            ('today', DATE_TRUNC('day', NOW())),
+            ('7d',    NOW() - INTERVAL '7 days'),
+            ('30d',   NOW() - INTERVAL '30 days')
+        ) AS t(period, period_start) ON n.created_at >= t.period_start
+        GROUP BY t.period
+    </select>
+
+    <!-- REQ-NS-002: 카테고리별 통계 (구간 필터, 발송 건수 내림차순) -->
+    <select id="findByCategory"
+            resultType="kr.co.ircp.cms.domain.notification.stat.entity.NotificationStatRow">
+        SELECT
+            type AS type,
+            COUNT(*) AS dispatched,
+            SUM(CASE WHEN is_read THEN 1 ELSE 0 END) AS read_count
+        FROM user_notification_inbox
+        WHERE created_at >= #{from}::date
+          AND created_at &lt; #{to}::date + INTERVAL '1 day'
+        GROUP BY type
+        ORDER BY dispatched DESC
+    </select>
+
+    <!-- REQ-NS-003: 일별 추이 (generate_series gap-fill, 발송 0건 일자도 0으로 채움) -->
+    <select id="findDailyTrend"
+            resultType="kr.co.ircp.cms.domain.notification.stat.entity.NotificationStatRow">
+        WITH date_series AS (
+            SELECT generate_series(#{from}::date, #{to}::date, '1 day'::interval)::date AS stat_date
+        ),
+        daily AS (
+            SELECT
+                created_at::date AS stat_date,
+                COUNT(*) AS dispatched,
+                SUM(CASE WHEN is_read THEN 1 ELSE 0 END) AS read_count
+            FROM user_notification_inbox
+            WHERE created_at >= #{from}::date
+              AND created_at &lt; #{to}::date + INTERVAL '1 day'
+            GROUP BY created_at::date
+        )
+        SELECT
+            TO_CHAR(ds.stat_date, 'YYYY-MM-DD') AS stat_date,
+            COALESCE(d.dispatched, 0) AS dispatched,
+            COALESCE(d.read_count, 0) AS read_count
+        FROM date_series ds
+        LEFT JOIN daily d ON ds.stat_date = d.stat_date
+        ORDER BY ds.stat_date ASC
+    </select>
+
+    <!-- REQ-NS-004: 오류/미발송 목록 (created_at 내림차순, 페이지네이션) -->
+    <select id="findErrors"
+            resultType="kr.co.ircp.cms.domain.notification.stat.entity.NotificationStatRow">
+        SELECT
+            id AS id,
+            user_id AS user_id,
+            type AS type,
+            title AS title,
+            delivery_status AS delivery_status,
+            created_at AS created_at
+        FROM user_notification_inbox
+        WHERE delivery_status IN ('FAILED','PENDING')
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countErrors" resultType="long">
+        SELECT COUNT(*)
+        FROM user_notification_inbox
+        WHERE delivery_status IN ('FAILED','PENDING')
+    </select>
+
+    <!-- REQ-NS-005: 재발송 상태 정정 (멱등 UPDATE) -->
+    <update id="updateDeliveryStatus">
+        UPDATE user_notification_inbox
+        SET delivery_status = #{status}
+        WHERE id = #{id}
+    </update>
+
+</mapper>
