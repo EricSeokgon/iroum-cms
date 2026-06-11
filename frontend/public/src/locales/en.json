@@ -140,6 +140,41 @@
     "questionRequired": "Please enter a question",
     "questionTooLong": "Question must not exceed 1000 characters"
   },
+  "simulation": {
+    "title": "Startup Simulation",
+    "subtitle": "Enter your company information to forecast future revenue and get policy recommendations",
+    "ksicLabel": "Industry Code (KSIC)",
+    "ksicPlaceholder": "e.g. 62010",
+    "ksicInvalid": "Industry code must be 5 digits",
+    "capitalLabel": "Capital (KRW)",
+    "capitalRequired": "Please enter the capital amount",
+    "foundingYearLabel": "Founding Year",
+    "foundingYearInvalid": "Please enter a valid founding year",
+    "revenueLabel": "Expected Revenue (KRW)",
+    "revenueRequired": "Please enter the expected revenue",
+    "employeeLabel": "Employees (optional)",
+    "horizonLabel": "Projection Period",
+    "horizon3": "3 years",
+    "horizon5": "5 years",
+    "submit": "Start Simulation",
+    "submitting": "Analyzing...",
+    "error": "An error occurred during the simulation. Please try again later",
+    "resultTitle": "Simulation Result",
+    "restart": "New Simulation",
+    "horizonApplied": "Based on {years}-year scenario",
+    "projectionTitle": "Revenue Projection",
+    "projectionEmpty": "No projection data available",
+    "colYear": "Year",
+    "colRevenue": "Expected Revenue",
+    "colGrowth": "Growth Rate",
+    "won": " KRW",
+    "policiesTitle": "Recommended Policies",
+    "policiesPlaceholder": "Policy integration is being prepared",
+    "pdfDownload": "Download PDF",
+    "pdfDownloading": "Downloading...",
+    "pdfPreparing": "Preparing your PDF",
+    "pdfError": "Failed to download the PDF. Please try again later"
+  },
   "safety": {
     "guidelines": "Safety Guidelines",
     "incidents": "Incident Cases",
@@ -349,6 +384,10 @@
       "match": "Policy Match",
       "rag": "Policy AI Q&A",
       "subscription": "Subscription"
+    },
+    "simulation": {
+      "wizard": "Startup Simulation",
+      "result": "Simulation Result"
     },
     "safety": {
       "guidelines": "Safety Guidelines",
