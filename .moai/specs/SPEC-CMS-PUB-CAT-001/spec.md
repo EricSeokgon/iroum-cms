@@ -1,3 +1,14 @@
+---
+id: SPEC-CMS-PUB-CAT-001
+title: "발간자료 카테고리 관리자 CRUD"
+status: Implemented
+version: 1.0.0
+created_at: 2026-06-10
+updated_at: 2026-06-12
+author: ircp
+priority: Medium
+---
+
 # SPEC-CMS-PUB-CAT-001 — 발간자료 카테고리 관리자 CRUD
 
 ## 개요

@@ -1,3 +1,14 @@
+---
+id: SPEC-CMS-QNA-MODERATE-001
+title: "Q&A 관리자 모더레이션 패널"
+status: Implemented
+version: 1.0.0
+created_at: 2026-06-10
+updated_at: 2026-06-12
+author: ircp
+priority: Medium
+---
+
 # SPEC-CMS-QNA-MODERATE-001: Q&A 관리자 모더레이션 패널
 
 ## Overview

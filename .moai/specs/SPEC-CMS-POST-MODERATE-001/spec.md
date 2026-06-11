@@ -1,6 +1,15 @@
-# SPEC-CMS-POST-MODERATE-001: 게시글 관리자 모더레이션 패널
+---
+id: SPEC-CMS-POST-MODERATE-001
+title: "게시글 관리자 모더레이션 패널"
+status: Implemented
+version: 1.0.0
+created_at: 2026-06-10
+updated_at: 2026-06-12
+author: ircp
+priority: Medium
+---
 
-## Status: In Progress
+# SPEC-CMS-POST-MODERATE-001: 게시글 관리자 모더레이션 패널
 
 ## Overview
 관리자가 전체 게시판에 걸쳐 BBS 게시글을 모더레이션(숨김/복원/강제 삭제)할 수 있는 어드민 패널을 구현한다.

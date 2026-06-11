@@ -66,6 +66,26 @@
   - **프론트엔드** (`NotificationStatPanel.vue`, `notificationStatStore.ts`, `notificationStat.ts`): 요약 4카드, vue-echarts LineChart 일별 추이, 카테고리 테이블, 오류 목록 + 재발송 버튼 + el-pagination. `DashboardView.vue` additive 통합
   - **단위 테스트**: `NotificationStatServiceTest` 9개 GREEN (getSummary, getDailyTrend_capAt90Days, getByCategory_defaultsToLast30Days, getErrors 페이지네이션, resend, refreshKpiFeed graceful degradation 등)
 
+- **비회원 창업기업 가상 시뮬레이션 환경 확장** (`SimulationServiceImpl`, `SimulationWizardView.vue`, `SimulationResultView.vue`, SPEC-CMS-SIM-001)
+  - **V45 마이그레이션**: `ai_simulation_session`에 `employee_count`, `horizon_years`(CHECK 3 또는 5), `recommended_policies`(JSONB) 컬럼 추가
+  - **백엔드 DTO 확장**: `SimulationStartDto` — 직원수·투영기간(3~5년, 기본 3 보정) 추가. `SimulationResultDto` — `horizonApplied`, `recommendedPolicies` echo 필드 추가. `client_ip_hash` SHA-256 불변식 유지
+  - **공개 위저드 UI** (`SimulationWizardView.vue`, `SimulationResultView.vue`, `SimulationDownloadView.vue`): 6개 입력 필드 검증, 매출 투영 표, PDF 다운로드 — 비회원 허용 라우트 3개
+  - **`simulationStore.ts`**: Pinia 스토어 (currentResult/loading/error + start/getResult/downloadPdf 액션)
+  - **단위 테스트**: `SimulationServiceImplExtendTest` 5개, `PdfGeneratorServiceTest` GREEN. `MigrationOrderIT` baseline 갱신. ko/en i18n simulation 네임스페이스 추가
+
+- **Q&A 관리자 모더레이션 패널** (`QnaAdminController`, `QnaAdminServiceImpl`, `QnaMapper`, `QnaManagementView.vue`, SPEC-CMS-QNA-MODERATE-001)
+  - **V44 마이그레이션**: `chk_qna_answer_set` 제약조건 — HIDDEN 상태 허용으로 확장
+  - **백엔드**: `GET /api/v1/admin/qnas` (status/keyword 필터 + 페이징, HIDDEN 포함 전체 조회). `PATCH /{id}/status` — PENDING/ANSWERED/CLOSED/HIDDEN 변경. `DELETE /{id}` — 소프트 삭제
+  - **`QnaMapper`**: `listForAdmin`, `countForAdmin` 메서드 추가
+  - **IT**: `QnaAdminControllerIT` AC-QNA-ADM-001~004 9개 전체 GREEN
+  - **프론트엔드**: `qnaAdmin.ts` API, `QnaManagementView.vue`, 라우터 등록, ko/en i18n 추가
+
+- **게시글 관리자 모더레이션 패널** (`PostAdminController`, `PostAdminServiceImpl`, `BbsPostMapper`, `PostManagementView.vue`, SPEC-CMS-POST-MODERATE-001)
+  - **백엔드**: `GET /api/v1/admin/posts` (bbsId/status/keyword 필터 + 페이징, HIDDEN 포함 교차 게시판 조회). `PATCH /{id}/status` — 상태 변경. `DELETE /{id}` — 강제 삭제
+  - **`BbsPostMapper`**: `listForAdmin`, `countForAdmin`, `updateStatusByAdmin`, `findAdminSummaryById` 4개 메서드 추가. `bbs_master` JOIN + 동적 WHERE 필터
+  - **IT**: `PostAdminControllerIT` AC-PA-001~004 10개 전체 GREEN
+  - **프론트엔드**: `postAdmin.ts` API, `PostManagementView.vue`, 라우터 등록, ko/en i18n 추가
+
 ### Fixed
 
 - **게시글/공지 목록 API `?lang=en` 파라미터 처리** — 영어 제목 반환 (SPEC-CMS-NOTICE-I18N-002)
