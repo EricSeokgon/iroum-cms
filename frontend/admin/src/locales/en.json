@@ -741,6 +741,12 @@
       "title": "Page Not Found",
       "message": "The page you requested does not exist.",
       "goHome": "Go to Home"
+    },
+    "forbidden": {
+      "title": "Access Denied",
+      "message": "You do not have permission to access this page. Contact an administrator if you need access.",
+      "goBack": "Go Back",
+      "goHome": "Go to Dashboard"
     }
   },
   "a11y": {

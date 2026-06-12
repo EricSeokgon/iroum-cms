@@ -73,6 +73,11 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     expiresAt.value = null
     user.value = null
+    // SPEC-CMS-RBAC-001 — 권한 캐시도 함께 초기화 (다음 로그인 사용자와 권한 혼선 방지)
+    // 동적 import 로 순환 참조 회피 (permissionStore → api → client → auth)
+    void import('@/stores/permissionStore').then(({ usePermissionStore }) => {
+      usePermissionStore().reset()
+    })
   }
 
   /** 로그아웃 — POST /api/v1/auth/logout 후 상태 초기화 */

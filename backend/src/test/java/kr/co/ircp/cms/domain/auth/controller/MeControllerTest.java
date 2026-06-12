@@ -5,6 +5,7 @@ import kr.co.ircp.cms.config.GlobalExceptionHandler;
 import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
+import kr.co.ircp.cms.domain.auth.service.PermissionService;
 import kr.co.ircp.cms.domain.auth.service.UserService;
 import kr.co.ircp.cms.domain.board.service.QnaNotificationService;
 import org.junit.jupiter.api.DisplayName;
@@ -49,6 +50,9 @@ class MeControllerTest {
 
     @MockitoBean
     private QnaNotificationService qnaNotificationService;
+
+    @MockitoBean
+    private PermissionService permissionService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -108,6 +112,28 @@ class MeControllerTest {
                         .with(SecurityMockMvcRequestPostProcessors
                                 .authentication(jwtAuth(ME_PRINCIPAL))))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // GET /api/v1/me/permissions — SPEC-CMS-RBAC-001 REQ-RBAC-003
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("GET /api/v1/me/permissions — roles·permissions 정렬 집합 200 반환")
+    void mePermissions_returnsSortedRolesAndPermissions() throws Exception {
+        when(permissionService.findRoleCodesForUser(2L)).thenReturn(Set.of("ADMIN"));
+        when(permissionService.findEffectivePermissionsForUser(2L))
+                .thenReturn(Set.of("USER:WRITE", "USER:READ", "ROLE:READ"));
+
+        mockMvc.perform(get("/api/v1/me/permissions")
+                        .with(SecurityMockMvcRequestPostProcessors
+                                .authentication(jwtAuth(ME_PRINCIPAL))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.roles[0]").value("ADMIN"))
+                // 정렬 검증: ROLE:READ < USER:READ < USER:WRITE
+                .andExpect(jsonPath("$.permissions[0]").value("ROLE:READ"))
+                .andExpect(jsonPath("$.permissions[1]").value("USER:READ"))
+                .andExpect(jsonPath("$.permissions[2]").value("USER:WRITE"));
     }
 
     // ──────────────────────────────────────────────────────────────

@@ -290,12 +290,14 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // SUPER_ADMIN은 ADMIN의 모든 권한을 포함한다.
+    // SPEC-CMS-RBAC-001 REQ-RBAC-001 — 역할 계층 완성.
+    // 상위 역할은 하위 역할의 모든 권한을 자동 상속한다(SUPER_ADMIN ⊃ ADMIN ⊃ DEPT_ADMIN ⊃ EDITOR ⊃ VIEWER).
     // Spring Security 6.4+: RoleHierarchy @Bean 선언만으로 @PreAuthorize + URL 룰 모두 자동 적용.
     @Bean
     public RoleHierarchy roleHierarchy() {
         RoleHierarchyImpl hierarchy = new RoleHierarchyImpl();
-        hierarchy.setHierarchy("ROLE_SUPER_ADMIN > ROLE_ADMIN");
+        hierarchy.setHierarchy(
+            "ROLE_SUPER_ADMIN > ROLE_ADMIN > ROLE_DEPT_ADMIN > ROLE_EDITOR > ROLE_VIEWER");
         return hierarchy;
     }
 

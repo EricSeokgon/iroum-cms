@@ -1,6 +1,7 @@
-// 라우터 설정 — SPEC-CMS-002 인증 가드 포함
+// 라우터 설정 — SPEC-CMS-002 인증 가드 + SPEC-CMS-RBAC-001 권한 가드 포함
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePermissionStore } from '@/stores/permissionStore'
 
 // @MX:ANCHOR: [AUTO] router — router/index.ts는 main.ts, auth store, 모든 view에서 참조
 // @MX:REASON: fan_in >= 3: main.ts, auth store의 logout, 각 View 컴포넌트에서 push 호출
@@ -550,6 +551,14 @@ const router = createRouter({
       ],
     },
 
+    // ── 403 접근 거부 (SPEC-CMS-RBAC-001) ───────────────────────────────────
+    {
+      path: '/forbidden',
+      name: 'forbidden',
+      component: () => import('@/views/ForbiddenView.vue'),
+      meta: { requiresAuth: true, title: '접근 권한이 없습니다' },
+    },
+
     // ── 404 ────────────────────────────────────────────────────────────────
     {
       path: '/:pathMatch(.*)*',
@@ -560,12 +569,12 @@ const router = createRouter({
   ],
 })
 
-// ── 인증 가드 ──────────────────────────────────────────────────────────────
-router.beforeEach((to, _from, next) => {
+// ── 인증 + 권한 가드 (SPEC-CMS-002 + SPEC-CMS-RBAC-001) ─────────────────────
+router.beforeEach(async (to, _from, next) => {
   const auth = useAuthStore()
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    // 인증 필요 → 로그인 페이지로, 원래 경로 저장
+    // 인증 필요 → 로그인 페이지로, 원래 경로 저장 (REQ-RBAC-006 레이스: 미인증은 로그인 흐름 우선)
     next({ name: 'login', query: { redirect: to.fullPath } })
     return
   }
@@ -574,6 +583,40 @@ router.beforeEach((to, _from, next) => {
     // 이미 인증됨 → 대시보드로
     next({ name: 'dashboard' })
     return
+  }
+
+  // ── 권한 평가 (REQ-RBAC-006) ──────────────────────────────────────────────
+  // 인증된 사용자만, meta.permissions/meta.roles 가 선언된 라우트 대상.
+  const requiredPermissions = to.meta.permissions as string[] | undefined
+  const requiredRoles = to.meta.roles as string[] | undefined
+
+  if (auth.isAuthenticated && (requiredPermissions?.length || requiredRoles?.length)) {
+    const permStore = usePermissionStore()
+    // REQ-RBAC-006: 권한 미로드 시 로드 완료까지 대기 → 미달 오판 방지
+    if (!permStore.loaded) {
+      try {
+        await permStore.loadPermissions()
+      } catch {
+        // 권한 로드 실패 시 안전하게 차단
+        next({ name: 'forbidden' })
+        return
+      }
+    }
+
+    // meta.permissions: 나열된 코드 중 하나라도 권한 또는 역할로 보유하면 통과 (기존 혼용 데이터 호환)
+    const passesPermissions =
+      !requiredPermissions?.length ||
+      requiredPermissions.some(
+        (code) => permStore.hasPermission(code) || permStore.hasRole(code),
+      )
+    // meta.roles: 나열된 역할 중 하나라도 보유하면 통과
+    const passesRoles =
+      !requiredRoles?.length || requiredRoles.some((role) => permStore.hasRole(role))
+
+    if (!passesPermissions || !passesRoles) {
+      next({ name: 'forbidden' })
+      return
+    }
   }
 
   next()

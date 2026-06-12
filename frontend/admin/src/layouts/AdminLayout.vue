@@ -60,13 +60,13 @@
             <span>{{ t('nav.searchUnified') }}</span>
           </el-menu-item>
           <el-menu-item
-            v-if="hasPermission(auth, 'ROLE:READ')"
+            v-if="hasPermission('ROLE:READ')"
             index="/search/synonyms"
           >
             <span>{{ t('nav.searchSynonyms') }}</span>
           </el-menu-item>
           <el-menu-item
-            v-if="hasPermission(auth, 'ROLE:READ')"
+            v-if="hasPermission('ROLE:READ')"
             index="/search/analytics"
           >
             <span>{{ t('nav.searchAnalytics') }}</span>
@@ -75,7 +75,7 @@
 
         <!-- 역할/권한 관리 — SUPER_ADMIN 또는 DEPT_ADMIN -->
         <el-menu-item
-          v-if="hasPermission(auth, 'ROLE:READ')"
+          v-if="hasPermission('ROLE:READ')"
           index="/roles"
           :aria-label="t('nav.roles')"
         >
@@ -94,14 +94,14 @@
           </el-menu-item>
           <!-- 회원정보 접근 이력 — AUDIT:READ + USER:READ 권한 필요 -->
           <el-menu-item
-            v-if="hasPermission(auth, 'AUDIT:READ')"
+            v-if="hasPermission('AUDIT:READ')"
             index="/audit/personal-data-access"
           >
             <span>{{ t('nav.personalDataAccess') }}</span>
           </el-menu-item>
           <!-- 로그인 이력 — AUDIT:READ 권한 -->
           <el-menu-item
-            v-if="hasPermission(auth, 'AUDIT:READ')"
+            v-if="hasPermission('AUDIT:READ')"
             index="/audit/login-history"
           >
             <span>{{ t('nav.loginHistoryAudit') }}</span>
@@ -116,7 +116,7 @@
           </template>
           <!-- 게시판 마스터 관리 — SUPER_ADMIN만 -->
           <el-menu-item
-            v-if="hasPermission(auth, 'ROLE:READ')"
+            v-if="hasPermission('ROLE:READ')"
             index="/board/masters"
           >
             <span>{{ t('nav.boardMasters') }}</span>
@@ -204,7 +204,7 @@
           </el-menu-item>
           <!-- 동의어 관리 (SPEC-CMS-010) — ADMIN 전용 -->
           <el-menu-item
-            v-if="hasPermission(auth, 'ROLE:READ')"
+            v-if="hasPermission('ROLE:READ')"
             index="/synonyms"
           >
             <span>{{ t('nav.synonyms') }}</span>
@@ -239,7 +239,7 @@
 
         <!-- AI 모델 운영 그룹 (SPEC-CMS-AI-001) — ADMIN 전용 -->
         <el-sub-menu
-          v-if="hasPermission(auth, 'ROLE:READ')"
+          v-if="hasPermission('ROLE:READ')"
           index="ai"
           :aria-label="t('nav.ai')"
         >
@@ -372,7 +372,10 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePermission } from '@/composables/usePermission'
+import { usePermissionStore } from '@/stores/permissionStore'
 import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
 import { useDashboardPreferenceApply } from '@/composables/useDashboardPreferenceApply'
 // SPEC-CMS-NOTIFICATION-CENTER-001 — 헤더 배지·30초 폴링
@@ -390,13 +393,15 @@ const buildDate = new Date(__BUILD_TIME__).toLocaleDateString('ko-KR', {
   minute: '2-digit',
 })
 
-// 권한 기반 메뉴 노출 헬퍼
-function hasPermission(auth: ReturnType<typeof useAuthStore>, permission: string): boolean {
-  const roles: string[] = auth.user?.roleCodes ?? []
-  if (roles.includes('SUPER_ADMIN')) return true
-  if (permission === 'ROLE:READ' && roles.includes('DEPT_ADMIN')) return true
-  return false
-}
+// SPEC-CMS-RBAC-001 REQ-RBAC-006 — 하드코딩 스텁 제거, 실제 권한 데이터(me/permissions) 기반 판정
+// usePermission 컴포저블이 permissionStore 캐시를 단일 진실 소스로 사용
+const { hasPermission } = usePermission()
+const permissionStore = usePermissionStore()
+
+// 레이아웃 마운트 시 권한 캐시 로드 보장 (라우터 가드가 선로드하지 않은 라우트 대비)
+onMounted(() => {
+  void permissionStore.loadPermissions()
+})
 
 // 테마/밀도/폰트 스케일 CSS 변수를 <html>에 반응형으로 적용 (REQ-DP-002)
 useDashboardPreferenceApply()

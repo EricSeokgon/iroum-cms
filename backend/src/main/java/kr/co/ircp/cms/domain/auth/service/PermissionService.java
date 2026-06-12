@@ -70,4 +70,16 @@ public class PermissionService {
                 .flatMap(rc -> rolePermissionMapper.findEffectivePermissionCodes(rc).stream())
                 .collect(Collectors.toSet());
     }
+
+    /**
+     * 사용자의 역할 코드 집합 조회 (alias 포함, 원본 그대로).
+     *
+     * <p>SPEC-CMS-RBAC-001 REQ-RBAC-003 — GET /api/v1/me/permissions 역할 목록 산출에 사용.
+     *
+     * @param userId 사용자 PK
+     * @return 사용자에게 직접 부여된 역할 코드 집합
+     */
+    public Set<String> findRoleCodesForUser(long userId) {
+        return userMapper.findRoleCodesByUserId(userId);
+    }
 }

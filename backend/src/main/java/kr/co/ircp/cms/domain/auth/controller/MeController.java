@@ -1,11 +1,14 @@
 package kr.co.ircp.cms.domain.auth.controller;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import java.util.Map;
+import kr.co.ircp.cms.domain.auth.dto.MePermissionsResponse;
 import kr.co.ircp.cms.domain.auth.dto.QnaNotificationPreferenceRequest;
 import kr.co.ircp.cms.domain.auth.dto.UserSelf;
 import kr.co.ircp.cms.domain.auth.dto.UserSelfUpdateRequest;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
+import kr.co.ircp.cms.domain.auth.service.PermissionService;
 import kr.co.ircp.cms.domain.auth.service.UserService;
 import kr.co.ircp.cms.domain.board.service.QnaNotificationService;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class MeController {
 
     private final UserService userService;
     private final QnaNotificationService qnaNotificationService;
+    private final PermissionService permissionService;
 
     /**
      * 본인 정보 조회.
@@ -39,6 +43,22 @@ public class MeController {
     @GetMapping
     public UserSelf get(@AuthenticationPrincipal JwtPrincipal principal) {
         return userService.getMe(principal.userId());
+    }
+
+    /**
+     * 본인 유효 권한 집합 조회.
+     *
+     * <p>SPEC-CMS-RBAC-001 REQ-RBAC-003 — GET /api/v1/me/permissions.
+     * 프론트엔드 권한 판정(usePermission)의 단일 진실 소스. 인증된 모든 사용자 접근 가능.
+     * 역할은 alias 포함 원본, 권한은 alias·계층 상속 반영된 유효 권한 집합(정렬).
+     */
+    @GetMapping("/permissions")
+    public MePermissionsResponse permissions(@AuthenticationPrincipal JwtPrincipal principal) {
+        List<String> roles = permissionService.findRoleCodesForUser(principal.userId())
+                .stream().sorted().toList();
+        List<String> permissions = permissionService.findEffectivePermissionsForUser(principal.userId())
+                .stream().sorted().toList();
+        return new MePermissionsResponse(roles, permissions);
     }
 
     /**

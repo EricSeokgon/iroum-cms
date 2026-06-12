@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- SPEC-CMS-RBAC-001 REQ-RBAC-002 — 어드민 메뉴 카탈로그 접근 -->
+<mapper namespace="kr.co.ircp.cms.domain.auth.menu.AdminMenuMapper">
+
+    <!-- record AdminMenuMeta 생성자 매핑 -->
+    <resultMap id="adminMenuMetaMap" type="kr.co.ircp.cms.domain.auth.menu.AdminMenuMeta">
+        <constructor>
+            <idArg column="menu_key"   javaType="string"/>
+            <arg   column="name"       javaType="string"/>
+            <arg   column="parent_key" javaType="string"/>
+            <arg   column="route_path" javaType="string"/>
+            <arg   column="sort_order" javaType="_int"/>
+            <arg   column="icon"       javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <select id="findActiveMenus" resultMap="adminMenuMetaMap">
+        SELECT menu_key, name, parent_key, route_path, sort_order, icon
+        FROM admin_menu
+        WHERE is_active = TRUE
+        ORDER BY sort_order ASC, menu_key ASC
+    </select>
+
+    <!-- record AdminMenuPermissionRow 생성자 매핑 -->
+    <resultMap id="adminMenuPermissionRowMap"
+               type="kr.co.ircp.cms.domain.auth.menu.AdminMenuPermissionRow">
+        <constructor>
+            <idArg column="menu_key"        javaType="string"/>
+            <arg   column="permission_code" javaType="string"/>
+        </constructor>
+    </resultMap>
+
+    <!-- 활성 메뉴에 매핑된 권한만 반환 -->
+    <select id="findActiveMenuPermissions" resultMap="adminMenuPermissionRowMap">
+        SELECT mp.menu_key, mp.permission_code
+        FROM admin_menu_permissions mp
+        JOIN admin_menu m ON m.menu_key = mp.menu_key AND m.is_active = TRUE
+    </select>
+
+</mapper>
