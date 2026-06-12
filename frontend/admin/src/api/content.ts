@@ -322,9 +322,9 @@ export const menus = {
     return apiClient.post(`${BASE}/menus`, req)
   },
 
-  /** PUT /api/v1/content/menus/{id} */
+  /** PATCH /api/v1/content/menus/{id} — 이름·URL·대상 수정 */
   update(id: number, req: Partial<MenuRequest>): Promise<{ data: MenuTreeNode }> {
-    return apiClient.put(`${BASE}/menus/${id}`, req)
+    return apiClient.patch(`${BASE}/menus/${id}`, req)
   },
 
   /** PATCH /api/v1/content/menus/{id}/order */

@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.content.menu.dto.MenuPermissionRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuResponse;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuTreeNode;
+import kr.co.ircp.cms.domain.content.menu.dto.MenuUpdateRequest;
 
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,9 @@ public interface MenuService {
      * 권한 없는 메뉴는 accessible=false로 표시.
      */
     List<MenuTreeNode> getMenuTreeForUser(Long siteId, Set<String> userPermissions);
+
+    /** 메뉴 이름·URL·대상 수정 */
+    MenuResponse updateMenu(Long id, MenuUpdateRequest request);
 
     /** 메뉴 순서 변경 */
     MenuResponse changeOrder(Long id, MenuOrderRequest request);

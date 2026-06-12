@@ -22,15 +22,15 @@
 
       <!-- 메뉴 -->
       <el-menu
-        :router="true"
         :default-active="currentPath"
         background-color="#111827"
         text-color="#d1d5db"
         active-text-color="#ffffff"
         class="border-none"
         :aria-label="t('nav.mainMenu')"
+        @select="handleMenuSelect"
       >
-        <el-menu-item index="/system/dashboard">
+        <el-menu-item index="/dashboard">
           <el-icon><i-ep-home-filled /></el-icon>
           <span>{{ t('nav.dashboard') }}</span>
         </el-menu-item>
@@ -178,8 +178,8 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 시스템 관리 그룹 (SPEC-CMS-005) -->
-        <el-sub-menu index="system" :aria-label="t('nav.system')">
+        <!-- 시스템 관리 그룹 (SPEC-CMS-005) — SYSTEM:DASHBOARD 권한 보유자만 표시 -->
+        <el-sub-menu v-if="hasPermission('SYSTEM:DASHBOARD')" index="system" :aria-label="t('nav.system')">
           <template #title>
             <el-icon><i-ep-setting /></el-icon>
             <span>{{ t('nav.system') }}</span>
@@ -409,6 +409,12 @@ useDashboardPreferenceApply()
 // SPEC-CMS-NOTIFICATION-CENTER-001 REQ-NC-006/009 — 헤더 배지 + 30초 폴링
 const notificationStore = useNotificationCenterStore()
 useUnreadCountPolling()
+
+function handleMenuSelect(index: string): void {
+  // el-menu :router="true" 대신 명시적 네비게이션 사용
+  // — permissions v-if 변화 시 el-menu 내부 라우터 바인딩이 재초기화되는 버그 방지
+  void router.push(index)
+}
 
 function goToNotificationCenter(): void {
   router.push({ name: 'notification-center' })
