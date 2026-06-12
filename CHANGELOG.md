@@ -11,6 +11,16 @@
 
 ### Added
 
+- **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
+  - ADMIN 역할 시드 및 5단 권한 계층 (`SUPER_ADMIN > ADMIN > DEPT_ADMIN > EDITOR > VIEWER`) — V48 Flyway 마이그레이션
+  - 어드민 메뉴 접근 권한 카탈로그 (`admin_menu` / `admin_menu_permissions` 테이블) — V49 Flyway 마이그레이션
+  - `GET /api/v1/me/permissions` — 현재 사용자 유효 권한 집합 조회 API (프론트 단일 진실 소스)
+  - `GET /api/v1/admin/menus/accessible` — 접근 가능 메뉴 트리 API
+  - Vue Router `beforeEach` 권한 가드 (`meta.permissions`/`meta.roles` 기반 → `/forbidden` 리디렉션)
+  - `usePermission` 컴포저블 (`hasPermission`/`hasRole`/`canAccessMenu`) 및 Pinia `permissionStore`
+  - `AdminLayout.vue` 하드코딩 `hasPermission` 스텁 제거 → 동적 메뉴 렌더링
+  - `/forbidden` 403 접근 거부 전용 페이지 (`ForbiddenView.vue`)
+
 - **AdminNotificationController 통합 테스트** (`AdminNotificationControllerIT`, SPEC-CMS-NC-IT-001)
   - `AbstractIntegrationTest` 상속, `pgvector/pgvector:pg16` TestContainers 기반
   - AC-NC-IT-001: `GET /api/v1/admin/notifications` — 200 OK + `PageResponse<AdminNotificationDto>` 구조 검증

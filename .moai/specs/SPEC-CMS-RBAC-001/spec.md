@@ -208,3 +208,12 @@ iroum-cms는 이미 DB 레벨 RBAC 인프라(`roles`, `user_roles`, `permissions
 - Java 패키지 루트 `kr.co.ircp.cms.domain.auth`. 어드민 메뉴는 하위 패키지 `auth.menu`로 분리. DTO는 Java record, Service는 인터페이스+`*Impl`, `@Mapper` 인터페이스 + `*.xml`.
 - Docker 전용 빌드(로컬 Maven/Gradle 직접 실행 없음).
 - 주석·SPEC·커밋 메시지 한국어. 식별자/코드/API 스펙은 영어.
+
+---
+
+## Implementation Status
+
+- Status: completed
+- Completed: 2026-06-12
+- Commit: c444ace
+- All 5 requirements (REQ-RBAC-001/002/003/006/007) implemented and tested.
