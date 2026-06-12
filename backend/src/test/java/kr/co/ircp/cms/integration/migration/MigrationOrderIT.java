@@ -23,10 +23,10 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V46 마이그레이션 총 45개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
-    // V45 (ai_simulation_session_extend, SPEC-CMS-SIM-001),
-    // V46 (notification_delivery_status, SPEC-CMS-NOTIFICATION-STAT-001) 추가로 45개.
-    private static final int EXPECTED_MIGRATION_COUNT = 45;
+    // @MX:NOTE: [AUTO] V1~V47 마이그레이션 총 46개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // V45 (kpi_aggregation_mv), V46 (notification_delivery_status, SPEC-CMS-NOTIFICATION-STAT-001),
+    // V47 (ai_simulation_session_extend, SPEC-CMS-SIM-001) 추가로 46개.
+    private static final int EXPECTED_MIGRATION_COUNT = 46;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -58,6 +58,6 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 "12", "13", "14", "15", "16", "17", "18", "19", "20", "21",
                 "22", "23", "24", "25", "26", "27", "28", "29", "30", "31",
                 "32", "33", "34", "35", "36",
-                "37", "38", "39", "40", "41", "42", "43", "44", "45", "46");
+                "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47");
     }
 }
