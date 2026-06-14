@@ -1,10 +1,10 @@
 ---
 id: SPEC-CMS-POST-MODERATE-001
 title: "게시글 관리자 모더레이션 패널"
-status: Implemented
-version: 1.0.0
+status: Completed
+version: 1.0.1
 created_at: 2026-06-10
-updated_at: 2026-06-12
+updated_at: 2026-06-15
 author: ircp
 priority: Medium
 ---
