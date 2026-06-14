@@ -1,10 +1,10 @@
 ---
 id: SPEC-CMS-NOTIFICATION-STAT-001
 title: 관리자 알림 발송 통계 대시보드
-status: Implemented
-version: 1.0.0
+status: Completed
+version: 1.0.2
 created_at: 2026-06-11
-updated_at: 2026-06-11
+updated_at: 2026-06-15
 author: manager-spec (MoAI)
 priority: P2
 depends_on:
@@ -16,6 +16,7 @@ depends_on:
 
 ## HISTORY
 
+- 2026-06-15 (v1.0.2): Implemented → Completed. backend 단위 테스트 9건 GREEN, 5개 엔드포인트 정상 동작 확인. PR 머지 완료.
 - 2026-06-11 (v1.0.1): 구현 완료 (Implemented). 커밋 009c5ac — backend 14개 파일(V46 마이그레이션, 5개 엔드포인트, NotificationStatMapper XML, 단위 테스트 9건 GREEN), frontend 4개 파일(NotificationStatPanel.vue, notificationStatStore.ts, notificationStat.ts, DashboardView.vue additive 통합), KpiValueMapper upsertNotificationKpi 추가.
 - 2026-06-11 (v1.0.0): 최초 작성 (Draft). 시민용 인앱 알림 발송 현황·읽음율·카테고리·일별 추이·오류 목록·KPI 위젯 피드 통합. user_notification_inbox(V35) 재사용 + 단일 additive 컬럼(delivery_status) + 단일 마이그레이션(V46). manager-spec (MoAI).
 
