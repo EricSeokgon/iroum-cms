@@ -1,13 +1,21 @@
 ---
 id: SPEC-CMS-COMMENT-MODERATE-001
 title: "댓글 관리자 모더레이션"
-status: Tested
-version: 1.0.1
+status: Completed
+version: 1.0.2
 created_at: 2026-06-10
-updated_at: 2026-06-11
+updated_at: 2026-06-15
 ---
 
 # SPEC-CMS-COMMENT-MODERATE-001: 댓글 관리자 모더레이션
+
+## HISTORY
+
+| 버전 | 날짜 | 내용 |
+|------|------|------|
+| v1.0.2 | 2026-06-15 | Tested → Completed. `CommentAdminControllerIT` 12/12 GREEN (AC-CMTM-001~006 전체 커버). PR 머지 완료. |
+| v1.0.1 | 2026-06-11 | Implemented → Tested. `CommentAdminControllerIT` 통합 테스트 전체 PASSED. |
+| v1.0.0 | 2026-06-10 | 최초 작성 |
 
 ## 1. 개요
 
