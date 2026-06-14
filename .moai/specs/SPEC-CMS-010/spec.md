@@ -8,7 +8,7 @@
 | 제목 | 통합 검색 (Unified Search — 풀텍스트·자동완성·인기검색어·하이라이트) |
 | 작성일 | 2026-05-07 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P1 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-002 (인증·권한 — 비공개 콘텐츠 가드), SPEC-CMS-003 (게시판·FAQ·QnA `search_vector`/`pg_trgm` GIN), SPEC-CMS-004 (콘텐츠 페이지 `tsv_ko`/`tsv_en` 다국어 tsvector), SPEC-CMS-005 (`access_log` 기반 검색 통계 소스 + 알림 큐), SPEC-CMS-006 (`safety_incidents.search_vector`), SPEC-CMS-007 (정책사업 검색), SPEC-CMS-MEDIA-001 (미디어 메타데이터 GIN), SPEC-CMS-009 (`policy_match_stats`/`content_view_stats`/`batch_execution_log`/`retention_policy` analytics 신호 + 보존 정책) |

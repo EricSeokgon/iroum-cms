@@ -8,7 +8,7 @@
 | 제목 | HTTP 권한 매트릭스 통합 테스트 인프라 (운영 SecurityFilterChain + @PreAuthorize 회귀 검증) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P1 (보안 회귀 검출 인프라)** |
 | 분류 | Cross-cutting Security IT SPEC |
 | 의존 SPEC | SPEC-CMS-002 §16.x SecurityConfig + JwtAuthenticationFilter, SPEC-CMS-SECURITY-PII-001 (PII 더미 키 인프라 패턴 재사용), SPEC-CMS-SECURITY-PII-002 (`SecurityConfigIntegrationTest` 참조 패턴) |

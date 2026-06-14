@@ -8,7 +8,7 @@
 | 제목 | 통계·로그·시스템관리 상세 (Bundle D — Statistics, Logs, System Administration) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-002 (login_history 통계 집계 대상) |

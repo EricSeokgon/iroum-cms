@@ -8,7 +8,7 @@
 | 제목 | PII 노출 통제 (Admin 검색 partial 차단 + 응답 마스킹 + PII 접근 감사 보강) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P0 (PIPA 추가 완화)** |
 | 분류 | Cross-cutting Security SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-001 §5.3/§5.4/§5.5 (REQ-007/008/009 정의 원본), SPEC-CMS-002 §16.2 REQ-AUTH-018-D (PII 접근 감사 인프라), SPEC-CMS-002 §17.3 personal_data_access_log DDL |

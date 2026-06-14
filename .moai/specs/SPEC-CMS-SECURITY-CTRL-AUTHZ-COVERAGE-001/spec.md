@@ -8,7 +8,7 @@
 | 제목 | ControllerTest 메소드 레벨 권한 거부 시나리오 보강 (`@WebMvcTest` 슬라이스 401/403 회귀 커버리지) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P2 (보안 회귀 검출 보완)** |
 | 분류 | Cross-cutting Security Test Coverage SPEC |
 | 의존 SPEC | SPEC-CMS-002 §16.x SecurityConfig + `@PreAuthorize` 정책, SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 (HTTP 매트릭스 IT 인프라 — 검증 레이어 분리) |

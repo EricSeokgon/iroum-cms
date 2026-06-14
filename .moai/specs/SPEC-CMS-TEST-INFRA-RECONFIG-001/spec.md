@@ -8,7 +8,7 @@
 | 제목 | 테스트 인프라 잔여 갭 해소 (JaCoCo report integrationTest 통합 + check task 통합 + CI workflow integrationTest 실행 보장) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P1 (테스트 인프라 신뢰도)** |
 | 분류 | Cross-cutting Test Infrastructure SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-002 v0.2 (Implemented, integrationTest task 활용 최초 적용), SPEC-CMS-SECURITY-AUTHZ-MATRIX-001 v0.2 (Implemented, AuthorizationMatrixIT) |

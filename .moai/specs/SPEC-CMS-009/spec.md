@@ -8,7 +8,7 @@
 | 제목 | 데이터 거버넌스 (Data Governance — 표준 사전·보존 정책·통계 파이프라인 확장·품질 모니터링·RTO/RPO) |
 | 작성일 | 2026-05-06 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P1 |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-005 (시스템·배치·감사로그 인프라), SPEC-CMS-002 (personal_data_access_log), SPEC-CMS-006 (안전경영 사고 데이터), SPEC-CMS-007 (정책사업 매칭 데이터), SPEC-CMS-003 (게시판 access_log 소스), SPEC-CMS-004 (콘텐츠 view 소스) |

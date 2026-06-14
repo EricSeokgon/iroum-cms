@@ -8,7 +8,7 @@
 | 제목 | 개인정보 암호화 (PII Encryption — Email AES-256-GCM + HMAC + 키 관리) |
 | 작성일 | 2026-05-07 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P0 (운영 배포 차단)** |
 | 분류 | Cross-cutting Security SPEC |
 | 의존 SPEC | SPEC-CMS-002 §17.2 (PII 처리 정책), REQ-CROSS-002, REQ-AUTH-001~006 |

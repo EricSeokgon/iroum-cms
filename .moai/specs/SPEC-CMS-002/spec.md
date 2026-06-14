@@ -9,7 +9,7 @@
 | 부모 SPEC | SPEC-CMS-001 v0.2 (Umbrella) — §15.2 SFR-014 / SFR-010 / SFR-015, §16, §17 매핑 |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 버전 | v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 우선순위 | P0 (다른 묶음의 보안 기반, 가장 먼저 구현) |
 | 분류 | Detail SPEC |

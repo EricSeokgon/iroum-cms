@@ -11,7 +11,7 @@
 | 작성일 | 2026-04-29 |
 | 최종 수정 | 2026-04-29 (v0.4 — Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 (A에 의존, A와 병렬로 C/D 진행 가능) |
 | 분류 | Detail SPEC |
 | egov 차용 모듈 | cop/bbs(일반게시판), cop/ntc(공지사항), cop/com/faq(FAQ), cop/com/qna(Q&A), cop/cmm/fms(첨부파일) |
