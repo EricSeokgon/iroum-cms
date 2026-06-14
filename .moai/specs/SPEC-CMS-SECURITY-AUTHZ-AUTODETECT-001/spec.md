@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-AUTODETECT-001: ArchUnit 기반 운영 @PreAuthorize 자동 검출 — IT 매트릭스 누락 PR 차단 v0.2
 
-**Status**: Tested (2026-05-13) — 실제 Java 17 + Gradle 구동 검증 완료
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 실제 Java 17 + Gradle 구동 검증 완료.
 **Implementation commits**: 2be18d0 (Step 1 신설), 9cb4933 (Step 1 GREEN), 6b831d8 (Step 2 GREEN)
 **Test result**: 4 AC, 0 failed, BUILD SUCCESSFUL in 11s
 

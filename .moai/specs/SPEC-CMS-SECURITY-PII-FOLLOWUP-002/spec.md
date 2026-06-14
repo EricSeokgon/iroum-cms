@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-002: PII-FOLLOWUP-001 잔여 RED 해소 (@MockitoSpyBean + @Async 근본 충돌) v0.2
 
-**Status**: Tested (2026-05-13) — 본 SPEC 핵심 목표(Spy + @Async 충돌) 100% 해소
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 핵심 목표(Spy + @Async 충돌) 100% 해소 확인 완료.
 **Implementation commit**: a5f873b (PiiAuditEnhanceIT 재설계 + PersonalDataAccessLogServiceImplFallbackTest 신규)
 **Test result**: Unit test 3 AC GREEN + IT 3 AC GREEN, 2 AC 잔여 (PIPA 트리거 + tx 제약, 분리 SPEC 권장)
 **Trigger**: AUTHZ-AUTODETECT-001 Step 1 실제 구동 검증 중 발견된 PII-FOLLOWUP-001 잔여 회귀

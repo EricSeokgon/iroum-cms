@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-005: PiiAuditEnhanceIT AC-009-2 race condition 정밀 진단 v0.3
 
-**Status**: Tested (2026-05-13) — Option B @DirtiesContext 적용 → 5/5 GREEN 완성
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. Option B @DirtiesContext 적용 → 5/5 GREEN 완성 확인 완료.
 **Implementation commits**: b44cab6 (v0.1 Planned), 667332d (v0.2 옵션 A 진단), [본 commit] (v0.3 Option B 적용)
 
 ## v0.3 변경 이력 (2026-05-12) — Option B @DirtiesContext 적용
