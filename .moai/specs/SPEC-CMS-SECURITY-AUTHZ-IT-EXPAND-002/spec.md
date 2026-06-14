@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-002: HTTP 권한 매트릭스 IT 확장 2차 — ArchUnit baseline 31 어휘 100% IT 커버 v0.3
 
-**Status**: Tested (2026-05-13) — 19 어휘 × 57 AC GREEN + ArchUnit baseline 54 endpoint 매칭
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 19 어휘 × 57 AC GREEN + ArchUnit baseline 54 endpoint 매칭 확인 완료.
 **Implementation commits**: fc4a569 (Step 1 인프라), c450299 (Phase A 29 AC), 7a058e5 (Phase B 28 AC), [본 commit] (ArchTest baseline 54 갱신)
 
 ## v0.3 변경 이력 (2026-05-12) — Step 4 baseline 갱신 + Implemented

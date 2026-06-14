@@ -1,6 +1,6 @@
 # SPEC-CMS-META-IT-GREEN-MANDATORY-001: IT user environment GREEN mandatory 정책 v0.3
 
-**Status**: Tested (2026-05-13) — Evidence 강화 (PII 5건 + AUTHZ 회귀 6건 + Controller test 12건)
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. Evidence 강화 (PII 5건 + AUTHZ 회귀 6건 + Controller test 12건) 확인 완료.
 **Implementation commits**: 75da38a (v0.1 정책 초안), 7c58647 (v0.2 README + Sync checklist), [본 commit] (v0.3 AUTHZ evidence 추가)
 
 ## v0.3 변경 이력 (2026-05-12) — AUTHZ REGRESSION-001 evidence 통합
