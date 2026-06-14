@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003: HTTP 권한 매트릭스 IT 확장 3차 — 운영 120 @PreAuthorize 전체 endpoint IT 커버 v0.4
 
-**Status**: Tested (2026-05-13) — 8 도메인 106 AC GREEN + ArchUnit baseline 54 → 88 endpoint 갱신
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 8 도메인 106 AC GREEN + ArchUnit baseline 88 endpoint 확인 완료.
 
 ## v0.4 변경 이력 (2026-05-12) — Step 3-6 완성: Phase A+B+C + Sync
 

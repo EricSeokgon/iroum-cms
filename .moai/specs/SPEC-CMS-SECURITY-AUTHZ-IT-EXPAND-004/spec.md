@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004: HTTP 권한 매트릭스 IT 확장 4차 — 잔여 27 endpoint 100% IT 커버 (Final) v0.5
 
-**Status**: Tested (2026-05-13) — Step 4+5 완료 / AUTHZ 트랙 완전 종결
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. Step 4+5 완료 / AUTHZ 트랙 완전 종결 확인 완료.
 
 ## v0.5 변경 이력 (2026-05-13) — Step 4 ArchUnit baseline 확정 + Step 5 Sync
 

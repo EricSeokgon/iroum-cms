@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001: AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 v0.8
 
-**Status**: Tested (2026-05-13) — AuthorizationMatrixIT 8 RED 추가 회복, AUTHZ 트랙 100% GREEN
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. AuthorizationMatrixIT 8 RED 추가 회복, AUTHZ 트랙 100% GREEN 확인 완료.
 
 ## v0.8 변경 이력 (2026-05-12) — AuthorizationMatrixIT 추가 회복 + 종합 회귀 검증
 
