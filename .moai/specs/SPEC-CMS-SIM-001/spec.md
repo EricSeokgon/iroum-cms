@@ -1,10 +1,10 @@
 ---
 id: SPEC-CMS-SIM-001
 title: 비회원 창업기업 가상 시뮬레이션 환경 확장 (위저드 UI·5년 투영·정책 번들·사용 통계)
-status: Implemented
-version: 1.0.0
+status: Completed
+version: 1.0.1
 created_at: 2026-06-11
-updated_at: 2026-06-11
+updated_at: 2026-06-15
 author: manager-spec (MoAI)
 priority: P2
 issue_number: 0
