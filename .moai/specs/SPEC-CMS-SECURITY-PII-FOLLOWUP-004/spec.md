@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-004: AC-009-3/4 false GREEN 정밀 진단 (PII-002 본래 SPEC vs 운영 동작 차이) v0.4
 
-**Status**: Tested (2026-05-13) — AC-009-3/4 GREEN, AC-009-2는 PII-FOLLOWUP-005 v0.3에서 완전 해결 (5/5 GREEN)
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. AC-009-3/4 GREEN, AC-009-2는 PII-FOLLOWUP-005 v0.3에서 완전 해결 (5/5 GREEN) 확인 완료.
 **Implementation commits**: dc224f2 (AC-009-4 IT 시나리오 정정), a886b20 (VerificationService REQUIRES_NEW), 608855b (AC-009-2 v0.3 Option B)
 
 ## v0.4 변경 이력 (2026-05-12) — AC-009-2 PII-FOLLOWUP-005에서 해결, Status 정상화

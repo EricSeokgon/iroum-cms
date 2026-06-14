@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-ROTATION-001: PII 암호화 키 자동 회전 배치 v0.2
 
-**Status**: Tested (2026-05-13) — 단위 5 GREEN / MigrationOrderIT V25 반영
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 단위 5 GREEN / MigrationOrderIT V25 반영 확인 완료.
 **Trigger**: PIPA 개인정보 안전성 확보 조치 의무 — 암호화 키 주기적 교체 권고
 **Severity**: P3 (장기 보안 강화, KMS 활성화 후 진입)
 

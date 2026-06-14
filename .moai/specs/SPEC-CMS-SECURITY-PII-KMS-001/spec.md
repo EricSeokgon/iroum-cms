@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-KMS-001: 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault) v0.3
 
-**Status**: Tested (2026-05-13) — AWS KMS 어댑터 구현 완료 / 단위 4 GREEN + LocalStack IT 3 GREEN
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. AWS KMS 어댑터 구현 완료 / 단위 4 GREEN + LocalStack IT 3 GREEN 확인 완료.
 **Trigger**: PII-001 v0.2 Implemented §7 운영 환경 차단 가드 해제 필요
 **Severity**: P2 (운영 prod 활성화 필수, dev/test는 LocalEnvPiiKeyVault로 우회 가능)
 

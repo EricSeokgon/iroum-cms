@@ -1,6 +1,6 @@
 # SPEC-CMS-SECURITY-PII-FOLLOWUP-003: PII Audit IT 잔여 2 AC 해소 (HikariCP readOnly connection 본질적 제약) v0.2
 
-**Status**: Tested (2026-05-13) — 옵션 G (IT 재설계) 채택 + 핵심 2 AC GREEN 회복
+**Status**: Completed (2026-06-15) — MoAI sync: Tested → Completed. 옵션 G (IT 재설계) 채택 + 핵심 2 AC GREEN 회복 확인 완료.
 **Implementation commit**: b464bd3 (PiiAuditEnhanceIT @Transactional 제거 + TRUNCATE cleanup)
 **Test result**: 5 AC 중 3 PASSED + 2 FAILED (false GREEN 노출 — PII-FOLLOWUP-004 분리 권장)
 
