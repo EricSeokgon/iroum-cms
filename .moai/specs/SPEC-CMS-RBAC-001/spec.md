@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-RBAC-001
-version: 0.1.0
-status: draft
+version: 0.1.2
+status: Completed
 created: 2026-06-12
-updated: 2026-06-12
+updated: 2026-06-15
 author: manager-spec (MoAI)
 priority: P1
 issue_number: TBD
@@ -14,6 +14,8 @@ issue_number: TBD
 ## HISTORY
 
 - 2026-06-12 (v0.1.0): 최초 작성. 기존 RBAC 인프라(`roles`/`user_roles`/`permissions`/`role_permissions`/`permission_change_history` + `auth` 도메인 서비스/컨트롤러 + 프론트 `RoleMatrixView`/`PermissionChangeHistoryView`) 실측 후 **진짜 갭에 한정**해 정의. ADMIN 역할 시드 누락(G1), 어드민 사이드바 메뉴 카탈로그 부재(G2), 라우터 가드의 `meta.permissions` 미적용 + `hasPermission` 하드코딩 스텁(G6), 프론트 403 화면 부재(G7)를 핵심 범위로 확정.
+- 2026-06-12 (v0.1.1): 구현 완료. Flyway V48/V49/V50~V52 마이그레이션 적용, ADMIN 역할 시드, admin_menu/admin_menu_permissions 테이블 생성, GET /api/v1/me/permissions + GET /api/v1/admin/menus/accessible 엔드포인트 구현, 프론트엔드 usePermission 컴포저블 + 403 화면 추가, AdminLayout.vue 하드코딩 스텁 제거. REQ-RBAC-001/002/003/006/007 전체 구현. commit c444ace.
+- 2026-06-15 (v0.1.2): MoAI sync. draft → Completed. IT 테스트 및 전체 요구사항 구현 완료 확인. PR 머지 완료.
 
 ---
 
@@ -24,7 +26,7 @@ issue_number: TBD
 | SPEC ID | SPEC-CMS-RBAC-001 |
 | 제목 | 관리자 역할 기반 접근 제어(RBAC) 권한 관리 체계 완성 |
 | 작성일 | 2026-06-12 |
-| 상태 | draft |
+| 상태 | Completed |
 | 우선순위 | P1 (홈페이지 통합 대비 권한 체계 정합성) |
 | 분류 | 보안/권한 (Cross-cutting Authorization) |
 | 주 도메인 패키지 | `kr.co.ircp.cms.domain.auth` (역할/권한), 신규 어드민 메뉴는 `kr.co.ircp.cms.domain.auth.menu` |
