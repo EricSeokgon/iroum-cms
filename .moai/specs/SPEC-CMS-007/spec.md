@@ -9,7 +9,7 @@
 | 작성일 | 2026-04-29 |
 | 버전 | v0.4 (2026-04-29 Spring Boot 3.5.9 + 운영 결정 통합 — SPEC-CMS-001 v0.4 §20 부록 참조) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 |
 | 분류 | RFP 신규 P0 SPEC (SFR-007 + SFR-008) |
 | Parent | SPEC-CMS-001 v0.3.2 (Umbrella) |

@@ -8,7 +8,7 @@
 | 제목 | PII 비동기 감사 IT 검증 인프라 정비 (@Disabled 3건 활성화) |
 | 작성일 | 2026-05-08 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P2 (Operational quality / non-blocker)** |
 | 분류 | Test Infrastructure SPEC (코드/Production 변경 없음 — 순수 테스트 인프라 + IT 활성화) |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-002 §5.5 REQ-PII-EMAIL-009 (RUN 1차 완료, commit 6aadc45까지) |

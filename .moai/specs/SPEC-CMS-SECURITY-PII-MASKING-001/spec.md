@@ -8,7 +8,7 @@
 | 제목 | PII 운영 노출 통제 (Logback 정규식 마스킹 + MDC PII 필드 정책 + JWT 로그 마스킹) |
 | 작성일 | 2026-05-11 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | **P1 (운영 노출 위험 통제)** |
 | 분류 | Cross-cutting Security Operational Procedure SPEC |
 | 의존 SPEC | SPEC-CMS-SECURITY-PII-001 §3.2 비범위 일부 이행, SPEC-CMS-005 (Logback/MDC 인프라) |

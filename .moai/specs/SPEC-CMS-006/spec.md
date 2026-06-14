@@ -7,7 +7,7 @@
 | SPEC ID | SPEC-CMS-006 |
 | 제목 | 안전경영 가이드라인 + 사고사례 매칭 (Safety Management + Incident Matching) |
 | 상위 SPEC | SPEC-CMS-001 v0.3.2 (iroum-cms 통합 SPEC) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 (RFP SFR-005, SFR-006 직접 대응) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec |

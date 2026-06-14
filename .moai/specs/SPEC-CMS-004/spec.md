@@ -8,7 +8,7 @@
 | 제목 | 콘텐츠·메뉴·사이트관리 상세 (Bundle C — Content, Menu, Site Management) |
 | 작성일 | 2026-04-29 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 |
 | 분류 | 상세 SPEC (Umbrella SPEC-CMS-001의 Bundle C 분할) |
 | Parent SPEC | SPEC-CMS-001 (§6.3 REQ-CONTENT-001~010, §6.5 REQ-CROSS-001/006/007) |

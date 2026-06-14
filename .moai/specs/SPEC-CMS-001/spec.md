@@ -9,7 +9,7 @@
 | 작성일 | 2026-04-29 |
 | 버전 | v0.5 (2026-05-14 Umbrella Tested 갱신) |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 |
 | 분류 | Umbrella SPEC (후속 SPEC-CMS-002 ~ SPEC-CMS-010 + 옵션 트랙 분할) |
 | 참조 문서 | `.moai/project/product.md`, `.moai/project/structure.md`, `.moai/project/tech.md` |

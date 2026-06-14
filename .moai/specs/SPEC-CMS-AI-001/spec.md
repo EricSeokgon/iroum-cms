@@ -8,7 +8,7 @@
 | 제목 | AI/ML 기능 — 성장단계 예측·가상 시뮬레이션·경영위험 예측·알고리즘 품질 모니터링 |
 | 작성일 | 2026-05-18 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
 | 의존 SPEC | SPEC-CMS-009 (데이터 거버넌스 — 데이터 파이프라인, batch_execution_log, data_quality_rule) |
