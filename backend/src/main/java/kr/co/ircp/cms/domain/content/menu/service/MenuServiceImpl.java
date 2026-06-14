@@ -6,6 +6,7 @@ import kr.co.ircp.cms.domain.content.menu.dto.MenuPermissionRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuResponse;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuTreeNode;
+import kr.co.ircp.cms.domain.content.menu.dto.MenuUpdateRequest;
 import kr.co.ircp.cms.domain.content.menu.entity.Menu;
 import kr.co.ircp.cms.domain.content.menu.entity.MenuPermission;
 import kr.co.ircp.cms.domain.content.menu.exception.MenuCircularReferenceException;
@@ -119,6 +120,23 @@ public class MenuServiceImpl implements MenuService {
     public List<MenuTreeNode> getMenuTreeForUser(Long siteId, Set<String> userPermissions) {
         List<Menu> menus = menuMapper.findBySiteId(siteId);
         return buildTreeForUser(menus, null, userPermissions);
+    }
+
+    /**
+     * 메뉴 이름·URL·대상 수정.
+     * REQ-CONTENT-001-D
+     */
+    @Override
+    @Transactional
+    @CacheEvict(value = "menuTree", allEntries = true)
+    public MenuResponse updateMenu(Long id, MenuUpdateRequest request) {
+        Menu menu = menuMapper.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("메뉴를 찾을 수 없습니다. id=" + id));
+        menu.setName(request.name());
+        menu.setUrl(request.url());
+        menu.setTarget(request.target());
+        menuMapper.update(menu);
+        return MenuResponse.from(menu);
     }
 
     /**

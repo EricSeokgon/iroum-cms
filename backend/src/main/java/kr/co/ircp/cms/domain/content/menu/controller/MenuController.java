@@ -7,6 +7,7 @@ import kr.co.ircp.cms.domain.content.menu.dto.MenuPermissionRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuRequest;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuResponse;
 import kr.co.ircp.cms.domain.content.menu.dto.MenuTreeNode;
+import kr.co.ircp.cms.domain.content.menu.dto.MenuUpdateRequest;
 import kr.co.ircp.cms.domain.content.menu.service.MenuService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +48,16 @@ public class MenuController {
     @GetMapping("/tree")
     public ResponseEntity<List<MenuTreeNode>> getMenuTree(@RequestParam Long siteId) {
         return ResponseEntity.ok(menuService.getMenuTree(siteId));
+    }
+
+    /** PATCH /api/v1/content/menus/{id} — 메뉴 이름·URL·대상 수정 */
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority('MENU:WRITE')")
+    public ResponseEntity<MenuResponse> updateMenu(
+            @PathVariable Long id,
+            @Valid @RequestBody MenuUpdateRequest request
+    ) {
+        return ResponseEntity.ok(menuService.updateMenu(id, request));
     }
 
     /** PATCH /api/v1/content/menus/{id}/order — 메뉴 순서 변경 */

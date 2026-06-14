@@ -1,8 +1,8 @@
 ---
 id: SPEC-CMS-NC-IT-001
 title: "AdminNotificationController 통합 테스트"
-status: Implemented
-version: 1.0.0
+status: Completed
+version: 1.0.2
 created_at: 2026-06-11
 updated_at: 2026-06-12
 ---
@@ -11,6 +11,7 @@ updated_at: 2026-06-12
 
 | 버전 | 날짜 | 내용 |
 |------|------|------|
+| v1.0.2 | 2026-06-12 | Tested → Completed. integrationTest 태스크로 14개 테스트 케이스 전체 PASSED 재확인. PR #20 머지 완료. |
 | v1.0.1 | 2026-06-12 | 구현 완료 (Implemented). 커밋 d8433e1 — `AdminNotificationControllerIT.java` 신규 (384 lines), 14개 테스트 케이스 (AC-NC-IT-001~008) 전체 PASSED. CHANGELOG.md 업데이트. |
 | v1.0.0 | 2026-06-11 | 최초 작성 |
 

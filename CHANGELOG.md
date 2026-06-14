@@ -9,6 +9,17 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **어드민 네비게이션 라우팅 버그 수정 및 SUPER_ADMIN 권한 동기화** (커밋 5777076)
+  - `AdminLayout.vue`: `el-menu :router="true"` 제거 → `@select="handleMenuSelect"` 명시적 라우팅으로 변경 (Element Plus el-menu 내장 라우터 충돌 해결)
+  - `router/index.ts`: 대시보드 기본 라우트 중복 경로 정리
+  - `MenuController` / `MenuService` / `MenuServiceImpl`: `AdminMenu` 분리 API 구현 (`admin_menu` 테이블 독립화)
+  - `MenuUpdateRequest` DTO 신규 추가
+  - **V50 마이그레이션**: `admin_menu_permissions` 시드 데이터
+  - **V51 마이그레이션**: `menu` 공공 테이블에서 `ADMIN_*` 항목 정리
+  - **V52 마이그레이션**: `SUPER_ADMIN` 역할 누락 권한 동기화 (V13/V14에서 추가된 `SYSTEM:CODE:READ` 등 11개 권한 일괄 추가)
+
 ### Added
 
 - **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
