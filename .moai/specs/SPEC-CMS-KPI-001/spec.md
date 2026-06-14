@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-KPI-001
-version: 1.0.0
-status: Implemented
+version: 1.0.2
+status: Completed
 created_at: 2026-06-11
-updated: 2026-06-11
+updated: 2026-06-15
 author: manager-spec
 priority: high
 labels: [kpi, dashboard, aggregation, excel-export, performance]
@@ -19,6 +19,7 @@ issue_number: 21
 
 ## HISTORY
 
+- v1.0.2 / 2026-06-15 / MoAI sync / Implemented → Completed. 24개 IT 테스트 GREEN, kpiStore.spec.ts 18건 GREEN 확인. PR 머지 완료.
 - v1.0.1 / 2026-06-12 / MoAI sync / 구현 완료 (Implemented). 커밋 20d90a2 — backend 19개 파일(V45 마이그레이션, 4개 엔드포인트, IT 24건), frontend 9개 파일(KpiDashboardView.vue + 4 components + kpiStore.ts + kpi.ts + kpiStore.spec.ts), 24개 IT 테스트 GREEN. CHANGELOG.md 업데이트.
 - v0.1 / 2026-06-11 / manager-spec / 신규 작성. SPEC-CMS-008 이 구축한 대시보드 인프라(`kpi_definition` / `kpi_value` / `kpi_value_history` / `chart_dataset_cache` / `export_history`) 위에 1) **KPI 전용 집계 로직**(기능별 이용률, 파일 다운로드 수, 정책 매칭 전환율), 2) **조건별(기간/기능/업종/지역) 멀티필터 조회**, 3) **통계 엑셀 다운로드**(SXSSFWorkbook 실구현 완성), 4) **대용량 로그/트랜잭션 집계 성능 최적화**, 5) **KPI 대시보드 위젯** 5개 격차를 정의. 신규 DB 스키마는 도입하지 않고 V17 의 KPI 테이블을 재사용하며, 사전집계용 단일 마이그레이션(V45)만 추가.
 
