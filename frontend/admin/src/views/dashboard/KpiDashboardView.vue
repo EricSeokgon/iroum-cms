@@ -41,6 +41,29 @@
       />
       <KpiConversionFunnel :items="store.conversionItems" />
     </div>
+
+    <!-- SPEC-CMS-KPI-002: 운영 활동 지표 섹션 -->
+    <div class="mt-8">
+      <h3 class="mb-4 text-lg font-semibold text-gray-800">{{ t('kpi.section.activity') }}</h3>
+
+      <!-- 활동 요약 카드 (DAU/MAU/오류율) -->
+      <div class="mb-6">
+        <KpiActivityCards
+          :dau-items="store.dauItems"
+          :mau-items="store.mauItems"
+          :error-rate-items="store.errorRateItems"
+        />
+      </div>
+
+      <!-- 활동 추이(세션·오류율) + 콘텐츠 유형별 조회 수 -->
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <KpiActivityTrendChart
+          :session-items="store.sessionDurationItems"
+          :error-rate-items="store.errorRateItems"
+        />
+        <KpiContentViewChart :items="store.contentViewItems" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -54,6 +77,9 @@ import KpiFilterPanel from '@/components/dashboard/KpiFilterPanel.vue'
 import KpiSummaryCards from '@/components/dashboard/KpiSummaryCards.vue'
 import KpiTrendChart from '@/components/dashboard/KpiTrendChart.vue'
 import KpiConversionFunnel from '@/components/dashboard/KpiConversionFunnel.vue'
+import KpiActivityCards from '@/components/dashboard/KpiActivityCards.vue'
+import KpiActivityTrendChart from '@/components/dashboard/KpiActivityTrendChart.vue'
+import KpiContentViewChart from '@/components/dashboard/KpiContentViewChart.vue'
 
 const { t } = useI18n()
 const store = useKpiStore()

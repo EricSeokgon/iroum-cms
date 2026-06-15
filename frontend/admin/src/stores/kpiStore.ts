@@ -120,6 +120,23 @@ export const useKpiStore = defineStore('kpi', () => {
     kpiValues.value.some((i) => i.dataState === 'PREPARING'),
   )
 
+  // ── SPEC-CMS-KPI-002 신규 게터 (기존 3종 getter 는 변경 없음, REQ-KPI2-007-5) ──
+  const dauItems = computed(() =>
+    kpiValues.value.filter((i) => i.kpiCode === KPI_CODES.DAU),
+  )
+  const mauItems = computed(() =>
+    kpiValues.value.filter((i) => i.kpiCode === KPI_CODES.MAU),
+  )
+  const contentViewItems = computed(() =>
+    kpiValues.value.filter((i) => i.kpiCode === KPI_CODES.CONTENT_VIEW),
+  )
+  const sessionDurationItems = computed(() =>
+    kpiValues.value.filter((i) => i.kpiCode === KPI_CODES.AVG_SESSION_DURATION),
+  )
+  const errorRateItems = computed(() =>
+    kpiValues.value.filter((i) => i.kpiCode === KPI_CODES.API_ERROR_RATE),
+  )
+
   return {
     // state
     filters,
@@ -138,5 +155,11 @@ export const useKpiStore = defineStore('kpi', () => {
     fileDownloadItems,
     conversionItems,
     hasPreparingData,
+    // SPEC-CMS-KPI-002 getters
+    dauItems,
+    mauItems,
+    contentViewItems,
+    sessionDurationItems,
+    errorRateItems,
   }
 })

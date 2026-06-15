@@ -22,6 +22,19 @@
     </insert>
 
     <!--
+        SPEC-CMS-KPI-002: 특정 일자(dimension->>'date') 의 모든 행을 history 로 아카이브.
+        CONTENT_VIEW 처럼 (date, contentType) 다중 행 KPI 의 재집계 전 아카이브에 사용.
+    -->
+    <insert id="archiveExistingByDate">
+        INSERT INTO kpi_value_history
+            (kpi_id, dimension, value_numeric, value_text, calculated_at, archived_at)
+        SELECT kpi_id, dimension, value_numeric, value_text, calculated_at, NOW()
+        FROM kpi_value
+        WHERE kpi_id = #{kpiId}
+          AND dimension->>'date' = #{dateText}
+    </insert>
+
+    <!--
         AC-001: feature_usage_rate = 기능 페이지 조회수 / 전체 조회수 (일별).
         파티션 프루닝: created_at BETWEEN [day 0:00, next day 0:00).
         기능 페이지 정의: page_url ~ '^/features?/'.
@@ -75,6 +88,155 @@
         SELECT COUNT(*) FROM information_schema.tables
         WHERE table_schema = current_schema() AND table_name = #{tableName}
     </select>
+
+    <!-- ============================================================== -->
+    <!-- SPEC-CMS-KPI-002: 운영 활동 지표 4종(코드 5개) UPSERT            -->
+    <!-- 모든 access_log 집계는 created_at 범위 조건으로 파티션 프루닝.   -->
+    <!-- ============================================================== -->
+
+    <!--
+        AC-001/003/004: DAU = COUNT(DISTINCT user_id) (user_id NOT NULL), 일별.
+        빈 일자도 COUNT 가 0 을 반환하므로 항상 1행 UPSERT 된다(파티션 GROUP 없는 단일 집계).
+    -->
+    <update id="upsertDau">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, value_text, calculated_at)
+        SELECT
+            #{kpiId}                                  AS kpi_id,
+            #{dimensionJson}::jsonb                   AS dimension,
+            COUNT(DISTINCT user_id)::numeric          AS value_numeric,
+            NULL                                      AS value_text,
+            NOW()                                     AS calculated_at
+        FROM access_log
+        WHERE created_at &gt;= #{targetDate}::date
+          AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+          AND user_id IS NOT NULL
+        ON CONFLICT (kpi_id, dimension) DO UPDATE SET
+            value_numeric = EXCLUDED.value_numeric,
+            value_text    = EXCLUDED.value_text,
+            calculated_at = NOW()
+    </update>
+
+    <!--
+        AC-002: MAU = COUNT(DISTINCT user_id) (user_id NOT NULL), 대상일이 속한 월 범위.
+        파티션 프루닝: date_trunc('month', targetDate) ~ +1 month.
+    -->
+    <update id="upsertMau">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, value_text, calculated_at)
+        SELECT
+            #{kpiId}                                  AS kpi_id,
+            #{dimensionJson}::jsonb                   AS dimension,
+            COUNT(DISTINCT user_id)::numeric          AS value_numeric,
+            NULL                                      AS value_text,
+            NOW()                                     AS calculated_at
+        FROM access_log
+        WHERE created_at &gt;= date_trunc('month', #{targetDate}::date)
+          AND created_at &lt;  date_trunc('month', #{targetDate}::date) + INTERVAL '1 month'
+          AND user_id IS NOT NULL
+        ON CONFLICT (kpi_id, dimension) DO UPDATE SET
+            value_numeric = EXCLUDED.value_numeric,
+            value_text    = EXCLUDED.value_text,
+            calculated_at = NOW()
+    </update>
+
+    <!--
+        AC-005/006/007: CONTENT_VIEW = page_url 패턴 분류(notice/post/publication) 유형별 COUNT(*), 일별.
+        dimension = {"date":..,"contentType":..} 조합별 1행. 미분류 URL 은 contentType=NULL → 제외.
+        유형 라벨은 SQL CASE 에서 산출하고 jsonb_build_object 로 dimension 을 구성한다.
+    -->
+    <update id="upsertContentView">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, value_text, calculated_at)
+        SELECT
+            #{kpiId}                                                              AS kpi_id,
+            jsonb_build_object('date', #{targetDateText}, 'contentType', ct)      AS dimension,
+            COUNT(*)::numeric                                                     AS value_numeric,
+            NULL                                                                  AS value_text,
+            NOW()                                                                 AS calculated_at
+        FROM (
+            SELECT
+                CASE
+                    WHEN page_url ~ '/notices?/' OR page_url ~ '/board/notice'        THEN 'notice'
+                    WHEN page_url ~ '/posts?/'   OR page_url ~ '/board/(free|qna)'    THEN 'post'
+                    WHEN page_url ~ '/publications?/' OR page_url ~ '/pub/'           THEN 'publication'
+                    ELSE NULL
+                END AS ct
+            FROM access_log
+            WHERE created_at &gt;= #{targetDate}::date
+              AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+        ) classified
+        WHERE ct IS NOT NULL
+        GROUP BY ct
+        ON CONFLICT (kpi_id, dimension) DO UPDATE SET
+            value_numeric = EXCLUDED.value_numeric,
+            value_text    = EXCLUDED.value_text,
+            calculated_at = NOW()
+    </update>
+
+    <!--
+        AC-008/009/010/011: AVG_SESSION_DURATION = session_id 별 (MAX-MIN) created_at 초의 전체 평균, 일별.
+        session_id IS NULL 제외. 30분(1800초) idle gap 을 LAG 윈도우로 탐지하여 하위 세션 경계 분리.
+        유효 세션 없으면 COALESCE(AVG,0) = 0.
+    -->
+    <update id="upsertAvgSessionDuration">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, value_text, calculated_at)
+        WITH ordered AS (
+            SELECT session_id, created_at,
+                CASE WHEN created_at - LAG(created_at)
+                        OVER (PARTITION BY session_id ORDER BY created_at)
+                        &gt; INTERVAL '30 minutes'
+                     THEN 1 ELSE 0 END AS new_seg
+            FROM access_log
+            WHERE created_at &gt;= #{targetDate}::date
+              AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+              AND session_id IS NOT NULL
+        ),
+        segmented AS (
+            SELECT session_id, created_at,
+                SUM(new_seg) OVER (PARTITION BY session_id ORDER BY created_at) AS seg_no
+            FROM ordered
+        ),
+        durations AS (
+            SELECT EXTRACT(EPOCH FROM (MAX(created_at) - MIN(created_at))) AS dur_sec
+            FROM segmented
+            GROUP BY session_id, seg_no
+        )
+        SELECT
+            #{kpiId}                                       AS kpi_id,
+            #{dimensionJson}::jsonb                        AS dimension,
+            ROUND(COALESCE(AVG(dur_sec), 0), 4)::numeric   AS value_numeric,
+            NULL                                           AS value_text,
+            NOW()                                          AS calculated_at
+        FROM durations
+        ON CONFLICT (kpi_id, dimension) DO UPDATE SET
+            value_numeric = EXCLUDED.value_numeric,
+            value_text    = EXCLUDED.value_text,
+            calculated_at = NOW()
+    </update>
+
+    <!--
+        AC-012/013: API_ERROR_RATE = COUNT(status_code>=500) / NULLIF(COUNT(*),0) * 100, 일별.
+        분모 0(빈 일자)이면 NULLIF → NULL → COALESCE 0%. division-by-zero 없음.
+    -->
+    <update id="upsertApiErrorRate">
+        INSERT INTO kpi_value (kpi_id, dimension, value_numeric, value_text, calculated_at)
+        SELECT
+            #{kpiId}                AS kpi_id,
+            #{dimensionJson}::jsonb AS dimension,
+            ROUND(
+                COALESCE(
+                    COUNT(*) FILTER (WHERE status_code &gt;= 500)::numeric
+                    / NULLIF(COUNT(*), 0) * 100,
+                    0
+                ), 4)               AS value_numeric,
+            NULL                    AS value_text,
+            NOW()                   AS calculated_at
+        FROM access_log
+        WHERE created_at &gt;= #{targetDate}::date
+          AND created_at &lt;  #{targetDate}::date + INTERVAL '1 day'
+        ON CONFLICT (kpi_id, dimension) DO UPDATE SET
+            value_numeric = EXCLUDED.value_numeric,
+            value_text    = EXCLUDED.value_text,
+            calculated_at = NOW()
+    </update>
 
     <!-- CONCURRENTLY: uk_kpi_aggregation_mv(UNIQUE) 전제. 트랜잭션 밖에서 호출되어야 한다. -->
     <update id="refreshAggregationMv">

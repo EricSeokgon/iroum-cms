@@ -1452,8 +1452,12 @@
         "ACTIVE": "활성",
         "INACTIVE": "비활성"
       },
-      "createDialog": { "title": "템플릿 추가" },
-      "editDialog": { "title": "템플릿 수정" },
+      "createDialog": {
+        "title": "템플릿 추가"
+      },
+      "editDialog": {
+        "title": "템플릿 수정"
+      },
       "error": {
         "codeRequired": "코드를 입력해주세요",
         "nameRequired": "템플릿명을 입력해주세요",
@@ -1549,7 +1553,9 @@
         "title": "예약 발행",
         "placeholder": "발행 일시 선택"
       },
-      "createDialog": { "title": "페이지 추가" },
+      "createDialog": {
+        "title": "페이지 추가"
+      },
       "error": {
         "codeRequired": "코드를 입력해주세요",
         "titleRequired": "제목을 입력해주세요",
@@ -1620,8 +1626,12 @@
         "isActive": "활성",
         "period": "노출 기간"
       },
-      "createDialog": { "title": "팝업 추가" },
-      "editDialog": { "title": "팝업 수정" },
+      "createDialog": {
+        "title": "팝업 추가"
+      },
+      "editDialog": {
+        "title": "팝업 수정"
+      },
       "error": {
         "nameRequired": "팝업명을 입력해주세요",
         "contentRequired": "내용을 입력해주세요",
@@ -1655,8 +1665,12 @@
         "sortOrder": "정렬 순서",
         "isActive": "활성"
       },
-      "createDialog": { "title": "배너 추가" },
-      "editDialog": { "title": "배너 수정" },
+      "createDialog": {
+        "title": "배너 추가"
+      },
+      "editDialog": {
+        "title": "배너 수정"
+      },
       "error": {
         "groupRequired": "그룹 코드를 입력해주세요",
         "titleRequired": "제목을 입력해주세요",
@@ -1682,7 +1696,9 @@
         "namespace": "네임스페이스",
         "resourceId": "리소스 키"
       },
-      "addFieldDialog": { "title": "리소스 추가" },
+      "addFieldDialog": {
+        "title": "리소스 추가"
+      },
       "error": {
         "namespaceRequired": "네임스페이스를 입력해주세요",
         "resourceIdRequired": "리소스 키를 입력해주세요",
@@ -1713,8 +1729,12 @@
         "307": "307 임시 리다이렉트",
         "308": "308 영구 리다이렉트"
       },
-      "createDialog": { "title": "리다이렉트 추가" },
-      "editDialog": { "title": "리다이렉트 수정" },
+      "createDialog": {
+        "title": "리다이렉트 추가"
+      },
+      "editDialog": {
+        "title": "리다이렉트 수정"
+      },
       "error": {
         "fromPathRequired": "원본 경로를 입력해주세요",
         "fromPathPattern": "원본 경로는 /로 시작해야 합니다",
@@ -2018,7 +2038,12 @@
     "code": {
       "FEATURE_USAGE_RATE": "기능별 이용률",
       "FILE_DOWNLOAD_COUNT": "파일 다운로드 수",
-      "POLICY_APPLY_CONVERSION_RATE": "정책 매칭 신청 전환율"
+      "POLICY_APPLY_CONVERSION_RATE": "정책 매칭 신청 전환율",
+      "DAU": "일 활성 사용자",
+      "MAU": "월 활성 사용자",
+      "CONTENT_VIEW": "콘텐츠 조회 수",
+      "AVG_SESSION_DURATION": "평균 세션 지속 시간",
+      "API_ERROR_RATE": "API 오류율"
     },
     "card": {
       "vsPrevious": "이전 기간 대비"
@@ -2027,11 +2052,22 @@
       "trendTitle": "이용률·다운로드 추이",
       "conversionTitle": "정책 매칭 전환율 (월별)",
       "count": "건수",
-      "empty": "표시할 데이터가 없습니다"
+      "empty": "표시할 데이터가 없습니다",
+      "activityTitle": "활동 지표 추이 (세션 지속·오류율)",
+      "contentViewTitle": "콘텐츠 유형별 조회 수",
+      "seconds": "초"
     },
     "state": {
       "preparing": "준비 중",
       "preparingNotice": "데이터 준비 중입니다. 정책 매칭 통계가 집계되면 표시됩니다."
+    },
+    "contentType": {
+      "notice": "공지",
+      "post": "게시물",
+      "publication": "발간자료"
+    },
+    "section": {
+      "activity": "운영 활동 지표"
     }
   }
 }

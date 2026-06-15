@@ -59,9 +59,16 @@ export interface ExportStatus {
 
 /** 알려진 KPI 코드 상수 — 위젯 매핑에 사용. */
 export const KPI_CODES = {
+  // SPEC-CMS-KPI-001 (콘텐츠·정책 성과 3종)
   FEATURE_USAGE_RATE: 'FEATURE_USAGE_RATE',
   FILE_DOWNLOAD_COUNT: 'FILE_DOWNLOAD_COUNT',
   POLICY_APPLY_CONVERSION_RATE: 'POLICY_APPLY_CONVERSION_RATE',
+  // SPEC-CMS-KPI-002 (운영 활동 지표 4종 / 코드 5개)
+  DAU: 'DAU',
+  MAU: 'MAU',
+  CONTENT_VIEW: 'CONTENT_VIEW',
+  AVG_SESSION_DURATION: 'AVG_SESSION_DURATION',
+  API_ERROR_RATE: 'API_ERROR_RATE',
 } as const
 
 const EXCEL_CONTENT_TYPE = 'application/vnd.ms-excel'
