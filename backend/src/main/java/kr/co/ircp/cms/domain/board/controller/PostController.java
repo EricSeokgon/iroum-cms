@@ -90,6 +90,7 @@ public class PostController {
                         detail.isNotice(), detail.noticeFrom(), detail.noticeUntil(),
                         detail.isSecret(), detail.viewCount(), detail.commentCount(),
                         detail.status(), detail.metadata(), detail.attachments(),
+                        detail.tags(),
                         detail.createdAt(), detail.updatedAt()
                 );
                 return ResponseEntity.ok()

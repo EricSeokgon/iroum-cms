@@ -105,6 +105,17 @@
           />
         </el-form-item>
 
+        <!-- AI 스마트 태그 추천 (SPEC-CMS-AI-004) -->
+        <el-form-item :label="t('board.posts.field.tags')">
+          <TagRecommendationInput
+            v-model="tags"
+            :recommendations="recommendations"
+            :loading="recommendLoading"
+            @accept="acceptTag"
+            @reject="rejectTag"
+          />
+        </el-form-item>
+
         <!-- 첨부파일 업로드 -->
         <el-form-item :label="t('board.posts.field.attachments')">
           <el-upload
@@ -192,6 +203,8 @@ import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
 import type { PostCreateRequest } from '@iroum/shared/types/api'
 import TiptapEditor from '@/components/editor/TiptapEditor.vue'
+import TagRecommendationInput from '@/components/TagRecommendationInput.vue'
+import { useTagRecommendation } from '@/composables/useTagRecommendation'
 
 interface Props {
   bbsId?: string
@@ -235,6 +248,17 @@ const form = reactive<PostCreateRequest & { categoryCode?: string }>({
   isNotice: false,
 })
 
+// AI 스마트 태그 추천 (SPEC-CMS-AI-004)
+const tags = ref<string[]>([])
+// 본문 HTML에서 태그를 제거한 plain text — ML 추천 입력
+const contentText = computed(() => form.contentHtml.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim())
+const {
+  recommendations,
+  loading: recommendLoading,
+  acceptTag,
+  rejectTag,
+} = useTagRecommendation(contentText, tags, 'POST')
+
 const rules: FormRules = {
   title: [
     { required: true, message: t('board.posts.error.titleRequired'), trigger: 'blur' },
@@ -254,6 +278,7 @@ async function loadPost(): Promise<void> {
     form.contentHtml = p.contentHtml
     form.categoryCode = p.categoryCode ?? ''
     form.isNotice = p.isNotice
+    tags.value = p.tags ?? []
     // 예약 상태로 로드되면 picker 초기값 + 예약 모드 표시 (REQ-POST-SCHEDULE-006-2)
     if (p.status === 'SCHEDULED' && p.scheduledAt) {
       publishMode.value = 'SCHEDULE'
@@ -346,6 +371,7 @@ async function handleSave(): Promise<void> {
         contentHtml: form.contentHtml,
         categoryCode: form.categoryCode || undefined,
         isNotice: form.isNotice,
+        tags: tags.value,
       })
       await saveEnTranslation(Number(props.id))
       postId = Number(props.id)
@@ -355,6 +381,7 @@ async function handleSave(): Promise<void> {
         contentHtml: form.contentHtml,
         categoryCode: form.categoryCode || undefined,
         isNotice: form.isNotice,
+        tags: tags.value,
       })
       await saveEnTranslation(res.data.id)
       postId = res.data.id

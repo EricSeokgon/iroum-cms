@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
+import java.util.List;
 
 /**
  * 게시글 수정 요청 DTO.
@@ -17,6 +18,8 @@ public record PostUpdateRequest(
         Instant noticeFrom,
         Instant noticeUntil,
         boolean isSecret,
-        @Size(max = 500) String editReason
+        @Size(max = 500) String editReason,
+        // SPEC-CMS-AI-004: AI 스마트 태그 (선택, 공백 허용, 최대 5개). null/미전송 시 빈 목록 처리.
+        List<String> tags
 ) {
 }

@@ -148,6 +148,7 @@ ml:
       risk-score-ms: 500
       simulation-ms: 3000
       policy-match-ms: 3000
+      tag-recommend-ms: 3000
       health-ms: 1000
 
 ai:

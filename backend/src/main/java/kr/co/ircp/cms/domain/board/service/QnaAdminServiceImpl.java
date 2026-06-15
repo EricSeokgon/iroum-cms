@@ -48,6 +48,6 @@ public class QnaAdminServiceImpl implements QnaAdminService {
 
     private QnaSummary toSummary(Qna q) {
         return new QnaSummary(q.getId(), q.getTitle(), q.getQuestionerId(),
-                q.getStatus(), q.isPrivate(), q.getCreatedAt());
+                q.getStatus(), q.isPrivate(), q.getCreatedAt(), q.getTags());
     }
 }

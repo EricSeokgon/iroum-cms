@@ -72,6 +72,17 @@
           </div>
         </dl>
 
+        <!-- 태그 칩 (읽기 전용) — SPEC-CMS-AI-004 REQ-AI-TAG-015 -->
+        <div v-if="post.tags && post.tags.length > 0" class="mb-4 flex flex-wrap items-center gap-1">
+          <span class="mr-1 text-sm font-medium text-gray-500">{{ t('board.posts.field.tags') }}:</span>
+          <el-tag
+            v-for="tag in post.tags"
+            :key="tag"
+            size="small"
+            type="info"
+          >{{ tag }}</el-tag>
+        </div>
+
         <!-- 첨부파일 목록 -->
         <div v-if="post.attachments.length > 0" class="mb-4">
           <p class="mb-2 text-sm font-medium text-gray-700">

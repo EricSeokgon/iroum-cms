@@ -64,7 +64,7 @@ class PostControllerTest {
     void listPosts_returns200WithPage() throws Exception {
         PostSummary summary = new PostSummary(
                 1L, 1L, "NOTICE", "공지 제목", 10L, "관리자",
-                false, false, 0L, 0L, 0L, Instant.now(), "ko"
+                false, false, 0L, 0L, 0L, Instant.now(), "ko", List.of()
         );
         PageResponse<PostSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
         when(postService.listPosts(anyLong(), anyInt(), anyInt(), anyString())).thenReturn(page);
@@ -97,14 +97,14 @@ class PostControllerTest {
         PostDetail created = new PostDetail(
                 5L, 1L, "NOTICE", false, "테스트 제목", "<p>내용</p>",
                 null, null, false, null, null, false,
-                0L, 0L, "ACTIVE", null, List.of(),
+                0L, 0L, "ACTIVE", null, List.of(), List.of(),
                 Instant.now(), Instant.now()
         );
         when(postService.createPost(any(), isNull())).thenReturn(created);
 
         PostCreateRequest request = new PostCreateRequest(
                 1L, "테스트 제목", "<p>내용</p>", "내용",
-                false, null, null, false, null, null, null
+                false, null, null, false, null, null, null, null
         );
 
         // bbsMasterId(=bbsId)는 요청 바디에 포함되어 전달됨
@@ -126,7 +126,7 @@ class PostControllerTest {
         PostDetail scheduled = new PostDetail(
                 1L, 1L, "NOTICE", false, "제목", "<p>내용</p>",
                 null, null, false, null, null, false,
-                0L, 0L, "SCHEDULED", null, List.of(),
+                0L, 0L, "SCHEDULED", null, List.of(), List.of(),
                 Instant.now(), Instant.now()
         );
         when(postService.schedulePost(anyLong(), any())).thenReturn(scheduled);
@@ -173,7 +173,7 @@ class PostControllerTest {
         PostDetail draft = new PostDetail(
                 1L, 1L, "NOTICE", false, "제목", "<p>내용</p>",
                 null, null, false, null, null, false,
-                0L, 0L, "DRAFT", null, List.of(),
+                0L, 0L, "DRAFT", null, List.of(), List.of(),
                 Instant.now(), Instant.now()
         );
         when(postService.cancelSchedule(anyLong())).thenReturn(draft);

@@ -24,6 +24,9 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deletedAt" column="deleted_at"/>
+        <!-- SPEC-CMS-AI-004: PostgreSQL TEXT[] ↔ List&lt;String&gt; (V54 tags 컬럼) -->
+        <result property="tags" column="tags"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
     </resultMap>
 
     <select id="findByQuestionerId" resultMap="qnaResultMap">
@@ -40,8 +43,9 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO qna (title, question_html, question_text, questioner_id, is_private, status, metadata)
-        VALUES (#{title}, #{questionHtml}, #{questionText}, #{questionerId}, #{isPrivate}, #{status}, #{metadata}::jsonb)
+        INSERT INTO qna (title, question_html, question_text, questioner_id, is_private, status, metadata, tags)
+        VALUES (#{title}, #{questionHtml}, #{questionText}, #{questionerId}, #{isPrivate}, #{status}, #{metadata}::jsonb,
+            #{tags, typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler})
     </insert>
 
     <update id="update">
