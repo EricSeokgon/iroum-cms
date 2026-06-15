@@ -44,6 +44,16 @@
   - AC-NC-IT-008: 사용자 격리 — 타 사용자 알림 읽음 시도 시 403 (서비스 레이어 `AdminNotificationNotFoundException` → `GlobalExceptionHandler`)
   - 14개 테스트 케이스 전체 PASSED (BUILD SUCCESSFUL)
 
+- **운영 활동 지표 KPI 4종 확장** (`KpiAggregationServiceImpl`, `KpiAggregationMapper`, `KpiActivityCards.vue`, `KpiActivityTrendChart.vue`, `KpiContentViewChart.vue`, SPEC-CMS-KPI-002)
+  - **V53 마이그레이션**: `kpi_definition` 테이블에 DAU, MAU, CONTENT_VIEW, AVG_SESSION_DURATION, API_ERROR_RATE 5종 시드 INSERT
+  - **백엔드 집계 SQL**: `upsertDau`, `upsertMau`, `upsertContentView`, `upsertAvgSessionDuration`, `upsertApiErrorRate` — 전체 `access_log` 단일 원천, 파티션 프루닝 + NULLIF 제로 나눗셈 방지
+  - `AVG_SESSION_DURATION`: LAG 윈도우 함수 CTE 기반 30분 유휴 갭 세션 분할 알고리즘
+  - `API_ERROR_RATE`: `status_code >= 500` 기준 (컬럼명: `status_code`)
+  - **KpiAggregationServiceImpl**: 기존 3종 이후 신규 5종 try-catch 격리 블록 추가
+  - **프론트엔드**: `KpiActivityCards.vue` + `KpiActivityTrendChart.vue` + `KpiContentViewChart.vue` 신규 위젯 3종 — `KpiDashboardView.vue` "운영 활동 지표" 섹션에 통합
+  - `kpi.ts` KPI_CODES 5종 상수 + `kpiStore.ts` computed getter 5종 추가, ko/en i18n 키 추가
+  - **IT 테스트**: `KpiAggregationKpi002IT` AC-001~AC-019 총 19건 전체 PASSED, `MigrationOrderIT` EXPECTED_MIGRATION_COUNT 51→52 갱신
+
 - **플랫폼 KPI 통합 관리** (`AdminKpiController`, `KpiExportController`, `KpiAggregationServiceImpl`, `KpiQueryServiceImpl`, `KpiExportServiceImpl`, `KpiDashboardView.vue`, SPEC-CMS-KPI-001)
   - **V45 마이그레이션**: `kpi_aggregation_mv` Materialized View + access_log 파티션 보강(2026-06/07) + `idx_audit_log_export_time` 부분 인덱스
   - **백엔드 API**: `GET /api/v1/admin/kpi/values` (멀티필터 조회, JSONB containment), `GET /api/v1/admin/kpi/conversion-funnel`, `POST /api/v1/admin/kpi/export` (동기/비동기 SXSSFWorkbook), `GET /api/v1/admin/kpi/export/download` — 전체 `@PreAuthorize("hasRole('ADMIN')")`
