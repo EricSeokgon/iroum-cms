@@ -59,6 +59,54 @@
         </p>
       </div>
 
+      <!-- AI 스마트 태그 추천 (SPEC-CMS-AI-004) — 비회원 포함 사용 가능 -->
+      <div>
+        <label for="qna-tag-input" class="mb-1 block text-sm font-medium text-content-DEFAULT">
+          {{ t('qna.tagsLabel') }}
+        </label>
+        <!-- 선택된 태그 + 자유 입력 -->
+        <div class="flex flex-wrap items-center gap-1">
+          <span
+            v-for="tag in tags"
+            :key="tag"
+            class="inline-flex items-center gap-1 rounded bg-primary-50 px-2 py-0.5 text-xs text-primary-700"
+          >
+            {{ tag }}
+            <button
+              type="button"
+              class="text-primary-500 hover:text-primary-700"
+              :aria-label="`${tag} 태그 삭제`"
+              @click="removeTag(tag)"
+            >&times;</button>
+          </span>
+          <input
+            id="qna-tag-input"
+            v-model.trim="tagInput"
+            type="text"
+            :placeholder="t('qna.tagPlaceholder')"
+            class="min-w-[140px] flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-primary-600"
+            data-testid="qna-tag-input"
+            @keyup.enter.prevent="addTag"
+            @keydown.comma.prevent="addTag"
+          />
+        </div>
+        <!-- AI 추천 칩 -->
+        <div v-if="filteredRecommendations.length > 0" class="mt-2 flex flex-wrap items-center gap-1">
+          <span class="mr-1 text-xs text-gray-500">{{ t('qna.aiRecommend') }}</span>
+          <button
+            v-for="tag in filteredRecommendations"
+            :key="tag"
+            type="button"
+            class="rounded border border-dashed border-primary-300 bg-white px-2 py-0.5 text-xs text-primary-600 hover:bg-primary-50"
+            data-testid="qna-tag-recommend"
+            @click="acceptRecommendation(tag)"
+          >+ {{ tag }}</button>
+        </div>
+        <p v-else-if="recommendLoading" class="mt-1 text-xs text-gray-400">
+          {{ t('qna.aiAnalyzing') }}
+        </p>
+      </div>
+
       <div class="flex items-center gap-2">
         <input
           id="qna-private"
@@ -93,11 +141,12 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { qnaApi } from '@/api/qnaApi'
+import { useTagRecommendation } from '@/composables/useTagRecommendation'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -111,6 +160,39 @@ const form = reactive({
 const titleError = ref('')
 const contentError = ref('')
 const submitting = ref(false)
+
+// AI 스마트 태그 추천 (SPEC-CMS-AI-004) — 비회원 포함 사용 가능
+const tags = ref<string[]>([])
+const tagInput = ref('')
+const {
+  recommendations,
+  loading: recommendLoading,
+  acceptTag,
+} = useTagRecommendation(toRef(form, 'content'), tags, 'QNA')
+
+// 이미 선택된 태그는 추천 목록에서 제외
+const filteredRecommendations = computed(() =>
+  recommendations.value.filter((tg) => !tags.value.includes(tg)),
+)
+
+function addTag(): void {
+  const tag = tagInput.value.trim().replace(/,$/, '').trim()
+  if (tag && !tags.value.includes(tag)) {
+    tags.value = [...tags.value, tag]
+  }
+  tagInput.value = ''
+}
+
+function removeTag(tag: string): void {
+  tags.value = tags.value.filter((tg) => tg !== tag)
+}
+
+function acceptRecommendation(tag: string): void {
+  if (!tags.value.includes(tag)) {
+    tags.value = [...tags.value, tag]
+    void acceptTag(tag)
+  }
+}
 
 function validateTitle(): boolean {
   if (!form.title.trim()) {
@@ -143,6 +225,7 @@ async function onSubmit(): Promise<void> {
       title: form.title,
       questionHtml,
       isPrivate: form.isPrivate,
+      tags: tags.value,
     })
     ElMessage.success(t('qna.submit'))
     await router.replace({ name: 'qna-detail', params: { id: created.id } })

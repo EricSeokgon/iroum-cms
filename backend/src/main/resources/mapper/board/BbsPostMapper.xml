@@ -35,6 +35,9 @@
         <result property="createdAt" column="created_at"/>
         <result property="updatedAt" column="updated_at"/>
         <result property="deletedAt" column="deleted_at"/>
+        <!-- SPEC-CMS-AI-004: PostgreSQL TEXT[] ↔ List&lt;String&gt; (V54 tags 컬럼) -->
+        <result property="tags" column="tags"
+                typeHandler="kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler"/>
     </resultMap>
 
     <!--
@@ -56,7 +59,7 @@
         SELECT p.id, p.bbs_id, p.content_html, p.content_text, p.category_code,
                p.author_id, p.author_name, p.is_notice, p.notice_from, p.notice_until, p.is_secret,
                p.view_count, p.like_count, p.comment_count, p.attachment_count,
-               p.status, p.published_at, p.created_at, p.updated_at, p.deleted_at,
+               p.status, p.published_at, p.created_at, p.updated_at, p.deleted_at, p.tags,
                COALESCE(i18n.title, p.title) AS title,
                CASE WHEN i18n.title IS NOT NULL THEN #{lang} ELSE 'ko' END AS language
         FROM bbs_post p
@@ -71,7 +74,7 @@
         SELECT id, bbs_id, title, content_html, content_text, category_code,
                author_id, author_name, is_notice, notice_from, notice_until, is_secret,
                view_count, like_count, comment_count, attachment_count,
-               status, published_at, created_at, updated_at, deleted_at
+               status, published_at, created_at, updated_at, deleted_at, tags
         FROM bbs_post
         WHERE bbs_id = #{bbsMasterId}
           AND deleted_at IS NULL
@@ -95,17 +98,18 @@
         SELECT id, bbs_id, title, content_html, content_text, category_code,
                author_id, author_name, is_notice, notice_from, notice_until, is_secret,
                view_count, like_count, comment_count, attachment_count,
-               status, version, published_at, created_at, updated_at, deleted_at
+               status, version, published_at, created_at, updated_at, deleted_at, tags
         FROM bbs_post WHERE id = #{id} AND deleted_at IS NULL
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO bbs_post (bbs_id, title, content_html, content_text,
             author_id, author_name,
-            is_notice, notice_from, notice_until, is_secret, status)
+            is_notice, notice_from, notice_until, is_secret, status, tags)
         VALUES (#{bbsId}, #{title}, #{contentHtml}, #{contentText},
             #{authorId}, #{authorName},
-            #{notice}, #{noticeFrom}, #{noticeUntil}, #{secret}, #{status})
+            #{notice}, #{noticeFrom}, #{noticeUntil}, #{secret}, #{status},
+            #{tags, typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler})
     </insert>
 
     <!--
@@ -124,6 +128,7 @@
             is_secret = #{secret},
             status = #{status},
             version = version + 1,
+            tags = #{tags, typeHandler=kr.co.ircp.cms.domain.media.mapper.StringArrayTypeHandler},
             updated_at = NOW()
         WHERE id = #{id} AND version = #{version} AND deleted_at IS NULL
     </update>
@@ -158,7 +163,7 @@
         SELECT id, bbs_id, title, content_html, content_text, category_code,
                author_id, author_name, is_notice, notice_from, notice_until, is_secret,
                view_count, like_count, comment_count, attachment_count,
-               status, published_at, scheduled_at, created_at, updated_at, deleted_at
+               status, published_at, scheduled_at, created_at, updated_at, deleted_at, tags
         FROM bbs_post
         WHERE status = 'SCHEDULED' AND scheduled_at &lt;= NOW() AND deleted_at IS NULL
     </select>

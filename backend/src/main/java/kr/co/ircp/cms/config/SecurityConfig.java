@@ -230,6 +230,16 @@ public class SecurityConfig {
                     "/api/v1/ai/rag/query",
                     "/api/v1/ai/rag/feedback"
                 ).permitAll()
+                // SPEC-CMS-AI-004 REQ-AI-TAG-007/NFR-003 — 태그 추천·피드백 공개 API
+                // (시민 비인증 허용, 관리자면 인증 컨텍스트 활용. AI-002/003 화이트리스트 패턴)
+                // @MX:WARN: [AUTO] 규칙 순서 중요 — /api/v1/ai/** authenticated() 규칙보다 반드시 위에 위치해야 함
+                // @MX:REASON: 아래 .requestMatchers("/api/v1/ai/**").authenticated() 가 먼저 매칭되면 시민 비인증 추천이 401로 차단됨
+                // @MX:SPEC: SPEC-CMS-AI-004
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.POST,
+                    "/api/v1/ai/tag-recommend",
+                    "/api/v1/ai/tag-recommend/feedback"
+                ).permitAll()
                 // REQ-POLICY-001: 정책사업 목록·단건 공개 조회 허용
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,

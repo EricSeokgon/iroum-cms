@@ -1012,7 +1012,11 @@
         "attachments": "Attachments",
         "publishMode": "Publish mode",
         "scheduledAt": "Scheduled publish time",
-        "scheduledAtPlaceholder": "Select date and time to publish"
+        "scheduledAtPlaceholder": "Select date and time to publish",
+        "tags": "Tags",
+        "tagPlaceholder": "Type a tag and press Enter",
+        "aiRecommend": "AI suggests:",
+        "aiAnalyzing": "Analyzing suggestions..."
       },
       "publishMode": {
         "now": "Publish now",

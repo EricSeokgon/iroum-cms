@@ -82,6 +82,10 @@ public class CacheConfig {
                         .expireAfterWrite(ragProperties.getCacheTtlMinutes(), TimeUnit.MINUTES)
                         .maximumSize(ragProperties.getCacheMaxSize()));
 
+        // SPEC-CMS-AI-004 REQ-AI-TAG-010: 태그 추천 결과 캐시 (본문 SHA-256 해시 키, TTL 30분)
+        CaffeineCache tagRecommendationCache = build("tagRecommendationCache",
+                Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).maximumSize(2000));
+
         // REQ-CONTENT-007-D-3: 사이트 조회 캐시 (도메인 매핑 고빈도 — TTL 10분, max 50)
         CaffeineCache siteByDomain = build("siteByDomain",
                 Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(50));
@@ -91,7 +95,7 @@ public class CacheConfig {
 
         manager.setCaches(List.of(menuTree, pageBySlug, sitemap, popupActive,
                 codes, codeGroups, dashboard, aiGrowthStage, policyMatchCache, ragQueryCache,
-                siteByDomain, siteByCode));
+                tagRecommendationCache, siteByDomain, siteByCode));
         return manager;
     }
 

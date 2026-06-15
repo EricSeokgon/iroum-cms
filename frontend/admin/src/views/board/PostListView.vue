@@ -147,6 +147,23 @@
           {{ formatDate(row.createdAt) }}
         </template>
       </el-table-column>
+      <!-- 태그 칩 (읽기 전용) — SPEC-CMS-AI-004 REQ-AI-TAG-015 -->
+      <el-table-column
+        :label="t('board.posts.field.tags')"
+        min-width="160"
+      >
+        <template #default="{ row }">
+          <div v-if="row.tags && row.tags.length > 0" class="flex flex-wrap gap-1">
+            <el-tag
+              v-for="tag in row.tags"
+              :key="tag"
+              size="small"
+              type="info"
+            >{{ tag }}</el-tag>
+          </div>
+          <span v-else class="text-xs text-gray-300">-</span>
+        </template>
+      </el-table-column>
     </el-table>
 
     <!-- 빈 상태 -->
