@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-AI-004
 version: 0.1.0
-status: Draft
+status: completed
 created: 2026-06-15
 updated: 2026-06-15
 author: manager-spec (MoAI)
@@ -32,7 +32,7 @@ issue_number: 0
 | 제목 | AI 스마트 태그 추천 기능 — 게시글·Q&A 실시간 태그 추천 |
 | 작성일 | 2026-06-15 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Draft |
+| 상태 | completed |
 | 버전 | v0.1 |
 | 우선순위 | P2 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |
@@ -276,3 +276,17 @@ ALTER TABLE qna      ADD COLUMN tags TEXT[] NOT NULL DEFAULT '{}';
 ## 9. HISTORY
 
 - 2026-06-15 (v0.1.0): 초기 Draft 작성. SPEC-CMS-AI-001/002/003 인프라 재사용 기반 게시글·Q&A 실시간 태그 추천 명세. REQ-AI-TAG-001~015 + NFR 3건 정의. V54 단일 마이그레이션. (manager-spec)
+
+---
+
+## 구현 완료 노트
+
+- **완료일**: 2026-06-16
+- **커밋**: 62f777d
+- **태스크**: T-001~T-014, T-016 완료 (T-015 stretch 미구현)
+- **테스트**: 백엔드 2,072 unit + 11 IT / 어드민 414 / 공공 249 전체 통과
+- **주요 결정**:
+  - ML 실패 시 빈 배열 반환(그레이스풀 디그레이데이션) — 태그 추천 실패가 본문 저장에 영향 없음
+  - `StringArrayTypeHandler` 재사용으로 PostgreSQL `TEXT[]` ↔ `List<String>` 자동 변환
+  - 공공 UI는 Tailwind 인라인 방식 (어드민 el-tag 컴포넌트와 별도 구현, 기존 Q&A 뷰 일관성 유지)
+  - SecurityConfig permit 순서: `/api/v1/ai/tag-recommend`(공개) → `/api/v1/ai/**`(인증) 순서 필수
