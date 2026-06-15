@@ -23,7 +23,7 @@ import java.util.List;
  * 본 클래스의 @Transactional aggregateAll 에 포함하지 않고 Job 이 별도로 호출한다.
  */
 // @MX:NOTE: [AUTO] KpiAggregationServiceImpl — KPI 단위 실패 격리 + 아카이브 후 UPSERT
-// @MX:SPEC: SPEC-CMS-KPI-001 Phase 1 (AC-001/002/003/017)
+// @MX:SPEC: SPEC-CMS-KPI-001 Phase 1 (AC-001/002/003/017) + SPEC-CMS-KPI-002 (운영 활동 4종)
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -82,6 +82,70 @@ public class KpiAggregationServiceImpl implements KpiAggregationService {
             log.warn("KPI 집계 실패(격리): POLICY_APPLY_CONVERSION_RATE", e);
         }
 
+        // ── SPEC-CMS-KPI-002: 운영 활동 지표 4종(코드 5개) ──────────────────────
+        String monthDimensionJson = monthDimension(targetDate);
+        String dateText = targetDate.toString();
+
+        // KPI 4: DAU (일별, COUNT DISTINCT user_id)
+        try {
+            Long kpiId = requireKpiId("DAU");
+            mapper.archiveExisting(kpiId, dimensionJson);
+            mapper.upsertDau(kpiId, targetDate, dimensionJson);
+            processed++;
+        } catch (Exception e) {
+            failed++;
+            errors.add("DAU: " + e.getMessage());
+            log.warn("KPI 집계 실패(격리): DAU targetDate={}", targetDate, e);
+        }
+
+        // KPI 5: MAU (월별, COUNT DISTINCT user_id)
+        try {
+            Long kpiId = requireKpiId("MAU");
+            mapper.archiveExisting(kpiId, monthDimensionJson);
+            mapper.upsertMau(kpiId, targetDate, monthDimensionJson);
+            processed++;
+        } catch (Exception e) {
+            failed++;
+            errors.add("MAU: " + e.getMessage());
+            log.warn("KPI 집계 실패(격리): MAU targetDate={}", targetDate, e);
+        }
+
+        // KPI 6: CONTENT_VIEW (일별·유형별, dimension={date,contentType})
+        try {
+            Long kpiId = requireKpiId("CONTENT_VIEW");
+            mapper.archiveExistingByDate(kpiId, dateText);
+            mapper.upsertContentView(kpiId, targetDate, dateText);
+            processed++;
+        } catch (Exception e) {
+            failed++;
+            errors.add("CONTENT_VIEW: " + e.getMessage());
+            log.warn("KPI 집계 실패(격리): CONTENT_VIEW targetDate={}", targetDate, e);
+        }
+
+        // KPI 7: AVG_SESSION_DURATION (일별, 세션별 지속시간 평균)
+        try {
+            Long kpiId = requireKpiId("AVG_SESSION_DURATION");
+            mapper.archiveExisting(kpiId, dimensionJson);
+            mapper.upsertAvgSessionDuration(kpiId, targetDate, dimensionJson);
+            processed++;
+        } catch (Exception e) {
+            failed++;
+            errors.add("AVG_SESSION_DURATION: " + e.getMessage());
+            log.warn("KPI 집계 실패(격리): AVG_SESSION_DURATION targetDate={}", targetDate, e);
+        }
+
+        // KPI 8: API_ERROR_RATE (일별, status_code>=500 비율)
+        try {
+            Long kpiId = requireKpiId("API_ERROR_RATE");
+            mapper.archiveExisting(kpiId, dimensionJson);
+            mapper.upsertApiErrorRate(kpiId, targetDate, dimensionJson);
+            processed++;
+        } catch (Exception e) {
+            failed++;
+            errors.add("API_ERROR_RATE: " + e.getMessage());
+            log.warn("KPI 집계 실패(격리): API_ERROR_RATE targetDate={}", targetDate, e);
+        }
+
         String status = failed == 0 ? "SUCCESS" : "FAILURE";
         String summary = failed == 0
                 ? "targetDate=" + targetDate
@@ -92,6 +156,11 @@ public class KpiAggregationServiceImpl implements KpiAggregationService {
     /** 일별 KPI 의 dimension JSONB: {"date":"YYYY-MM-DD"}. */
     private String dayDimension(LocalDate date) {
         return "{\"date\":\"" + date + "\"}";
+    }
+
+    /** 월별 KPI(MAU) 의 dimension JSONB: {"month":"YYYY-MM"}. */
+    private String monthDimension(LocalDate date) {
+        return String.format("{\"month\":\"%04d-%02d\"}", date.getYear(), date.getMonthValue());
     }
 
     private Long requireKpiId(String code) {

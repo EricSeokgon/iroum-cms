@@ -1370,11 +1370,21 @@
         "supportedLanguages": "Supported Languages",
         "status": "Status"
       },
-      "status": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
-      "error": { "nameRequired": "Site name is required", "domainRequired": "Domain is required" }
+      "status": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "error": {
+        "nameRequired": "Site name is required",
+        "domainRequired": "Domain is required"
+      }
     },
     "menu": {
-      "tree": { "title": "Menu Tree", "label": "Menu Tree", "empty": "No menus found" },
+      "tree": {
+        "title": "Menu Tree",
+        "label": "Menu Tree",
+        "empty": "No menus found"
+      },
       "add": "Add Menu",
       "addChild": "Add Child Menu",
       "hidden": "Hidden",
@@ -1400,11 +1410,22 @@
         "path": "Full Path",
         "parent": "Parent Menu"
       },
-      "createDialog": { "title": "Add Menu", "depthError": "Maximum depth is 5" },
-      "error": { "codeRequired": "Code is required", "nameRequired": "Menu name is required" }
+      "createDialog": {
+        "title": "Add Menu",
+        "depthError": "Maximum depth is 5"
+      },
+      "error": {
+        "codeRequired": "Code is required",
+        "nameRequired": "Menu name is required"
+      }
     },
     "perm": {
-      "dialog": { "title": "Permission Mapping", "label": "Permission Codes", "saved": "Permissions saved", "saveError": "Failed to save permissions" }
+      "dialog": {
+        "title": "Permission Mapping",
+        "label": "Permission Codes",
+        "saved": "Permissions saved",
+        "saveError": "Failed to save permissions"
+      }
     },
     "template": {
       "title": "Page Templates",
@@ -1426,9 +1447,16 @@
         "slotOk": "{{CONTENT}} slot detected",
         "slotMissing": "Missing {{CONTENT}} slot (content cannot be injected)"
       },
-      "status": { "ACTIVE": "Active", "INACTIVE": "Inactive" },
-      "createDialog": { "title": "Add Template" },
-      "editDialog": { "title": "Edit Template" },
+      "status": {
+        "ACTIVE": "Active",
+        "INACTIVE": "Inactive"
+      },
+      "createDialog": {
+        "title": "Add Template"
+      },
+      "editDialog": {
+        "title": "Edit Template"
+      },
       "error": {
         "codeRequired": "Code is required",
         "nameRequired": "Template name is required",
@@ -1439,10 +1467,20 @@
       }
     },
     "page": {
-      "list": { "title": "Pages", "add": "Add Page", "empty": "No pages found", "filterStatus": "Filter by status" },
+      "list": {
+        "title": "Pages",
+        "add": "Add Page",
+        "empty": "No pages found",
+        "filterStatus": "Filter by status"
+      },
       "created": "Page created",
       "createError": "Failed to create page",
-      "status": { "DRAFT": "Draft", "SCHEDULED": "Scheduled", "PUBLISHED": "Published", "RETRACTED": "Retracted" },
+      "status": {
+        "DRAFT": "Draft",
+        "SCHEDULED": "Scheduled",
+        "PUBLISHED": "Published",
+        "RETRACTED": "Retracted"
+      },
       "field": {
         "code": "Code",
         "slug": "Slug",
@@ -1510,8 +1548,13 @@
         "compare": "Compare",
         "selectTwo": "Select 2 versions to compare"
       },
-      "scheduleDialog": { "title": "Schedule Publication", "placeholder": "Select date and time" },
-      "createDialog": { "title": "Add Page" },
+      "scheduleDialog": {
+        "title": "Schedule Publication",
+        "placeholder": "Select date and time"
+      },
+      "createDialog": {
+        "title": "Add Page"
+      },
       "error": {
         "codeRequired": "Code is required",
         "titleRequired": "Title is required",
@@ -1524,7 +1567,13 @@
     "block": {
       "add": "Add Block",
       "empty": "No blocks. Add a block to get started.",
-      "types": { "RICH_TEXT": "Rich Text", "IMAGE": "Image", "HTML": "HTML (Advanced)", "MARKDOWN": "Markdown", "EMBED": "Embed" },
+      "types": {
+        "RICH_TEXT": "Rich Text",
+        "IMAGE": "Image",
+        "HTML": "HTML (Advanced)",
+        "MARKDOWN": "Markdown",
+        "EMBED": "Embed"
+      },
       "field": {
         "type": "Block Type",
         "altText": "Alt Text",
@@ -1543,7 +1592,10 @@
       "deleteError": "Failed to delete block",
       "deleteConfirm": "Delete this block?"
     },
-    "diff": { "before": "Before", "after": "After" },
+    "diff": {
+      "before": "Before",
+      "after": "After"
+    },
     "popup": {
       "title": "Popup Management",
       "add": "Add Popup",
@@ -1573,8 +1625,12 @@
         "isActive": "Active",
         "period": "Display Period"
       },
-      "createDialog": { "title": "Add Popup" },
-      "editDialog": { "title": "Edit Popup" },
+      "createDialog": {
+        "title": "Add Popup"
+      },
+      "editDialog": {
+        "title": "Edit Popup"
+      },
       "error": {
         "nameRequired": "Popup name is required",
         "contentRequired": "Content is required",
@@ -1608,8 +1664,12 @@
         "sortOrder": "Sort Order",
         "isActive": "Active"
       },
-      "createDialog": { "title": "Add Banner" },
-      "editDialog": { "title": "Edit Banner" },
+      "createDialog": {
+        "title": "Add Banner"
+      },
+      "editDialog": {
+        "title": "Edit Banner"
+      },
       "error": {
         "groupRequired": "Group code is required",
         "titleRequired": "Title is required",
@@ -1631,8 +1691,13 @@
       "emptyValue": "(empty)",
       "filterNamespace": "Filter namespace",
       "filterKey": "Filter key",
-      "field": { "namespace": "Namespace", "resourceId": "Resource Key" },
-      "addFieldDialog": { "title": "Add Resource" },
+      "field": {
+        "namespace": "Namespace",
+        "resourceId": "Resource Key"
+      },
+      "addFieldDialog": {
+        "title": "Add Resource"
+      },
       "error": {
         "namespaceRequired": "Namespace is required",
         "resourceIdRequired": "Resource key is required",
@@ -1657,9 +1722,18 @@
         "httpStatus": "HTTP Status",
         "isActive": "Active"
       },
-      "status": { "301": "301 Permanent", "302": "302 Temporary", "307": "307 Temporary Redirect", "308": "308 Permanent Redirect" },
-      "createDialog": { "title": "Add Redirect" },
-      "editDialog": { "title": "Edit Redirect" },
+      "status": {
+        "301": "301 Permanent",
+        "302": "302 Temporary",
+        "307": "307 Temporary Redirect",
+        "308": "308 Permanent Redirect"
+      },
+      "createDialog": {
+        "title": "Add Redirect"
+      },
+      "editDialog": {
+        "title": "Edit Redirect"
+      },
       "error": {
         "fromPathRequired": "From path is required",
         "fromPathPattern": "From path must start with /",
@@ -1955,7 +2029,12 @@
     "code": {
       "FEATURE_USAGE_RATE": "Feature Usage Rate",
       "FILE_DOWNLOAD_COUNT": "File Download Count",
-      "POLICY_APPLY_CONVERSION_RATE": "Policy Apply Conversion Rate"
+      "POLICY_APPLY_CONVERSION_RATE": "Policy Apply Conversion Rate",
+      "DAU": "Daily Active Users",
+      "MAU": "Monthly Active Users",
+      "CONTENT_VIEW": "Content Views",
+      "AVG_SESSION_DURATION": "Avg Session Duration",
+      "API_ERROR_RATE": "API Error Rate"
     },
     "card": {
       "vsPrevious": "vs previous period"
@@ -1964,11 +2043,22 @@
       "trendTitle": "Usage & Download Trend",
       "conversionTitle": "Policy Apply Conversion Rate (Monthly)",
       "count": "Count",
-      "empty": "No data to display"
+      "empty": "No data to display",
+      "activityTitle": "Activity Trend (Session Duration & Error Rate)",
+      "contentViewTitle": "Content Views by Type",
+      "seconds": "sec"
     },
     "state": {
       "preparing": "Preparing",
       "preparingNotice": "Data is being prepared. Policy matching statistics will appear once aggregated."
+    },
+    "contentType": {
+      "notice": "Notice",
+      "post": "Post",
+      "publication": "Publication"
+    },
+    "section": {
+      "activity": "Operational Activity Metrics"
     }
   }
 }
