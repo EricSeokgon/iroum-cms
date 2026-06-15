@@ -6,7 +6,6 @@ import kr.co.ircp.cms.domain.dashboard.entity.DashboardWidget;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import kr.co.ircp.cms.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -454,10 +453,6 @@ class DashboardWidgetIT extends AbstractIntegrationTest {
     /**
      * A-8 (REQ-VIZ-001-D-8): DEPT_ADMIN 이 타 부서 소속 사용자가 만든 위젯을 PUT 으로 수정하면
      * 403 WIDGET_DEPT_MISMATCH 가 반환된다.
-     *
-     * <p>본 IT 는 운영 ArgumentResolver 의존성과 무관하게 동작하지 않을 수 있으므로
-     * (DashboardWidgetController.update 가 @AuthenticationPrincipal Long userId 사용),
-     * 운영 fix 가 완료될 때까지 @Disabled 로 두고 컴파일만 검증한다.
      */
     @Test
     @DisplayName("A-8: DEPT_ADMIN 이 타 부서 위젯 수정 시 403 WIDGET_DEPT_MISMATCH")

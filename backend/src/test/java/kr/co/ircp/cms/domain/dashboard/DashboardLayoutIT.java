@@ -9,7 +9,6 @@ import kr.co.ircp.cms.domain.dashboard.repository.DashboardLayoutMapper;
 import kr.co.ircp.cms.domain.dashboard.repository.DashboardWidgetMapper;
 import kr.co.ircp.cms.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -145,20 +144,6 @@ class DashboardLayoutIT extends AbstractIntegrationTest {
                 + "\"configOverride\":\"{}\",\"sortOrder\":" + sortOrder + "}";
     }
 
-    // =================================================================================
-    // §B 대시보드 레이아웃 (REQ-VIZ-002)
-    //
-    // BLOCKED: 운영 결함 발견 — DashboardLayoutController 가 @AuthenticationPrincipal Long userId
-    // 로 사용자 ID 를 받고 있으나 운영 JwtAuthenticationFilter 는 SecurityContext 에 JwtPrincipal
-    // 을 설정한다. JwtPrincipal → Long 변환 ArgumentResolver 가 없어 userId 가 null 이 되고
-    // dashboard_layout.owner_id NOT NULL 제약 위반이 발생한다.
-    //
-    // Fix 옵션: (1) 컨트롤러를 @AuthenticationPrincipal JwtPrincipal 로 변경 후 principal.userId()
-    // 사용, 또는 (2) HandlerMethodArgumentResolver 등록.
-    //
-    // 임시 조치: 운영 fix 가 완료될 때까지 @Disabled 처리. fix 후 enable 복귀하면 본 IT 가
-    // B-1/B-3/B-6/B-9 시나리오를 검증한다.
-    // =================================================================================
     @Nested
     @DisplayName("§B 대시보드 레이아웃")
     class LayoutCrud {
