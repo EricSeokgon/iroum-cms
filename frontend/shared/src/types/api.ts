@@ -421,6 +421,8 @@ export interface PostSummary {
   publishedAt?: string
   /** 예약 발행 시각 (SPEC-CMS-POST-SCHEDULE-001, status=SCHEDULED 일 때) */
   scheduledAt?: string
+  /** 게시글 태그 (SPEC-CMS-AI-004 REQ-AI-TAG-015, 빈 배열 기본) */
+  tags?: string[]
   createdAt: string
 }
 
@@ -468,6 +470,8 @@ export interface PostCreateRequest {
   contentHtml: string
   categoryCode?: string
   isNotice: boolean
+  /** 선택 태그 (SPEC-CMS-AI-004 REQ-AI-TAG-015) */
+  tags?: string[]
 }
 
 /** 게시글 수정 요청 */
@@ -477,6 +481,8 @@ export interface PostUpdateRequest {
   categoryCode?: string
   isNotice?: boolean
   status?: BbsPostStatus
+  /** 선택 태그 (SPEC-CMS-AI-004 REQ-AI-TAG-015) */
+  tags?: string[]
 }
 
 /** 댓글 목록용 요약 DTO (1단계 대댓글 포함) */

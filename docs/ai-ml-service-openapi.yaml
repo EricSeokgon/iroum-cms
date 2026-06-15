@@ -107,6 +107,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RagResponse'
+  /ml/v1/tag-recommend:
+    post:
+      summary: 태그 추천 (SPEC-CMS-AI-004)
+      operationId: tagRecommend
+      description: >-
+        게시글·Q&A 본문 텍스트로 추천 태그 목록과 신뢰도 점수를 반환한다.
+        페이로드에는 본문(content)과 기존 선택 태그(existing_tags)만 포함되며
+        작성자 식별정보는 포함하지 않는다(AC-AI-TAG-007/NFR-003).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRecommendRequest'
+      responses:
+        '200':
+          description: 추천 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagRecommendResponse'
   /ml/v1/health:
     get:
       summary: ML Service Health Check
@@ -261,3 +282,22 @@ components:
               id: {type: integer, format: int64}
               relevance: {type: number, format: double, minimum: 0, maximum: 1}
         quality_score: {type: integer, minimum: 0, maximum: 100, nullable: true}
+    TagRecommendRequest:
+      type: object
+      required: [content]
+      properties:
+        content: {type: string, description: '추천 입력 본문 텍스트 (PII 미포함)'}
+        existing_tags:
+          type: array
+          items: {type: string}
+        top_k: {type: integer, default: 5}
+    TagRecommendResponse:
+      type: object
+      properties:
+        recommended_tags:
+          type: array
+          items: {type: string}
+        scores:
+          type: object
+          additionalProperties: {type: number, format: double}
+        model_version: {type: string, nullable: true}

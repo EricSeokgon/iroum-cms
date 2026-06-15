@@ -115,6 +115,7 @@ public class PostServiceImpl implements PostService {
                 post.isSecret(), post.getViewCount(), post.getCommentCount(),
                 post.getStatus(), null,
                 Collections.emptyList(),
+                post.getTags(),
                 post.getCreatedAt(), post.getUpdatedAt()
         );
     }
@@ -139,6 +140,8 @@ public class PostServiceImpl implements PostService {
                 .noticeUntil(request.noticeUntil())
                 .secret(request.isSecret())
                 .status("PUBLISHED")
+                // SPEC-CMS-AI-004: 요청 태그 반영 (null/미전송 시 빈 목록 — TypeHandler NPE 방지)
+                .tags(request.tags() != null ? request.tags() : Collections.emptyList())
                 .build();
         bbsPostMapper.insert(post);
 
@@ -150,6 +153,7 @@ public class PostServiceImpl implements PostService {
                 post.isSecret(), post.getViewCount(), post.getCommentCount(),
                 post.getStatus(), null,
                 Collections.emptyList(),
+                post.getTags(),
                 post.getCreatedAt(), post.getUpdatedAt()
         );
     }
@@ -192,6 +196,10 @@ public class PostServiceImpl implements PostService {
             // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 낙관적 잠금 기준은 클라이언트가 보낸 expectedVersion.
             // UPDATE WHERE version = expectedVersion 으로 충돌을 검출한다.
             existing.setVersion(request.expectedVersion());
+            // SPEC-CMS-AI-004: 요청에 태그가 있으면 교체, null/미전송이면 기존 태그 유지
+            if (request.tags() != null) {
+                existing.setTags(request.tags());
+            }
         }
 
         int updatedRows = bbsPostMapper.update(existing);
@@ -224,6 +232,7 @@ public class PostServiceImpl implements PostService {
                 existing.isSecret(), existing.getViewCount(), existing.getCommentCount(),
                 existing.getStatus(), null,
                 Collections.emptyList(),
+                existing.getTags(),
                 existing.getCreatedAt(), existing.getUpdatedAt()
         );
     }
@@ -306,6 +315,7 @@ public class PostServiceImpl implements PostService {
                 post.isSecret(), post.getViewCount(), post.getCommentCount(),
                 post.getStatus(), null,
                 Collections.emptyList(),
+                post.getTags(),
                 post.getCreatedAt(), post.getUpdatedAt()
         );
     }
@@ -370,7 +380,7 @@ public class PostServiceImpl implements PostService {
                 p.getTitle(), p.getAuthorId(), p.getAuthorName(),
                 p.isNotice(), p.isSecret(),
                 p.getViewCount(), p.getCommentCount(), p.getAttachmentCount(),
-                p.getCreatedAt(), language
+                p.getCreatedAt(), language, p.getTags()
         );
     }
 

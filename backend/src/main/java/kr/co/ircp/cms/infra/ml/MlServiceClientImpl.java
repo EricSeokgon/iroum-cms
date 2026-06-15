@@ -14,6 +14,8 @@ import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
 import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationRequest;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +57,7 @@ public class MlServiceClientImpl implements MlServiceClient {
     private final RestTemplate policyMatchRt;
     private final RestTemplate embedRt;
     private final RestTemplate ragRt;
+    private final RestTemplate tagRecommendRt;
     private final RestTemplate healthRt;
 
     public MlServiceClientImpl(
@@ -66,6 +69,7 @@ public class MlServiceClientImpl implements MlServiceClient {
             @Value("${ml.service.timeout.policy-match-ms:3000}") long policyMatchMs,
             @Value("${ml.service.timeout.embed-ms:1500}") long embedMs,
             @Value("${ml.service.timeout.rag-ms:5000}") long ragMs,
+            @Value("${ml.service.timeout.tag-recommend-ms:3000}") long tagRecommendMs,
             @Value("${ml.service.timeout.health-ms:1000}") long healthMs) {
         this.baseUrl = baseUrl;
         this.growthStageRt = rt(builder, growthStageMs);
@@ -74,6 +78,7 @@ public class MlServiceClientImpl implements MlServiceClient {
         this.policyMatchRt = rt(builder, policyMatchMs);
         this.embedRt = rt(builder, embedMs);
         this.ragRt = rt(builder, ragMs);
+        this.tagRecommendRt = rt(builder, tagRecommendMs);
         this.healthRt = rt(builder, healthMs);
     }
 
@@ -165,6 +170,19 @@ public class MlServiceClientImpl implements MlServiceClient {
         }
     }
 
+    // SPEC-CMS-AI-004 REQ-AI-TAG-002 — 태그 추천 호출 (3초 타임아웃, CircuitBreaker 공유)
+    @Override
+    @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackTagRecommendation")
+    public TagRecommendationResponse tagRecommendation(TagRecommendationRequest request) {
+        try {
+            return tagRecommendRt.postForObject(
+                    baseUrl + "/ml/v1/tag-recommend", jsonEntity(request),
+                    TagRecommendationResponse.class);
+        } catch (RestClientException e) {
+            throw new MlServiceException("tag-recommend failed", e);
+        }
+    }
+
     @Override
     @CircuitBreaker(name = CB_NAME, fallbackMethod = "fallbackHealth")
     public MlHealthResponse health() {
@@ -214,6 +232,14 @@ public class MlServiceClientImpl implements MlServiceClient {
     private RagResponse fallbackRag(RagRequest request, Throwable t) {
         log.warn("ml-service rag fallback: {}", t.getMessage());
         throw new MlServiceException("ml-service unavailable (rag fallback)", t);
+    }
+
+    // SPEC-CMS-AI-004 REQ-AI-TAG-003 — 예외 재던지기로 호출부 그레이스풀 폴백에 위임
+    @SuppressWarnings("unused")
+    private TagRecommendationResponse fallbackTagRecommendation(
+            TagRecommendationRequest request, Throwable t) {
+        log.warn("ml-service tag-recommend fallback: {}", t.getMessage());
+        throw new MlServiceException("ml-service unavailable (tag-recommend fallback)", t);
     }
 
     @SuppressWarnings("unused")

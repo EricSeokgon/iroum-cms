@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-AI-004 — AI 스마트 태그 추천/피드백 로그 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.ai.tag.mapper.AiTagRecommendationLogMapper">
+
+    <!-- 추천 이벤트(SUGGESTED) 행 적재. JSONB는 ::jsonb 캐스팅 (AI-002 패턴). tag_value는 NULL. -->
+    <insert id="insertSuggested"
+            parameterType="kr.co.ircp.cms.domain.ai.tag.model.AiTagRecommendationLog"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_tag_recommendation_log
+            (session_ref, content_type, content_hash, recommended_tags,
+             ml_scores, model_version, event_type)
+        VALUES (
+            #{sessionRef},
+            #{contentType},
+            #{contentHash},
+            <choose><when test="recommendedTags != null">#{recommendedTags}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            <choose><when test="mlScores != null">#{mlScores}::jsonb</when><otherwise>NULL</otherwise></choose>,
+            #{modelVersion},
+            'SUGGESTED'
+        )
+    </insert>
+
+    <!-- 피드백 이벤트(ACCEPTED/REJECTED) 행 적재. tag_value·interacted_at 채움. -->
+    <insert id="insertFeedback"
+            parameterType="kr.co.ircp.cms.domain.ai.tag.model.AiTagRecommendationLog"
+            useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO ai_tag_recommendation_log
+            (session_ref, content_type, content_hash, event_type, tag_value, interacted_at)
+        VALUES (
+            #{sessionRef},
+            #{contentType},
+            #{contentHash},
+            #{eventType},
+            #{tagValue},
+            #{interactedAt}
+        )
+    </insert>
+
+</mapper>

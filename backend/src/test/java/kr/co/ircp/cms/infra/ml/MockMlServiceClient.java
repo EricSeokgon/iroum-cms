@@ -16,6 +16,8 @@ import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
 import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationRequest;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -48,6 +50,28 @@ public class MockMlServiceClient implements MlServiceClient {
 
     /** embed 단계만 실패 시뮬레이션 (AC-RAG-007 — 임베딩 실패 → FTS 폴백). */
     private volatile boolean embedFails = false;
+
+    /** tagRecommendation 호출 횟수 (캐시 hit 검증용 — AC-AI-TAG-010). */
+    private final AtomicInteger tagRecommendationCalls = new AtomicInteger(0);
+
+    /** 태그 추천 타임아웃/장애 시뮬레이션 (AC-AI-TAG-009 — 그레이스풀 폴백). */
+    private volatile boolean tagRecommendationTimeout = false;
+
+    /** 태그 추천 호출만 장애 발생하도록 토글한다 (다른 호출은 정상). */
+    public void simulateTagRecommendationTimeout(boolean enabled) {
+        this.tagRecommendationTimeout = enabled;
+    }
+
+    /** tagRecommendation 호출 횟수 반환 (캐시 미스 시 1, 캐시 hit 시 추가 호출 없음). */
+    public int tagRecommendationCallCount() {
+        return tagRecommendationCalls.get();
+    }
+
+    /** 태그 추천 호출 카운터·장애 토글 초기화. */
+    public void resetTagRecommendationCounters() {
+        tagRecommendationCalls.set(0);
+        tagRecommendationTimeout = false;
+    }
 
     /** embed 단계만 강제 실패하도록 토글한다(rag/FTS는 정상). */
     public void simulateEmbedFailure(boolean enabled) {
@@ -190,6 +214,26 @@ public class MockMlServiceClient implements MlServiceClient {
             rank--;
         }
         return new RagResponse(answer.toString().trim(), sources, 88);
+    }
+
+    @Override
+    public TagRecommendationResponse tagRecommendation(TagRecommendationRequest request) {
+        tagRecommendationCalls.incrementAndGet();
+        if (tagRecommendationTimeout) {
+            throw new MlServiceException("ml-service tag-recommend failure (simulated)");
+        }
+        guardTimeout();
+        // 결정적 추천 태그 — 기존 선택 태그는 제외(E6). 본문 무관 고정 후보 2개.
+        List<String> existing = request == null || request.existingTags() == null
+                ? List.of() : request.existingTags();
+        List<String> candidates = List.of("테스트태그", "샘플태그");
+        List<String> recommended = candidates.stream()
+                .filter(tag -> !existing.contains(tag))
+                .toList();
+        return new TagRecommendationResponse(
+                recommended,
+                Map.of("테스트태그", 0.92, "샘플태그", 0.81),
+                "mock-tag-1.0.0");
     }
 
     @Override

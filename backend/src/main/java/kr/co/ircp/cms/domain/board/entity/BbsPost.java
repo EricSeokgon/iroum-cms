@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 게시글 엔티티.
@@ -49,4 +51,9 @@ public class BbsPost {
 
     // SPEC-CMS-NOTICE-I18N-002: LEFT JOIN bbs_post_i18n 결과에서 채워지는 필드. DB 컬럼 없음.
     private String language;
+
+    // SPEC-CMS-AI-004: AI 스마트 태그 (V54 bbs_post.tags TEXT[] NOT NULL DEFAULT '{}').
+    // @Builder.Default 로 null 방지 — StringArrayTypeHandler.createArrayOf 는 null 입력 시 NPE 발생.
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
 }
