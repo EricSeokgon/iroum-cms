@@ -186,8 +186,8 @@ export interface AuditLogFilter {
   toTime?: string     // 백엔드 파라미터 이름: toTime
   actor_id?: number
   entity_type?: string
-  action?: AuditAction[]
-  severity?: AuditSeverity[]
+  action?: AuditAction | string  // 단일 값 또는 콤마 구분 복수 값
+  severity?: AuditSeverity | string
   result?: AuditResult
   page?: number       // 백엔드는 1-based
   size?: number
