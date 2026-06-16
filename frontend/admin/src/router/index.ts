@@ -74,6 +74,14 @@ const router = createRouter({
           meta: { title: '사용자 관리' },
         },
         {
+          // SPEC-CMS-USER-APPROVAL-001 — 가입 승인 대기열. users/:id 보다 먼저 등록해 'approvals' 가
+          // 동적 세그먼트로 캡처되지 않도록 한다.
+          path: 'users/approvals',
+          name: 'user-approvals',
+          component: () => import('@/views/users/ApprovalQueueView.vue'),
+          meta: { title: '가입 승인' },
+        },
+        {
           path: 'users/:id',
           name: 'user-detail',
           component: () => import('@/views/users/UserDetailView.vue'),

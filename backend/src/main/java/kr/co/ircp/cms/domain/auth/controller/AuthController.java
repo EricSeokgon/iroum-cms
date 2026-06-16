@@ -22,8 +22,11 @@ import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.auth.service.AuthService;
 import kr.co.ircp.cms.domain.auth.service.VerificationService;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+
+import java.util.Map;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -87,14 +90,22 @@ public class AuthController {
      * 이미 가입된 이메일이면 409, 비밀번호 정책 위반이면 400 을 반환한다.
      */
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(
+    public ResponseEntity<?> register(
             @Valid @RequestBody PublicRegisterRequest request,
             HttpServletRequest httpRequest) {
         String ipAddress = httpRequest.getRemoteAddr();
         String userAgent = resolveUserAgent(httpRequest);
 
-        AuthService.LoginOutcome outcome = authService.registerPublicUser(request, ipAddress, userAgent);
+        AuthService.RegisterResult result = authService.registerPublicUser(request, ipAddress, userAgent);
 
+        // SPEC-CMS-USER-APPROVAL-001 REQ-UA-001 — 게이트 ON: JWT/쿠키 없이 202 Accepted + 안내 메시지.
+        if (result instanceof AuthService.RegisterResult.PendingApproval) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED)
+                    .body(Map.of("message", "가입 신청이 접수되었습니다. 관리자 승인 후 로그인 가능합니다."));
+        }
+
+        // 게이트 OFF — 기존 동작: 201 Created + Access Token(바디) + Refresh Token(Set-Cookie).
+        AuthService.LoginOutcome outcome = ((AuthService.RegisterResult.Approved) result).loginOutcome();
         ResponseCookie refreshCookie = buildRefreshCookie(outcome.refreshToken());
         return ResponseEntity.status(201)
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())

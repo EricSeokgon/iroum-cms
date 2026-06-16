@@ -107,9 +107,80 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    /**
+     * 가입 승인 확정 안내 이메일 비동기 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-017/019 — USER_APPROVAL_CONFIRMED 템플릿 우선,
+     * 미존재/실패 시 하드코딩 fallback. 발송 실패는 예외를 전파하지 않는다.
+     */
+    @Async("auditExecutor")
+    @Override
+    public void sendApprovalConfirmed(String to, String userName) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(to);
+
+            Optional<RenderResult> rendered = templateResolver.resolveAndRender(
+                    "USER_APPROVAL_CONFIRMED", "ko", Map.of("userName", nullToEmpty(userName)));
+            if (rendered.isPresent()) {
+                message.setSubject(rendered.get().subject());
+                message.setText(plainBody(rendered.get()));
+            } else {
+                message.setSubject("[이루움 CMS] 가입이 승인되었습니다");
+                message.setText(String.format(
+                    "안녕하세요, %s님.\n\n회원 가입 신청이 승인되었습니다.\n" +
+                    "지금 바로 로그인하여 서비스를 이용하실 수 있습니다.\n\n이루움 CMS",
+                    nullToEmpty(userName)));
+            }
+            mailSender.send(message);
+            log.debug("가입 승인 안내 이메일 발송 완료: to={}", to);
+        } catch (Exception e) {
+            log.error("가입 승인 안내 이메일 발송 실패 (non-blocking): to={}", to, e);
+        }
+    }
+
+    /**
+     * 가입 거절 안내 이메일 비동기 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-018/019 — USER_APPROVAL_REJECTED 템플릿에 거절 사유 주입,
+     * 미존재/실패 시 하드코딩 fallback. 발송 실패는 예외를 전파하지 않는다.
+     */
+    @Async("auditExecutor")
+    @Override
+    public void sendApprovalRejected(String to, String userName, String rejectionReason) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(to);
+
+            Optional<RenderResult> rendered = templateResolver.resolveAndRender(
+                    "USER_APPROVAL_REJECTED", "ko",
+                    Map.of("userName", nullToEmpty(userName),
+                           "rejectionReason", nullToEmpty(rejectionReason)));
+            if (rendered.isPresent()) {
+                message.setSubject(rendered.get().subject());
+                message.setText(plainBody(rendered.get()));
+            } else {
+                message.setSubject("[이루움 CMS] 가입 신청이 거절되었습니다");
+                message.setText(String.format(
+                    "안녕하세요, %s님.\n\n회원 가입 신청이 거절되었습니다.\n사유: %s\n\n이루움 CMS",
+                    nullToEmpty(userName), nullToEmpty(rejectionReason)));
+            }
+            mailSender.send(message);
+            log.debug("가입 거절 안내 이메일 발송 완료: to={}", to);
+        } catch (Exception e) {
+            log.error("가입 거절 안내 이메일 발송 실패 (non-blocking): to={}", to, e);
+        }
+    }
+
     /** 렌더링 결과에서 평문 본문을 추출한다(평문 없으면 HTML 사용 — SimpleMailMessage는 평문). */
     private String plainBody(RenderResult result) {
         return result.bodyText() != null && !result.bodyText().isBlank()
                 ? result.bodyText() : result.bodyHtml();
+    }
+
+    private String nullToEmpty(String s) {
+        return s != null ? s : "";
     }
 }

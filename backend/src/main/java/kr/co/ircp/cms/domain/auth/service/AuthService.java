@@ -30,6 +30,21 @@ public interface AuthService {
     record LoginOutcome(LoginResponse response, String refreshToken) {}
 
     /**
+     * 공개 가입 결과 — 승인 게이트 ON/OFF 에 따라 두 가지 변종을 갖는다.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-001/002 —
+     * 게이트 OFF 시 {@link Approved}(JWT 발급), 게이트 ON 시 {@link PendingApproval}(JWT 미발급).
+     */
+    sealed interface RegisterResult permits RegisterResult.Approved, RegisterResult.PendingApproval {
+
+        /** 게이트 OFF — 즉시 활성화되어 JWT 가 발급된 결과. */
+        record Approved(LoginOutcome loginOutcome) implements RegisterResult {}
+
+        /** 게이트 ON — PENDING_APPROVAL 로 보류되어 JWT 가 발급되지 않은 결과. */
+        record PendingApproval() implements RegisterResult {}
+    }
+
+    /**
      * 일반 로그인 (ID/비밀번호).
      *
      * <p>REQ-AUTH-001 — 자격증명 검증, JWT 발급, 실패 횟수 관리, 이력 기록.
@@ -119,16 +134,19 @@ public interface AuthService {
      * 공개 사이트(시민 사용자) 회원가입.
      *
      * <p>외부 비회원이 호출하는 자가 가입(self-registration) 엔드포인트.
-     * 가입 즉시 MEMBER 역할이 부여되고 access/refresh 토큰이 함께 발급된다.
+     * SPEC-CMS-USER-APPROVAL-001 — {@code REGISTRATION_APPROVAL_REQUIRED} 설정에 따라 분기한다.
+     * 게이트 OFF(기본): 가입 즉시 MEMBER 역할이 부여되고 access/refresh 토큰이 발급된다
+     * ({@link RegisterResult.Approved}). 게이트 ON: PENDING_APPROVAL 로 보류되고 JWT 는
+     * 발급되지 않는다({@link RegisterResult.PendingApproval}).
      * 비밀번호는 BCrypt 해싱 후 저장하고 이메일은 PII 암호화 + HMAC 인덱스 규약을 따른다.
      *
      * @param request   이메일·비밀번호·이름
      * @param ipAddress 클라이언트 IP
      * @param userAgent 클라이언트 User-Agent
-     * @return Access Token + Refresh Token (관리자 로그인과 동일 형식)
+     * @return 게이트 OFF 면 Approved(JWT 포함), ON 이면 PendingApproval(JWT 미발급)
      * @throws DuplicateUserException         이메일이 이미 가입된 경우
      * @throws PasswordPolicyViolationException 비밀번호 정책 위반
      */
-    LoginOutcome registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent)
+    RegisterResult registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent)
             throws DuplicateUserException, PasswordPolicyViolationException;
 }

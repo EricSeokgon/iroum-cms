@@ -40,6 +40,15 @@
           <span>{{ t('nav.users') }}</span>
         </el-menu-item>
 
+        <!-- SPEC-CMS-USER-APPROVAL-001 — 가입 승인 대기열 (USER_APPROVAL:READ 권한) -->
+        <el-menu-item
+          v-if="hasPermission('USER_APPROVAL:READ')"
+          index="/users/approvals"
+        >
+          <el-icon><i-ep-circle-check /></el-icon>
+          <span>가입 승인</span>
+        </el-menu-item>
+
         <el-menu-item index="/organizations">
           <el-icon><i-ep-office-building /></el-icon>
           <span>{{ t('nav.organizations') }}</span>
