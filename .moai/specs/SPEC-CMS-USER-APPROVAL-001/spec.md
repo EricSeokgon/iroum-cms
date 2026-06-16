@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-USER-APPROVAL-001
 version: 0.1.0
-status: Draft
+status: Implemented
 created: 2026-06-16
 updated: 2026-06-16
 author: ircp
