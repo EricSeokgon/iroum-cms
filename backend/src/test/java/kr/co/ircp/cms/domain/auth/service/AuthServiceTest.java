@@ -66,6 +66,7 @@ class AuthServiceTest {
     @Mock private VerificationService verificationService;
     @Mock private EmailService emailService;
     @Mock private kr.co.ircp.cms.domain.security.pii.EmailEncryptionService emailEncryptionService;
+    @Mock private kr.co.ircp.cms.domain.system.setting.service.SystemSettingService systemSettingService;
 
     private JwtProperties jwtProperties;
     private AuthService authService;
@@ -81,7 +82,8 @@ class AuthServiceTest {
                 userMapper, refreshTokenMapper, loginHistoryMapper,
                 tokenBlacklistMapper, jwtTokenProvider, passwordPolicyService,
                 passwordHistoryMapper, jwtProperties, permissionService,
-                verificationService, emailService, emailEncryptionService);
+                verificationService, emailService, emailEncryptionService,
+                systemSettingService);
         // SPEC-CMS-SECURITY-PII-001 — password reset flow 가 호출하는 HMAC 격상 stub.
         org.mockito.Mockito.lenient().when(emailEncryptionService.computeHmac(anyString()))
                 .thenAnswer(inv -> "hmac-of-" + inv.getArgument(0).toString().toLowerCase());

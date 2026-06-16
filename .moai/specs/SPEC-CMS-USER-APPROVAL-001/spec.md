@@ -152,7 +152,7 @@ The system shall 승인/거절 처리 시 처리자(`approval_changed_by`)와 �
 
 **NFR-UA-C1**: 게이트 기본값은 `false`이며, 본 SPEC 배포 후에도 기존 즉시 활성 가입 동작이 유지된다(설정을 켜기 전까지 동작 변경 없음).
 
-**NFR-UA-C2**: 마이그레이션은 단일 Flyway 파일(V58)에 통합하여 적용 순서 충돌을 방지한다(상태 제약 변경 + additive 컬럼 + 권한/템플릿 시드).
+**NFR-UA-C2**: 마이그레이션은 단일 Flyway 파일(V62)에 통합하여 적용 순서 충돌을 방지한다(상태 제약 변경 + additive 컬럼 + 권한/템플릿 시드).
 
 ---
 
@@ -225,7 +225,7 @@ ON CONFLICT (key) DO NOTHING;
 
 | ID | 작업 | 산출물 | 의존 |
 |----|------|--------|------|
-| **T0** | DB 마이그레이션 | `V58__user_registration_approval.sql` — status 제약 재정의 + additive 3컬럼 + system_setting 시드 + 권한 3종 시드 + 이메일 템플릿 2종 시드 | — |
+| **T0** | DB 마이그레이션 | `V62__user_registration_approval.sql` — status 제약 재정의 + additive 3컬럼 + system_setting 시드 + 권한 3종 시드 + 이메일 템플릿 2종 시드 | — |
 | **T1** | 도메인 enum 확장 | `UserStatus.PENDING_APPROVAL` 추가 | T0 |
 | **T2** | 가입 게이트 적용 | `AuthServiceImpl.registerPublicUser` 분기 — 게이트 ON 시 PENDING_APPROVAL + JWT 미발급, `SystemSettingService.get` 재사용 | T1 |
 | **T3** | 로그인 차단 | `AuthServiceImpl.login` — PENDING_APPROVAL 상태 거부 | T1 |

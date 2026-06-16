@@ -21,6 +21,8 @@ import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
 import kr.co.ircp.cms.domain.auth.exception.PasswordReuseException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
+import kr.co.ircp.cms.domain.auth.exception.UserPendingApprovalException;
+import kr.co.ircp.cms.domain.system.setting.service.SystemSettingService;
 import kr.co.ircp.cms.domain.auth.repository.LoginHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.PasswordHistoryMapper;
 import kr.co.ircp.cms.domain.auth.repository.RefreshTokenMapper;
@@ -66,6 +68,8 @@ public class AuthServiceImpl implements AuthService {
     private final VerificationService verificationService;
     private final EmailService emailService;
     private final EmailEncryptionService emailEncryptionService;
+    // SPEC-CMS-USER-APPROVAL-001 — 가입 승인 게이트 설정 조회 (REGISTRATION_APPROVAL_REQUIRED).
+    private final SystemSettingService systemSettingService;
 
     // SPEC-CMS-SECURITY-MEDIUM-13 — IP 기반 로그인 실패 추적.
     // 동일 IP가 서로 다른 계정에 대해 시도하는 enumeration/brute-force를 방어한다.
@@ -104,7 +108,8 @@ public class AuthServiceImpl implements AuthService {
             PermissionService permissionService,
             VerificationService verificationService,
             EmailService emailService,
-            EmailEncryptionService emailEncryptionService) {
+            EmailEncryptionService emailEncryptionService,
+            SystemSettingService systemSettingService) {
         this.userMapper = userMapper;
         this.refreshTokenMapper = refreshTokenMapper;
         this.loginHistoryMapper = loginHistoryMapper;
@@ -117,6 +122,7 @@ public class AuthServiceImpl implements AuthService {
         this.verificationService = verificationService;
         this.emailService = emailService;
         this.emailEncryptionService = emailEncryptionService;
+        this.systemSettingService = systemSettingService;
     }
 
     /**
@@ -183,6 +189,21 @@ public class AuthServiceImpl implements AuthService {
                     .createdAt(now)
                     .build());
             throw new InvalidCredentialsException();
+        }
+
+        // 3.5 가입 승인 대기 계정 확인 (SPEC-CMS-USER-APPROVAL-001 REQ-UA-004)
+        //     PENDING_APPROVAL 사용자는 관리자 승인 전까지 로그인을 거부한다.
+        if (user.getStatus() == UserStatus.PENDING_APPROVAL) {
+            loginHistoryMapper.insert(LoginHistory.builder()
+                    .userId(user.getId())
+                    .username(req.username())
+                    .ipAddress(ipAddress)
+                    .userAgent(userAgent)
+                    .success(false)
+                    .failureReason("PENDING_APPROVAL")
+                    .createdAt(now)
+                    .build());
+            throw new UserPendingApprovalException();
         }
 
         // 4. 비밀번호 검증
@@ -479,7 +500,7 @@ public class AuthServiceImpl implements AuthService {
     @AuditLog(action = "REGISTER", entityType = "User", severity = "INFO", captureArgs = false)
     @Override
     @Transactional
-    public LoginOutcome registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent) {
+    public RegisterResult registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent) {
         Instant now = Instant.now();
 
         // 1. 중복 검사 — 이 엔드포인트는 email 을 곧 username 으로 사용한다.
@@ -499,13 +520,17 @@ public class AuthServiceImpl implements AuthService {
         // 3. SPEC-CMS-SECURITY-PII-001 — 이메일 AES-256-GCM 암호화 + HMAC 인덱스
         EncryptedEmail encryptedEmail = emailEncryptionService.encrypt(request.email());
 
+        // SPEC-CMS-USER-APPROVAL-001 REQ-UA-001/002/003 — 가입 승인 게이트 평가.
+        boolean approvalRequired = isRegistrationApprovalRequired();
+
         // 4. 사용자 INSERT — username = email (공개 사이트 가입자 컨벤션)
+        //    게이트 ON 이면 PENDING_APPROVAL 로 보류, OFF 면 기존대로 ACTIVE.
         User user = User.builder()
                 .username(request.email())
                 .email(request.email())
                 .passwordHash(hashed)
                 .name(request.name())
-                .status(UserStatus.ACTIVE)
+                .status(approvalRequired ? UserStatus.PENDING_APPROVAL : UserStatus.ACTIVE)
                 .emailEncrypted(encryptedEmail.ciphertext())
                 .emailIv(encryptedEmail.iv())
                 .emailTag(encryptedEmail.tag())
@@ -513,6 +538,11 @@ public class AuthServiceImpl implements AuthService {
                 .emailHmac(emailHmac)
                 .build();
         userMapper.insert(user);
+
+        // SPEC-CMS-USER-APPROVAL-001 REQ-UA-001 — 게이트 ON: 역할·토큰 발급 없이 보류 결과만 반환.
+        if (approvalRequired) {
+            return new RegisterResult.PendingApproval();
+        }
 
         // 5. MEMBER 역할 부여 (V36 시드).
         //    self-registration 이므로 grantedBy 는 본인 ID 를 사용한다.
@@ -547,9 +577,25 @@ public class AuthServiceImpl implements AuthService {
                 .build());
 
         long expiresInSeconds = jwtProperties.accessTokenTtl().toSeconds();
-        return new LoginOutcome(
+        return new RegisterResult.Approved(new LoginOutcome(
                 new LoginResponse(accessToken, expiresInSeconds, "Bearer"),
-                refreshToken);
+                refreshToken));
+    }
+
+    /**
+     * 가입 승인 게이트 설정 평가.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-003 — {@code REGISTRATION_APPROVAL_REQUIRED} 키가
+     * 없거나 파싱에 실패하면 {@code false}(즉시 활성)로 간주하여 기존 동작을 유지한다(회귀 방지).
+     */
+    private boolean isRegistrationApprovalRequired() {
+        try {
+            String value = systemSettingService.get("REGISTRATION_APPROVAL_REQUIRED").value();
+            return Boolean.parseBoolean(value);
+        } catch (RuntimeException e) {
+            // 설정 미존재(NoSuchElementException) 또는 조회 실패 → 게이트 OFF 로 회귀 방지.
+            return false;
+        }
     }
 
     /**

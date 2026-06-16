@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+  SPEC-CMS-USER-APPROVAL-001 — 가입 승인 대기열 조회·상태 전환.
+  email 평문 컬럼은 V26 에서 제거되었으므로 암호화 컬럼을 함께 조회하여
+  서비스 레이어(EmailEncryptionService)에서 복호화한다.
+  검색은 name 과 username(공개 가입자는 email 과 동일) 부분 일치로 제한한다.
+-->
+<mapper namespace="kr.co.ircp.cms.domain.approval.repository.UserApprovalMapper">
+
+    <resultMap id="pendingUserResultMap" type="kr.co.ircp.cms.domain.auth.entity.User">
+        <id     property="id"                column="id"/>
+        <result property="uuid"              column="uuid"/>
+        <result property="username"          column="username"/>
+        <result property="name"              column="name"/>
+        <result property="status"            column="status"
+                javaType="kr.co.ircp.cms.domain.auth.entity.UserStatus"/>
+        <result property="createdAt"         column="created_at"/>
+        <result property="organizationId"    column="organization_id"/>
+        <result property="emailEncrypted"    column="email_encrypted"   jdbcType="BINARY"/>
+        <result property="emailIv"           column="email_iv"          jdbcType="BINARY"/>
+        <result property="emailTag"          column="email_tag"         jdbcType="BINARY"/>
+        <result property="emailKeyVersion"   column="email_key_version" jdbcType="SMALLINT"/>
+        <result property="emailHmac"         column="email_hmac"/>
+    </resultMap>
+
+    <sql id="pendingFilter">
+        WHERE status = 'PENDING_APPROVAL'
+          AND deleted_at IS NULL
+        <if test="keyword != null and keyword != ''">
+            AND (name LIKE CONCAT('%', #{keyword}, '%')
+                 OR username LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <!-- 대기열 목록 (가입일시 오름차순) — REQ-UA-007/008 -->
+    <select id="selectPendingApprovals" resultMap="pendingUserResultMap">
+        SELECT id, uuid, username, name, status, created_at, organization_id,
+               email_encrypted, email_iv, email_tag, email_hmac, email_key_version
+        FROM users
+        <include refid="pendingFilter"/>
+        ORDER BY created_at ASC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 대기열 총 개수 — REQ-UA-007 -->
+    <select id="countPendingApprovals" resultType="long">
+        SELECT COUNT(*)
+        FROM users
+        <include refid="pendingFilter"/>
+    </select>
+
+    <!-- 단건 대기 사용자 상세 — REQ-UA-009 -->
+    <select id="selectPendingById" resultMap="pendingUserResultMap">
+        SELECT id, uuid, username, name, status, created_at, organization_id,
+               email_encrypted, email_iv, email_tag, email_hmac, email_key_version
+        FROM users
+        WHERE id = #{userId}
+          AND status = 'PENDING_APPROVAL'
+          AND deleted_at IS NULL
+    </select>
+
+    <!-- 승인/거절 상태 전환 — REQ-UA-010/011/013/021. PENDING_APPROVAL 행만 갱신. -->
+    <update id="updateApprovalStatus">
+        UPDATE users
+        SET status                     = #{newStatus},
+            rejection_reason           = #{rejectionReason},
+            approval_status_changed_at = #{changedAt},
+            approval_changed_by        = #{changedBy},
+            updated_at                 = #{changedAt}
+        WHERE id = #{userId}
+          AND status = 'PENDING_APPROVAL'
+          AND deleted_at IS NULL
+    </update>
+
+</mapper>

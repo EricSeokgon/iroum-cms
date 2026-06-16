@@ -10,7 +10,7 @@
 
 | ID | 작업 | 상태 | 비고 |
 |----|------|------|------|
-| T0 | DB 마이그레이션 `V58__user_registration_approval.sql` (status 제약 재정의 + additive 3컬럼 + system_setting/권한/템플릿 시드) | TODO | 단일 파일 통합 (NFR-UA-C2) |
+| T0 | DB 마이그레이션 `V62__user_registration_approval.sql` (status 제약 재정의 + additive 3컬럼 + system_setting/권한/템플릿 시드) | TODO | 단일 파일 통합 (NFR-UA-C2) |
 | T1 | `UserStatus.PENDING_APPROVAL` enum 추가 | TODO | |
 | T2 | 가입 게이트 적용 (`AuthServiceImpl.registerPublicUser`) | TODO | `SystemSettingService.get` 재사용 |
 | T3 | 로그인 차단 (`AuthServiceImpl.login`, PENDING_APPROVAL 거부) | TODO | REQ-UA-004 |
@@ -39,7 +39,7 @@
 
 | 게이트 | 상태 | 비고 |
 |--------|------|------|
-| 마이그레이션 V58 적용 (제약 재정의 무손실) | TODO | 기존 4개 상태 행 영향 없음 확인 |
+| 마이그레이션 V62 적용 (제약 재정의 무손실) | TODO | 기존 4개 상태 행 영향 없음 확인 |
 | 게이트 기본값 false 회귀 확인 | TODO | NFR-UA-C1 |
 | 이메일 발송 실패 graceful (상태 커밋 유지) | TODO | REQ-UA-019 |
 | RBAC 403 검증 | TODO | NFR-UA-S1 |

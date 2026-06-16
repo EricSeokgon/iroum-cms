@@ -24,4 +24,27 @@ public interface EmailService {
      * @param to 수신 이메일 주소
      */
     void sendPasswordResetNotice(String to);
+
+    /**
+     * 가입 승인 확정 안내 이메일 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-017 — USER_APPROVAL_CONFIRMED 템플릿 렌더링 발송.
+     * 발송 실패는 예외를 전파하지 않고 로그만 남긴다(REQ-UA-019 graceful fallback).
+     *
+     * @param to       수신 이메일 주소
+     * @param userName 사용자 이름 (템플릿 변수 userName)
+     */
+    void sendApprovalConfirmed(String to, String userName);
+
+    /**
+     * 가입 거절 안내 이메일 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-018 — USER_APPROVAL_REJECTED 템플릿에 거절 사유 주입.
+     * 발송 실패는 예외를 전파하지 않고 로그만 남긴다(REQ-UA-019 graceful fallback).
+     *
+     * @param to              수신 이메일 주소
+     * @param userName        사용자 이름 (템플릿 변수 userName)
+     * @param rejectionReason 거절 사유 (템플릿 변수 rejectionReason)
+     */
+    void sendApprovalRejected(String to, String userName, String rejectionReason);
 }

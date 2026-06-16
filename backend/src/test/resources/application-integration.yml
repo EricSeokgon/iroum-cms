@@ -13,6 +13,9 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: false
+    # SPEC-CMS-USER-APPROVAL-001 — V57/V58 시드는 이메일 템플릿에 Thymeleaf ${var} 리터럴을
+    # 포함하므로 Flyway 의 placeholder 치환을 비활성화한다(${...} 를 SQL 그대로 적재).
+    placeholder-replacement: false
     # application.properties 의 `spring.flyway.target=32` 를 덮어써서 V33 (pgvector) 까지 적용.
     # integration 프로파일은 AbstractIntegrationTest 의 `pgvector/pgvector:pg16` 이미지를 사용하므로
     # vector 확장 생성이 가능하다 (SPEC-CMS-AI-003).
