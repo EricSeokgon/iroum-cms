@@ -96,6 +96,10 @@ import kr.co.ircp.cms.domain.search.exception.SynonymNotFoundException;
 import kr.co.ircp.cms.domain.search.exception.SynonymSelfException;
 import kr.co.ircp.cms.domain.system.code.exception.CodeDuplicateException;
 import kr.co.ircp.cms.domain.system.code.exception.CodeGroupInUseException;
+import kr.co.ircp.cms.domain.email.template.admin.exception.DuplicateEmailTemplateException;
+import kr.co.ircp.cms.domain.email.template.admin.exception.EmailTemplateNotFoundException;
+import kr.co.ircp.cms.domain.email.template.admin.exception.MissingTemplateVariableException;
+import kr.co.ircp.cms.domain.email.template.admin.exception.TemplateInactiveException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -1366,6 +1370,45 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Admin Notification Not Found");
         detail.setProperty("code", "ADMIN_NOTIFICATION_NOT_FOUND");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-EMAIL-TEMPLATE-001 — 이메일 템플릿 예외 매핑 ──────────────────
+
+    /** 이메일 템플릿 미존재 → 404 (REQ-ET-004/005). */
+    @ExceptionHandler(EmailTemplateNotFoundException.class)
+    public ProblemDetail handleEmailTemplateNotFound(EmailTemplateNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Email Template Not Found");
+        detail.setProperty("code", "EMAIL_TEMPLATE_NOT_FOUND");
+        return detail;
+    }
+
+    /** code+language 중복 → 409 (REQ-ET-002). */
+    @ExceptionHandler(DuplicateEmailTemplateException.class)
+    public ProblemDetail handleDuplicateEmailTemplate(DuplicateEmailTemplateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate Email Template");
+        detail.setProperty("code", "EMAIL_TEMPLATE_DUPLICATE");
+        return detail;
+    }
+
+    /** 필수 변수 누락 → 400 + 누락 목록 (REQ-ET-011). */
+    @ExceptionHandler(MissingTemplateVariableException.class)
+    public ProblemDetail handleMissingTemplateVariable(MissingTemplateVariableException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        detail.setTitle("Missing Template Variable");
+        detail.setProperty("code", "EMAIL_TEMPLATE_MISSING_VARIABLE");
+        detail.setProperty("missingVariables", ex.getMissingVariables());
+        return detail;
+    }
+
+    /** 비활성 템플릿 실발송/테스트 발송 → 409 (REQ-ET-012). */
+    @ExceptionHandler(TemplateInactiveException.class)
+    public ProblemDetail handleTemplateInactive(TemplateInactiveException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Template Inactive");
+        detail.setProperty("code", "EMAIL_TEMPLATE_INACTIVE");
         return detail;
     }
 }

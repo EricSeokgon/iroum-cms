@@ -54,6 +54,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-mail")
+    // Thymeleaf — 이메일 템플릿 변수 치환 렌더링 (SPEC-CMS-EMAIL-TEMPLATE-001 REQ-ET-010)
+    //   TextTemplateEngine(제목, TEXT 모드) + SpringTemplateEngine(본문, HTML 모드) 사용
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     // AOP — AspectJ 위빙 지원 (@AuditLog Aspect, SPEC-CMS-005 §7)
     implementation("org.springframework.boot:spring-boot-starter-aop")
 
