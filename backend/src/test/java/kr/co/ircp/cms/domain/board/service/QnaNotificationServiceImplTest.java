@@ -8,6 +8,7 @@ import kr.co.ircp.cms.domain.board.repository.QnaMapper;
 import kr.co.ircp.cms.domain.board.repository.QnaNotificationLogMapper;
 import kr.co.ircp.cms.domain.board.repository.QnaNotificationOptoutMapper;
 import kr.co.ircp.cms.domain.board.repository.UserNotificationInboxMapper;
+import kr.co.ircp.cms.domain.email.template.admin.service.EmailTemplateResolver;
 import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -67,6 +68,10 @@ class QnaNotificationServiceImplTest {
     @Mock
     EmailEncryptionService emailEncryptionService;
 
+    // SPEC-CMS-EMAIL-TEMPLATE-001 — 템플릿 리졸버. 기본 빈 응답(하드코딩 fallback)으로 기존 동작 보존.
+    @Mock
+    EmailTemplateResolver templateResolver;
+
     @InjectMocks
     QnaNotificationServiceImpl service;
 
@@ -77,6 +82,10 @@ class QnaNotificationServiceImplTest {
     @BeforeEach
     void noop() {
         // Mockito가 @Mock/@InjectMocks를 자동 와이어링
+        // 템플릿 미존재 → 기존 하드코딩 발송 경로 유지 (회귀 방지, REQ-ET-033)
+        org.mockito.Mockito.lenient()
+                .when(templateResolver.resolveAndRender(anyString(), anyString(), any()))
+                .thenReturn(Optional.empty());
     }
 
     // ------------------------------------------------------------------

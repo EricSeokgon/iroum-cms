@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-EMAIL-TEMPLATE-001 — 이메일 발송 로그 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.email.template.admin.repository.EmailTemplateSendLogMapper">
+
+    <resultMap id="logResultMap"
+               type="kr.co.ircp.cms.domain.email.template.admin.entity.EmailTemplateSendLog">
+        <id property="id" column="id"/>
+        <result property="templateId" column="template_id"/>
+        <result property="templateCode" column="template_code"/>
+        <result property="recipientEnc" column="recipient_enc"/>
+        <result property="recipientHmac" column="recipient_hmac"/>
+        <result property="subject" column="subject"/>
+        <result property="status" column="status"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="retryCount" column="retry_count"/>
+        <result property="sentAt" column="sent_at"/>
+    </resultMap>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="criteria.templateId != null">AND template_id = #{criteria.templateId}</if>
+            <if test="criteria.status != null and criteria.status != ''">AND status = #{criteria.status}</if>
+            <if test="criteria.from != null">AND sent_at &gt;= #{criteria.from}</if>
+            <if test="criteria.to != null">AND sent_at &lt;= #{criteria.to}</if>
+        </where>
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO email_template_send_log
+            (template_id, template_code, recipient_enc, recipient_hmac, subject,
+             status, error_message, retry_count)
+        VALUES (
+            #{templateId}, #{templateCode}, #{recipientEnc}, #{recipientHmac}, #{subject},
+            #{status}, #{errorMessage}, #{retryCount}
+        )
+    </insert>
+
+    <select id="findAll" resultMap="logResultMap">
+        SELECT * FROM email_template_send_log
+        <include refid="filterWhere"/>
+        ORDER BY sent_at DESC, id DESC
+        LIMIT #{criteria.effectiveSize} OFFSET #{criteria.offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM email_template_send_log
+        <include refid="filterWhere"/>
+    </select>
+
+</mapper>

@@ -405,6 +405,19 @@ const router = createRouter({
           component: () => import('@/views/system/MenuStatsView.vue'),
           meta: { title: '메뉴별 방문 통계', permissions: ['SYSTEM:STATS'] },
         },
+        // ── 이메일 템플릿 관리 라우트 (SPEC-CMS-EMAIL-TEMPLATE-001) ──────────
+        {
+          path: 'system/email-templates',
+          name: 'email-template-list',
+          component: () => import('@/views/system/EmailTemplateListView.vue'),
+          meta: { title: '이메일 템플릿 관리', permissions: ['EMAIL_TEMPLATE:READ'] },
+        },
+        {
+          path: 'system/smtp-config',
+          name: 'smtp-config',
+          component: () => import('@/views/system/SmtpConfigView.vue'),
+          meta: { title: 'SMTP 설정', permissions: ['EMAIL_TEMPLATE:WRITE'] },
+        },
         // ── 안전관리 라우트 (SPEC-CMS-006) ─────────────────────────────────
         {
           path: 'safety/incidents',
