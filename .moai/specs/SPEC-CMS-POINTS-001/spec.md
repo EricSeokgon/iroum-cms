@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-POINTS-001
 version: 0.1.0
-status: draft
+status: implemented
 created: 2026-06-17
 updated: 2026-06-17
 author: ircp
@@ -38,7 +38,7 @@ issue_number: 0
 - 관리자 포인트 내역 화면 (사용자/이벤트/기간 검색)
 - 사용자 본인 포인트 총액 및 내역 조회
 - 신규 도메인 패키지 `kr.co.ircp.cms.domain.point`
-- DB 마이그레이션 `V59__points_system.sql`
+- DB 마이그레이션 `V63__points_system.sql`
 
 ## 비범위 (Out of Scope)
 
@@ -116,7 +116,7 @@ The 시스템 SHALL 포인트 적립 실패를 오류로 전파하지 않고 로
 
 ### 신규 (Backend)
 
-- `[DELTA] backend/src/main/resources/db/migration/V59__points_system.sql` — user_point_ledger, user_point_summary, bbs_post_like 테이블 + POINTS:* system_setting seed + POINTS:READ/POINTS:WRITE 권한 seed
+- `[DELTA] backend/src/main/resources/db/migration/V63__points_system.sql` — user_point_ledger, user_point_summary, bbs_post_like 테이블 + POINTS:* system_setting seed + POINTS:READ/POINTS:WRITE 권한 seed
 - `[DELTA] backend/src/main/java/kr/co/ircp/cms/domain/point/entity/UserPointLedger.java`
 - `[DELTA] backend/src/main/java/kr/co/ircp/cms/domain/point/entity/UserPointSummary.java`
 - `[DELTA] backend/src/main/java/kr/co/ircp/cms/domain/board/entity/BbsPostLike.java`
@@ -143,3 +143,21 @@ The 시스템 SHALL 포인트 적립 실패를 오류로 전파하지 않고 로
 - `[DELTA] frontend/src/views/.../UserPointHistoryView.vue` (또는 프로필 영역 컴포넌트) — 본인 총액 + 내역
 - `[DELTA] frontend/src/api/point.ts` — 포인트 API 클라이언트
 - `[DELTA] frontend/src/router/` — 신규 라우트 + meta.permissions 등록
+
+## 구현 완료 (Implementation Notes)
+
+- **구현 일자**: 2026-06-17
+- **테스트 결과**: 28개 통과 (단위 테스트 18개 + 통합 테스트 10개), BUILD SUCCESSFUL
+- **구현된 요구사항**: REQ-PNT-001 ~ REQ-PNT-008 전체 구현 완료
+
+### 주요 아키텍처 결정 사항
+
+- **트랜잭션 격리**: `UserPointService`의 모든 `award*` 메서드에 `@Transactional(propagation = REQUIRES_NEW)` 적용 — 포인트 적립 실패가 원인 행위 트랜잭션을 롤백시키지 않도록 격리 (REQ-PNT-008 best-effort)
+- **정책 캐시 없음**: `PointPolicyService.getPolicy()`는 매 호출마다 `system_setting`을 직접 조회 — `POINTS:ENABLED` 토글 변경이 즉시 반영됨 (REQ-PNT-007)
+- **좋아요 중복 방지**: `bbs_post_like` 테이블에 `UNIQUE(user_id, post_id)` 제약 적용 — DB 레벨에서 중복 좋아요 차단, `DuplicateKeyException` 무음 처리로 중복 요청 시 포인트 미적립
+- **Best-Effort 패턴**: `PostServiceImpl`, `CommentServiceImpl`, `BbsPostLikeServiceImpl` 내 포인트 호출은 모두 try-catch로 감싸 포인트 실패가 핵심 비즈니스 로직에 영향을 미치지 않도록 보장
+- **RBAC 권한**: `POINTS:READ` (관리자 내역 조회), `POINTS:WRITE` (관리자 정책 변경), V63 마이그레이션에서 seed
+
+### 신규 DB 마이그레이션
+
+- `V63__points_system.sql`: `user_point_ledger`, `user_point_summary`, `bbs_post_like` 테이블 생성 + `POINTS:*` system_setting seed + `POINTS:READ`/`POINTS:WRITE` RBAC seed

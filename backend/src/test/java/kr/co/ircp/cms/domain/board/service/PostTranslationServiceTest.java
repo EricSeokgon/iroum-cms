@@ -56,7 +56,8 @@ class PostTranslationServiceTest {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper,
                 bbsViewLogMapper, bbsPostI18nMapper, htmlSanitizer, authorizationGuard,
-                org.mockito.Mockito.mock(kr.co.ircp.cms.common.service.RevisionRetentionService.class)
+                org.mockito.Mockito.mock(kr.co.ircp.cms.common.service.RevisionRetentionService.class),
+                org.mockito.Mockito.mock(kr.co.ircp.cms.domain.point.service.UserPointService.class)
         );
     }
 

@@ -110,7 +110,7 @@ class AuthorizationCoverageArchTest {
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
     // (하단 baseline 상세 변경 이력 참조 — 최신: 140)
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 150, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 157, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
@@ -145,15 +145,20 @@ class AuthorizationCoverageArchTest {
         // (SPEC-CMS-EMAIL-TEMPLATE-001 — 140→150, +10. EmailTemplateAdminController 8개
         //  (list/detail/create/update/delete/preview/test-send/send-logs) +
         //  SmtpConfigAdminController 2개(getActive/update). EMAIL_TEMPLATE:READ/WRITE/DELETE 권한 게이트.)
+        // (SPEC-CMS-POINTS-001 — 150→157, +7. PointPolicyController 2개(getPolicy=POINTS:READ,
+        //  updatePolicy=POINTS:WRITE) + PointLedgerController 3개(searchLedger=POINTS:READ,
+        //  mySummary/myHistory=isAuthenticated) + PostController like/unlike 2개(isAuthenticated).
+        //  me/* 엔드포인트는 userId를 SecurityContext에서 도출하여 타인 데이터 접근이 구조적으로 불가하며,
+        //  POINTS:READ/WRITE 인가 거동은 PointLedgerController_AuthIT에서 검증한다.)
         // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 컨트롤러)는
         // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 권한 어휘 검증으로 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(150)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(157)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(150L);
+                .isEqualTo(157L);
     }
 
     // =================================================================================
@@ -448,6 +453,9 @@ class AuthorizationCoverageArchTest {
                 "EMAIL_TEMPLATE:READ",
                 "EMAIL_TEMPLATE:WRITE",
                 "EMAIL_TEMPLATE:DELETE",
+                // ─── Points Authority (2종, SPEC-CMS-POINTS-001) ─────────────────
+                "POINTS:READ",
+                "POINTS:WRITE",
                 // ─── 인증만 요구 (1종) ─────────────────────────────────────────
                 "isAuthenticated"
         );

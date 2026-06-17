@@ -8,7 +8,7 @@
 - **원장 + 요약 분리**: append-only `user_point_ledger`(거래 단일 진실)와 비정규화 `user_point_summary`(총액 조회 성능)를 함께 운용한다.
 - **좋아요 추적**: per-user 적립 판단을 위해 `bbs_post_like`를 신규 도입하되, 기존 `bbs_post.like_count` 카운터는 그대로 유지한다.
 - **적립은 best-effort**: 원인 행위(게시글/댓글/좋아요)는 절대 포인트 적립 실패로 롤백되지 않는다.
-- **단일 마이그레이션**: 모든 스키마/시드를 `V59__points_system.sql` 하나로 묶는다.
+- **단일 마이그레이션**: 모든 스키마/시드를 `V63__points_system.sql` 하나로 묶는다.
 
 ## 작업 분해 (Task Breakdown)
 
@@ -18,8 +18,8 @@
 - 정책 키 확정: `POINTS:ENABLED`(BOOL), `POINTS:POST_CREATED`(INT), `POINTS:COMMENT_CREATED`(INT), `POINTS:LIKE_GIVEN`(INT)
 - 관련 요구사항: REQ-PNT-001, REQ-PNT-005
 
-### T1: DB 마이그레이션 V59
-- 파일: `backend/src/main/resources/db/migration/V59__points_system.sql`
+### T1: DB 마이그레이션 V63
+- 파일: `backend/src/main/resources/db/migration/V63__points_system.sql`
 - `user_point_ledger` 생성: id(PK), user_id(FK), event_type, points, ref_type, ref_id, created_at TIMESTAMPTZ DEFAULT NOW()
   - 인덱스: (user_id, created_at), (event_type)
 - `user_point_summary` 생성: user_id(PK/FK), total_points DEFAULT 0, updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -106,8 +106,8 @@
 - **트랜잭션 경계 오용**: 적립 예외가 원인 행위를 롤백시키면 REQ-PNT-008 위반. → T5에서 적립 로직 전체를 try-catch로 감싸고, 필요 시 별도 전파-억제 설계(예: 예외 swallow + 로그) 적용. 통합 테스트로 검증(acceptance.md 시나리오).
 - **좋아요 동시성**: 동일 사용자가 동시에 like 요청 시 중복 적립 가능성. → `bbs_post_like`의 UNIQUE(user_id, post_id) 제약으로 DB 레벨 차단, insert 충돌 시 적립 스킵.
 - **like_count 정합성**: 기존 `bbs_post.like_count`와 `bbs_post_like` row 수 불일치 가능. → like/unlike에서 카운터와 테이블을 같은 트랜잭션으로 갱신.
-- **정책 미시드 환경**: 기존 운영 DB에 POINTS:* 키가 없을 때. → REQ-PNT-001 기본값 처리 + V59 seed로 보장.
-- **권한 시드 누락**: POINTS:READ/WRITE 권한이 ADMIN 역할에 매핑되지 않으면 관리자 접근 불가. → V59에서 권한 seed 및 역할 매핑 확인.
+- **정책 미시드 환경**: 기존 운영 DB에 POINTS:* 키가 없을 때. → REQ-PNT-001 기본값 처리 + V63 seed로 보장.
+- **권한 시드 누락**: POINTS:READ/WRITE 권한이 ADMIN 역할에 매핑되지 않으면 관리자 접근 불가. → V63에서 권한 seed 및 역할 매핑 확인.
 
 ## 기존 인프라 재사용 정리
 

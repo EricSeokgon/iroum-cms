@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.point.mapper.UserPointSummaryMapper">
+
+    <resultMap id="SummaryRM" type="kr.co.ircp.cms.domain.point.entity.UserPointSummary">
+        <id     property="userId"      column="user_id"/>
+        <result property="totalPoints" column="total_points"/>
+        <result property="updatedAt"   column="updated_at"/>
+    </resultMap>
+
+    <!-- 누적 총액 가산 upsert: PK 충돌 시 total_points += delta -->
+    <insert id="upsertSummary">
+        INSERT INTO user_point_summary (user_id, total_points, updated_at)
+        VALUES (#{userId}, #{delta}, NOW())
+        ON CONFLICT (user_id) DO UPDATE SET
+            total_points = user_point_summary.total_points + #{delta},
+            updated_at   = NOW()
+    </insert>
+
+    <select id="findByUserId" resultMap="SummaryRM">
+        SELECT user_id, total_points, updated_at
+        FROM user_point_summary
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>
