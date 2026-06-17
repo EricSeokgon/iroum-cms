@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-USER-APPROVAL-001
-version: 0.1.0
-status: Implemented
+version: 0.2.0
+status: Completed
 created: 2026-06-16
-updated: 2026-06-16
+updated: 2026-06-17
 author: ircp
 priority: High
 issue_number: null
@@ -13,6 +13,7 @@ issue_number: null
 
 ## HISTORY
 
+- 2026-06-17 (v0.2.0): 구현 완료 (Completed). V58 마이그레이션(`chk_users_status` 제약 재정의 + additive 3컬럼 + system_setting/권한/이메일 템플릿 시드), `UserStatus.PENDING_APPROVAL` enum, `RegisterResult` sealed 타입, `UserApprovalService`/`UserApprovalController` 6 엔드포인트, `UserApprovalMapper.xml`, 프론트 `userApprovals.ts` + `ApprovalQueueView.vue`, `MigrationOrderIT` 카운트 갱신 완료. `application-*.yml` `placeholder-replacement: false` 패치 포함.
 - 2026-06-16 (v0.1.0): 최초 작성 (Draft). 게이트형 가입 승인 워크플로 정의. 기존 인프라 재사용 원칙 — `system_setting`(V14) 설정 게이트, `users.status` enum 확장, 이메일 템플릿 시스템(SPEC-CMS-EMAIL-TEMPLATE-001), RBAC `permissions`/`role_permissions`(SPEC-CMS-RBAC-001), `@PreAuthorize("hasAnyRole('SUPER_ADMIN','DEPT_ADMIN')")` 인가 패턴 계승.
 
 ---
