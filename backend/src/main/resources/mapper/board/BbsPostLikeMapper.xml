@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.board.mapper.BbsPostLikeMapper">
+
+    <!-- UNIQUE(user_id, post_id) 위반 시 PSQLException → Spring DuplicateKeyException 변환 -->
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.board.entity.BbsPostLike"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_post_like (post_id, user_id)
+        VALUES (#{postId}, #{userId})
+    </insert>
+
+    <select id="countByPostIdAndUserId" resultType="int">
+        SELECT COUNT(*) FROM bbs_post_like
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <delete id="deleteByPostIdAndUserId">
+        DELETE FROM bbs_post_like
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </delete>
+
+</mapper>

@@ -27,7 +27,7 @@
 
 ## 수정/신규 파일
 
-신규(BE): V59__points_system.sql; point/entity(UserPointLedger, UserPointSummary); board/entity/BbsPostLike; point/mapper(UserPointLedgerMapper, UserPointSummaryMapper)+XML; board/mapper/BbsPostLikeMapper+XML; point/service(PointPolicyService, UserPointService+Impl); board/service/BbsPostLikeService+Impl; point/controller(PointPolicyController, PointLedgerController); point/dto/*
+신규(BE): V60__points_system.sql; point/entity(UserPointLedger, UserPointSummary); board/entity/BbsPostLike; point/mapper(UserPointLedgerMapper, UserPointSummaryMapper)+XML; board/mapper/BbsPostLikeMapper+XML; point/service(PointPolicyService, UserPointService+Impl); board/service/BbsPostLikeService+Impl; point/controller(PointPolicyController, PointLedgerController); point/dto/*
 
 수정(BE): board/service/PostServiceImpl(createPost→awardPoints), board/service/CommentServiceImpl(createComment→awardPoints), board/controller(좋아요 like/unlike 엔드포인트)
 

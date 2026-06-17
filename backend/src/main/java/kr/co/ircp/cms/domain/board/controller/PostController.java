@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.dto.PostHistoryItem;
 import kr.co.ircp.cms.domain.board.dto.PostScheduleRequest;
 import kr.co.ircp.cms.domain.board.dto.PostSummary;
 import kr.co.ircp.cms.domain.board.dto.PostUpdateRequest;
+import kr.co.ircp.cms.domain.board.service.BbsPostLikeService;
 import kr.co.ircp.cms.domain.board.service.PostHistoryService;
 import kr.co.ircp.cms.domain.board.service.PostService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,8 @@ public class PostController {
 
     private final PostService postService;
     private final PostHistoryService postHistoryService;
+    // SPEC-CMS-POINTS-001 REQ-PNT-004 — 게시글 좋아요(최초 1회 적립)
+    private final BbsPostLikeService bbsPostLikeService;
 
     /** GET /api/v1/board/posts?bbsId=X&page=0&size=20&lang=ko — 게시글 목록 페이징 조회 */
     @GetMapping
@@ -140,6 +143,28 @@ public class PostController {
     ) {
         Long requesterId = principal != null ? principal.userId() : null;
         postService.deletePost(postId, requesterId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ─── SPEC-CMS-POINTS-001: 게시글 좋아요 ─────────────────────────────────────
+
+    /** POST /api/v1/board/posts/{postId}/like — 좋아요 등록 (최초 1회 포인트 적립). */
+    @PostMapping("/{postId}/like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<java.util.Map<String, Object>> like(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        boolean newLike = bbsPostLikeService.like(postId, principal.userId());
+        return ResponseEntity.ok(java.util.Map.of("liked", true, "newLike", newLike));
+    }
+
+    /** DELETE /api/v1/board/posts/{postId}/like — 좋아요 취소 (포인트 회수 없음). */
+    @DeleteMapping("/{postId}/like")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> unlike(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal JwtPrincipal principal) {
+        bbsPostLikeService.unlike(postId, principal.userId());
         return ResponseEntity.noContent().build();
     }
 
