@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-SURVEY-001
-version: 0.1.0
-status: Draft
+version: 0.1.1
+status: Planned
 created: 2026-06-18
 updated: 2026-06-18
 author: ircp
@@ -14,6 +14,7 @@ issue_number: 39
 ## HISTORY
 
 - 2026-06-18 (v0.1.0): 최초 작성(Draft). 브라운필드 확장 SPEC. 기존 코드 실측 결과를 반영하여 범위를 재조정함(아래 "현황 정정" 참조).
+- 2026-06-18 (v0.1.1): plan-auditor 감사 반영 — MAJOR 수정(시민 응답 제출 인증 정책 명시), MINOR 6건(REQ-011 주어, SurveyRespondView 현황 정정 추가, REQ-016 UTF-8 BOM, 차트 라이브러리 기준, V번호 충돌 주의, 멱등 키 명시).
 
 ---
 
@@ -38,7 +39,7 @@ issue_number: 39
 | SurveyListView | 신규 작성 필요 | **이미 존재**(661줄, 상태 필터·생성 다이얼로그·el-table 완비). 라우트 `board/surveys` 등록됨 |
 | SurveyDetailView | 신규 작성 필요 | **이미 존재**(627줄, 인라인 질문 빌더·5개 유형·옵션 관리·결과 다이얼로그 완비). 라우트 `board/surveys/:id` |
 | SurveyFormView / SurveyQuestionBuilder | 신규 작성 필요 | **불필요**. 생성/수정/질문빌더는 List·Detail 뷰에 인라인으로 이미 구현됨 |
-| 공개 응답 뷰 | 별도 `frontend/public` SPA | 실제는 **admin SPA 내** `views/public/SurveyRespondView.vue`(230줄), 라우트 `/public/survey/:id`. `frontend/public/src`(별도 시민 SPA)에는 설문 뷰 **없음** |
+| 공개 응답 뷰 | 별도 `frontend/public` SPA | 실제는 **admin SPA 내** `views/public/SurveyRespondView.vue`(230줄 이미 존재), 라우트 `/public/survey/:id`. `frontend/public/src`(별도 시민 SPA)에는 설문 뷰 **없음**. 본 SPEC은 해당 뷰의 접근성만 보강 |
 | 알림 엔티티 패키지 | `UserNotificationInbox` 별도 패키지 | 실제 `kr.co.ircp.cms.domain.board.UserNotificationInbox`, `notification.admin.AdminNotification` |
 | 메뉴 테이블 | `admin_menu_catalog` | 실제 `admin_menu` / `admin_menu_permissions`(V49/V50) |
 | 권한 action 컬럼 | EXPORT | `permissions.action` CHECK 제약 = READ/WRITE/DELETE/EXECUTE/ADMIN. 코드는 `SURVEY:EXPORT` 가능하나 action 컬럼은 **`EXECUTE`** |
@@ -90,12 +91,16 @@ issue_number: 39
 
 ### 알림 연동 (SurveyNotificationService)
 
-- **REQ-SURVEY-011** (Event-Driven): **When** 설문 상태가 `DRAFT`/기타에서 `OPEN`으로 전환되면, the 시스템 **shall** 활성 사용자에게 type=`SURVEY_OPENED` 인앱 알림(`UserNotificationInbox`)을 발송한다.
+- **REQ-SURVEY-011** (Event-Driven): **When** 설문 상태가 `DRAFT`/기타에서 `OPEN`으로 전환되면, the 시스템 **shall** 활성 사용자의 `UserNotificationInbox`에 type=`SURVEY_OPENED` 인앱 알림 레코드를 삽입한다.
 - **REQ-SURVEY-012** (Event-Driven): **When** 설문이 종료(`CLOSED`)되면, the 시스템 **shall** 관리자에게 type=`SURVEY_CLOSED`, severity=`INFO` 운영 알림(`AdminNotification`)을 발송한다.
 - **REQ-SURVEY-013** (Event-Driven): **When** 응답 제출로 `responseCount`가 `maxResponses`에 도달하면, the 시스템 **shall** 관리자에게 type=`SURVEY_RESPONSE_LIMIT` 운영 알림을 발송한다.
-- **REQ-SURVEY-014** (Unwanted Behavior): **If** 동일 설문·동일 알림 유형이 이미 발송 기록(`survey_notification_log`)에 존재하면, **then** the 시스템 **shall** 재발송하지 않는다(멱등).
+- **REQ-SURVEY-014** (Unwanted Behavior): **If** 동일 설문·동일 알림 유형(`(survey_id, type)` 복합 키)이 이미 `survey_notification_log`에 존재하면, **then** the 시스템 **shall** 재발송하지 않는다(멱등).
+
+- **REQ-SURVEY-014a** (MAJOR — 인증 정책): **When** 시민이 `POST /api/v1/surveys/{id}/responses`로 응답을 제출할 때, the 시스템 **shall** 인증 없이(비로그인) 제출을 허용한다. 단, `isAnonymous=false`인 설문은 Spring Security 인증 컨텍스트에서 respondentId를 추출하며, 로그인하지 않은 경우 401을 반환한다.
 - **REQ-SURVEY-015** (Unwanted Behavior): **If** 알림 발송 중 예외가 발생하면, **then** the 시스템 **shall** 예외를 로깅·삼키고 설문 상태 전환/응답 제출 트랜잭션을 롤백하지 **않는다**(best-effort).
 - **REQ-SURVEY-016** (Unwanted Behavior): The 시스템 **shall** 설문 알림에 대해 이메일을 발송하지 **않는다**(인앱·관리자 알림 한정).
+
+- **REQ-SURVEY-016a** (Ubiquitous): The CSV 내보내기 응답(`GET /api/v1/surveys/{id}/results/export`) **shall** `Content-Type: text/csv; charset=UTF-8` 헤더와 UTF-8 BOM(`0xEF 0xBB 0xBF`)으로 시작하는 파일을 반환한다(Excel 한글 깨짐 방지).
 
 ### 권한·설정·메뉴·로그 (V54)
 
@@ -135,3 +140,7 @@ issue_number: 39
 - **V6** — `permissions` 카탈로그(권한 시드 패턴, action CHECK 제약).
 - **SPEC-CMS-POINTS-001** — best-effort 적립/알림 패턴 참조([[project-iroum-points-spec-pattern]]).
 - **알림 도메인 아키텍처** — [[project-iroum-notification-arch]](모수 분리 [HARD]).
+
+> **V번호 충돌 주의**: 신규 마이그레이션 파일명은 run 단계 착수 시점에 `db/migration/` 디렉토리를 재확인하여 최신 V번호+1을 사용한다. 현재 기준 V53이 최신이며 V54를 계획하나, 동시에 머지된 PR이 있을 경우 번호가 달라질 수 있다.
+
+> **차트 라이브러리 기준**: admin SPA에 `vue-echarts`(또는 ECharts)가 이미 도입되어 있으면 재사용한다. 미도입 시 Element Plus 기본 그래픽 > vue-echarts > Chart.js 순으로 평가하되, 번들 크기 증가가 50KB 미만일 때만 신규 도입을 허용한다(run 단계 확인).
