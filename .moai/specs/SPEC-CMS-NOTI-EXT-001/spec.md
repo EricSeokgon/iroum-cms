@@ -458,7 +458,7 @@ Phase 3 (프론트엔드)
 
 #### 백엔드
 
-- **V60 Flyway 마이그레이션** (`V60__notification_template_extension.sql`): `notification_template` 테이블에 10개 컬럼 추가 (subject, body_html, variables JSONB, language, is_active, email_template_id FK, created_by FK, updated_by FK, created_at, updated_at). 기존 3개 NOT NULL 제약 완화, `(code, language)` 복합 UNIQUE 인덱스 추가, RBAC 권한 시드 (`NOTIFICATION_TEMPLATE:READ/WRITE/DELETE`, `POLICY:DISPATCH:READ/WRITE`).
+- **V61 Flyway 마이그레이션** (`V61__notification_template_extension.sql`): `notification_template` 테이블에 10개 컬럼 추가 (subject, body_html, variables JSONB, language, is_active, email_template_id FK, created_by FK, updated_by FK, created_at, updated_at). 기존 3개 NOT NULL 제약 완화, `(code, language)` 복합 UNIQUE 인덱스 추가, RBAC 권한 시드 (`NOTIFICATION_TEMPLATE:READ/WRITE/DELETE`, `POLICY:DISPATCH:READ/WRITE`).
 
 - **`NotificationTemplateAdminController`**: REST CRUD API (`/api/v1/notification/admin/template`), `@PreAuthorize` 권한 가드 적용.
 
