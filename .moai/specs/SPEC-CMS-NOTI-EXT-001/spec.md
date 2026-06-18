@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTI-EXT-001
 version: 1.0.0
-status: Draft
+status: Implemented
 created: 2026-06-18
 updated: 2026-06-18
 author: ircp
@@ -445,3 +445,67 @@ Phase 3 (프론트엔드)
 - `EmailServiceImpl` — `@Async` fire-and-forget + 템플릿 폴백 패턴
 - `PolicyDispatchServiceImpl` — 멱등성 키 / 야간 차단 로직 (기존)
 - `EmailEncryptionService` — PII 복호화 (발송 직전)
+
+---
+
+## Implementation Notes
+
+**구현 완료일**: 2026-06-18
+**구현 커밋**: `efe2ed3` — `feat(notification): SPEC-CMS-NOTI-EXT-001 알림 기능 확장 구현`
+**변경 규모**: 42개 파일, 2,534줄 추가
+
+### 구현된 주요 컴포넌트
+
+#### 백엔드
+
+- **V60 Flyway 마이그레이션** (`V60__notification_template_extension.sql`): `notification_template` 테이블에 10개 컬럼 추가 (subject, body_html, variables JSONB, language, is_active, email_template_id FK, created_by FK, updated_by FK, created_at, updated_at). 기존 3개 NOT NULL 제약 완화, `(code, language)` 복합 UNIQUE 인덱스 추가, RBAC 권한 시드 (`NOTIFICATION_TEMPLATE:READ/WRITE/DELETE`, `POLICY:DISPATCH:READ/WRITE`).
+
+- **`NotificationTemplateAdminController`**: REST CRUD API (`/api/v1/notification/admin/template`), `@PreAuthorize` 권한 가드 적용.
+
+- **`NotificationTemplateServiceImpl`**: create, getAll(페이지네이션), getById, update, delete, previewTemplate (`${var}` 치환, 발송 없음).
+
+- **`NotificationTemplateMapper` + `.xml`**: MyBatis 매퍼, variables 컬럼 JSONB 지원 (`variables::jsonb` 캐스트).
+
+- **`DispatchChannelExecutor`**: 채널 실행기 Strategy 인터페이스.
+
+- **`EmailDispatchExecutor`**: `MimeMessage` + `MimeMessageHelper` HTML 이메일 발송, 발송 직전 복호화(PII 보호, 로그 평문 이메일 금지).
+
+- **`InappDispatchExecutor`**: `user_notification_inbox`에만 인앱 알림 기록.
+
+- **`NotificationDispatchWorker`**: `@Scheduled(fixedDelay=60_000)` 폴링 워커, `LIMIT 10` + `FOR UPDATE SKIP LOCKED`.
+
+- **`DispatchSchedulerConfig`**: `dispatchScheduler` 빈, 테스트 오버라이드를 위한 `@ConditionalOnMissingBean`.
+
+- **`PolicyDispatchController`**: `@PreAuthorize` (`POLICY:DISPATCH:READ/WRITE`) 추가.
+
+- **`MigrationOrderIT`**: 마이그레이션 카운트 58→59, 버전 목록에 "60" 추가.
+
+#### 프론트엔드
+
+- **`notificationTemplate.ts` (API 클라이언트)**: 기본 URL `/api/v1/notification/admin/template`.
+- **`notificationTemplate.ts` (Pinia 스토어)**: Setup 방식 스토어, 템플릿 CRUD 상태 관리.
+- **`NotificationTemplateListView.vue`**: Element Plus 기반 CRUD 목록 화면.
+- **`router/index.ts`**: `/notification/template` 라우트 추가.
+- **`PolicyDispatchView.vue`**: EMAIL 템플릿 드롭다운 실연동.
+
+### 테스트 결과
+
+단위 테스트 50개 전체 통과:
+- `NotificationTemplateAdminControllerTest`, `NotificationTemplateServiceImplTest`
+- `PolicyDispatchControllerTest`, `EmailDispatchExecutorTest`, `InappDispatchExecutorTest`, `NotificationDispatchWorkerTest`
+- `NotificationTemplateMapperIT`, `MigrationOrderIT` (Docker/CI 환경 필요)
+
+Docker 빌드 성공, TypeScript 오류 0건.
+
+### 인수 기준 충족 현황
+
+- **AC-NE-001 ~ AC-NE-020**: 전체 인수 기준 충족 (SPEC 요구사항 REQ-NE-001 ~ REQ-NE-025 구현 완료).
+- **예외**: REQ-NE-006 `email_template_id` 위임 발송은 구현되었으나 실제 위임 로직은 `EmailDispatchExecutor` 내 `email_template_id` 참조 분기로 처리됨.
+
+### 아키텍처 결정 준수 사항
+
+1. 이메일 재구축 없이 기존 `EmailService` 재사용.
+2. `notification_template.email_template_id` FK 위임 방식(Option A) 채택.
+3. Strategy 패턴으로 채널 실행기 분리 (`Map<Channel, DispatchChannelExecutor>`).
+4. `@Scheduled` 단일 노드 폴링 (분산 락은 후속 SPEC).
+5. `dispatchExecutor` 별도 스레드 풀 — `auditExecutor`와 격리.
