@@ -157,8 +157,23 @@
       <!-- 액션 버튼 -->
       <div class="flex justify-end gap-2">
         <template v-if="isAdmin">
-          <el-button type="info" plain @click="openResultDialog">
+          <el-button
+            v-if="showResultLinks"
+            type="info"
+            plain
+            data-testid="goto-results-btn"
+            @click="goToResults"
+          >
             {{ t('survey.results') }}
+          </el-button>
+          <el-button
+            v-if="showResultLinks"
+            type="info"
+            plain
+            data-testid="goto-responses-btn"
+            @click="goToResponses"
+          >
+            {{ t('survey.responses') }}
           </el-button>
           <el-button type="primary" plain @click="openEditDialog">
             {{ t('common.edit') }}
@@ -315,62 +330,6 @@
         </el-button>
       </template>
     </el-dialog>
-
-    <!-- 결과 보기 다이얼로그 -->
-    <el-dialog
-      v-model="showResultDialog"
-      :title="t('survey.results')"
-      width="720px"
-    >
-      <div v-loading="resultLoading">
-        <div v-if="result" class="space-y-4">
-          <div class="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
-            <span class="font-semibold">{{ t('survey.field.totalResponses') }}:</span>
-            <span class="ml-2">{{ result.totalResponses.toLocaleString() }}</span>
-          </div>
-
-          <div
-            v-for="q in result.questions"
-            :key="q.questionId"
-            class="rounded border border-gray-200 bg-white p-4"
-          >
-            <div class="mb-2 flex items-start justify-between">
-              <div class="text-sm font-medium text-gray-800">
-                {{ q.questionText }}
-              </div>
-              <el-tag size="small">
-                {{ t(`survey.questionType.${q.questionType}`) }}
-              </el-tag>
-            </div>
-            <div class="mb-2 text-xs text-gray-500">
-              {{ t('survey.field.totalAnswers') }}: {{ q.totalAnswers.toLocaleString() }}
-            </div>
-
-            <div v-if="q.distribution.length === 0" class="text-xs text-gray-400">
-              {{ t('common.empty') }}
-            </div>
-
-            <div
-              v-for="(item, i) in q.distribution"
-              :key="i"
-              class="mb-2"
-            >
-              <div class="mb-1 flex items-center justify-between text-xs">
-                <span class="text-gray-700">{{ item.label }}</span>
-                <span class="text-gray-500">
-                  {{ item.count.toLocaleString() }} ({{ item.percentage.toFixed(1) }}%)
-                </span>
-              </div>
-              <el-progress :percentage="item.percentage" :show-text="false" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <el-button @click="showResultDialog = false">{{ t('common.close') }}</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -385,12 +344,10 @@ import {
   getSurvey,
   updateSurvey,
   deleteSurvey,
-  getSurveyResults,
   type SurveyDetail,
   type SurveyStatus,
   type QuestionType,
   type SurveyQuestionRequest,
-  type SurveyResultDto,
 } from '@/api/survey'
 import { useSafeHtml } from '@/composables/useSafeHtml'
 
@@ -411,10 +368,6 @@ const submitting = ref(false)
 
 const showDialog = ref(false)
 const formRef = ref<FormInstance>()
-
-const showResultDialog = ref(false)
-const resultLoading = ref(false)
-const result = ref<SurveyResultDto | null>(null)
 
 const questionTypeOptions: QuestionType[] = ['SINGLE', 'MULTI', 'TEXT', 'RATING', 'DATE']
 const optionLists = ref<{ value: string; label: string }[][]>([])
@@ -446,6 +399,19 @@ const isAdmin = computed(() => {
   const roles = auth.user?.roleCodes ?? []
   return roles.includes('SUPER_ADMIN') || roles.includes('ADMIN') || roles.includes('DEPT_ADMIN')
 })
+
+// 결과/응답 링크는 진행 중(OPEN) 또는 종료(CLOSED) 설문에만 노출 (SPEC-CMS-SURVEY-001 C6)
+const showResultLinks = computed(
+  () => survey.value?.status === 'OPEN' || survey.value?.status === 'CLOSED',
+)
+
+function goToResults(): void {
+  void router.push(`/board/surveys/${props.id}/results`)
+}
+
+function goToResponses(): void {
+  void router.push(`/board/surveys/${props.id}/responses`)
+}
 
 function statusTagType(status: SurveyStatus): 'info' | 'success' | 'warning' | 'danger' {
   switch (status) {
@@ -581,20 +547,6 @@ async function handleDelete(): Promise<void> {
     router.push({ name: 'board-surveys' })
   } catch (e) {
     if (e !== 'cancel') ElMessage.error(t('common.deleteError'))
-  }
-}
-
-async function openResultDialog(): Promise<void> {
-  if (!survey.value) return
-  showResultDialog.value = true
-  resultLoading.value = true
-  try {
-    const res = await getSurveyResults(survey.value.id)
-    result.value = res.data
-  } catch {
-    ElMessage.error(t('common.loadError'))
-  } finally {
-    resultLoading.value = false
   }
 }
 

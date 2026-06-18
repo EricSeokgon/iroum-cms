@@ -278,6 +278,21 @@ const router = createRouter({
           props: true,
           meta: { requiresAuth: true, title: '설문조사 상세' },
         },
+        // ── 설문 결과/응답 라우트 (SPEC-CMS-SURVEY-001) ─────────────────────
+        {
+          path: 'board/surveys/:id/results',
+          name: 'board-survey-results',
+          component: () => import('@/views/board/SurveyResultsView.vue'),
+          props: true,
+          meta: { requiresAuth: true, title: '설문 결과' },
+        },
+        {
+          path: 'board/surveys/:id/responses',
+          name: 'board-survey-responses',
+          component: () => import('@/views/board/SurveyResponsesView.vue'),
+          props: true,
+          meta: { requiresAuth: true, title: '설문 응답 목록' },
+        },
         // ── 콘텐츠 관리 라우트 (SPEC-CMS-004) ──────────────────────────────
         {
           path: 'content/site',

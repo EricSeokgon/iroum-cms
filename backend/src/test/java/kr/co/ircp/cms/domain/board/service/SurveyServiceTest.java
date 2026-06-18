@@ -1,10 +1,12 @@
 package kr.co.ircp.cms.domain.board.service;
 
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
+import kr.co.ircp.cms.domain.board.dto.SurveyAnswerDetail;
 import kr.co.ircp.cms.domain.board.dto.SurveyAnswerRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
 import kr.co.ircp.cms.domain.board.dto.SurveyQuestionRequest;
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.dto.SurveyResultDto;
 import kr.co.ircp.cms.domain.board.dto.SurveySubmitRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveySummary;
@@ -35,8 +37,10 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -64,6 +68,9 @@ class SurveyServiceTest {
     @Mock
     private SurveyAnswerMapper surveyAnswerMapper;
 
+    @Mock
+    private SurveyNotificationService surveyNotificationService;
+
     private SurveyService service;
     private final kr.co.ircp.cms.domain.board.util.HtmlSanitizer htmlSanitizer =
             new kr.co.ircp.cms.domain.board.util.HtmlSanitizer();
@@ -75,7 +82,8 @@ class SurveyServiceTest {
                 surveyQuestionMapper,
                 surveyResponseMapper,
                 surveyAnswerMapper,
-                htmlSanitizer
+                htmlSanitizer,
+                surveyNotificationService
         );
     }
 
@@ -871,5 +879,183 @@ class SurveyServiceTest {
                 .isInstanceOf(SurveyNotFoundException.class);
 
         verify(surveyAnswerMapper, never()).aggregateByQuestion(any());
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-SURVEY-001 — 알림 연동 (REQ-SURVEY-011/012/013/015)
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("updateSurvey — DRAFT→OPEN 전환 시 발행 알림 트리거")
+    void updateSurvey_draftToOpen_triggersPublishedNotification() {
+        Instant now = Instant.now();
+        Survey before = stubSurvey(1L, "DRAFT", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        Survey after = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(before), Optional.of(after), Optional.of(after));
+        when(surveyQuestionMapper.findBySurveyId(1L)).thenReturn(List.of());
+        SurveyUpdateRequest req = new SurveyUpdateRequest(null, null, null, null, null, null, null, "OPEN", null);
+
+        service.updateSurvey(1L, req);
+
+        verify(surveyNotificationService).sendSurveyPublishedNotification(1L);
+        verify(surveyNotificationService, never()).sendSurveyClosedAdminNotification(any());
+    }
+
+    @Test
+    @DisplayName("updateSurvey — OPEN→CLOSED 전환 시 관리자 종료 알림 트리거")
+    void updateSurvey_toClosed_triggersClosedAdminNotification() {
+        Instant now = Instant.now();
+        Survey before = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        Survey after = stubSurvey(1L, "CLOSED", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(before), Optional.of(after), Optional.of(after));
+        when(surveyQuestionMapper.findBySurveyId(1L)).thenReturn(List.of());
+        SurveyUpdateRequest req = new SurveyUpdateRequest(null, null, null, null, null, null, null, "CLOSED", null);
+
+        service.updateSurvey(1L, req);
+
+        verify(surveyNotificationService).sendSurveyClosedAdminNotification(1L);
+        verify(surveyNotificationService, never()).sendSurveyPublishedNotification(any());
+    }
+
+    @Test
+    @DisplayName("updateSurvey — 상태 무변경(OPEN→OPEN) 시 알림 미트리거")
+    void updateSurvey_noStatusChange_noNotification() {
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(stubSurvey(1L)));
+        when(surveyQuestionMapper.findBySurveyId(1L)).thenReturn(List.of());
+        SurveyUpdateRequest req = new SurveyUpdateRequest(null, null, null, null, null, null, null, null, null);
+
+        service.updateSurvey(1L, req);
+
+        verify(surveyNotificationService, never()).sendSurveyPublishedNotification(any());
+        verify(surveyNotificationService, never()).sendSurveyClosedAdminNotification(any());
+    }
+
+    @Test
+    @DisplayName("updateSurvey — 알림 발송 예외는 설문 트랜잭션을 깨지 않음 (best-effort)")
+    void updateSurvey_notificationFailure_doesNotPropagate() {
+        Instant now = Instant.now();
+        Survey before = stubSurvey(1L, "DRAFT", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        Survey after = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, null, 0);
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(before), Optional.of(after), Optional.of(after));
+        when(surveyQuestionMapper.findBySurveyId(1L)).thenReturn(List.of());
+        doThrow(new RuntimeException("notification down"))
+                .when(surveyNotificationService).sendSurveyPublishedNotification(1L);
+        SurveyUpdateRequest req = new SurveyUpdateRequest(null, null, null, null, null, null, null, "OPEN", null);
+
+        assertThatCode(() -> service.updateSurvey(1L, req)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("submitResponse — 응답 한도 도달 시 관리자 한도 알림 트리거")
+    void submitResponse_limitReached_triggersLimitAdminNotification() {
+        Instant now = Instant.now();
+        // 응답 제출 검증 시점: responseCount=4, maxResponses=5 (한도 미달이라 제출 허용)
+        Survey beforeIncrement = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, 5, 4);
+        // 카운트 증가 후 재조회: responseCount=5 → 한도 도달
+        Survey afterIncrement = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, 5, 5);
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(beforeIncrement), Optional.of(afterIncrement));
+        when(surveyResponseMapper.findByUserAndSurvey(1L, 42L)).thenReturn(Optional.empty());
+        doAnswer(invocation -> {
+            SurveyResponse r = invocation.getArgument(0);
+            r.setId(8001L);
+            return null;
+        }).when(surveyResponseMapper).insert(any(SurveyResponse.class));
+        SurveySubmitRequest req = new SurveySubmitRequest(
+                List.of(new SurveyAnswerRequest(11L, "응답", null, null, null)));
+
+        service.submitResponse(1L, req, 42L, "IP");
+
+        verify(surveyNotificationService).sendResponseLimitAdminNotification(1L);
+    }
+
+    @Test
+    @DisplayName("submitResponse — 한도 미도달 시 알림 미트리거")
+    void submitResponse_belowLimit_noNotification() {
+        Instant now = Instant.now();
+        Survey survey = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, 10, 2);
+        Survey afterIncrement = stubSurvey(1L, "OPEN", now.minusSeconds(3600), now.plusSeconds(3600), false, 10, 3);
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(survey), Optional.of(afterIncrement));
+        when(surveyResponseMapper.findByUserAndSurvey(1L, 42L)).thenReturn(Optional.empty());
+        doAnswer(invocation -> {
+            SurveyResponse r = invocation.getArgument(0);
+            r.setId(8002L);
+            return null;
+        }).when(surveyResponseMapper).insert(any(SurveyResponse.class));
+        SurveySubmitRequest req = new SurveySubmitRequest(
+                List.of(new SurveyAnswerRequest(11L, "응답", null, null, null)));
+
+        service.submitResponse(1L, req, 42L, "IP");
+
+        verify(surveyNotificationService, never()).sendResponseLimitAdminNotification(any());
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-SURVEY-001 — 응답 목록 + CSV 내보내기 (REQ-SURVEY-006/008)
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("getResponses — 페이징된 응답 목록 PageResponse 반환")
+    void getResponses_returnsPagedResponses() {
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(stubSurvey(1L)));
+        SurveyResponseItem item = new SurveyResponseItem(
+                7001L, 42L, "홍길동", Instant.now(),
+                List.of(new SurveyAnswerDetail(11L, "질문1", "TEXT", "응답")));
+        when(surveyResponseMapper.listBySurveyId(1L, 10, 10)).thenReturn(List.of(item));
+        when(surveyResponseMapper.countBySurveyId(1L)).thenReturn(25L);
+
+        PageResponse<SurveyResponseItem> result = service.getResponses(1L, 1, 10);
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).responseId()).isEqualTo(7001L);
+        assertThat(result.totalElements()).isEqualTo(25L);
+        verify(surveyResponseMapper).listBySurveyId(1L, 10, 10);
+    }
+
+    @Test
+    @DisplayName("getResponses — 익명 설문 응답은 respondentId/Name null 유지")
+    void getResponses_anonymousSurvey_nullRespondent() {
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(stubSurvey(1L)));
+        SurveyResponseItem anon = new SurveyResponseItem(
+                7002L, null, null, Instant.now(), List.of());
+        when(surveyResponseMapper.listBySurveyId(1L, 0, 20)).thenReturn(List.of(anon));
+        when(surveyResponseMapper.countBySurveyId(1L)).thenReturn(1L);
+
+        PageResponse<SurveyResponseItem> result = service.getResponses(1L, 0, 20);
+
+        assertThat(result.content().get(0).respondentId()).isNull();
+        assertThat(result.content().get(0).respondentName()).isNull();
+    }
+
+    @Test
+    @DisplayName("getResponses — 미존재 설문이면 SurveyNotFoundException")
+    void getResponses_nonExistent_throws() {
+        when(surveyMapper.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getResponses(999L, 0, 20))
+                .isInstanceOf(SurveyNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("exportResults — UTF-8 BOM CSV byte[] 반환 (첫 3바이트 = EF BB BF)")
+    void exportResults_returnsCsvWithBom() {
+        when(surveyMapper.findById(1L)).thenReturn(Optional.of(stubSurvey(1L)));
+        when(surveyAnswerMapper.aggregateByQuestion(1L)).thenReturn(List.of(
+                aggregateRow(11L, "TEXT", "자유질문", 3L, 3L, null, null, null)));
+
+        byte[] csv = service.exportResults(1L);
+
+        assertThat(csv).isNotEmpty();
+        assertThat(csv[0] & 0xFF).isEqualTo(0xEF);
+        assertThat(csv[1] & 0xFF).isEqualTo(0xBB);
+        assertThat(csv[2] & 0xFF).isEqualTo(0xBF);
+    }
+
+    @Test
+    @DisplayName("exportResults — 미존재 설문이면 SurveyNotFoundException")
+    void exportResults_nonExistent_throws() {
+        when(surveyMapper.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.exportResults(999L))
+                .isInstanceOf(SurveyNotFoundException.class);
     }
 }
