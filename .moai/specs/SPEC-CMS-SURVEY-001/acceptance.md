@@ -74,12 +74,12 @@ updated: 2026-06-18
 ### AC-011 (REQ-SURVEY-013) 한도 도달 → 관리자 알림
 - **Given** `maxResponses=K`, `responseCount=K-1`인 설문에
 - **When** 마지막 응답이 제출되어 `responseCount`가 K에 도달하면
-- **Then** `AdminNotification`에 type=`SURVEY_RESPONSE_LIMIT` 행이 INSERT된다.
+- **Then** 관리자 운영 알림 수신함에 응답 한도 초과 알림 행이 INSERT된다.
 
 ### AC-012 (REQ-SURVEY-014) 멱등
-- **Given** (surveyId, `SURVEY_OPENED`) 발송 기록이 이미 존재할 때
-- **When** 동일 설문이 다시 `OPEN`으로 전환(또는 재호출)되면
-- **Then** 중복 INAPP 발송이 발생하지 않고 `DuplicateKeyException`이 삼켜지며 로그 행이 추가되지 않는다.
+- **Given** (surveyId, 동일 알림 유형) 발송 기록이 이미 `survey_notification_log`에 존재할 때
+- **When** 동일 설문에 동일 알림이 다시 트리거되면
+- **Then** 중복 발송이 발생하지 않으며 `survey_notification_log`에 새 행이 추가되지 않는다.
 
 ### AC-013 (REQ-SURVEY-015) best-effort
 - **Given** `SurveyNotificationService`가 예외를 던지도록 강제했을 때
@@ -127,21 +127,32 @@ updated: 2026-06-18
 ### AC-020 (REQ-SURVEY-022) 공개 응답 폼 KWCAG 2.2 AA
 - **Given** 공개 응답 폼(`/public/survey/:id`)에서
 - **When** 키보드만으로 폼을 조작하면
-- **Then** 모든 입력에 연관 라벨이 있고, 포커스 순서가 논리적이며, 필수 미입력 오류가 `aria-describedby`로 연관되고 제출 성공 메시지가 `aria-live`로 안내된다.
+- **Then** 모든 입력에 연관 라벨이 있고, Tab 키 탐색 순서가 화면 위→아래(DOM 순서) 방향으로 이동하며, 필수 미입력 오류가 `aria-describedby`로 연관되고 제출 성공 메시지가 `aria-live`로 안내된다.
 
 ---
 
 ## UI 인수 (공통)
 
-- 폼 검증: 필수 질문 미응답 시 제출 차단 및 오류 표시.
-- 질문 유형 렌더: `SINGLE`(라디오), `MULTI`(체크박스), `TEXT`(입력), `RATING`(점수), `DATE`(날짜 선택)가 유형별로 올바르게 렌더.
-- 차트 렌더: 응답 0건일 때 "응답 없음" 빈 상태 표시(차트 깨짐 없음).
+### AC-021 (REQ-SURVEY-024) 폼 검증
+- **Given** 공개 응답 폼에서 필수 질문에 응답을 입력하지 않은 채
+- **When** 제출 버튼을 누르면
+- **Then** 제출이 차단되고 해당 질문 아래에 오류 메시지가 표시된다.
+
+### AC-022 (REQ-SURVEY-003~005, 023) 질문 유형 렌더
+- **Given** 설문에 `SINGLE`, `MULTI`, `TEXT`, `RATING`, `DATE` 유형 질문이 각각 포함될 때
+- **When** 결과 또는 응답 화면을 렌더링하면
+- **Then** 각 유형이 지정된 컴포넌트(라디오/체크박스/텍스트/점수/날짜)로 올바르게 표시된다.
+
+### AC-023 (REQ-SURVEY-025) 차트 빈 상태
+- **Given** 설문 응답 건수가 0건일 때
+- **When** 결과 화면을 열면
+- **Then** 차트 영역에 "응답 없음" 빈 상태 메시지가 표시되고 렌더링 오류가 발생하지 않는다.
 
 ---
 
 ## Definition of Done
 
-- [ ] REQ-SURVEY-001~022 전부 AC 충족(증거 첨부).
+- [ ] REQ-SURVEY-001~025 전부 AC 충족(증거 첨부).
 - [ ] 백엔드 단위·IT 테스트 통과(알림 멱등·best-effort 포함), 커버리지 기준 충족.
 - [ ] V54 멱등 재실행 검증 통과.
 - [ ] 신규 라우트 2개(results/responses) 권한 가드 동작.
