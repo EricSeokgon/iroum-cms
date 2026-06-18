@@ -44,6 +44,15 @@
   - 프론트엔드: `RevisionPanel.vue` (이력 목록), `DiffViewer.vue` (INSERT/DELETE/EQUAL 라인 뷰어), `ConflictModal.vue` (409 충돌 해결)
   - PostFormView / PostDetailView / PageEditorView `expectedVersion` 연동
 
+- **알림 기능 확장: 알림 템플릿 CRUD + 이메일/인앱 발송 워커** (`SPEC-CMS-NOTI-EXT-001`, 커밋 `efe2ed3`)
+  - `notification_template` 테이블 확장 (V61 Flyway 마이그레이션): subject, body_html, variables(JSONB), language, is_active 등 10개 컬럼 추가
+  - 알림 템플릿 관리 CRUD API (`/api/v1/notification/admin/template`, `NOTIFICATION_TEMPLATE:READ/WRITE/DELETE` 권한)
+  - 이메일 발송 실행기(`EmailDispatchExecutor`): HTML 이메일 지원, PII 보호(복호화는 발송 직전만, 로그 평문 이메일 금지)
+  - 인앱 발송 실행기(`InappDispatchExecutor`): `user_notification_inbox`에만 기록
+  - 발송 스케줄러 워커(`NotificationDispatchWorker`): `@Scheduled(fixedDelay=60_000)`, 배치 10건, `FOR UPDATE SKIP LOCKED`
+  - `PolicyDispatchController` 권한 보강 (`POLICY:DISPATCH:READ/WRITE`)
+  - 프론트엔드: 알림 템플릿 목록/관리 UI (`NotificationTemplateListView.vue`), 정책 발송 화면 이메일 템플릿 드롭다운 연동
+
 - **게시판/댓글 참여 포인트 지급 시스템** (SPEC-CMS-POINTS-001)
   - 사용자 게시글 작성, 댓글 작성, 게시글 좋아요(최초 1회) 활동에 포인트 자동 적립
   - **포인트 정책 관리 API**: `GET /api/v1/admin/points/policy` — 현재 정책(이벤트별 포인트 값, 시스템 활성화 여부) 조회. `PUT /api/v1/admin/points/policy` — 정책 변경 (`POINTS:WRITE` 권한, `@AuditLog` 기록)
