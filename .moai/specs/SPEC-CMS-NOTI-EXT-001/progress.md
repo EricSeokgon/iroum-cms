@@ -5,7 +5,7 @@
 - Phase 0.95 complete: Full Pipeline Mode (24 files, 3 domains)
 - Development mode: TDD (RED-GREEN-REFACTOR)
 - Harness level: standard
-- Phase 1 complete: 전략 분석 완료 (4개 HIGH 리스크 수정, V60 DDL 교정, 경로 검증)
+- Phase 1 complete: 전략 분석 완료 (4개 HIGH 리스크 수정, V61 DDL 교정, 경로 검증)
 - Phase 2B complete: 백엔드 TDD 구현 완료 (42 files, 50 unit tests pass, BUILD SUCCESSFUL)
 - Phase 2B complete: 프런트엔드 구현 완료 (5 files, TypeScript 0 errors)
 - Phase 2.5/2.8 complete: 커밋 완료 (efe2ed3, feat/SPEC-CMS-NOTI-EXT-001)
@@ -24,4 +24,4 @@
 - AC-NE-014: @Scheduled 워커 fixedDelay=60s, LIMIT 10 ✅
 - AC-NE-015: FOR UPDATE SKIP LOCKED (다중 인스턴스 안전) ✅
 - AC-NE-016: PolicyDispatchController @PreAuthorize DISPATCH:WRITE 수정 ✅
-- AC-NE-017: SUPER_ADMIN role_permissions 매핑 (V60) ✅
+- AC-NE-017: SUPER_ADMIN role_permissions 매핑 (V61) ✅
