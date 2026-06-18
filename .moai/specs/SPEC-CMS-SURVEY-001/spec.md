@@ -6,7 +6,7 @@ created: 2026-06-18
 updated: 2026-06-18
 author: ircp
 priority: medium
-issue_number: null
+issue_number: 39
 ---
 
 # SPEC-CMS-SURVEY-001 — 설문조사 결과 시각화 및 알림 연동
