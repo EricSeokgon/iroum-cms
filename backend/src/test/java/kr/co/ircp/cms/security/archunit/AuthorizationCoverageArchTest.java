@@ -108,6 +108,8 @@ class AuthorizationCoverageArchTest {
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
     //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
+    // (SPEC-CMS-SURVEY-001 — 127→129, SurveyController getResponses(SURVEY:READ) +
+    //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.)
     @Test
     @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 136, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
@@ -162,7 +164,7 @@ class AuthorizationCoverageArchTest {
      */
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 110→138 (Expand5IT 미커버 28 endpoint 추가) 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (138 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (140 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
@@ -171,9 +173,9 @@ class AuthorizationCoverageArchTest {
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
                         "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에서 " +
                         "시나리오 추가/제거가 발생했습니다. " +
-                        "본 baseline(138)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "본 baseline(140)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(138);
+                .hasSize(140);
     }
 
     /**
@@ -184,7 +186,7 @@ class AuthorizationCoverageArchTest {
      */
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — baseline 138 endpoint 정확 매칭 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-002-1: 138 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    @DisplayName("AC-AAD-002-1: 140 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
     void it_endpointSet_matchesBaseline88() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
@@ -200,7 +202,7 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 138 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                .as("baseline 140 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
                         "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에 " +
                         "해당 시나리오가 제거되었습니다. 회귀 검토 필요.", missingFromIt)
@@ -426,6 +428,9 @@ class AuthorizationCoverageArchTest {
                 "SYSTEM:LOG:READ",
                 "SYSTEM:ADMIN",
                 "AUDIT:READ",
+                // ─── Survey Authority (2종, SPEC-CMS-SURVEY-001) ──────────────
+                "SURVEY:READ",
+                "SURVEY:EXPORT",
                 // ─── 인증만 요구 (1종) ─────────────────────────────────────────
                 "isAuthenticated"
         );
@@ -622,7 +627,13 @@ class AuthorizationCoverageArchTest {
                 "POST /api/v1/dashboard/preference/reset",
                 "PATCH /api/v1/dashboard/preference/widgets/{id}/hidden",
                 "POST /api/v1/dashboard/preference/widgets/{id}/show-all",
-                "PATCH /api/v1/dashboard/layouts/{id}/positions"
+                "PATCH /api/v1/dashboard/layouts/{id}/positions",
+
+                // ─── SPEC-CMS-SURVEY-001 2 endpoint (설문 응답 목록 + 결과 CSV 내보내기) ───
+                // SurveyController.getResponses (SURVEY:READ) + exportResults (SURVEY:EXPORT).
+                // AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 에서 401/403 인가 시나리오 커버.
+                "GET /api/v1/surveys/{id}/responses",
+                "GET /api/v1/surveys/{id}/results/export"
         );
     }
 }

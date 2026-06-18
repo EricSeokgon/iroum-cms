@@ -23,12 +23,13 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V55 마이그레이션 총 54개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // @MX:NOTE: [AUTO] V1~V56 마이그레이션 총 55개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
     // V50 (admin_role_menu_permissions), V51 (clean_admin_menus_from_public_menu_table),
     // V52 (super_admin_permissions_sync), V53 (kpi_definition_activity_seed, SPEC-CMS-KPI-002),
     // V54 (bbs_post_optimistic_lock, SPEC-CMS-CONTENT-REVISION-001 M1),
-    // V55 (shared_content_block, SPEC-CMS-CONTENT-BLOCK-001) 추가로 54개.
-    private static final int EXPECTED_MIGRATION_COUNT = 54;
+    // V55 (shared_content_block, SPEC-CMS-CONTENT-BLOCK-001),
+    // V56 (survey_notification_and_rbac, SPEC-CMS-SURVEY-001) 추가로 55개.
+    private static final int EXPECTED_MIGRATION_COUNT = 55;
 
     @Test
     void allMigrationsApplied_inOrder() {
