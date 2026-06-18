@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.policy.dispatch.repository;
 
+import kr.co.ircp.cms.domain.policy.dispatch.dto.NotificationDispatchTargetWithUser;
 import kr.co.ircp.cms.domain.policy.dispatch.entity.NotificationDispatchTarget;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -22,4 +23,11 @@ public interface NotificationDispatchTargetMapper {
             @Param("status") String status,
             @Param("failedReason") String failedReason
     );
+
+    /**
+     * 발송 대기 대상 + 수신자 암호화 이메일 조인 조회 (SPEC-CMS-NOTI-EXT-001).
+     * 채널 실행기가 대상별 이메일을 복호화하기 위해 사용한다.
+     */
+    List<NotificationDispatchTargetWithUser> findPendingTargetsWithEmail(
+            @Param("scheduleId") Long scheduleId);
 }

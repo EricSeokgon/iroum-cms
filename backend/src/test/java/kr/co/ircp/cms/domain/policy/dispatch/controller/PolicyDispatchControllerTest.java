@@ -10,7 +10,6 @@ import kr.co.ircp.cms.domain.policy.dispatch.exception.DispatchScheduleNotFoundE
 import kr.co.ircp.cms.domain.policy.dispatch.service.PolicyDispatchService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -18,13 +17,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.jwtAuth;
+import static kr.co.ircp.cms.support.JwtPrincipalTestFactory.withAuthority;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -39,12 +39,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * PolicyDispatchController GREEN 단계 테스트.
  *
- * <p>SPEC-CMS-007 REQ-POLICY-003: 정책 알림 발송 예약 + 즉시 트리거 + 취소 HTTP 계층 검증.
+ * <p>SPEC-CMS-007 REQ-POLICY-003 + SPEC-CMS-NOTI-EXT-001: 정책 알림 발송 예약 +
+ * 즉시 트리거 + 취소 HTTP 계층 검증. SPEC-CMS-NOTI-EXT-001에서 @PreAuthorize
+ * (POLICY:DISPATCH:READ/WRITE)가 부착되어 권한 게이트를 슬라이스에서 검증한다.
  */
 @WebMvcTest(PolicyDispatchController.class)
 @ImportAutoConfiguration(exclude = {SecurityAutoConfiguration.class})
 @Import({GlobalExceptionHandler.class, kr.co.ircp.cms.support.WebMvcTestInfraConfig.class})
-@DisplayName("PolicyDispatchController GREEN 테스트 (REQ-POLICY-003)")
+@DisplayName("PolicyDispatchController GREEN 테스트 (REQ-POLICY-003 + NOTI-EXT 권한)")
 class PolicyDispatchControllerTest {
 
     @Autowired
@@ -68,7 +70,6 @@ class PolicyDispatchControllerTest {
     }
 
     @Test
-    @WithMockUser(authorities = {"POLICY:DISPATCH:READ"})
     @DisplayName("GET /policy/admin/dispatch/schedules — 발송 예약 목록 200 OK")
     void listSchedules_returnsOkWithPage() throws Exception {
         PageResponse<DispatchScheduleResponse> page = PageResponse.of(
@@ -79,6 +80,7 @@ class PolicyDispatchControllerTest {
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/v1/policy/admin/dispatch/schedules")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:READ")))
                         .param("status", "PENDING")
                         .param("policyId", "100")
                         .param("page", "0")
@@ -89,7 +91,14 @@ class PolicyDispatchControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
+    @DisplayName("GET /policy/admin/dispatch/schedules — READ 권한 없으면 403")
+    void listSchedules_withoutAuthority_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/policy/admin/dispatch/schedules")
+                        .with(jwtAuth(withAuthority("SOME_OTHER:READ"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("POST /policy/admin/dispatch/schedules — 발송 예약 생성 201 Created")
     void createSchedule_returnsCreated() throws Exception {
         DispatchScheduleCreateRequest req = new DispatchScheduleCreateRequest(
@@ -101,6 +110,7 @@ class PolicyDispatchControllerTest {
                 .thenReturn(sampleSchedule(77L, "PENDING"));
 
         mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
@@ -109,76 +119,76 @@ class PolicyDispatchControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
+    @DisplayName("POST /policy/admin/dispatch/schedules — WRITE 권한 없으면 403")
+    void createSchedule_withoutAuthority_returns403() throws Exception {
+        DispatchScheduleCreateRequest req = new DispatchScheduleCreateRequest(
+                100L, "POLICY_BROADCAST", "{\"industry\":\"IT\"}",
+                Instant.parse("2026-06-15T09:00:00Z"),
+                List.of("EMAIL"), 555L, 5, 1L
+        );
+
+        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:READ")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @DisplayName("POST /policy/admin/dispatch/schedules — 필수 필드(scheduledAt) 누락 시 400 Bad Request")
     void createSchedule_missingScheduledAt_returns400() throws Exception {
-        // scheduledAt(@NotNull) 누락
         String invalidJson = "{\"policyId\":100,\"dispatchType\":\"POLICY_BROADCAST\","
                 + "\"channels\":[\"EMAIL\"],\"templateId\":555,\"createdBy\":1}";
 
         mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE")))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidJson))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
     @DisplayName("POST /policy/admin/dispatch/schedules/{id}/trigger — 즉시 트리거 200 OK")
     void triggerNow_returnsOk() throws Exception {
         when(dispatchService.triggerNow(eq(77L)))
                 .thenReturn(sampleSchedule(77L, "PROCESSING"));
 
-        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/77/trigger"))
+        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/77/trigger")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(77))
                 .andExpect(jsonPath("$.status").value("PROCESSING"));
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
     @DisplayName("POST /policy/admin/dispatch/schedules/{id}/trigger — 미존재 시 404 Not Found")
     void triggerNow_notFound_returns404() throws Exception {
         when(dispatchService.triggerNow(eq(999L)))
                 .thenThrow(new DispatchScheduleNotFoundException(999L));
 
-        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/999/trigger"))
+        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/999/trigger")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE"))))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
     @DisplayName("POST /policy/admin/dispatch/schedules/{id}/cancel — 예약 취소 204 No Content")
     void cancelSchedule_returnsNoContent() throws Exception {
-        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/77/cancel"))
+        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/77/cancel")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE"))))
                 .andExpect(status().isNoContent());
 
         verify(dispatchService).cancelSchedule(77L);
     }
 
     @Test
-    @WithMockUser(roles = {"SUPER_ADMIN"})
     @DisplayName("POST /policy/admin/dispatch/schedules/{id}/cancel — PROCESSING 이후 취소 시 409 Conflict")
     void cancelSchedule_conflict_returns409() throws Exception {
         doThrow(new DispatchScheduleConflictException("이미 처리 중인 예약은 취소할 수 없습니다."))
                 .when(dispatchService).cancelSchedule(eq(99L));
 
-        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/99/cancel"))
+        mockMvc.perform(post("/api/v1/policy/admin/dispatch/schedules/99/cancel")
+                        .with(jwtAuth(withAuthority("POLICY:DISPATCH:WRITE"))))
                 .andExpect(status().isConflict());
     }
-
-    // ──────────────────────────────────────────────────────────────
-    // SPEC-CMS-SECURITY-CTRL-AUTHZ-COVERAGE-001 — 권한 거부 시나리오 (적용 불가)
-    //
-    // PolicyDispatchController는 클래스/메소드 레벨 @PreAuthorize 어노테이션이 없으며,
-    // 운영 환경에서는 SecurityConfig의 HTTP 레벨 정책(.anyRequest().authenticated())로
-    // /api/v1/policy/admin/dispatch/** 경로 인증만 강제된다. 권한(role/authority)별 차등 통제는 없다.
-    //
-    // 본 슬라이스 테스트는 SecurityAutoConfiguration을 제외하므로 HTTP 레벨 정책이 미적용되며,
-    // 메소드 레벨 정책 거부 트리거가 없어 ExceptionTranslationFilter가 EntryPoint를 호출하지 않는다.
-    // 따라서 슬라이스에서 401(미인증) / 403(권한 부족) 응답을 결정적으로 검증할 수 없다.
-    //
-    // 401(미인증) / 403(권한 부족) 회귀는 SPEC-CMS-SECURITY-AUTHZ-MATRIX-001
-    // (HTTP 매트릭스 IT 레이어, @SpringBootTest)에서 검증한다.
-    // ──────────────────────────────────────────────────────────────
 }

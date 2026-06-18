@@ -7,6 +7,7 @@ import kr.co.ircp.cms.domain.policy.dispatch.dto.DispatchScheduleResponse;
 import kr.co.ircp.cms.domain.policy.dispatch.service.PolicyDispatchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,6 +31,7 @@ public class PolicyDispatchController {
 
     /** GET /api/v1/policy/admin/dispatch/schedules */
     @GetMapping("/schedules")
+    @PreAuthorize("hasAuthority('POLICY:DISPATCH:READ')")
     public ResponseEntity<PageResponse<DispatchScheduleResponse>> listSchedules(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Long policyId,
@@ -40,6 +42,7 @@ public class PolicyDispatchController {
 
     /** POST /api/v1/policy/admin/dispatch/schedules */
     @PostMapping("/schedules")
+    @PreAuthorize("hasAuthority('POLICY:DISPATCH:WRITE')")
     public ResponseEntity<DispatchScheduleResponse> createSchedule(
             @Valid @RequestBody DispatchScheduleCreateRequest request) {
         DispatchScheduleResponse created = dispatchService.createSchedule(request);
@@ -49,12 +52,14 @@ public class PolicyDispatchController {
 
     /** POST /api/v1/policy/admin/dispatch/schedules/{id}/trigger */
     @PostMapping("/schedules/{id}/trigger")
+    @PreAuthorize("hasAuthority('POLICY:DISPATCH:WRITE')")
     public ResponseEntity<DispatchScheduleResponse> triggerNow(@PathVariable Long id) {
         return ResponseEntity.ok(dispatchService.triggerNow(id));
     }
 
     /** POST /api/v1/policy/admin/dispatch/schedules/{id}/cancel */
     @PostMapping("/schedules/{id}/cancel")
+    @PreAuthorize("hasAuthority('POLICY:DISPATCH:WRITE')")
     public ResponseEntity<Void> cancelSchedule(@PathVariable Long id) {
         dispatchService.cancelSchedule(id);
         return ResponseEntity.noContent().build();
