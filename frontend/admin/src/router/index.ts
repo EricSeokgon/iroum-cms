@@ -155,6 +155,14 @@ const router = createRouter({
           component: () => import('@/views/notifications/NotificationCenterView.vue'),
           meta: { title: '알림 센터' },
         },
+        // SPEC-CMS-NOTI-EXT-001 — 알림 템플릿 관리
+        {
+          path: 'notification/template',
+          name: 'NotificationTemplateList',
+          component: () =>
+            import('@/views/notification/NotificationTemplateListView.vue'),
+          meta: { title: '알림 템플릿', permissions: ['NOTIFICATION_TEMPLATE:READ'] },
+        },
         // ── 미디어 라우트 (SPEC-CMS-MEDIA-001) ───────────────────────────────
         {
           path: 'media',

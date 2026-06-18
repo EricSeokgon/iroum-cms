@@ -142,6 +142,23 @@
             <el-checkbox label="INAPP" value="INAPP" />
           </el-checkbox-group>
         </el-form-item>
+        <!-- SPEC-CMS-NOTI-EXT-001 — EMAIL 채널 선택 시 알림 템플릿 지정(선택) -->
+        <el-form-item v-if="emailSelected" label="알림 템플릿">
+          <el-select
+            v-model="form.notification_template_id"
+            clearable
+            filterable
+            placeholder="알림 템플릿 선택 (선택사항)"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="t in notificationTemplateStore.templates"
+              :key="t.id"
+              :label="t.name ? `${t.name} (${t.code})` : t.code"
+              :value="t.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="예약 시각" prop="scheduled_at">
           <el-date-picker
             v-model="form.scheduled_at"
@@ -169,10 +186,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { usePolicyStore } from '@/stores/policyStore'
+import { useNotificationTemplateStore } from '@/stores/notificationTemplate'
 import { policyApi } from '@/api/policy'
 import type {
   Channel,
@@ -184,6 +202,7 @@ import type {
 } from '@/api/policy'
 
 const store = usePolicyStore()
+const notificationTemplateStore = useNotificationTemplateStore()
 
 const statusFilter = ref<DispatchStatus | undefined>(undefined)
 const page = ref(1)
@@ -200,7 +219,11 @@ const form = reactive<DispatchScheduleRequest>({
   channels: [] as Channel[],
   scheduled_at: '',
   target_filter: undefined,
+  notification_template_id: undefined,
 })
+
+// EMAIL 채널이 선택된 경우에만 알림 템플릿 선택 노출
+const emailSelected = computed(() => form.channels.includes('EMAIL'))
 
 const policyOptions = ref<PolicyProgramSummary[]>([])
 
@@ -234,7 +257,10 @@ function openCreate(): void {
   form.channels = []
   form.scheduled_at = ''
   form.target_filter = undefined
+  form.notification_template_id = undefined
   dialogOpen.value = true
+  // 알림 템플릿 옵션(활성)을 미리 로드 (EMAIL 채널 선택 시 사용)
+  void notificationTemplateStore.fetchTemplates({ page: 0, size: 100, isActive: true }).catch(() => {})
 }
 
 async function handleCreate(): Promise<void> {

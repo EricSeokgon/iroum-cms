@@ -70,4 +70,20 @@
             completed_at = CASE WHEN #{status} IN ('COMPLETED', 'CANCELLED', 'FAILED') THEN now() ELSE completed_at END
         WHERE id = #{id}
     </update>
+
+    <!-- SPEC-CMS-NOTI-EXT-001: 발송 대기 배치 — 도래한 PENDING을 잠그고 가져온다 -->
+    <select id="findPendingBatch" resultMap="scheduleMap">
+        SELECT <include refid="cols"/> FROM notification_dispatch_schedule
+        WHERE status = 'PENDING' AND scheduled_at &lt;= now()
+        ORDER BY priority DESC, scheduled_at ASC
+        LIMIT #{limit}
+        FOR UPDATE SKIP LOCKED
+    </select>
+
+    <update id="markAsDispatching">
+        UPDATE notification_dispatch_schedule
+        SET status = 'PROCESSING',
+            started_at = COALESCE(started_at, now())
+        WHERE id = #{id}
+    </update>
 </mapper>

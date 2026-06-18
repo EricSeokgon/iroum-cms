@@ -102,6 +102,8 @@ import kr.co.ircp.cms.domain.email.template.admin.exception.DuplicateEmailTempla
 import kr.co.ircp.cms.domain.email.template.admin.exception.EmailTemplateNotFoundException;
 import kr.co.ircp.cms.domain.email.template.admin.exception.MissingTemplateVariableException;
 import kr.co.ircp.cms.domain.email.template.admin.exception.TemplateInactiveException;
+import kr.co.ircp.cms.domain.notification.template.admin.exception.DuplicateNotificationTemplateException;
+import kr.co.ircp.cms.domain.notification.template.admin.exception.NotificationTemplateNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
@@ -834,6 +836,26 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         detail.setTitle("Safety Checklist Item Not Found");
         detail.setProperty("code", "SAFETY_CHECKLIST_ITEM_NOT_FOUND");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-NOTI-EXT-001 알림 템플릿 예외 ───────────────────────────
+
+    /** 알림 템플릿 미존재 → 404. SPEC-CMS-NOTI-EXT-001 */
+    @ExceptionHandler(NotificationTemplateNotFoundException.class)
+    public ProblemDetail handleNotificationTemplateNotFound(NotificationTemplateNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Notification Template Not Found");
+        detail.setProperty("code", "NOTIFICATION_TEMPLATE_NOT_FOUND");
+        return detail;
+    }
+
+    /** 알림 템플릿 (code, language) 중복 → 409. SPEC-CMS-NOTI-EXT-001 */
+    @ExceptionHandler(DuplicateNotificationTemplateException.class)
+    public ProblemDetail handleDuplicateNotificationTemplate(DuplicateNotificationTemplateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Duplicate Notification Template");
+        detail.setProperty("code", "NOTIFICATION_TEMPLATE_DUPLICATE");
         return detail;
     }
 

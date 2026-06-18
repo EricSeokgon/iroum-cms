@@ -41,4 +41,28 @@
             evaluated_at = CASE WHEN evaluated_at IS NULL THEN now() ELSE evaluated_at END
         WHERE id = #{id}
     </update>
+
+    <!-- SPEC-CMS-NOTI-EXT-001: 발송 대기 대상 + 수신자 암호화 이메일 조인 -->
+    <resultMap id="targetWithUserMap"
+               type="kr.co.ircp.cms.domain.policy.dispatch.dto.NotificationDispatchTargetWithUser">
+        <id property="id" column="id"/>
+        <result property="scheduleId" column="schedule_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="channel" column="channel"/>
+        <result property="status" column="status"/>
+        <result property="emailEncrypted" column="email_encrypted" jdbcType="BINARY"/>
+        <result property="emailIv" column="email_iv" jdbcType="BINARY"/>
+        <result property="emailTag" column="email_tag" jdbcType="BINARY"/>
+        <result property="keyVersion" column="email_key_version"/>
+    </resultMap>
+
+    <select id="findPendingTargetsWithEmail" resultMap="targetWithUserMap">
+        SELECT t.id, t.schedule_id, t.user_id, t.channel, t.status,
+               u.email_encrypted, u.email_iv, u.email_tag, u.email_key_version
+        FROM notification_dispatch_target t
+        JOIN users u ON u.id = t.user_id
+        WHERE t.schedule_id = #{scheduleId}
+          AND t.status = 'PENDING'
+        ORDER BY t.id
+    </select>
 </mapper>

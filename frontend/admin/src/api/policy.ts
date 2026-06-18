@@ -174,6 +174,8 @@ export interface DispatchScheduleRequest {
   channels: Channel[]
   scheduled_at: string         // ISO-8601
   target_filter?: Record<string, unknown>
+  // SPEC-CMS-NOTI-EXT-001 — EMAIL 채널 발송 시 사용할 알림 템플릿(선택)
+  notification_template_id?: number
 }
 
 export interface DispatchSimulateRequest {
