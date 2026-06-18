@@ -119,4 +119,21 @@
              COALESCE(#{status}, 'UNREAD'))
     </insert>
 
+    <!-- SPEC-CMS-SURVEY-001 REQ-SURVEY-012/013: 모든 ADMIN/SUPER_ADMIN 사용자에게 운영 알림 일괄 INSERT -->
+    <insert id="insertForAdminRoles">
+        INSERT INTO admin_notification
+            (admin_user_id, type, severity, title, body, ref_type, ref_id, status)
+        SELECT DISTINCT ur.user_id,
+               #{type},
+               #{severity},
+               #{title},
+               #{body},
+               'SURVEY',
+               #{refId},
+               'UNREAD'
+        FROM user_roles ur
+        JOIN roles r ON r.code = ur.role_code
+        WHERE r.code IN ('ADMIN', 'SUPER_ADMIN')
+    </insert>
+
 </mapper>

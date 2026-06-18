@@ -649,6 +649,42 @@ class AuthorizationMatrixExpand4IT {
             assertAuthzPassed(get("/api/v1/surveys/1/results")
                     .header("Authorization", "Bearer " + VALID_TOKEN));
         }
+
+        // ── GET /api/v1/surveys/{id}/responses — SURVEY:READ OR ADMIN/SUPER_ADMIN/CONTENT_ADMIN (SPEC-CMS-SURVEY-001) ──
+        @Test
+        @DisplayName("AC-AME4-A1-47: GET /api/v1/surveys/{id}/responses — 모든 권한 부재 + 403")
+        void surveyResponses_missingAllRoles_returns403() throws Exception {
+            givenValidToken(Set.of("USER"), Set.of());
+            mockMvc.perform(get("/api/v1/surveys/1/responses")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-48: GET /api/v1/surveys/{id}/responses — SURVEY:READ 보유 + 401/403 아님 (OR bypass)")
+        void surveyResponses_hasSurveyRead_passesAuthz() throws Exception {
+            givenValidToken(Set.of("VIEWER"), Set.of("SURVEY:READ"));
+            assertAuthzPassed(get("/api/v1/surveys/1/responses")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
+
+        // ── GET /api/v1/surveys/{id}/results/export — SURVEY:EXPORT OR ADMIN/SUPER_ADMIN (SPEC-CMS-SURVEY-001) ──
+        @Test
+        @DisplayName("AC-AME4-A1-49: GET /api/v1/surveys/{id}/results/export — SURVEY:READ 만 보유 + 403 (EXPORT 필요)")
+        void surveyExport_onlySurveyRead_returns403() throws Exception {
+            givenValidToken(Set.of("VIEWER"), Set.of("SURVEY:READ"));
+            mockMvc.perform(get("/api/v1/surveys/1/results/export")
+                            .header("Authorization", "Bearer " + VALID_TOKEN))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @DisplayName("AC-AME4-A1-50: GET /api/v1/surveys/{id}/results/export — SURVEY:EXPORT 보유 + 401/403 아님 (OR bypass)")
+        void surveyExport_hasSurveyExport_passesAuthz() throws Exception {
+            givenValidToken(Set.of("VIEWER"), Set.of("SURVEY:EXPORT"));
+            assertAuthzPassed(get("/api/v1/surveys/1/results/export")
+                    .header("Authorization", "Bearer " + VALID_TOKEN));
+        }
     }
 
     /** §A.2 ContentDomainTests — Block 2 + Popup 2 + Template PATCH status 1 = 5 endpoint (Phase B 활성화, Page는 100% 커버). */

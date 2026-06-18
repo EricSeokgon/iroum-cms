@@ -107,6 +107,22 @@ export interface SurveyListParams {
   size?: number
 }
 
+// ── 개별 응답 열람 타입 (SPEC-CMS-SURVEY-001) ────────────────────────────────
+export interface SurveyAnswerDetail {
+  questionId: number
+  questionText: string
+  questionType: string
+  answerText: string | null
+}
+
+export interface SurveyResponseItem {
+  responseId: number
+  respondentId: number | null
+  respondentName: string | null
+  submittedAt: string
+  answers: SurveyAnswerDetail[]
+}
+
 // ── API 함수 ─────────────────────────────────────────────────────────────────
 export function listSurveys(
   params: SurveyListParams,
@@ -142,4 +158,20 @@ export function submitSurveyResponse(
 
 export function getSurveyResults(surveyId: number): Promise<{ data: SurveyResultDto }> {
   return apiClient.get(`${BASE}/${surveyId}/results`)
+}
+
+// ── SPEC-CMS-SURVEY-001: 개별 응답 목록 + CSV 내보내기 ────────────────────────
+// 주의: 백엔드 PageResponse 는 page 필드(0-based)를 사용 (number 아님).
+export function getSurveyResponses(
+  surveyId: number,
+  page = 0,
+  size = 20,
+): Promise<{ data: PageResponse<SurveyResponseItem> & { page: number } }> {
+  return apiClient.get(`${BASE}/${surveyId}/responses`, { params: { page, size } })
+}
+
+export function exportSurveyResults(surveyId: number): Promise<Blob> {
+  return apiClient
+    .get(`${BASE}/${surveyId}/results/export`, { responseType: 'blob' })
+    .then((r) => r.data as Blob)
 }

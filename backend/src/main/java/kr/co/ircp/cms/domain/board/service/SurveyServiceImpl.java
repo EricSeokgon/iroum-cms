@@ -4,6 +4,7 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
 import kr.co.ircp.cms.domain.board.dto.SurveyQuestionDto;
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.dto.SurveyResultDto;
 import kr.co.ircp.cms.domain.board.dto.SurveySubmitRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveySummary;
@@ -19,9 +20,12 @@ import kr.co.ircp.cms.domain.board.repository.SurveyQuestionMapper;
 import kr.co.ircp.cms.domain.board.repository.SurveyResponseMapper;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -38,6 +42,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class SurveyServiceImpl implements SurveyService {
 
@@ -50,6 +55,7 @@ public class SurveyServiceImpl implements SurveyService {
     private final SurveyResponseMapper surveyResponseMapper;
     private final SurveyAnswerMapper surveyAnswerMapper;
     private final HtmlSanitizer htmlSanitizer;
+    private final SurveyNotificationService surveyNotificationService;
 
     @Override
     public PageResponse<SurveySummary> listSurveys(String status, String keyword, int page, int size) {
@@ -99,8 +105,9 @@ public class SurveyServiceImpl implements SurveyService {
     @Override
     @Transactional
     public SurveyDetail updateSurvey(Long id, SurveyUpdateRequest req) {
-        surveyMapper.findById(id)
+        Survey oldSurvey = surveyMapper.findById(id)
                 .orElseThrow(() -> new SurveyNotFoundException(id));
+        String oldStatus = oldSurvey.getStatus();
 
         // 1) 설문 마스터 UPDATE (부분 갱신)
         surveyMapper.update(id, req);
@@ -110,6 +117,22 @@ public class SurveyServiceImpl implements SurveyService {
             surveyQuestionMapper.deleteBySurveyId(id);
             if (!req.questions().isEmpty()) {
                 surveyQuestionMapper.insertBatch(id, req.questions());
+            }
+        }
+
+        // 3) 상태 전환 감지 후 best-effort 알림 (REQ-SURVEY-011/012/015)
+        String newStatus = surveyMapper.findById(id).map(Survey::getStatus).orElse(oldStatus);
+        if ("DRAFT".equals(oldStatus) && "OPEN".equals(newStatus)) {
+            try {
+                surveyNotificationService.sendSurveyPublishedNotification(id);
+            } catch (Exception e) {
+                log.warn("설문 공개 알림 발송 실패 (best-effort): surveyId={}", id, e);
+            }
+        } else if (!"CLOSED".equals(oldStatus) && "CLOSED".equals(newStatus)) {
+            try {
+                surveyNotificationService.sendSurveyClosedAdminNotification(id);
+            } catch (Exception e) {
+                log.warn("설문 종료 관리자 알림 발송 실패 (best-effort): surveyId={}", id, e);
             }
         }
 
@@ -176,6 +199,18 @@ public class SurveyServiceImpl implements SurveyService {
         // 6) 제출 완료 처리 + 응답 카운트 증가
         surveyResponseMapper.markSubmitted(response.getId());
         surveyMapper.incrementResponseCount(surveyId);
+
+        // 7) 응답 한도 도달 감지 후 best-effort 관리자 알림 (REQ-SURVEY-013/015)
+        Survey afterIncrement = surveyMapper.findById(surveyId).orElse(null);
+        if (afterIncrement != null
+                && afterIncrement.getMaxResponses() != null
+                && afterIncrement.getResponseCount() >= afterIncrement.getMaxResponses()) {
+            try {
+                surveyNotificationService.sendResponseLimitAdminNotification(surveyId);
+            } catch (Exception e) {
+                log.warn("설문 한도 도달 알림 발송 실패 (best-effort): surveyId={}", surveyId, e);
+            }
+        }
     }
 
     /**
@@ -233,6 +268,68 @@ public class SurveyServiceImpl implements SurveyService {
                 totalResponses,
                 questionResults
         );
+    }
+
+    /**
+     * 설문 개별 응답 목록 페이징 조회 (관리자).
+     *
+     * // @MX:NOTE: [AUTO] getResponses — 응답 목록은 제출 완료(submitted_at IS NOT NULL)만 노출. 익명은 mapper 단에서 null.
+     * // @MX:SPEC: REQ-SURVEY-008
+     */
+    @Override
+    public PageResponse<SurveyResponseItem> getResponses(Long surveyId, int page, int size) {
+        surveyMapper.findById(surveyId)
+                .orElseThrow(() -> new SurveyNotFoundException(surveyId));
+        int offset = page * size;
+        List<SurveyResponseItem> content = surveyResponseMapper.listBySurveyId(surveyId, offset, size);
+        long total = surveyResponseMapper.countBySurveyId(surveyId);
+        return PageResponse.of(content, page, size, total);
+    }
+
+    /**
+     * 설문 결과 CSV 내보내기 (UTF-8 BOM — Excel 한글 호환).
+     *
+     * <p>질문별 분포 통계를 행으로 출력한다. 첫 3바이트는 UTF-8 BOM(EF BB BF).
+     *
+     * // @MX:NOTE: [AUTO] exportResults — UTF-8 BOM 선행. getResults 통계를 평탄화하여 CSV 직렬화.
+     * // @MX:SPEC: REQ-SURVEY-006
+     */
+    @Override
+    public byte[] exportResults(Long surveyId) {
+        SurveyResultDto results = getResults(surveyId);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("질문ID,질문,유형,항목,응답수,비율(%)\n");
+        for (SurveyResultDto.QuestionResult q : results.questions()) {
+            for (SurveyResultDto.DistributionItem item : q.distribution()) {
+                sb.append(csv(String.valueOf(q.questionId()))).append(',')
+                        .append(csv(q.questionText())).append(',')
+                        .append(csv(q.questionType())).append(',')
+                        .append(csv(item.label())).append(',')
+                        .append(item.count()).append(',')
+                        .append(String.format("%.1f", item.percentage())).append('\n');
+            }
+        }
+
+        byte[] body = sb.toString().getBytes(StandardCharsets.UTF_8);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(body.length + 3);
+        // UTF-8 BOM
+        out.write(0xEF);
+        out.write(0xBB);
+        out.write(0xBF);
+        out.write(body, 0, body.length);
+        return out.toByteArray();
+    }
+
+    /** CSV 셀 이스케이프 — 쉼표/따옴표/개행 포함 시 따옴표로 감싸고 내부 따옴표는 2배화. */
+    private String csv(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
+            return '"' + value.replace("\"", "\"\"") + '"';
+        }
+        return value;
     }
 
     // ─── 분포 가공 헬퍼 ───────────────────────────────────────────────────

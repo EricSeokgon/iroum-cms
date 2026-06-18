@@ -1884,7 +1884,19 @@
       "created": "Survey created successfully.",
       "updated": "Survey updated successfully.",
       "deleted": "Survey deleted successfully."
-    }
+    },
+    "responses": "Responses",
+    "exportCsv": "Export CSV",
+    "exportError": "Failed to export CSV.",
+    "completionRate": "Completion Rate",
+    "totalAnswers": "{count} answers",
+    "noResponse": "No responses",
+    "responseId": "Response ID",
+    "respondent": "Respondent",
+    "submittedAt": "Submitted At",
+    "viewDetail": "View",
+    "responseDetail": "Response Detail",
+    "anonymous": "Anonymous"
   },
   "notifications": {
     "title": "Notification Settings",
