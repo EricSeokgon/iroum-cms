@@ -1,20 +1,31 @@
 ---
 id: SPEC-CMS-SURVEY-001
-version: 0.1.1
+version: 0.1.2
 status: Planned
-created: 2026-06-18
-updated: 2026-06-18
+created_at: "2026-06-18"
+updated_at: "2026-06-18"
 author: ircp
 priority: medium
 issue_number: 39
+labels: [survey, notification, visualization, brownfield]
 ---
 
 # SPEC-CMS-SURVEY-001 — 설문조사 결과 시각화 및 알림 연동
+
+## 인수 기준 형식 정책
+
+> **[Policy] REQ는 EARS 형식, AC는 GWT(Given/When/Then) 형식을 사용한다.**
+> 요구사항(REQ)은 EARS 5가지 패턴(Ubiquitous / Event-Driven / State-Driven / Optional / Unwanted)으로 기술한다.
+> 인수 기준(acceptance.md)은 TDD 테스트 가시성을 위해 Given/When/Then 형식을 의도적으로 채택한다.
+> 이 정책은 GWT를 EARS 위반으로 오해하지 않도록 명시한다.
+
+---
 
 ## HISTORY
 
 - 2026-06-18 (v0.1.0): 최초 작성(Draft). 브라운필드 확장 SPEC. 기존 코드 실측 결과를 반영하여 범위를 재조정함(아래 "현황 정정" 참조).
 - 2026-06-18 (v0.1.1): plan-auditor 감사 반영 — MAJOR 수정(시민 응답 제출 인증 정책 명시), MINOR 6건(REQ-011 주어, SurveyRespondView 현황 정정 추가, REQ-016 UTF-8 BOM, 차트 라이브러리 기준, V번호 충돌 주의, 멱등 키 명시).
+- 2026-06-18 (v0.1.2): plan-auditor 최종 감사(REJECT) 반영 — BLOCKER 4건(YAML 필드명, labels, REQ-016 EARS, AC 형식 정책), MAJOR 7건(DATE REQ, 고아 AC, AC-020 비이진, 구현 상세 제거 등).
 
 ---
 
@@ -75,7 +86,7 @@ issue_number: 39
 
 ### 결과 시각화 (SurveyResultsView)
 
-- **REQ-SURVEY-001** (Event-Driven): **When** 관리자가 설문 상세에서 "상세 결과"를 선택하면, the 시스템 **shall** `board/surveys/:id/results` 경로의 SurveyResultsView를 렌더링하고 `GET /api/v1/surveys/{id}/results`를 호출한다.
+- **REQ-SURVEY-001** (Event-Driven): **When** 관리자가 설문 상세에서 "상세 결과"를 선택하면, the 시스템 **shall** 설문 결과 요약 화면으로 이동하여 해당 설문의 집계 데이터를 표시한다.
 - **REQ-SURVEY-002** (Ubiquitous): The SurveyResultsView **shall** 총 응답 수, 완료율(제출 응답 / 시작 응답), 평균 소요 시간을 요약 카드로 표시한다.
 - **REQ-SURVEY-003** (State-Driven): **While** 질문 유형이 `SINGLE` 또는 `MULTI`이면, the 시스템 **shall** 선택지별 응답 분포를 막대 차트로 표시한다.
 - **REQ-SURVEY-004** (State-Driven): **While** 질문 유형이 `RATING`이면, the 시스템 **shall** 점수 분포를 막대 차트와 평균값으로 표시한다.
@@ -85,20 +96,20 @@ issue_number: 39
 
 ### 응답 개별 열람 (SurveyResponsesView)
 
-- **REQ-SURVEY-008** (Event-Driven): **When** 관리자가 응답 목록을 요청하면, the 시스템 **shall** `GET /api/v1/surveys/{id}/responses`(페이징)로 응답자, 제출 시각, 소요 시간 컬럼의 표를 표시한다.
+- **REQ-SURVEY-008** (Event-Driven): **When** 관리자가 응답 목록을 요청하면, the 시스템 **shall** 응답자, 제출 시각, 소요 시간 컬럼을 페이징하여 표로 표시한다.
 - **REQ-SURVEY-009** (State-Driven): **While** 설문이 익명(`isAnonymous=true`)이면, the 시스템 **shall** 응답자 열을 "익명"으로 표기한다.
 - **REQ-SURVEY-010** (Event-Driven): **When** 관리자가 특정 응답 행을 펼치면, the 시스템 **shall** 해당 응답의 질문별 답변을 표시한다.
 
 ### 알림 연동 (SurveyNotificationService)
 
-- **REQ-SURVEY-011** (Event-Driven): **When** 설문 상태가 `DRAFT`/기타에서 `OPEN`으로 전환되면, the 시스템 **shall** 활성 사용자의 `UserNotificationInbox`에 type=`SURVEY_OPENED` 인앱 알림 레코드를 삽입한다.
-- **REQ-SURVEY-012** (Event-Driven): **When** 설문이 종료(`CLOSED`)되면, the 시스템 **shall** 관리자에게 type=`SURVEY_CLOSED`, severity=`INFO` 운영 알림(`AdminNotification`)을 발송한다.
-- **REQ-SURVEY-013** (Event-Driven): **When** 응답 제출로 `responseCount`가 `maxResponses`에 도달하면, the 시스템 **shall** 관리자에게 type=`SURVEY_RESPONSE_LIMIT` 운영 알림을 발송한다.
-- **REQ-SURVEY-014** (Unwanted Behavior): **If** 동일 설문·동일 알림 유형(`(survey_id, type)` 복합 키)이 이미 `survey_notification_log`에 존재하면, **then** the 시스템 **shall** 재발송하지 않는다(멱등).
+- **REQ-SURVEY-011** (Event-Driven): **When** 설문 상태가 `OPEN`으로 전환되면, the 시스템 **shall** 활성 사용자의 시민 인앱 알림 수신함에 설문 개시 알림 레코드를 삽입한다.
+- **REQ-SURVEY-012** (Event-Driven): **When** 설문이 `CLOSED` 상태가 되면, the 시스템 **shall** 관리자의 운영 알림 수신함에 설문 종료 알림 레코드를 삽입한다(중요도: 정보).
+- **REQ-SURVEY-013** (Event-Driven): **When** 응답 제출로 `responseCount`가 `maxResponses`에 도달하면, the 시스템 **shall** 관리자의 운영 알림 수신함에 응답 한도 초과 알림 레코드를 삽입한다.
+- **REQ-SURVEY-014** (Unwanted Behavior): **If** 동일 설문·동일 알림 유형(`(survey_id, type)` 복합 키)이 이미 `survey_notification_log`에 존재하면, **then** the 시스템 **shall** 중복 발송을 생략하고 기존 기록을 유지한다(멱등).
 
 - **REQ-SURVEY-014a** (MAJOR — 인증 정책): **When** 시민이 `POST /api/v1/surveys/{id}/responses`로 응답을 제출할 때, the 시스템 **shall** 인증 없이(비로그인) 제출을 허용한다. 단, `isAnonymous=false`인 설문은 Spring Security 인증 컨텍스트에서 respondentId를 추출하며, 로그인하지 않은 경우 401을 반환한다.
 - **REQ-SURVEY-015** (Unwanted Behavior): **If** 알림 발송 중 예외가 발생하면, **then** the 시스템 **shall** 예외를 로깅·삼키고 설문 상태 전환/응답 제출 트랜잭션을 롤백하지 **않는다**(best-effort).
-- **REQ-SURVEY-016** (Unwanted Behavior): The 시스템 **shall** 설문 알림에 대해 이메일을 발송하지 **않는다**(인앱·관리자 알림 한정).
+- **REQ-SURVEY-016** (Unwanted Behavior): **If** 설문 관련 알림 발송이 트리거되면, **then** the 시스템 **shall** 이메일 채널을 호출하지 않고 인앱 알림 및 관리자 운영 알림 채널만 사용한다.
 
 - **REQ-SURVEY-016a** (Ubiquitous): The CSV 내보내기 응답(`GET /api/v1/surveys/{id}/results/export`) **shall** `Content-Type: text/csv; charset=UTF-8` 헤더와 UTF-8 BOM(`0xEF 0xBB 0xBF`)으로 시작하는 파일을 반환한다(Excel 한글 깨짐 방지).
 
@@ -108,11 +119,21 @@ issue_number: 39
 - **REQ-SURVEY-018** (Ubiquitous): The 시스템 **shall** `survey.max_responses_default`(INT, 기본 100), `survey.allow_anonymous`(BOOL, 기본 true)를 `system_setting`에 보유한다.
 - **REQ-SURVEY-019** (Ubiquitous): The 시스템 **shall** 관리자 메뉴(`admin_menu`)에 "설문관리"(route `/board/surveys`)를 게시판/콘텐츠 섹션 하위로 노출하고, `admin_menu_permissions`에 `SURVEY:READ`를 매핑한다.
 - **REQ-SURVEY-020** (Ubiquitous): The 시스템 **shall** `survey_notification_log` 테이블로 알림 발송 멱등성과 발송 결과(status, error_message)를 추적한다.
-- **REQ-SURVEY-021** (State-Driven): **While** 모든 마이그레이션 시드가 재실행되어도, the 시스템 **shall** `ON CONFLICT DO NOTHING`으로 중복 없이 멱등 적용된다.
+- **REQ-SURVEY-021** (State-Driven): **While** V54 마이그레이션 시드를 여러 번 재실행해도, the 시스템 **shall** 데이터 중복 없이 멱등하게 적용된다.
+
+- **REQ-SURVEY-023** (State-Driven): **While** 질문 유형이 `DATE`이면, the 시스템 **shall** 날짜 응답 분포를 날짜별 응답 건수 목록(텍스트 또는 막대 차트)으로 표시한다.
+
+### 공개 응답 폼 입력 검증
+
+- **REQ-SURVEY-024** (Unwanted Behavior): **If** 필수(`required=true`) 질문에 응답을 입력하지 않은 채 제출을 시도하면, **then** the 시스템 **shall** 제출을 차단하고 해당 질문에 오류 메시지를 표시한다.
+
+### 결과 빈 상태
+
+- **REQ-SURVEY-025** (State-Driven): **While** 설문에 응답이 0건이면, the 시스템 **shall** 차트 영역에 빈 상태 안내 메시지를 표시하고 렌더링 오류를 발생시키지 않는다.
 
 ### 접근성 (공개 응답)
 
-- **REQ-SURVEY-022** (Ubiquitous): The 공개 설문 응답 폼(`SurveyRespondView`) **shall** KWCAG 2.2 AA를 준수한다(모든 입력에 라벨, 키보드 조작 가능, 오류 메시지 프로그램적 연관).
+- **REQ-SURVEY-022** (Ubiquitous): The 시스템 **shall** 공개 설문 응답 폼이 KWCAG 2.2 AA를 준수하도록 한다(모든 입력에 라벨, 키보드 조작 가능, 오류 메시지 프로그램적 연관).
 
 ---
 
