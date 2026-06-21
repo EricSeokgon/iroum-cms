@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-SURVEY-001
 version: 0.1.2
-status: Planned
+status: Implemented
 created_at: "2026-06-18"
 updated_at: "2026-06-18"
 author: ircp
