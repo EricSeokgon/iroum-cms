@@ -250,23 +250,65 @@ class PageIT extends AbstractIntegrationTest {
     class PageRollback {
 
         @Test
-        @DisplayName("AC-PAGE-10: POST /rollback/{version} — 권한 보유 시 호출 가능")
-        // @MX:NOTE: [AUTO] AC-PAGE-10 실 롤백 로직은 page_history 시드 필요.
-        // 본 IT는 권한 게이트 + 엔드포인트 매핑까지만 검증한다.
-        void rollback_asAdmin_callable() throws Exception {
+        @DisplayName("AC-PHIST-005/006: rollback 시 snapshot의 title/slug가 실제 복원된다")
+        // @MX:NOTE: [AUTO] AC-PHIST-005/006 — page_history 시드 후 롤백 → title/slug 복원 검증.
+        // @MX:SPEC: SPEC-CMS-PAGE-HISTORY-001
+        void rollback_restoresTitleAndSlug() throws Exception {
+            // 1) BEFORE 상태로 페이지 생성
             long pageId = insertPage(siteId, templateId, "RBK-" + uid().toUpperCase(),
-                    "rbk-" + uid(), "DRAFT");
+                    "before-slug-" + uid(), "DRAFT");
+            jdbcTemplate.update(
+                    "UPDATE page SET title = 'BEFORE_TITLE', slug = 'before-slug' WHERE id = ?", pageId);
 
+            // 2) version 1 스냅샷 시드 (복원 대상)
+            insertPageHistory(pageId, 1, "BEFORE_TITLE", "before-slug");
+
+            // 3) 현재 페이지를 다른 값으로 변경
+            jdbcTemplate.update(
+                    "UPDATE page SET title = 'AFTER_TITLE', slug = 'after-slug' WHERE id = ?", pageId);
+
+            // 4) version 1 로 롤백
             givenAdminToken();
-            // 미존재 version 롤백은 4xx 가능 — 200/4xx 모두 권한 게이트 통과 확인 용도
             mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/1")
                             .header("Authorization", TOKEN))
-                    .andExpect(result -> {
-                        int s = result.getResponse().getStatus();
-                        if (s == 401 || s == 403) {
-                            throw new AssertionError("권한 게이트 통과 실패: status=" + s);
-                        }
-                    });
+                    .andExpect(status().isOk());
+
+            // 5) title/slug 가 스냅샷 값으로 복원되었는지 DB 직접 확인
+            String title = jdbcTemplate.queryForObject(
+                    "SELECT title FROM page WHERE id = ?", String.class, pageId);
+            String slug = jdbcTemplate.queryForObject(
+                    "SELECT slug FROM page WHERE id = ?", String.class, pageId);
+            org.assertj.core.api.Assertions.assertThat(title).isEqualTo("BEFORE_TITLE");
+            org.assertj.core.api.Assertions.assertThat(slug).isEqualTo("before-slug");
+        }
+    }
+
+    // ─── §E-10b AC-PHIST-007: 롤백 감사 로그 ────────────────────────────────
+
+    @Nested
+    @DisplayName("§E-10b: 롤백 감사 로그")
+    class PageRollbackAuditLog {
+
+        @Test
+        @DisplayName("AC-PHIST-007: rollback 시 audit_log action=UPDATE 기록")
+        // @MX:NOTE: [AUTO] AC-PHIST-007 — @AuditLog 비동기 적재. Thread.sleep 버퍼 후 검증.
+        // @MX:SPEC: SPEC-CMS-PAGE-HISTORY-001
+        void rollback_createsAuditLog() throws Exception {
+            long pageId = insertPage(siteId, templateId, "AUDIT-" + uid().toUpperCase(),
+                    "audit-" + uid(), "DRAFT");
+            insertPageHistory(pageId, 1, "이전제목", "prev-slug");
+
+            givenAdminToken();
+            mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/1")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().isOk());
+
+            // audit_log 는 비동기 적재 — 잠시 대기
+            Thread.sleep(300);
+            Integer count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM audit_log WHERE entity_type = 'Page' AND entity_id = ? AND action = 'UPDATE'",
+                    Integer.class, String.valueOf(pageId));
+            org.assertj.core.api.Assertions.assertThat(count).isGreaterThanOrEqualTo(1);
         }
     }
 
@@ -383,6 +425,15 @@ class PageIT extends AbstractIntegrationTest {
         Long id = jdbcTemplate.queryForObject(
                 "SELECT id FROM template WHERE code = ?", Long.class, code);
         return id == null ? -1L : id;
+    }
+
+    /** page_history 시드 (롤백/감사 IT 용). REQ-PHIST-002/004 */
+    private void insertPageHistory(long pageId, int version, String title, String slug) {
+        String snapshot = String.format("{\"title\":\"%s\",\"slug\":\"%s\"}", title, slug);
+        jdbcTemplate.update(
+                "INSERT INTO page_history (page_id, version, snapshot, edited_by, change_summary) " +
+                        "VALUES (?, ?, ?::jsonb, 1, 'test')",
+                pageId, version, snapshot);
     }
 
     private long insertPage(long siteId, long templateId, String code, String slug, String status) {

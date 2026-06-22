@@ -1532,7 +1532,8 @@
         "retractReasonHint": "사용자에게 표시되지 않습니다",
         "retractSuccess": "철회되었습니다",
         "retractError": "철회에 실패했습니다",
-        "rollbackSuccess": "이전 버전으로 롤백되었습니다"
+        "rollbackSuccess": "이전 버전으로 롤백되었습니다",
+        "history": "이력"
       },
       "editor": {
         "seo": "SEO 설정",

@@ -1,5 +1,9 @@
 package kr.co.ircp.cms.domain.content.page.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.co.ircp.cms.domain.audit.annotation.AuditLog;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
@@ -25,7 +29,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -50,6 +56,7 @@ public class PageServiceImpl implements PageService {
     private final SeoRedirectService seoRedirectService;
     // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
     private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
+    private final ObjectMapper objectMapper;
 
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(PageServiceImpl.class);
@@ -104,13 +111,30 @@ public class PageServiceImpl implements PageService {
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
 
         // 수정 전 스냅샷을 page_history에 기록
+        String snapshotJson;
+        try {
+            Map<String, String> snapData = new HashMap<>();
+            snapData.put("title", existing.getTitle());
+            snapData.put("slug", existing.getSlug());
+            snapshotJson = objectMapper.writeValueAsString(snapData);
+        } catch (JsonProcessingException e) {
+            snapshotJson = "{}";
+        }
         PageHistory history = PageHistory.builder()
                 .pageId(id)
                 .version(existing.getCurrentVersion())
-                .snapshot("{\"title\":\"" + existing.getTitle() + "\",\"slug\":\"" + existing.getSlug() + "\"}")
+                .snapshot(snapshotJson)
                 .editedBy(updatedBy)
                 .editedAt(Instant.now())
-                .changeSummary(request.changeSummary())
+                // REQ-PHIST-003: changeSummary 미제공 시 변경 필드명 목록 자동 생성
+                .changeSummary(
+                        (request.changeSummary() == null || request.changeSummary().isBlank())
+                                ? PageChangeSummaryGenerator.generate(
+                                        existing.getTitle(),
+                                        request.title() != null ? request.title() : existing.getTitle(),
+                                        existing.getSlug(),
+                                        request.slug() != null ? request.slug() : existing.getSlug())
+                                : request.changeSummary())
                 .build();
         pageHistoryMapper.insert(history);
 
@@ -241,17 +265,33 @@ public class PageServiceImpl implements PageService {
 
     /**
      * 특정 버전으로 롤백.
-     * REQ-CONTENT-005-D-7: snapshot 복원, status='DRAFT' 강제
+     * REQ-CONTENT-005-D-7 / REQ-PHIST-002: snapshot JSON 파싱으로 title/slug 복원, status='DRAFT' 강제
+     *
+     * // @MX:NOTE: [AUTO] REQ-PHIST-002 — snapshot JSON 파싱으로 title/slug 복원. ObjectMapper 실패 시 status=DRAFT만 적용 (graceful degradation)
+     * // @MX:SPEC: SPEC-CMS-PAGE-HISTORY-001
      */
     @Override
     @Transactional
+    @AuditLog(action = "UPDATE", entityType = "Page", captureReturn = true)
     public PageResponse rollbackPage(Long id, int version, Long rolledBackBy) {
         Page page = pageMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
         PageHistory historySnapshot = pageHistoryMapper.findByPageIdAndVersion(id, version)
                 .orElseThrow(() -> new PageHistoryVersionNotFoundException(version));
 
-        // snapshot 기반 복원 (간단히 status만 DRAFT로 강제, 실제 필드 복원은 snapshot JSON 파싱 필요)
+        // snapshot JSON 을 파싱해 title/slug 를 실제 복원한다. 파싱 실패 시 status=DRAFT 복원만 진행.
+        try {
+            Map<String, Object> snap = objectMapper.readValue(
+                    historySnapshot.getSnapshot(), new TypeReference<Map<String, Object>>() {});
+            if (snap.get("title") != null) {
+                page.setTitle((String) snap.get("title"));
+            }
+            if (snap.get("slug") != null) {
+                page.setSlug((String) snap.get("slug"));
+            }
+        } catch (JsonProcessingException e) {
+            // snapshot 파싱 실패 시 DRAFT 복원만 진행 (graceful degradation)
+        }
         page.setStatus("DRAFT");
         page.setCurrentVersion(page.getCurrentVersion() + 1);
         page.setUpdatedBy(rolledBackBy);

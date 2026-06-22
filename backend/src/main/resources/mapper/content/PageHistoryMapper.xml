@@ -50,4 +50,23 @@
           )
     </delete>
 
+    <!-- SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001: 보존 수 초과 페이지 ID 목록 -->
+    <select id="findPageIdsWithExcessHistory" resultType="long">
+        SELECT page_id
+        FROM page_history
+        GROUP BY page_id
+        HAVING COUNT(*) > #{maxVersions}
+    </select>
+
+    <!-- SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001: 오래된 이력 삭제 (최신 maxVersions 개만 유지) -->
+    <delete id="deleteOldestExceedingLimit">
+        DELETE FROM page_history
+        WHERE id IN (
+            SELECT id FROM page_history
+            WHERE page_id = #{pageId}
+            ORDER BY version ASC
+            LIMIT GREATEST(0, (SELECT COUNT(*) FROM page_history WHERE page_id = #{pageId}) - #{maxVersions})
+        )
+    </delete>
+
 </mapper>

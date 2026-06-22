@@ -78,6 +78,13 @@
             plain
             @click="retractPage(row)"
           >{{ t('content.page.action.retract') }}</el-button>
+          <el-button
+            v-if="canViewHistory"
+            size="small"
+            type="info"
+            plain
+            @click="openHistory(row)"
+          >{{ t('content.page.action.history') }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -152,11 +159,19 @@
         <el-button type="primary" :loading="scheduling" @click="confirmSchedule">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- 이력 다이얼로그 — REQ-PHIST-005 -->
+    <PageHistoryDialog
+      v-if="historyDialogOpen"
+      v-model="historyDialogOpen"
+      :page-id="historyPageId"
+      @rolled-back="loadPages"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -164,10 +179,16 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { pages, templates } from '@/api/content'
 import type { PageItemResponse as PageType, TemplateResponse, PageStatus } from '@/api/content'
 import { useSiteStore } from '@/stores/content'
+import { usePermission } from '@/composables/usePermission'
+import PageHistoryDialog from '@/components/content/PageHistoryDialog.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const siteStore = useSiteStore()
+const { hasPermission } = usePermission()
+
+// REQ-PHIST-005 / AC-PHIST-013: PAGE:HISTORY:READ 권한 보유 시에만 이력 버튼 노출
+const canViewHistory = computed(() => hasPermission('PAGE:HISTORY:READ'))
 
 const statusOptions: PageStatus[] = ['DRAFT', 'SCHEDULED', 'PUBLISHED', 'RETRACTED']
 
@@ -186,6 +207,10 @@ const scheduleOpen = ref(false)
 const scheduleAt = ref<Date | null>(null)
 const schedulingPageId = ref<number | null>(null)
 const createFormRef = ref<FormInstance>()
+
+// REQ-PHIST-005: 이력 다이얼로그 상태
+const historyDialogOpen = ref(false)
+const historyPageId = ref<number | null>(null)
 
 const createForm = ref({
   code: '',
@@ -304,6 +329,12 @@ function openSchedule(row: PageType): void {
   schedulingPageId.value = row.id
   scheduleAt.value = null
   scheduleOpen.value = true
+}
+
+// REQ-PHIST-005 / AC-PHIST-014: 이력 버튼 클릭 시 다이얼로그 오픈
+function openHistory(row: PageType): void {
+  historyPageId.value = row.id
+  historyDialogOpen.value = true
 }
 
 async function confirmSchedule(): Promise<void> {

@@ -40,4 +40,10 @@ public interface PageHistoryMapper {
      * @return 삭제된 행 수
      */
     int deleteOldestByPageId(@Param("pageId") Long pageId, @Param("keepCount") int keepCount);
+
+    /** 최대 보존 수를 초과하는 페이지 ID 목록 조회 (SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001) */
+    List<Long> findPageIdsWithExcessHistory(@Param("maxVersions") int maxVersions);
+
+    /** 오래된 이력 삭제 (pageId 기준, 최신 maxVersions 개만 유지). SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001 */
+    int deleteOldestExceedingLimit(@Param("pageId") Long pageId, @Param("maxVersions") int maxVersions);
 }
