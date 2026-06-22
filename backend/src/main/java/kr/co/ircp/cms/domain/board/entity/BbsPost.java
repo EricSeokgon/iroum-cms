@@ -37,6 +37,9 @@ public class BbsPost {
     private long likeCount;
     private int commentCount;
     private int attachmentCount;
+    // SPEC-CMS-REVIEW-001: VISIBLE 리뷰 집계 (서비스 계층 full-recompute)
+    private int reviewCount;
+    private java.math.BigDecimal averageRating;
     private String status;
     // SPEC-CMS-CONTENT-REVISION-001: 낙관적 잠금 기준 버전. UPDATE 시 version+1, WHERE version=expectedVersion.
     private int version;
