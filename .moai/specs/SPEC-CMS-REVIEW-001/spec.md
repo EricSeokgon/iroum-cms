@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-REVIEW-001
-version: "0.1.0"
-status: Planned
+version: "0.1.1"
+status: Implemented
 created: 2026-06-22
 updated: 2026-06-22
 author: ircp
