@@ -141,6 +141,12 @@ public class SecurityConfig {
                     "/api/v1/board/posts/**",
                     "/api/v1/board/comments/**"
                 ).permitAll()
+                // SPEC-CMS-REVIEW-001 REQ-REV-005/007: 게시물 리뷰 목록 공개 조회 허용.
+                // POST(작성)는 default .anyRequest().authenticated() 로 401 강제 (REQ-REV-007).
+                .requestMatchers(
+                    org.springframework.http.HttpMethod.GET,
+                    "/api/v1/posts/*/reviews"
+                ).permitAll()
                 // REQ-BOARD-007: FAQ 공개 조회 허용 (목록·카테고리·단건)
                 .requestMatchers(
                     org.springframework.http.HttpMethod.GET,

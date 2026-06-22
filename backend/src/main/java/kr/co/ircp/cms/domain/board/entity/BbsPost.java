@@ -37,6 +37,9 @@ public class BbsPost {
     private long likeCount;
     private int commentCount;
     private int attachmentCount;
+    // SPEC-CMS-REVIEW-001: VISIBLE 리뷰 집계 (서비스 계층 full-recompute)
+    private int reviewCount;
+    private java.math.BigDecimal averageRating;
     private String status;
     private Instant publishedAt;
     // SPEC-CMS-POST-SCHEDULE-001: 예약 발행 시각 (NULL=예약 없음, status=SCHEDULED 일 때만 의미)
