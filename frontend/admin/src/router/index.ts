@@ -209,6 +209,13 @@ const router = createRouter({
           component: () => import('@/views/board/CommentManagementView.vue'),
           meta: { title: '댓글 관리', requiresAuth: true },
         },
+        // ── 리뷰 모더레이션 (SPEC-CMS-REVIEW-001) ──────────────────────────
+        {
+          path: 'board/reviews',
+          name: 'board-reviews',
+          component: () => import('@/views/board/ReviewManagementView.vue'),
+          meta: { title: '리뷰 관리', permissions: ['REVIEW:READ'] },
+        },
         // ── Q&A 모더레이션 (SPEC-CMS-QNA-MODERATE-001) ─────────────────────
         {
           path: 'board/qnas/management',

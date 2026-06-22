@@ -110,8 +110,11 @@ class AuthorizationCoverageArchTest {
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
     // (SPEC-CMS-SURVEY-001 — 127→129, SurveyController getResponses(SURVEY:READ) +
     //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.)
+    // (SPEC-CMS-REVIEW-001 — 129→131, ReviewAdminController hideReview/deleteReview 메소드 레벨
+    //  hasAuthority('REVIEW:DELETE') 2건 추가. 클래스 레벨 hasAuthority('REVIEW:READ')는 메소드 카운트 제외.
+    //  인가 매트릭스(401/403/204)는 ReviewAdminControllerIT(domain.board)에서 커버 — security 패키지 IT set 무영향.)
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 129, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 131, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
@@ -138,10 +141,10 @@ class AuthorizationCoverageArchTest {
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(129)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(131)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(129L);
+                .isEqualTo(131L);
     }
 
     // =================================================================================
@@ -426,6 +429,12 @@ class AuthorizationCoverageArchTest {
                 // ─── Survey Authority (2종, SPEC-CMS-SURVEY-001) ──────────────
                 "SURVEY:READ",
                 "SURVEY:EXPORT",
+                // ─── Review Authority (1종, SPEC-CMS-REVIEW-001) ──────────────
+                // ReviewAdminController 메소드 레벨 REVIEW:DELETE(hide/delete) 만 추출됨.
+                // 클래스 레벨 REVIEW:READ 는 extractOperationalAuthorityVocabularies(메소드 레벨 스캔)에서
+                // 미검출 — baseline 에 포함하지 않음(removedFromOps 회귀 방지).
+                // 인가 매트릭스는 ReviewAdminControllerIT(domain.board)에서 401/403/204 커버.
+                "REVIEW:DELETE",
                 // ─── 인증만 요구 (1종) ─────────────────────────────────────────
                 "isAuthenticated"
         );
