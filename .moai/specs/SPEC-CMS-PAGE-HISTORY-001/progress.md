@@ -22,3 +22,8 @@
   - 단위테스트: PageChangeSummaryGeneratorTest(4/4 PASS), PageHistoryRetentionJobTest(2/2 PASS)
   - TypeScript: exit 0 (0 errors)
   - 회귀 수정: PageServiceTest ObjectMapper 인자 추가
+- Phase 2.5 complete: evaluator-active PASS (2026-06-22)
+  - Functionality 88, Security 82, Craft 85, Consistency 90
+  - MEDIUM 수정: PageChangeSummaryGenerator Objects.equals() NPE 방어
+  - MEDIUM 수정: snapshot JSON objectMapper.writeValueAsString()으로 안전화
+- Phase 3 complete: feat commit 2f016b0 on feat/SPEC-CMS-PAGE-HISTORY-001
