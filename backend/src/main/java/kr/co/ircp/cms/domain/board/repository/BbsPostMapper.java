@@ -95,4 +95,13 @@ public interface BbsPostMapper {
 
     /** 관리자 단건 요약 조회 (상태 변경 후 응답용). */
     java.util.Optional<PostAdminSummary> findAdminSummaryById(@Param("id") Long id);
+
+    // ─── SPEC-CMS-REVIEW-001: 리뷰 집계 ─────────────────────────────────────────
+
+    /** VISIBLE 리뷰 집계(개수·평균)를 게시물에 반영. REQ-REV-003 */
+    int updateReviewAggregate(
+            @Param("postId") Long postId,
+            @Param("count") int count,
+            @Param("avg") java.math.BigDecimal avg
+    );
 }

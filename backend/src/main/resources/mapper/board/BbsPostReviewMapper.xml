@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    게시물 별점 리뷰 매퍼 XML.
+    SPEC-CMS-REVIEW-001 REQ-REV-001~012
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.BbsPostReviewMapper">
+
+    <resultMap id="bbsPostReviewResultMap" type="kr.co.ircp.cms.domain.board.entity.BbsPostReview">
+        <id     property="id"        column="id"/>
+        <result property="postId"    column="post_id"/>
+        <result property="authorId"  column="author_id"/>
+        <result property="rating"    column="rating"/>
+        <result property="content"   column="content"/>
+        <result property="status"    column="status"/>
+        <result property="ipAddress" column="ip_address"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <!--
+        record AdminReviewResponse 는 setter 가 없으므로 생성자 매핑 사용.
+        컬럼 순서 = AdminReviewResponse(id, postId, postTitle, authorId, authorName,
+                                        rating, content, status, ipAddress, createdAt) 와 일치.
+    -->
+    <resultMap id="adminReviewResponseResultMap"
+               type="kr.co.ircp.cms.domain.board.dto.AdminReviewResponse">
+        <constructor>
+            <idArg  column="id"          javaType="Long"              name="id"/>
+            <arg    column="post_id"     javaType="Long"              name="postId"/>
+            <arg    column="post_title"  javaType="String"            name="postTitle"/>
+            <arg    column="author_id"   javaType="Long"              name="authorId"/>
+            <arg    column="author_name" javaType="String"            name="authorName"/>
+            <arg    column="rating"      javaType="_int"              name="rating"/>
+            <arg    column="content"     javaType="String"            name="content"/>
+            <arg    column="status"      javaType="String"            name="status"/>
+            <arg    column="ip_address"  javaType="String"            name="ipAddress"/>
+            <arg    column="created_at"  javaType="java.time.Instant" name="createdAt"/>
+        </constructor>
+    </resultMap>
+
+    <!-- SPEC-CMS-REVIEW-001 REQ-REV-001: 리뷰 작성. INET 컬럼은 jdbcType=OTHER 로 캐스팅. -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bbs_post_review (post_id, author_id, rating, content, ip_address, status)
+        VALUES (#{postId}, #{authorId}, #{rating}, #{content},
+                #{ipAddress, jdbcType=OTHER}, #{status})
+    </insert>
+
+    <!-- 단건 조회 (DELETED 포함 — 관리 흐름 상태 검증용) -->
+    <select id="findById" resultMap="bbsPostReviewResultMap">
+        SELECT * FROM bbs_post_review WHERE id = #{id}
+    </select>
+
+    <!-- REQ-REV-005: 게시물 공개 리뷰 목록 (VISIBLE 만, 최신순) -->
+    <select id="selectByPostId" resultMap="bbsPostReviewResultMap">
+        SELECT *
+          FROM bbs_post_review
+         WHERE post_id = #{postId} AND status = 'VISIBLE'
+         ORDER BY created_at DESC, id DESC
+    </select>
+
+    <!-- 관리자 목록 공통 WHERE (selectAdminPage / countAdminPage 공유) -->
+    <sql id="adminFilter">
+        <where>
+            <if test="postId != null">
+                AND r.post_id = #{postId}
+            </if>
+            <choose>
+                <when test="status != null and status != ''">
+                    AND r.status = #{status}
+                </when>
+                <otherwise>
+                    AND r.status != 'DELETED'
+                </otherwise>
+            </choose>
+        </where>
+    </sql>
+
+    <!-- REQ-REV-004/011: 관리자 리뷰 목록 (페이징). 작성자 username 을 author_name 으로 노출. -->
+    <select id="selectAdminPage" resultMap="adminReviewResponseResultMap">
+        SELECT r.id,
+               r.post_id,
+               p.title      AS post_title,
+               r.author_id,
+               u.username   AS author_name,
+               r.rating,
+               r.content,
+               r.status,
+               r.ip_address::text AS ip_address,
+               r.created_at
+          FROM bbs_post_review r
+          JOIN bbs_post p ON p.id = r.post_id
+          LEFT JOIN users u ON u.id = r.author_id
+        <include refid="adminFilter"/>
+        ORDER BY r.created_at DESC, r.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- REQ-REV-004: 관리자 리뷰 전체 수 -->
+    <select id="countAdminPage" resultType="long">
+        SELECT COUNT(*)
+          FROM bbs_post_review r
+        <include refid="adminFilter"/>
+    </select>
+
+    <!--
+        REQ-REV-006/010: 리뷰 상태 변경 (HIDDEN/DELETED).
+        DELETED 는 비가역 — 물리 삭제 금지, status 전이 + deleted_at 기록만 수행.
+    -->
+    <update id="updateStatus">
+        UPDATE bbs_post_review
+           SET status     = #{status},
+               deleted_at = #{deletedAt},
+               updated_at = NOW()
+         WHERE id = #{id}
+    </update>
+
+    <!--
+        REQ-REV-003: 게시물 VISIBLE 리뷰 집계 (개수 + 평균).
+        리뷰 0건이면 count=0, average=NULL → 서비스에서 0.0 처리.
+        ROUND(...,1) 로 DECIMAL(3,1) 정밀도에 맞춤.
+    -->
+    <select id="aggregateVisible" resultType="kr.co.ircp.cms.domain.board.dto.ReviewAggregate">
+        SELECT COUNT(*)                       AS count,
+               ROUND(AVG(rating)::numeric, 1) AS average
+          FROM bbs_post_review
+         WHERE post_id = #{postId} AND status = 'VISIBLE'
+    </select>
+
+</mapper>
