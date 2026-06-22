@@ -220,3 +220,11 @@ kosha:
     page-size: 100
     connect-timeout-ms: 5000
     read-timeout-ms: 10000
+
+# 페이지 이력 보존 정책 (REQ-PHIST-001)
+# 페이지당 최대 max-versions 개의 이력만 유지하고, 초과 시 매일 02:00 배치로 가장 오래된 이력을 삭제한다.
+page:
+  history:
+    retention:
+      max-versions: 50
+      cron: "0 0 2 * * ?"   # 매일 02:00 실행 (Asia/Seoul)

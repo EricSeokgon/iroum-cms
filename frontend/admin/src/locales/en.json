@@ -1535,7 +1535,8 @@
         "retractReasonHint": "Not shown to users",
         "retractSuccess": "Retracted",
         "retractError": "Failed to retract",
-        "rollbackSuccess": "Rolled back to previous version"
+        "rollbackSuccess": "Rolled back to previous version",
+        "history": "History"
       },
       "editor": {
         "seo": "SEO Settings",
