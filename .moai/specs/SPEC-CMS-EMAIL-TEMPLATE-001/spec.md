@@ -1,10 +1,10 @@
 ---
 id: SPEC-CMS-EMAIL-TEMPLATE-001
 title: 이메일 템플릿 관리
-status: Implemented
+status: Completed
 version: 0.1.0
 created: 2026-06-16
-updated: 2026-06-16
+updated: 2026-06-23
 implemented_at: 2026-06-16
 author: ircp
 methodology: TDD
