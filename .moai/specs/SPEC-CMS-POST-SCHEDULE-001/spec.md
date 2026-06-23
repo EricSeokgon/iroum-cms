@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-POST-SCHEDULE-001
 version: 1.0.0
-status: Draft
+status: Implemented
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-23
 author: manager-spec
 priority: P2
 related:
