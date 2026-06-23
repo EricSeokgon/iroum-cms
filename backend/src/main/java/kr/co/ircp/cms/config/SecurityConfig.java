@@ -117,6 +117,9 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/actuator/**").hasRole("ADMIN")
+                // SPEC-CMS-NOTIFICATION-WS-001 REQ-NWS-001 — WebSocket/SockJS 핸드셰이크 업그레이드 허용.
+                // 실제 인증/인가는 STOMP CONNECT 단계(WebSocketAuthChannelInterceptor)에서 JWT 로 수행한다.
+                .requestMatchers("/ws/notifications/**").permitAll()
                 .requestMatchers(
                     "/api/v1/health/**",
                     "/api/v1/auth/login",

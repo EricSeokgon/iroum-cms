@@ -400,9 +400,10 @@ import { usePermission } from '@/composables/usePermission'
 import { usePermissionStore } from '@/stores/permissionStore'
 import MaintenanceBanner from '@/components/system/MaintenanceBanner.vue'
 import { useDashboardPreferenceApply } from '@/composables/useDashboardPreferenceApply'
-// SPEC-CMS-NOTIFICATION-CENTER-001 — 헤더 배지·30초 폴링
+// SPEC-CMS-NOTIFICATION-CENTER-001 — 헤더 배지 상태
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
-import { useUnreadCountPolling } from '@/composables/useUnreadCountPolling'
+// SPEC-CMS-NOTIFICATION-WS-001 — 30초 폴링을 WebSocket 실시간 구독으로 교체(끊김 시 폴링 폴백)
+import { useNotificationWs } from '@/composables/useNotificationWs'
 
 declare const __APP_VERSION__: string
 declare const __BUILD_TIME__: string
@@ -428,9 +429,11 @@ onMounted(() => {
 // 테마/밀도/폰트 스케일 CSS 변수를 <html>에 반응형으로 적용 (REQ-DP-002)
 useDashboardPreferenceApply()
 
-// SPEC-CMS-NOTIFICATION-CENTER-001 REQ-NC-006/009 — 헤더 배지 + 30초 폴링
+// SPEC-CMS-NOTIFICATION-WS-001 REQ-NWS-003 — 헤더 배지 + WebSocket 실시간 구독(폴링 폴백 내장)
 const notificationStore = useNotificationCenterStore()
-useUnreadCountPolling()
+// 초기 미읽음 수는 한 번 로드하고, 이후 갱신은 WebSocket 푸시(끊김 시 30초 폴링 폴백)가 담당한다.
+void notificationStore.fetchUnreadCount()
+useNotificationWs()
 
 function handleMenuSelect(index: string): void {
   // el-menu :router="true" 대신 명시적 네비게이션 사용
