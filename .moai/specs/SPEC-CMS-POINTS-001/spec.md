@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-POINTS-001
 version: 0.1.0
-status: implemented
+status: Completed
 created: 2026-06-17
-updated: 2026-06-17
+updated: 2026-06-23
 author: ircp
 priority: medium
 issue_number: 0
