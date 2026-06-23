@@ -39,13 +39,17 @@ class AdminNotificationServiceTest {
     @Mock
     private AdminNotificationMapper mapper;
 
+    // SPEC-CMS-NOTIFICATION-WS-001 — insert() 가 이벤트를 발행하므로 publisher 주입(기존 테스트는 미사용).
+    @Mock
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
     private AdminNotificationService service;
 
     private static final Long ADMIN_ID = 100L;
 
     @BeforeEach
     void setUp() {
-        service = new AdminNotificationService(mapper);
+        service = new AdminNotificationService(mapper, eventPublisher);
     }
 
     private AdminNotification sample(Long id, String status) {

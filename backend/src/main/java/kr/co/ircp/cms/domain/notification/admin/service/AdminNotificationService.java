@@ -8,10 +8,12 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.notification.admin.dto.AdminNotificationDto;
 import kr.co.ircp.cms.domain.notification.admin.dto.MarkAllReadRequest;
 import kr.co.ircp.cms.domain.notification.admin.entity.AdminNotification;
+import kr.co.ircp.cms.domain.notification.admin.event.AdminNotificationCreatedEvent;
 import kr.co.ircp.cms.domain.notification.admin.exception.AdminNotificationNotFoundException;
 import kr.co.ircp.cms.domain.notification.admin.repository.AdminNotificationMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +35,29 @@ public class AdminNotificationService {
     static final int DEFAULT_PAGE_SIZE = 20;
 
     private final AdminNotificationMapper mapper;
+    /** SPEC-CMS-NOTIFICATION-WS-001 REQ-NWS-002 — 알림 생성 시 WebSocket 푸시 이벤트 발행. */
+    private final ApplicationEventPublisher eventPublisher;
+
+    /**
+     * SPEC-CMS-NOTIFICATION-WS-001 REQ-NWS-002 — 신규 관리자 알림 생성(저장 + 실시간 푸시 이벤트 발행).
+     *
+     * <p>알림을 {@code admin_notification} 에 INSERT 한 뒤
+     * {@link AdminNotificationCreatedEvent} 를 발행한다.
+     * {@code AdminNotificationWebSocketPublisher} 가 이를 구독하여 대상 관리자에게 STOMP 푸시한다.
+     * 푸시는 트랜잭션 커밋 이후(AFTER_COMMIT) 수행되므로 저장과 알림 전송의 일관성이 보장된다.
+     *
+     * <p>기존 알림 생성 경로(매퍼 직접 INSERT)는 변경하지 않는다. 실시간 푸시가 필요한 신규
+     * 호출만 본 메서드를 사용한다(additive).
+     *
+     * @param notification 저장 대상 알림(id 미설정 — MyBatis useGeneratedKeys 로 채워짐)
+     * @return id 가 채워진 저장 완료 엔티티
+     */
+    @Transactional
+    public AdminNotification insert(AdminNotification notification) {
+        mapper.insert(notification);
+        eventPublisher.publishEvent(new AdminNotificationCreatedEvent(notification));
+        return notification;
+    }
 
     /**
      * REQ-NC-001 — 본인 알림 목록을 페이지네이션·필터로 조회한다.

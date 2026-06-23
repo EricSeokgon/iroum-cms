@@ -50,6 +50,8 @@ dependencies {
 
     // ─── Spring Boot Starters ──────────────────────────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // SPEC-CMS-NOTIFICATION-WS-001 — WebSocket + STOMP 실시간 알림 푸시
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
