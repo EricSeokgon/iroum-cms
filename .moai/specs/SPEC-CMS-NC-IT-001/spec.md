@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NC-IT-001
 title: "AdminNotificationController 통합 테스트"
-status: Implemented
+status: Completed
 version: 1.0.0
 created_at: 2026-06-11
 updated_at: 2026-06-12
