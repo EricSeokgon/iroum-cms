@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTIFICATION-WS-001
 title: 관리자 알림 WebSocket 실시간 푸시
-status: implemented
+status: Completed
 version: 0.1.0
 created_at: 2026-06-23
 updated_at: 2026-06-23
