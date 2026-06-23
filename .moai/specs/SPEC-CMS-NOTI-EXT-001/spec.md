@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-NOTI-EXT-001
 version: 1.0.0
-status: Implemented
+status: Completed
 created: 2026-06-18
-updated: 2026-06-18
+updated: 2026-06-23
 author: ircp
 priority: High
 issue_number: null
