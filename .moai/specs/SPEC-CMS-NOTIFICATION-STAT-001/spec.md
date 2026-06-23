@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-NOTIFICATION-STAT-001
 title: 관리자 알림 발송 통계 대시보드
-status: Implemented
+status: Completed
 version: 1.0.0
 created_at: 2026-06-11
 updated_at: 2026-06-11
