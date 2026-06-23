@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-KPI-002
 version: 0.1.0
-status: Implemented
+status: Completed
 created_at: 2026-06-15
-updated: 2026-06-15
+updated: 2026-06-23
 author: manager-spec
 priority: high
 parent: SPEC-CMS-KPI-001
