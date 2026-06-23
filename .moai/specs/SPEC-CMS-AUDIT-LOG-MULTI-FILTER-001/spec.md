@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-AUDIT-LOG-MULTI-FILTER-001
 version: 0.1.0
-status: Implemented
+status: Completed
 created: 2026-06-09
-updated: 2026-06-09
+updated: 2026-06-23
 author: MoAI
 priority: P2
 parent: SPEC-CMS-AUDIT-LOG-VIEW-001
