@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-POINTS-001
 title: 게시판/댓글 참여 포인트 지급 시스템
-status: Implemented
+status: Completed
 priority: Medium
 created_at: 2026-05-01
 updated_at: 2026-06-24
