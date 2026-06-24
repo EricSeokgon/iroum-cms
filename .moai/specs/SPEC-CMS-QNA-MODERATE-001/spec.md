@@ -1,5 +1,11 @@
 # SPEC-CMS-QNA-MODERATE-001: Q&A 관리자 모더레이션 패널
 
+| 항목 | 내용 |
+|------|------|
+| SPEC ID | SPEC-CMS-QNA-MODERATE-001 |
+| status | Completed |
+| 구현 브랜치 | feat/SPEC-CMS-QNA-MODERATE-001 |
+
 ## Overview
 
 관리자가 전체 Q&A를 조회·상태 변경·삭제할 수 있는 전용 어드민 API와 프론트엔드 관리 화면을 제공한다.

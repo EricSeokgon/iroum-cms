@@ -31,6 +31,11 @@
   - **프론트엔드**: `AuditLogFilter.action?`, `.severity?` 타입을 단일값에서 배열(`AuditAction[]`, `AuditSeverity[]`)로 변경. `buildFilter()` 전체 배열 전송 (첫 번째 값 절단 제거). `client.ts` `paramsSerializer: { indexes: null }` 추가로 반복 파라미터 직렬화
   - **IT**: `AuditLogMultiFilterIT` 신설 — `postgres:16-alpine` Testcontainers, AC-ALF-001~004 5건 전체 GREEN
   - CHANGELOG v2.5.0 알려진 제한 사항(백엔드 단일값 필터 제약) 해소
+- **Q&A 관리자 모더레이션 패널** (`QnaAdminController`, `QnaAdminServiceImpl`, `QnaManagementView.vue`, SPEC-CMS-QNA-MODERATE-001)
+  - **백엔드**: `GET /api/v1/admin/qnas` — 전체 Q&A 목록 (HIDDEN 포함, status/keyword 필터 + 페이징). `PATCH /api/v1/admin/qnas/{id}/status` — HIDDEN/PENDING/CLOSED 상태 변경 (200). `DELETE /api/v1/admin/qnas/{id}` — 소프트 삭제 (204)
+  - **`BbsQnaMapper`**: `listForAdmin`, `countForAdmin` 쿼리 추가. 기존 `updateStatus`, `deleteById` 재사용
+  - **프론트엔드**: `QnaManagementView.vue` Element Plus 테이블 (상태/키워드 필터, 상태 뱃지, 숨기기/복원/삭제 액션). `/board/qnas/management` 라우터 등록. ko/en i18n `qnaAdmin.*` 키 추가
+  - **IT**: `QnaAdminControllerIT` AC-QNA-ADM-001~004 전체 GREEN
 - **게시글 버전 히스토리 뷰어**: `GET /api/v1/board/posts/{postId}/history` 페이지네이션 API + 관리자 UI 히스토리 탭 (SPEC-CMS-POST-HISTORY-001)
 - **게시글 예약 발행**: `POST /api/v1/board/posts/{postId}/schedule` API + `PostPublishJob` 배치 잡(1분 주기) + 관리자 폼 예약 picker (SPEC-CMS-POST-SCHEDULE-001)
 
