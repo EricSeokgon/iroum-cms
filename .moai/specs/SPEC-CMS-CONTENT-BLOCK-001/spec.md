@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-CONTENT-BLOCK-001
 version: "0.1.0"
-status: Draft
+status: Implemented
 created_at: "2026-06-24"
 updated_at: "2026-06-24"
 author: ircp
