@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-REVIEW-001
 version: "0.1.1"
-status: Implemented
+status: Completed
 created: 2026-06-22
-updated: 2026-06-22
+updated: 2026-06-25
 author: ircp
 priority: Medium
 issue_number: 0
@@ -13,6 +13,7 @@ issue_number: 0
 
 ## HISTORY
 
+- 2026-06-25 (v0.1.1): SYNC 완료. 37파일 2797 insertions 구현 확인. status Implemented → Completed.
 - 2026-06-22 (v0.1.0): 초안 작성. 게시물(BbsPost) 대상 별점(1-5) + 리뷰 텍스트 시스템. 다중 리뷰 허용, 평균 별점 집계, 관리자 중앙 관리(목록/숨김/삭제). `bbs_post_review` 신규 테이블 분리. V55 마이그레이션.
 
 ---

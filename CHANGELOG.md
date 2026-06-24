@@ -155,6 +155,15 @@
   - **IT**: `QnaAdminControllerIT` AC-QNA-ADM-001~004 9개 전체 GREEN
   - **프론트엔드**: `qnaAdmin.ts` API, `QnaManagementView.vue`, 라우터 등록, ko/en i18n 추가
 
+- **게시물 별점 리뷰 시스템** (`BbsPostReview`, `BbsPostReviewMapper`, `ReviewController`, `ReviewAdminController`, `PostReviewSection.vue`, `ReviewManagementView.vue`, SPEC-CMS-REVIEW-001)
+  - **V55 마이그레이션**: `bbs_post_review` 테이블 DDL + `bbs_post`에 `average_rating`/`review_count` additive 컬럼 추가 + `REVIEW:READ/WRITE/DELETE` 권한 시드 + `admin_menu` "리뷰 관리" 시드 (`/admin/reviews`)
+  - **백엔드 엔티티/DTO**: `BbsPostReview` 엔티티 (status: VISIBLE/HIDDEN/DELETED, rating 1-5 CHECK), `BbsPostReviewCreateRequest`, `BbsPostReviewResponse`, `BbsPostReviewAdminListResponse` Java records
+  - **공개 API**: `GET /api/v1/posts/{postId}/reviews` (비인증 허용, VISIBLE만 반환), `POST /api/v1/posts/{postId}/reviews` (인증 필요, 401 방어)
+  - **관리자 API**: `GET /api/v1/admin/reviews` (REVIEW:READ 권한, 페이지네이션 + 상태 필터), `PATCH /api/v1/admin/reviews/{id}/hide` (HIDDEN 전환), `DELETE /api/v1/admin/reviews/{id}` (DELETED, idempotent, 비가역)
+  - **집계 로직**: 리뷰 생성/숨김/삭제 시 `BbsPost.average_rating`, `review_count` 실시간 재집계 (VISIBLE 리뷰만 모수, 서비스 계층 갱신)
+  - **프론트엔드**: `ReviewManagementView.vue` (268행) 관리자 리뷰 목록/숨김/삭제 + `PostReviewSection.vue` (205행) 공개 별점 표시/작성 UI + `reviewApi.ts` API 클라이언트
+  - **테스트**: `ReviewManagementView.spec.ts` (160행) + 관리자 컨트롤러 IT 포함 전체 인수 기준 커버
+
 - **게시글 관리자 모더레이션 패널** (`PostAdminController`, `PostAdminServiceImpl`, `BbsPostMapper`, `PostManagementView.vue`, SPEC-CMS-POST-MODERATE-001)
   - **백엔드**: `GET /api/v1/admin/posts` (bbsId/status/keyword 필터 + 페이징, HIDDEN 포함 교차 게시판 조회). `PATCH /{id}/status` — 상태 변경. `DELETE /{id}` — 강제 삭제
   - **`BbsPostMapper`**: `listForAdmin`, `countForAdmin`, `updateStatusByAdmin`, `findAdminSummaryById` 4개 메서드 추가. `bbs_master` JOIN + 동적 WHERE 필터
