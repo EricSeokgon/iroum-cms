@@ -13,7 +13,9 @@ import kr.co.ircp.cms.domain.board.repository.BbsCommentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
  * // @MX:NOTE: [AUTO] GREEN 단계 구현 완료. 1단계 대댓글만 허용 (DB 트리거가 2단계 이상 차단).
  * // @MX:SPEC: REQ-BOARD-003
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,6 +42,7 @@ public class CommentServiceImpl implements CommentService {
     private final BbsPostMapper bbsPostMapper;
     private final BbsCommentMapper bbsCommentMapper;
     private final AuthorizationGuard authorizationGuard;
+    private final UserPointService userPointService;
 
     @Override
     public List<CommentSummary> listComments(Long postId) {
@@ -68,6 +72,13 @@ public class CommentServiceImpl implements CommentService {
                 .status("VISIBLE")
                 .build();
         bbsCommentMapper.insert(comment);
+
+        // best-effort 포인트 지급 (REQ-PNT-003, REQ-PNT-008) — 실패해도 댓글 생성에 영향 없음
+        try {
+            userPointService.awardPoints(authorId, "COMMENT_CREATED", "COMMENT", comment.getId());
+        } catch (Exception e) {
+            log.warn("댓글 작성 포인트 지급 실패 authorId={} commentId={}: {}", authorId, comment.getId(), e.getMessage());
+        }
 
         BbsComment saved = bbsCommentMapper.findById(comment.getId())
                 .orElse(comment);

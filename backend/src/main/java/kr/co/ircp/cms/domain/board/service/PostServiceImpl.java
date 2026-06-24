@@ -23,7 +23,9 @@ import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
  * // @MX:NOTE: [AUTO] GREEN 단계 구현 완료. view_log dedupe 후 view_count 증가.
  * // @MX:SPEC: REQ-BOARD-002
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -51,6 +54,7 @@ public class PostServiceImpl implements PostService {
     private final BbsPostI18nMapper bbsPostI18nMapper;
     private final HtmlSanitizer htmlSanitizer;
     private final AuthorizationGuard authorizationGuard;
+    private final UserPointService userPointService;
 
     @Override
     public PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size, String lang) {
@@ -136,6 +140,13 @@ public class PostServiceImpl implements PostService {
                 .status("PUBLISHED")
                 .build();
         bbsPostMapper.insert(post);
+
+        // best-effort 포인트 지급 (REQ-PNT-002, REQ-PNT-008) — 실패해도 게시글 생성에 영향 없음
+        try {
+            userPointService.awardPoints(authorId, "POST_CREATED", "POST", post.getId());
+        } catch (Exception e) {
+            log.warn("게시글 작성 포인트 지급 실패 authorId={} postId={}: {}", authorId, post.getId(), e.getMessage());
+        }
 
         return new PostDetail(
                 post.getId(), post.getBbsId(), master.getCode(), master.isUseComment(),

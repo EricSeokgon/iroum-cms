@@ -11,6 +11,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsCommentMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsMasterMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,12 +39,13 @@ class CommentServiceTest {
     @Mock private BbsMasterMapper bbsMasterMapper;
     @Mock private BbsPostMapper bbsPostMapper;
     @Mock private BbsCommentMapper bbsCommentMapper;
+    @Mock private UserPointService userPointService;
 
     private CommentService commentService;
 
     @BeforeEach
     void setUp() {
-        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper, new AuthorizationGuard());
+        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper, new AuthorizationGuard(), userPointService);
     }
 
     private BbsPost stubPost(long id, long bbsId) {

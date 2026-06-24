@@ -12,6 +12,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ class PostTranslationServiceTest {
     @Mock private BbsViewLogMapper bbsViewLogMapper;
     @Mock private BbsPostI18nMapper bbsPostI18nMapper;
     @Mock private AuthorizationGuard authorizationGuard;
+    @Mock private UserPointService userPointService;
 
     private final HtmlSanitizer htmlSanitizer = new HtmlSanitizer();
 
@@ -55,7 +57,7 @@ class PostTranslationServiceTest {
     void setUp() {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper,
-                bbsViewLogMapper, bbsPostI18nMapper, htmlSanitizer, authorizationGuard
+                bbsViewLogMapper, bbsPostI18nMapper, htmlSanitizer, authorizationGuard, userPointService
         );
     }
 

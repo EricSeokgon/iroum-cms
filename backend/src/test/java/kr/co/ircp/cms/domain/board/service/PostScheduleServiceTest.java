@@ -13,6 +13,7 @@ import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ class PostScheduleServiceTest {
     @Mock private BbsPostHistoryMapper bbsPostHistoryMapper;
     @Mock private BbsViewLogMapper bbsViewLogMapper;
     @Mock private BbsPostI18nMapper bbsPostI18nMapper;
+    @Mock private UserPointService userPointService;
 
     private PostService postService;
 
@@ -53,7 +55,7 @@ class PostScheduleServiceTest {
     void setUp() {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper,
-                bbsPostI18nMapper, new HtmlSanitizer(), new AuthorizationGuard()
+                bbsPostI18nMapper, new HtmlSanitizer(), new AuthorizationGuard(), userPointService
         );
     }
 

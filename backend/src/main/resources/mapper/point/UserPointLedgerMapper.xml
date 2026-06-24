@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.point.mapper.UserPointLedgerMapper">
+
+    <resultMap id="LedgerRM" type="kr.co.ircp.cms.domain.point.entity.UserPointLedger">
+        <id     property="id"        column="id"/>
+        <result property="userId"    column="user_id"/>
+        <result property="delta"     column="delta"/>
+        <result property="reason"    column="reason"/>
+        <result property="refType"   column="ref_type"/>
+        <result property="refId"     column="ref_id"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.point.entity.UserPointLedger"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_point_ledger (user_id, delta, reason, ref_type, ref_id)
+        VALUES (#{userId}, #{delta}, #{reason}, #{refType}, #{refId})
+    </insert>
+
+    <select id="findAll" resultMap="LedgerRM">
+        SELECT id, user_id, delta, reason, ref_type, ref_id, created_at
+        FROM user_point_ledger
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+        </where>
+        ORDER BY created_at DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM user_point_ledger
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+        </where>
+    </select>
+
+</mapper>

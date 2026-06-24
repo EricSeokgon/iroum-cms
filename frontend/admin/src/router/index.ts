@@ -326,6 +326,19 @@ const router = createRouter({
           component: () => import('@/views/content/SeoRedirectManagerView.vue'),
           meta: { title: 'SEO 리다이렉트' },
         },
+        // ── 포인트 관리 (SPEC-CMS-POINTS-001) ─────────────────────────────
+        {
+          path: 'points/policy',
+          name: 'points-policy',
+          component: () => import('@/views/point/PointPolicyAdminView.vue'),
+          meta: { title: '포인트 정책', permissions: ['POINTS:WRITE'] },
+        },
+        {
+          path: 'points/ledger',
+          name: 'points-ledger',
+          component: () => import('@/views/point/PointLedgerAdminView.vue'),
+          meta: { title: '포인트 이력', permissions: ['POINTS:READ'] },
+        },
         // ── 시스템 관리 라우트 (SPEC-CMS-005) ──────────────────────────────
         {
           path: 'system/dashboard',
