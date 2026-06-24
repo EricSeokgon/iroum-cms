@@ -334,6 +334,12 @@ const router = createRouter({
           component: () => import('@/views/content/SeoRedirectManagerView.vue'),
           meta: { title: 'SEO 리다이렉트' },
         },
+        {
+          path: 'content/blocks',
+          name: 'ContentBlockManager',
+          component: () => import('@/views/content/ContentBlockManagerView.vue'),
+          meta: { requiresAuth: true, title: '콘텐츠 블록 관리' },
+        },
         // ── 시스템 관리 라우트 (SPEC-CMS-005) ──────────────────────────────
         {
           path: 'system/dashboard',

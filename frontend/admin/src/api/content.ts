@@ -623,3 +623,67 @@ export const seoRedirects = {
     return apiClient.delete(`${BASE}/seo/redirects/${id}`)
   },
 }
+
+// ── 공유 콘텐츠 블록 (SPEC-CMS-CONTENT-BLOCK-001) ──────────────────────────────
+export type ContentBlockType = 'RICH_TEXT' | 'HTML' | 'MARKDOWN' | 'EMBED'
+
+export interface ContentBlockRequest {
+  name: string
+  slug: string
+  blockType: ContentBlockType
+  contentHtml?: string
+  contentRaw?: string
+  description?: string
+  status?: string
+}
+
+export interface ContentBlockResponse {
+  id: number
+  name: string
+  slug: string
+  blockType: string
+  contentHtml: string | null
+  contentRaw: string | null
+  description: string | null
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+// @MX:NOTE: [AUTO] contentBlockApi — ContentBlockManagerView 에서 참조 (재사용 블록 라이브러리)
+export const contentBlockApi = {
+  /** GET /api/v1/content/blocks */
+  list(params?: { status?: string; type?: string }): Promise<{ data: ContentBlockResponse[] }> {
+    return apiClient.get(`${BASE}/blocks`, { params })
+  },
+
+  /** GET /api/v1/content/blocks/{id} */
+  getById(id: number): Promise<{ data: ContentBlockResponse }> {
+    return apiClient.get(`${BASE}/blocks/${id}`)
+  },
+
+  /** GET /api/v1/content/blocks/{id}/preview */
+  preview(id: number): Promise<{ data: { html: string } }> {
+    return apiClient.get(`${BASE}/blocks/${id}/preview`)
+  },
+
+  /** POST /api/v1/content/blocks */
+  create(req: ContentBlockRequest): Promise<{ data: ContentBlockResponse }> {
+    return apiClient.post(`${BASE}/blocks`, req)
+  },
+
+  /** PUT /api/v1/content/blocks/{id} */
+  update(id: number, req: ContentBlockRequest): Promise<{ data: ContentBlockResponse }> {
+    return apiClient.put(`${BASE}/blocks/${id}`, req)
+  },
+
+  /** PATCH /api/v1/content/blocks/{id}/status */
+  updateStatus(id: number, status: string): Promise<{ data: ContentBlockResponse }> {
+    return apiClient.patch(`${BASE}/blocks/${id}/status`, { status })
+  },
+
+  /** DELETE /api/v1/content/blocks/{id} */
+  delete(id: number): Promise<void> {
+    return apiClient.delete(`${BASE}/blocks/${id}`)
+  },
+}
