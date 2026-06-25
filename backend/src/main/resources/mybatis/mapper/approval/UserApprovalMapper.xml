@@ -24,6 +24,7 @@
         <result property="emailTag"          column="email_tag"         jdbcType="BINARY"/>
         <result property="emailKeyVersion"   column="email_key_version" jdbcType="SMALLINT"/>
         <result property="emailHmac"         column="email_hmac"/>
+        <result property="emailVerifiedAt"   column="email_verified_at"/>
     </resultMap>
 
     <sql id="pendingFilter">
@@ -35,10 +36,11 @@
         </if>
     </sql>
 
-    <!-- 대기열 목록 (가입일시 오름차순) — REQ-UA-007/008 -->
+    <!-- 대기열 목록 (가입일시 오름차순) — REQ-UA-007/008, REQ-UA2-008(email_verified_at) -->
     <select id="selectPendingApprovals" resultMap="pendingUserResultMap">
         SELECT id, uuid, username, name, status, created_at, organization_id,
-               email_encrypted, email_iv, email_tag, email_hmac, email_key_version
+               email_encrypted, email_iv, email_tag, email_hmac, email_key_version,
+               email_verified_at
         FROM users
         <include refid="pendingFilter"/>
         ORDER BY created_at ASC
@@ -52,10 +54,11 @@
         <include refid="pendingFilter"/>
     </select>
 
-    <!-- 단건 대기 사용자 상세 — REQ-UA-009 -->
+    <!-- 단건 대기 사용자 상세 — REQ-UA-009, REQ-UA2-008(email_verified_at) -->
     <select id="selectPendingById" resultMap="pendingUserResultMap">
         SELECT id, uuid, username, name, status, created_at, organization_id,
-               email_encrypted, email_iv, email_tag, email_hmac, email_key_version
+               email_encrypted, email_iv, email_tag, email_hmac, email_key_version,
+               email_verified_at
         FROM users
         WHERE id = #{userId}
           AND status = 'PENDING_APPROVAL'

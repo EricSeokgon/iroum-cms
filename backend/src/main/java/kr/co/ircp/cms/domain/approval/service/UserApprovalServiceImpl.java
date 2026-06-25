@@ -179,7 +179,8 @@ public class UserApprovalServiceImpl implements UserApprovalService {
                 decryptEmail(user),
                 user.getName(),
                 user.getCreatedAt(),
-                user.getOrganizationId());
+                user.getOrganizationId(),
+                user.getEmailVerifiedAt());
     }
 
     private String resolveEmail(long userId) {

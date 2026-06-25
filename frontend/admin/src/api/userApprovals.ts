@@ -25,6 +25,8 @@ export interface PendingUser {
   name: string
   createdAt: string
   organizationId: number | null
+  /** 이메일 인증 완료 시각 (null=미인증). SPEC-CMS-USER-APPROVAL-002 REQ-UA2-008 */
+  emailVerifiedAt: string | null
 }
 
 /** 일괄 처리 결과. */
