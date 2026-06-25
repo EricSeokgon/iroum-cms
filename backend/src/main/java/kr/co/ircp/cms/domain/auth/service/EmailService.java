@@ -47,4 +47,28 @@ public interface EmailService {
      * @param rejectionReason 거절 사유 (템플릿 변수 rejectionReason)
      */
     void sendApprovalRejected(String to, String userName, String rejectionReason);
+
+    /**
+     * 가입 승인 대기 리마인더 이메일 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-003/007 — USER_APPROVAL_REMINDER 템플릿에
+     * name·pendingDays 변수 주입. 발송 실패는 예외를 전파하지 않고 로그만 남긴다(graceful fallback).
+     *
+     * @param to          수신 이메일 주소
+     * @param name        사용자 이름 (템플릿 변수 name)
+     * @param pendingDays 대기 경과일 (템플릿 변수 pendingDays)
+     */
+    void sendApprovalReminder(String to, String name, long pendingDays);
+
+    /**
+     * 가입 자동 거절 안내 이메일 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-004/007 — USER_APPROVAL_AUTO_REJECTED 템플릿에
+     * name·rejectionReason 변수 주입. 발송 실패는 예외를 전파하지 않고 로그만 남긴다(graceful fallback).
+     *
+     * @param to              수신 이메일 주소
+     * @param name            사용자 이름 (템플릿 변수 name)
+     * @param rejectionReason 자동 거절 사유 (템플릿 변수 rejectionReason)
+     */
+    void sendApprovalAutoRejected(String to, String name, String rejectionReason);
 }

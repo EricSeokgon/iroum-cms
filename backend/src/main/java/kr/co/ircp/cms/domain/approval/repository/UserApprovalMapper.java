@@ -61,4 +61,45 @@ public interface UserApprovalMapper {
             @Param("rejectionReason") String rejectionReason,
             @Param("changedBy") long changedBy,
             @Param("changedAt") Instant changedAt);
+
+    /**
+     * 리마인더 대상 조회 — PENDING_APPROVAL 이면서 N일 경과 + 미발송(reminder_sent_at IS NULL).
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-003 — created_at &lt;= NOW() - thresholdDays.
+     *
+     * @param threshold 임계 시각 (NOW() - reminderDays). 이보다 created_at 이 이르면 대상.
+     */
+    List<User> selectReminderTargets(@Param("threshold") Instant threshold);
+
+    /**
+     * 리마인더 발송 완료 표시 — reminder_sent_at 을 멱등하게 기록한다.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-003 — reminder_sent_at IS NULL 인 행만 갱신하여 중복 미발송.
+     *
+     * @return 갱신 행 수 (0 = 이미 발송됨)
+     */
+    int markReminderSent(@Param("userId") long userId, @Param("sentAt") Instant sentAt);
+
+    /**
+     * 자동 거절 대상 조회 — PENDING_APPROVAL 이면서 maxWaitDays 초과.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-004 — created_at &lt; NOW() - maxWaitDays.
+     *
+     * @param threshold 임계 시각 (NOW() - maxWaitDays). 이보다 created_at 이 이르면 대상.
+     */
+    List<User> selectAutoRejectTargets(@Param("threshold") Instant threshold);
+
+    /**
+     * 자동 거절 처리 — PENDING_APPROVAL 행을 INACTIVE 로 전환한다(시스템 처리).
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-004 — approval_changed_by 를 NULL(시스템)로 기록한다.
+     * APPROVAL-001 의 {@link #updateApprovalStatus} 는 changedBy 가 primitive long 이라 NULL 불가하므로
+     * 자동 거절 전용 갱신을 분리한다.
+     *
+     * @return 갱신 행 수 (0 = 이미 처리되었거나 대기 상태 아님)
+     */
+    int autoReject(
+            @Param("userId") long userId,
+            @Param("rejectionReason") String rejectionReason,
+            @Param("changedAt") Instant changedAt);
 }
