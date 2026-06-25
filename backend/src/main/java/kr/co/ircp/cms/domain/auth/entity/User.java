@@ -93,4 +93,10 @@ public class User {
 
     /** 소속 조직 PK (NULL이면 미배정 — REQ-AUTH-014-D-2) */
     private Long organizationId;
+
+    /** 승인 대기 리마인더 발송 시각(미발송=NULL). SPEC-CMS-USER-APPROVAL-002 REQ-UA2-003 */
+    private Instant reminderSentAt;
+
+    /** 이메일 인증 완료 시각(NULL=미인증). SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 */
+    private Instant emailVerifiedAt;
 }

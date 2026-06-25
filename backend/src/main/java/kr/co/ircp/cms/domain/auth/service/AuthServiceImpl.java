@@ -13,6 +13,8 @@ import kr.co.ircp.cms.domain.auth.entity.User;
 import kr.co.ircp.cms.domain.auth.entity.UserStatus;
 import kr.co.ircp.cms.domain.auth.dto.VerifyRequestRequest;
 import kr.co.ircp.cms.domain.auth.entity.VerificationPurpose;
+import kr.co.ircp.cms.domain.auth.exception.RegistrationTokenInvalidException;
+import kr.co.ircp.cms.domain.auth.exception.RegistrationTokenRequiredException;
 import kr.co.ircp.cms.domain.auth.entity.VerificationRequest;
 import kr.co.ircp.cms.domain.auth.exception.AccountLockedException;
 import kr.co.ircp.cms.domain.auth.exception.DuplicateUserException;
@@ -503,6 +505,11 @@ public class AuthServiceImpl implements AuthService {
     public RegisterResult registerPublicUser(PublicRegisterRequest request, String ipAddress, String userAgent) {
         Instant now = Instant.now();
 
+        // SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — 이메일 인증 게이트(설정 ON 시) 선검증.
+        //   사용자 INSERT 이전에 토큰을 검증하여, 실패 시 사용자가 생성되지 않도록 한다.
+        //   토큰 누락 → 400, 토큰 무효/만료/목적불일치 → 403.
+        boolean emailVerified = validateRegistrationVerification(request);
+
         // 1. 중복 검사 — 이 엔드포인트는 email 을 곧 username 으로 사용한다.
         //    REQ-AUTH-006 컨벤션에 따라 username/email_hmac 두 컬럼 모두 충돌 여부를 검사한다.
         if (userMapper.existsByUsername(request.email())) {
@@ -538,6 +545,11 @@ public class AuthServiceImpl implements AuthService {
                 .emailHmac(emailHmac)
                 .build();
         userMapper.insert(user);
+
+        // SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — 인증 토큰 검증을 통과했으면 인증 완료 시각 기록.
+        if (emailVerified) {
+            userMapper.markEmailVerified(user.getId(), now);
+        }
 
         // SPEC-CMS-USER-APPROVAL-001 REQ-UA-001 — 게이트 ON: 역할·토큰 발급 없이 보류 결과만 반환.
         if (approvalRequired) {
@@ -594,6 +606,51 @@ public class AuthServiceImpl implements AuthService {
             return Boolean.parseBoolean(value);
         } catch (RuntimeException e) {
             // 설정 미존재(NoSuchElementException) 또는 조회 실패 → 게이트 OFF 로 회귀 방지.
+            return false;
+        }
+    }
+
+    /**
+     * 가입 이메일 인증 게이트 평가 + verifiedToken 검증.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — {@code REGISTRATION_EMAIL_VERIFY_REQUIRED}
+     * 가 false(기본)이면 검증을 건너뛰고 {@code false}(미인증) 를 반환하여 기존 가입 동작을
+     * 유지한다(회귀 방지). true 이면 다음을 강제한다:
+     * <ul>
+     *   <li>verifiedToken 필드 누락 → {@link RegistrationTokenRequiredException}(400)</li>
+     *   <li>토큰 무효·만료(5분 초과)·목적(purpose) 불일치 → {@link RegistrationTokenInvalidException}(403)</li>
+     * </ul>
+     *
+     * @return 인증 게이트를 통과한 경우 {@code true}(가입 후 email_verified_at 기록 대상)
+     */
+    private boolean validateRegistrationVerification(PublicRegisterRequest request) {
+        if (!isEmailVerifyRequired()) {
+            return false;
+        }
+        String token = request.verifiedToken();
+        if (token == null || token.isBlank()) {
+            throw new RegistrationTokenRequiredException();
+        }
+        // confirmPasswordReset 과 동일한 검증 경로 — purpose=SIGNUP, 5분 유효.
+        verificationService
+                .validateVerifiedToken(token, VerificationPurpose.SIGNUP)
+                .filter(vr -> vr.getTarget() != null
+                        && vr.getTarget().equalsIgnoreCase(request.email()))
+                .orElseThrow(RegistrationTokenInvalidException::new);
+        return true;
+    }
+
+    /**
+     * 가입 이메일 인증 필수 여부 설정 평가.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 NFR-UA2-C1 — {@code REGISTRATION_EMAIL_VERIFY_REQUIRED} 키가
+     * 없거나 파싱 실패 시 {@code false}(인증 비요구)로 간주하여 기존 동작을 유지한다(회귀 방지).
+     */
+    private boolean isEmailVerifyRequired() {
+        try {
+            String value = systemSettingService.get("REGISTRATION_EMAIL_VERIFY_REQUIRED").value();
+            return Boolean.parseBoolean(value);
+        } catch (RuntimeException e) {
             return false;
         }
     }

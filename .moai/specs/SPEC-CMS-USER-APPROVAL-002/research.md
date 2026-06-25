@@ -105,7 +105,7 @@ APPROVAL-001(`feat/SPEC-CMS-USER-APPROVAL-001`, Completed)이 게이트형 가�
 
 ### 마이그레이션 번호
 - main 최신 = **V53**. APPROVAL-001 = V58. (V54/V55/V56/V57은 EMAIL-TEMPLATE/POINTS 등 미머지 브랜치가 잠정 사용 중 — 충돌 위험.)
-- [HARD] SPEC-002 run 직전, **APPROVAL-001 머지 후의 실제 최신 마이그레이션 번호를 재확인**하고 그 다음 번호 사용. 본 SPEC 문서에서는 잠정 **V59**로 표기(APPROVAL-001 V58 다음 가정).
+- [HARD] SPEC-002 run 직전, **APPROVAL-001 머지 후의 실제 최신 마이그레이션 번호를 재확인**하고 그 다음 번호 사용. 본 SPEC 문서에서는 잠정 **V65**로 표기(APPROVAL-001 V58 다음 가정).
 
 ---
 

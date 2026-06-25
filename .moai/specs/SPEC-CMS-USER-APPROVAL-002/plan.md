@@ -8,7 +8,7 @@
 - **SPEC-CMS-EMAIL-TEMPLATE-001** (`EmailTemplateResolver`, `email_template` V55)
 - (SPEC-CMS-002의 `VerificationService`/`SIGNUP`은 이미 main 존재)
 
-run 직전 체크: `ls backend/src/main/java/kr/co/ircp/cms/domain/approval` 존재 확인 + 최신 마이그레이션 번호 재확인 → 그 다음 번호로 V 파일 생성(잠정 V59).
+run 직전 체크: `ls backend/src/main/java/kr/co/ircp/cms/domain/approval` 존재 확인 + 최신 마이그레이션 번호 재확인 → 그 다음 번호로 V 파일 생성(잠정 V65).
 
 ## 2. 기술 접근 (Technical Approach)
 

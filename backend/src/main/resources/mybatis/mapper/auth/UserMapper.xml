@@ -364,6 +364,15 @@
           AND deleted_at IS NULL
     </update>
 
+    <!-- 이메일 인증 완료 시각 기록 (SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002) -->
+    <update id="markEmailVerified">
+        UPDATE users
+        SET email_verified_at = #{verifiedAt},
+            updated_at        = #{verifiedAt}
+        WHERE id = #{id}
+          AND deleted_at IS NULL
+    </update>
+
     <!-- 사용자 소속 조직 갱신 (REQ-AUTH-014-D-2, null이면 배정 해제) -->
     <update id="updateOrganization">
         UPDATE users

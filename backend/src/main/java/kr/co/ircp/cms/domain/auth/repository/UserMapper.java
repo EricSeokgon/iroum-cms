@@ -214,6 +214,17 @@ public interface UserMapper {
     void updatePassword(@Param("id") long id, @Param("hash") String hash, @Param("now") Instant now);
 
     /**
+     * 이메일 인증 완료 시각 기록.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — 가입 시 verifiedToken(SIGNUP) 검증 성공 후
+     * {@code email_verified_at} 을 기록한다.
+     *
+     * @param id         사용자 PK
+     * @param verifiedAt 인증 완료 시각
+     */
+    void markEmailVerified(@Param("id") long id, @Param("verifiedAt") Instant verifiedAt);
+
+    /**
      * 사용자의 소속 조직 갱신.
      *
      * <p>REQ-AUTH-014-D-2 — organizationId가 null이면 조직 배정 해제.
