@@ -22,6 +22,14 @@
 
 ### Added
 
+- **페이지 버전 이력 관리 고도화** (SPEC-CMS-PAGE-HISTORY-001)
+  - **이력 보존 정책 배치** (`PageHistoryRetentionService`): 페이지당 최대 50건 유지, `currentVersion` 항목 보호. `PageHistoryMapper`에 `countByPageId` / `deleteOldestByPageId` 추가. `application.yml: cms.history.max-versions: 50`
+  - **롤백 실제 복원** (`PageServiceImpl.rollbackPage()`): snapshot JSON 파싱하여 `title` / `slug` 실제 복원 (이전: version 번호만 업데이트)
+  - **changeSummary 자동 생성** (`PageChangeSummaryGenerator`): title/slug 변경 감지 기반 diff 자동 요약, 사용자 입력 우선·'변경 없음' fallback 지원
+  - **롤백 감사 로그** (`AuditLogService.record(action="UPDATE")`): 롤백 시 `afterValue`에 from/to version 포함하여 수동 호출 (`@AuditLog` aspect 미사용 — 실패 시 FAILURE 이중 기록 방지)
+  - **PageListView 이력 진입점** (`PageListView.vue`): 이력 버튼 + `PageHistoryDialog` 연동 + 롤백 후 목록 새로고침. `ko.json: content.page.action.history` 메시지 추가
+  - **테스트**: `PageChangeSummaryGeneratorTest` 5건, `PageServiceTest` 17건, `PageIT` (Retention 3 / RollbackRestore 2 / RollbackAudit 2) 7건, `PageListView.spec` 4건 — 전 19 AC GREEN
+
 - **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
   - ADMIN 역할 시드 및 5단 권한 계층 (`SUPER_ADMIN > ADMIN > DEPT_ADMIN > EDITOR > VIEWER`) — V48 Flyway 마이그레이션
   - 어드민 메뉴 접근 권한 카탈로그 (`admin_menu` / `admin_menu_permissions` 테이블) — V49 Flyway 마이그레이션
