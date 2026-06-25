@@ -18,7 +18,8 @@ run 직전 체크: `ls backend/src/main/java/kr/co/ircp/cms/domain/approval` 존
   - 설정 ON → `request.verifiedToken`을 `validateVerifiedToken(token, SIGNUP)`로 검증, 실패 시 예외(403/400).
   - 설정 OFF → 기존 흐름 유지.
 - `PublicRegisterRequest`에 `verifiedToken` 필드 additive(설정 OFF 시 무시).
-- 인증 코드 발송 채널이 OTP 자체 발송인지 `EmailTemplateResolver` 경유인지 plan 검토 후 `USER_APPROVAL_VERIFY_CODE` 템플릿 사용 여부 확정.
+- 인증 코드 발송 채널: 기존 `VerificationService` OTP 채널 단일화. `USER_APPROVAL_VERIFY_CODE` 템플릿은 추가하지 않는다(Section 1.1 [4] 결정).
+- register 성공 + verifiedToken 검증 성공 시 `email_verified_at` 컬럼에 현재 시각 기록.
 
 ### 2.2 스케줄러 (Area 2) — 순신규
 - `domain.approval.job.ApprovalReminderJob` + `ApprovalAutoRejectJob`(또는 단일 `ApprovalLifecycleJob`), `@Component`+`@Scheduled(cron)`.
@@ -33,7 +34,8 @@ run 직전 체크: `ls backend/src/main/java/kr/co/ircp/cms/domain/approval` 존
 - 프론트: `ApprovalQueueView`에 경과일/인증여부 컬럼 + 부분 실패 상세 표시.
 
 ### 2.4 데이터 (T0)
-- 단일 Flyway 파일: `reminder_sent_at` additive + 설정 3종 + 이메일 템플릿 3종(ko/en).
+- 단일 Flyway 파일: `reminder_sent_at` additive + `email_verified_at` additive + 설정 3종(`REGISTRATION_APPROVAL_REMINDER_DAYS`, `REGISTRATION_APPROVAL_MAX_WAIT_DAYS`, `REGISTRATION_EMAIL_VERIFY_REQUIRED`) + 이메일 템플릿 2종(ko/en): `USER_APPROVAL_REMINDER`, `USER_APPROVAL_AUTO_REJECTED`.
+- `USER_APPROVAL_VERIFY_CODE` 템플릿 시드 없음 — VerificationService OTP 채널 재사용.
 - 모든 시드 idempotent(`ON CONFLICT DO NOTHING`).
 
 ## 3. 마일스톤 (우선순위 기반, 시간 추정 없음)
