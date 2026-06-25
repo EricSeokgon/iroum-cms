@@ -174,6 +174,74 @@ public class EmailServiceImpl implements EmailService {
         }
     }
 
+    /**
+     * 가입 승인 대기 리마인더 이메일 비동기 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-003/007 — USER_APPROVAL_REMINDER 템플릿 우선,
+     * 미존재/실패 시 하드코딩 fallback. 발송 실패는 예외를 전파하지 않는다.
+     */
+    @Async("auditExecutor")
+    @Override
+    public void sendApprovalReminder(String to, String name, long pendingDays) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(to);
+
+            Optional<RenderResult> rendered = templateResolver.resolveAndRender(
+                    "USER_APPROVAL_REMINDER", "ko",
+                    Map.of("name", nullToEmpty(name), "pendingDays", String.valueOf(pendingDays)));
+            if (rendered.isPresent()) {
+                message.setSubject(rendered.get().subject());
+                message.setText(plainBody(rendered.get()));
+            } else {
+                message.setSubject("[이루움 CMS] 가입 승인 대기 안내");
+                message.setText(String.format(
+                    "안녕하세요, %s님.\n\n가입 신청이 %d일째 승인 대기 중입니다.\n" +
+                    "관리자 승인 후 서비스를 이용하실 수 있습니다.\n\n이루움 CMS",
+                    nullToEmpty(name), pendingDays));
+            }
+            mailSender.send(message);
+            log.debug("가입 승인 대기 리마인더 발송 완료: to={}, pendingDays={}", to, pendingDays);
+        } catch (Exception e) {
+            log.error("가입 승인 대기 리마인더 발송 실패 (non-blocking): to={}", to, e);
+        }
+    }
+
+    /**
+     * 가입 자동 거절 안내 이메일 비동기 발송.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-004/007 — USER_APPROVAL_AUTO_REJECTED 템플릿 우선,
+     * 미존재/실패 시 하드코딩 fallback. 발송 실패는 예외를 전파하지 않는다.
+     */
+    @Async("auditExecutor")
+    @Override
+    public void sendApprovalAutoRejected(String to, String name, String rejectionReason) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(to);
+
+            Optional<RenderResult> rendered = templateResolver.resolveAndRender(
+                    "USER_APPROVAL_AUTO_REJECTED", "ko",
+                    Map.of("name", nullToEmpty(name),
+                           "rejectionReason", nullToEmpty(rejectionReason)));
+            if (rendered.isPresent()) {
+                message.setSubject(rendered.get().subject());
+                message.setText(plainBody(rendered.get()));
+            } else {
+                message.setSubject("[이루움 CMS] 가입 신청이 자동 거절되었습니다");
+                message.setText(String.format(
+                    "안녕하세요, %s님.\n\n가입 신청이 자동 거절되었습니다.\n사유: %s\n\n이루움 CMS",
+                    nullToEmpty(name), nullToEmpty(rejectionReason)));
+            }
+            mailSender.send(message);
+            log.debug("가입 자동 거절 안내 발송 완료: to={}", to);
+        } catch (Exception e) {
+            log.error("가입 자동 거절 안내 발송 실패 (non-blocking): to={}", to, e);
+        }
+    }
+
     /** 렌더링 결과에서 평문 본문을 추출한다(평문 없으면 HTML 사용 — SimpleMailMessage는 평문). */
     private String plainBody(RenderResult result) {
         return result.bodyText() != null && !result.bodyText().isBlank()
