@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-USER-APPROVAL-002
-version: 0.1.1
-status: draft
+version: 0.1.2
+status: Implemented
 created_at: 2026-06-25
 updated_at: 2026-06-25
 priority: medium
@@ -12,6 +12,7 @@ labels: [cms, user-approval, email-verification, reminder, bulk-action]
 
 ## HISTORY
 
+- 2026-06-25 (v0.1.2): TDD RUN 완료(status Implemented). V59 마이그레이션(reminder_sent_at/email_verified_at + 설정 3종 + 이메일 템플릿 2종), register verifiedToken 게이트(400/403), ApprovalReminderJob(@Scheduled 02:00 리마인더+자동거절), 프론트 이메일 인증 컬럼. 백엔드 IT 15(RegisterEmailVerify 5 + ApprovalScheduler 8 + ApprovalSummaryVerify 2) + 컨트롤러 11 + 프론트 6 GREEN. MigrationOrderIT 57→58.
 - 2026-06-25 (v0.1.1): plan-auditor REJECT/WARN 수정. REJECT-1: USER_APPROVAL_VERIFY_CODE 템플릿 제거(VerificationService OTP 채널로 대체), Section 1.1 결정 명시. REJECT-2: email_verified_at TIMESTAMPTZ 컬럼 추가. WARN 전체 반영(REQ 분리, NFR 추가, Exclusions 보강, HTTP 코드 확정).
 - 2026-06-25 (v0.1.0): 최초 작성 (Draft). SPEC-CMS-USER-APPROVAL-001(게이트형 가입 승인)을 고도화하여 ① 가입 이메일 인증 코드, ② 승인 대기 리마인더/자동 만료 스케줄러, ③ 일괄 승인/거절 보강을 정의. 신규 인프라 구축이 아니라 기존 OTP(SPEC-CMS-002 VerificationService)·이메일 템플릿·`@Scheduled` 잡·승인 도메인 확장 원칙.
 
