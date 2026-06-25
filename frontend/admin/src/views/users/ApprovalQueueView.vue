@@ -53,6 +53,17 @@
       <el-table-column label="가입신청일" min-width="180">
         <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
       </el-table-column>
+      <el-table-column label="이메일 인증" min-width="110">
+        <template #default="{ row }">
+          <el-tag
+            :type="row.emailVerifiedAt ? 'success' : 'info'"
+            size="small"
+            data-testid="email-verify-tag"
+          >
+            {{ row.emailVerifiedAt ? '인증 완료' : '미인증' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="처리" width="180" fixed="right">
         <template #default="{ row }">
           <el-button
