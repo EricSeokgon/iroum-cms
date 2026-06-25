@@ -65,7 +65,7 @@ Given-When-Then 시나리오. REQ당 3~4개, 총 27개.
 ## Definition of Done
 
 - [ ] 8개 REQ 전부 위 AC로 검증(총 27 AC) GREEN.
-- [ ] 마이그레이션(잠정 V59) Flyway 적용 PASS, idempotent 재실행 PASS.
+- [ ] 마이그레이션(잠정 V61) Flyway 적용 PASS, idempotent 재실행 PASS.
 - [ ] register 인증 게이트 OFF 시 기존 가입 회귀 없음.
 - [ ] 리마인더/자동거절 잡 멱등성·설정 0 비활성 검증.
 - [ ] 일괄 승인/거절 기구현 회귀 GREEN.

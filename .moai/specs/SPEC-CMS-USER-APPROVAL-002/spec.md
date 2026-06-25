@@ -147,7 +147,7 @@ WHERE 관리자 승인 대기열 화면(`ApprovalQueueView.vue`, 기구현)이 �
 ### 5.3 호환성/회귀 방지
 - **NFR-UA2-C1**: 가입 인증 요구는 게이트와 독립적이되, 기존 가입 동작을 깨지 않도록 인증 요구 활성 여부 자체를 `system_setting`(`REGISTRATION_EMAIL_VERIFY_REQUIRED`, BOOL, 기본 운영 정책에 따름)로 제어 가능해야 한다.
 - **NFR-UA2-C2**: 리마인더/자동거절은 설정 미지정 또는 0 이하 시 비활성(기존 무동작 유지).
-- **NFR-UA2-C3**: 마이그레이션은 단일 Flyway 파일에 통합한다(additive 컬럼 + 설정 시드 + 이메일 템플릿 3종 시드). **마이그레이션 번호는 APPROVAL-001 머지 후 최신 번호의 다음 값**으로 run 직전 확정한다(잠정 V59).
+- **NFR-UA2-C3**: 마이그레이션은 단일 Flyway 파일에 통합한다(additive 컬럼 + 설정 시드 + 이메일 템플릿 3종 시드). **마이그레이션 번호는 APPROVAL-001 머지 후 최신 번호의 다음 값**으로 run 직전 확정한다(잠정 V61).
 
 ---
 
@@ -210,7 +210,7 @@ WHERE 관리자 승인 대기열 화면(`ApprovalQueueView.vue`, 기구현)이 �
 
 | ID | 작업 | 우선순위 |
 |----|------|---------|
-| T0 | 마이그레이션(잠정 V59): `reminder_sent_at` 컬럼 + `email_verified_at` 컬럼 + 설정 3종 + 이메일 템플릿 2종 시드(`USER_APPROVAL_REMINDER`, `USER_APPROVAL_AUTO_REJECTED`) | High |
+| T0 | 마이그레이션(잠정 V61): `reminder_sent_at` 컬럼 + `email_verified_at` 컬럼 + 설정 3종 + 이메일 템플릿 2종 시드(`USER_APPROVAL_REMINDER`, `USER_APPROVAL_AUTO_REJECTED`) | High |
 | T1 | register 흐름에 `verifiedToken`(SIGNUP) 필수화 분기(설정 게이트) | High |
 | T2 | 리마인더 `@Scheduled` 잡 + 대기열 쿼리 + 이메일 | High |
 | T3 | 자동 거절 `@Scheduled` 잡 + 상태 전환 + 이메일 | High |

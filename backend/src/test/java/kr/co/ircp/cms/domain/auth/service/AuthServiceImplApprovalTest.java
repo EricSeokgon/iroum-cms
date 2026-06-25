@@ -95,7 +95,7 @@ class AuthServiceImplApprovalTest {
     }
 
     private static PublicRegisterRequest req() {
-        return new PublicRegisterRequest("citizen@example.com", "Passw0rd!", "시민");
+        return new PublicRegisterRequest("citizen@example.com", "Passw0rd!", "시민", null);
     }
 
     @Test
