@@ -54,9 +54,15 @@
       <el-table-column :label="t('content.page.field.updatedAt')" width="160">
         <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
       </el-table-column>
-      <el-table-column :label="t('common.actions')" width="230" fixed="right">
+      <el-table-column :label="t('common.actions')" width="300" fixed="right">
         <template #default="{ row }">
           <el-button size="small" @click="goEdit(row.id)">{{ t('common.edit') }}</el-button>
+          <!-- REQ-PHIST-005: 이력 진입점 (PAGE:HISTORY:READ 권한 보유 시에만 렌더) -->
+          <el-button
+            v-if="canViewHistory"
+            size="small"
+            @click="openHistory(row)"
+          >{{ t('content.page.action.history') }}</el-button>
           <el-button
             v-if="row.status === 'DRAFT'"
             size="small"
@@ -81,6 +87,13 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- REQ-PHIST-005: 페이지 이력 다이얼로그 (에디터와 동일 컴포넌트 재사용) -->
+    <PageHistoryDialog
+      v-model="historyOpen"
+      :page-id="historyPageId"
+      @rolledBack="handleRolledBack"
+    />
 
     <!-- 페이지네이션 -->
     <div class="mt-4 flex justify-end">
@@ -156,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -164,10 +177,20 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { pages, templates } from '@/api/content'
 import type { PageItemResponse as PageType, TemplateResponse, PageStatus } from '@/api/content'
 import { useSiteStore } from '@/stores/content'
+import { usePermissionStore } from '@/stores/permissionStore'
+import PageHistoryDialog from '@/components/content/PageHistoryDialog.vue'
 
 const { t } = useI18n()
 const router = useRouter()
 const siteStore = useSiteStore()
+const permissionStore = usePermissionStore()
+
+// REQ-PHIST-005 / AC-PHIST-019: 권한 보유 시에만 이력 버튼 노출
+const canViewHistory = computed(() => permissionStore.hasPermission('PAGE:HISTORY:READ'))
+
+// 이력 다이얼로그 상태
+const historyOpen = ref(false)
+const historyPageId = ref<number | null>(null)
 
 const statusOptions: PageStatus[] = ['DRAFT', 'SCHEDULED', 'PUBLISHED', 'RETRACTED']
 
@@ -256,6 +279,18 @@ async function loadTemplates(): Promise<void> {
 
 function goEdit(id: number): void {
   router.push({ name: 'content-page-edit', params: { id } })
+}
+
+// REQ-PHIST-005 / AC-PHIST-017: 이력 버튼 클릭 → 해당 pageId로 다이얼로그 오픈
+function openHistory(row: PageType): void {
+  historyPageId.value = row.id
+  historyOpen.value = true
+}
+
+// REQ-PHIST-005 / AC-PHIST-018: 롤백 후 목록 새로고침 (status=DRAFT/version 반영)
+async function handleRolledBack(): Promise<void> {
+  historyOpen.value = false
+  await loadPages()
 }
 
 function openCreate(): void {
