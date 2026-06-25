@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.content.page.service;
 
+import kr.co.ircp.cms.domain.audit.service.AuditLogService;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
@@ -46,12 +47,18 @@ class PageServiceTest {
     @Mock private ContentBlockMapper contentBlockMapper;
     @Mock private PageHistoryMapper pageHistoryMapper;
     @Mock private SeoRedirectService seoRedirectService;
+    @Mock private PageHistoryRetentionService pageHistoryRetentionService;
+    @Mock private AuditLogService auditLogService;
 
     private PageService pageService;
 
     @BeforeEach
     void setUp() {
-        pageService = new PageServiceImpl(pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService);
+        // PageChangeSummaryGenerator·ObjectMapper는 순수 함수형이라 실제 인스턴스 사용 (mock 불필요)
+        pageService = new PageServiceImpl(
+                pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService,
+                new PageChangeSummaryGenerator(), pageHistoryRetentionService,
+                auditLogService, new com.fasterxml.jackson.databind.ObjectMapper());
     }
 
     private Page stubPage(long id, String status, String slug) {
@@ -279,6 +286,119 @@ class PageServiceTest {
         assertThat(response).isNotNull();
         // 롤백 후 status는 DRAFT로 초기화되어야 함
         assertThat(response.status()).isEqualTo("DRAFT");
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-002/004: 롤백 실제 복원 + 감사 로그
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("AC-PHIST-005/006: 롤백 시 snapshot의 title/slug 복원 + status=DRAFT + version+1")
+    void rollback_restoresSnapshotFieldsAndIncrementsVersion() {
+        // Arrange — currentVersion=3, snapshot은 원본 title/slug 보유
+        Page page = Page.builder().id(1L).siteId(1L).templateId(1L).code("PAGE_1")
+                .title("현재 제목").slug("current-slug").status("PUBLISHED")
+                .currentVersion(3).createdBy(99L)
+                .createdAt(Instant.now()).updatedAt(Instant.now()).build();
+        PageHistory histV1 = PageHistory.builder().id(1L).pageId(1L).version(1)
+                .snapshot("{\"title\":\"원본\",\"slug\":\"orig\"}")
+                .editedBy(99L).editedAt(Instant.now()).build();
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(page));
+        when(pageHistoryMapper.findByPageIdAndVersion(1L, 1)).thenReturn(Optional.of(histV1));
+        when(pageMapper.update(any())).thenReturn(1);
+
+        // Act
+        PageResponse response = pageService.rollbackPage(1L, 1, 99L);
+
+        // Assert — 실제 필드 복원 (AC-PHIST-005)
+        assertThat(response.title()).isEqualTo("원본");
+        assertThat(response.slug()).isEqualTo("orig");
+        // status=DRAFT, version 증가 (AC-PHIST-006)
+        assertThat(response.status()).isEqualTo("DRAFT");
+        assertThat(response.currentVersion()).isEqualTo(4);
+    }
+
+    @Test
+    @DisplayName("AC-PHIST-007: 롤백 시 changeSummary에 ROLLBACK_FROM_v1 패턴을 포함한 이력 기록")
+    void rollback_recordsHistoryWithRollbackSummary() {
+        // Arrange
+        Page page = stubPage(1L, "PUBLISHED", "about-us");
+        PageHistory histV1 = PageHistory.builder().id(1L).pageId(1L).version(1)
+                .snapshot("{\"title\":\"원본\",\"slug\":\"orig\"}")
+                .editedBy(99L).editedAt(Instant.now()).build();
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(page));
+        when(pageHistoryMapper.findByPageIdAndVersion(1L, 1)).thenReturn(Optional.of(histV1));
+        when(pageMapper.update(any())).thenReturn(1);
+
+        org.mockito.ArgumentCaptor<PageHistory> captor =
+                org.mockito.ArgumentCaptor.forClass(PageHistory.class);
+
+        // Act
+        pageService.rollbackPage(1L, 1, 99L);
+
+        // Assert — 롤백 이력 INSERT 시 changeSummary 검증
+        verify(pageHistoryMapper).insert(captor.capture());
+        assertThat(captor.getValue().getChangeSummary()).contains("ROLLBACK_FROM_v1");
+    }
+
+    @Test
+    @DisplayName("AC-PHIST-013/014: 롤백 성공 시 audit_log를 action=UPDATE/entityType=Page로 1건 기록")
+    void rollback_recordsAuditLogOnSuccess() {
+        // Arrange
+        Page page = stubPage(1L, "PUBLISHED", "about-us");
+        PageHistory histV1 = PageHistory.builder().id(1L).pageId(1L).version(1)
+                .snapshot("{\"title\":\"원본\",\"slug\":\"orig\"}")
+                .editedBy(99L).editedAt(Instant.now()).build();
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(page));
+        when(pageHistoryMapper.findByPageIdAndVersion(1L, 1)).thenReturn(Optional.of(histV1));
+        when(pageMapper.update(any())).thenReturn(1);
+
+        org.mockito.ArgumentCaptor<AuditLogService.AuditLogRecord> captor =
+                org.mockito.ArgumentCaptor.forClass(AuditLogService.AuditLogRecord.class);
+
+        // Act
+        pageService.rollbackPage(1L, 1, 99L);
+
+        // Assert — 감사 로그 1건 + action/entityType + afterValue에 from/to version
+        verify(auditLogService).record(captor.capture());
+        AuditLogService.AuditLogRecord rec = captor.getValue();
+        assertThat(rec.action()).isEqualTo("UPDATE");
+        assertThat(rec.entityType()).isEqualTo("Page");
+        assertThat(rec.entityId()).isEqualTo("1");
+        assertThat(rec.afterValue()).contains("from_version").contains("to_version");
+    }
+
+    @Test
+    @DisplayName("AC-PHIST-015: 롤백 실패(version 미존재) 시 audit_log를 기록하지 않는다")
+    void rollback_doesNotRecordAuditOnFailure() {
+        // Arrange — version 미존재
+        Page page = stubPage(1L, "PUBLISHED", "about-us");
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(page));
+        when(pageHistoryMapper.findByPageIdAndVersion(1L, 99))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert — 예외 발생
+        assertThatThrownBy(() -> pageService.rollbackPage(1L, 99, 99L))
+                .isInstanceOf(RuntimeException.class);
+        // 감사 로그 미기록
+        org.mockito.Mockito.verifyNoInteractions(auditLogService);
+    }
+
+    @Test
+    @DisplayName("AC-PHIST-001 wiring: updatePage 후 보존 정책 enforceRetention 호출")
+    void updatePage_invokesRetention() {
+        // Arrange
+        Page existing = stubPage(1L, "DRAFT", "about-us");
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(pageMapper.update(any())).thenReturn(1);
+        PageUpdateRequest request = new PageUpdateRequest(
+                "수정된 제목", "about-us", null, null, null, null, null, null, null, "제목 변경");
+
+        // Act
+        pageService.updatePage(1L, request, 99L);
+
+        // Assert — 보존 정책 적용 호출 (currentVersion=1 전달)
+        verify(pageHistoryRetentionService).enforceRetention(1L, 1);
     }
 
     // ──────────────────────────────────────────────

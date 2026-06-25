@@ -23,4 +23,19 @@ public interface PageHistoryMapper {
 
     /** 이력 INSERT */
     void insert(PageHistory history);
+
+    /**
+     * 페이지 이력 건수 조회.
+     * REQ-PHIST-001: 보존 한도 초과 판단용.
+     */
+    int countByPageId(@Param("pageId") Long pageId);
+
+    /**
+     * 페이지별 최신 keepCount개 version을 보존하고 나머지 오래된 이력을 삭제한다.
+     * REQ-PHIST-001: 보존 정책 정리. 항상 최신 version부터 보존하므로 currentVersion은 삭제되지 않는다.
+     *
+     * @param pageId    대상 페이지 ID
+     * @param keepCount 보존할 최신 version 개수
+     */
+    void deleteOldestByPageId(@Param("pageId") Long pageId, @Param("keepCount") int keepCount);
 }

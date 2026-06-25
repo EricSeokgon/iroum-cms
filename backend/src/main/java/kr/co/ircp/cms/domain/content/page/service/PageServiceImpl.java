@@ -1,5 +1,9 @@
 package kr.co.ircp.cms.domain.content.page.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.co.ircp.cms.domain.audit.service.AuditLogService;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
@@ -26,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -48,6 +53,10 @@ public class PageServiceImpl implements PageService {
     private final ContentBlockMapper contentBlockMapper;
     private final PageHistoryMapper pageHistoryMapper;
     private final SeoRedirectService seoRedirectService;
+    private final PageChangeSummaryGenerator changeSummaryGenerator;
+    private final PageHistoryRetentionService pageHistoryRetentionService;
+    private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper;
 
     /**
      * 페이지 생성.
@@ -98,6 +107,9 @@ public class PageServiceImpl implements PageService {
         Page existing = pageMapper.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("페이지를 찾을 수 없습니다. id=" + id));
 
+        // REQ-PHIST-003: changeSummary 미입력 시 diff 기반 자동 생성 (사용자 입력 우선)
+        String changeSummary = changeSummaryGenerator.summarize(existing, request);
+
         // 수정 전 스냅샷을 page_history에 기록
         PageHistory history = PageHistory.builder()
                 .pageId(id)
@@ -105,9 +117,12 @@ public class PageServiceImpl implements PageService {
                 .snapshot("{\"title\":\"" + existing.getTitle() + "\",\"slug\":\"" + existing.getSlug() + "\"}")
                 .editedBy(updatedBy)
                 .editedAt(Instant.now())
-                .changeSummary(request.changeSummary())
+                .changeSummary(changeSummary)
                 .build();
         pageHistoryMapper.insert(history);
+
+        // REQ-PHIST-001: 이력 보존 정책 — 페이지당 최대 보존 한도 초과분 정리
+        pageHistoryRetentionService.enforceRetention(id, existing.getCurrentVersion());
 
         // slug 변경 시 seo_redirect 자동 INSERT (REQ-CONTENT-005-D-8)
         // Step 2: pageMapper.insertSeoRedirect 직접 호출 → SeoRedirectService 추상화로 변경
@@ -221,16 +236,22 @@ public class PageServiceImpl implements PageService {
         PageHistory historySnapshot = pageHistoryMapper.findByPageIdAndVersion(id, version)
                 .orElseThrow(() -> new PageHistoryVersionNotFoundException(version));
 
-        // snapshot 기반 복원 (간단히 status만 DRAFT로 강제, 실제 필드 복원은 snapshot JSON 파싱 필요)
+        int fromVersion = page.getCurrentVersion();
+
+        // REQ-PHIST-002: snapshot JSON 파싱하여 title/slug 등 페이지 필드 실제 복원
+        // snapshot 포맷: {"title":"...","slug":"..."} — 누락 키는 기존 값 유지
+        restoreFromSnapshot(page, historySnapshot.getSnapshot());
         page.setStatus("DRAFT");
-        page.setCurrentVersion(page.getCurrentVersion() + 1);
+        page.setCurrentVersion(fromVersion + 1);
         page.setUpdatedBy(rolledBackBy);
         pageMapper.update(page);
+
+        int toVersion = page.getCurrentVersion();
 
         // 롤백 이력 기록
         PageHistory rollbackHistory = PageHistory.builder()
                 .pageId(id)
-                .version(page.getCurrentVersion())
+                .version(toVersion)
                 .snapshot(historySnapshot.getSnapshot())
                 .editedBy(rolledBackBy)
                 .editedAt(Instant.now())
@@ -238,7 +259,61 @@ public class PageServiceImpl implements PageService {
                 .build();
         pageHistoryMapper.insert(rollbackHistory);
 
+        // REQ-PHIST-004: 롤백 성공 시에만 감사 로그 기록 (실패 시 예외가 위에서 throw되어 미기록)
+        // action="UPDATE" (audit_log CHECK 제약 준수), afterValue에 from/to version 기록.
+        recordRollbackAudit(id, rolledBackBy, fromVersion, toVersion);
+
         return PageResponse.from(page);
+    }
+
+    /**
+     * snapshot JSON을 파싱하여 페이지 필드를 복원한다.
+     * REQ-PHIST-002 — title/slug 복원. 누락 키는 기존 값 유지.
+     */
+    private void restoreFromSnapshot(Page page, String snapshotJson) {
+        try {
+            JsonNode snapshot = objectMapper.readTree(snapshotJson);
+            if (snapshot.hasNonNull("title")) {
+                page.setTitle(snapshot.get("title").asText());
+            }
+            if (snapshot.hasNonNull("slug")) {
+                page.setSlug(snapshot.get("slug").asText());
+            }
+        } catch (JsonProcessingException e) {
+            // snapshot 파싱 실패 시 필드 복원을 건너뛰고 status/version 변경만 적용 (best-effort)
+            // 실 데이터는 항상 유효 JSON이므로 운영 중 발생 가능성 낮음.
+        }
+    }
+
+    /**
+     * 롤백 작업 감사 로그를 기록한다.
+     * REQ-PHIST-004 — action="UPDATE", entityType="Page", afterValue={"from_version":N,"to_version":M}.
+     */
+    private void recordRollbackAudit(Long pageId, Long actorId, int fromVersion, int toVersion) {
+        String afterValue;
+        try {
+            afterValue = objectMapper.writeValueAsString(
+                    Map.of("from_version", fromVersion, "to_version", toVersion));
+        } catch (JsonProcessingException e) {
+            afterValue = "{\"from_version\":" + fromVersion + ",\"to_version\":" + toVersion + "}";
+        }
+        auditLogService.record(new AuditLogService.AuditLogRecord(
+                Instant.now(),
+                actorId,
+                null,
+                "UPDATE",
+                "Page",
+                String.valueOf(pageId),
+                null,
+                afterValue,
+                null,
+                null,
+                null,
+                "INFO",
+                "SUCCESS",
+                null,
+                null
+        ));
     }
 
     /**

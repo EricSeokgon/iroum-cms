@@ -31,4 +31,22 @@
         VALUES (#{pageId}, #{version}, #{snapshot}::jsonb, #{editedBy}, #{changeSummary})
     </insert>
 
+    <!-- REQ-PHIST-001: 페이지 이력 건수 조회 (보존 한도 초과 판단) -->
+    <select id="countByPageId" resultType="int">
+        SELECT COUNT(*) FROM page_history WHERE page_id = #{pageId}
+    </select>
+
+    <!-- REQ-PHIST-001: 최신 keepCount개 version 보존, 나머지 오래된 이력 삭제.
+         version DESC 정렬로 보존 대상을 선정하므로 currentVersion(최대 version)은 항상 보존된다. -->
+    <delete id="deleteOldestByPageId">
+        DELETE FROM page_history
+        WHERE page_id = #{pageId}
+          AND id NOT IN (
+              SELECT id FROM page_history
+              WHERE page_id = #{pageId}
+              ORDER BY version DESC
+              LIMIT #{keepCount}
+          )
+    </delete>
+
 </mapper>

@@ -2,6 +2,7 @@ package kr.co.ircp.cms.domain.content;
 
 import kr.co.ircp.cms.domain.auth.repository.TokenBlacklistMapper;
 import kr.co.ircp.cms.domain.auth.service.JwtTokenProvider;
+import kr.co.ircp.cms.domain.content.page.service.PageHistoryRetentionService;
 import kr.co.ircp.cms.integration.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -45,6 +47,7 @@ class PageIT extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbcTemplate;
+    @Autowired PageHistoryRetentionService retentionService;
 
     @MockitoBean JwtTokenProvider jwtTokenProvider;
     @MockitoBean TokenBlacklistMapper tokenBlacklistMapper;
@@ -338,10 +341,203 @@ class PageIT extends AbstractIntegrationTest {
         }
     }
 
+    // ─── SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001: 이력 보존 정책 ────────────────
+
+    @Nested
+    @DisplayName("REQ-PHIST-001: 이력 보존 정책 (Retention)")
+    class PageHistoryRetention {
+
+        @Test
+        @DisplayName("AC-PHIST-001: 52건 이력 + max=50 → version 1·2 삭제, 3~52 보존")
+        void retention_keepsLatest50_deletesOldest2() {
+            long pageId = insertPage(siteId, templateId, "RT1-" + uid().toUpperCase(),
+                    "rt1-" + uid(), "DRAFT");
+            // 52개 이력 시드 (version 1~52)
+            for (int v = 1; v <= 52; v++) {
+                insertPageHistory(pageId, v, "{\"title\":\"v" + v + "\",\"slug\":\"s" + v + "\"}");
+            }
+
+            // 보존 정책 적용 (max=50)
+            retentionService.enforceRetention(pageId, 52);
+
+            assertThat(countHistory(pageId)).isEqualTo(50);
+            assertThat(historyExists(pageId, 1)).isFalse();
+            assertThat(historyExists(pageId, 2)).isFalse();
+            assertThat(historyExists(pageId, 3)).isTrue();
+            assertThat(historyExists(pageId, 52)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-PHIST-002: 정리 후 currentVersion(최신 version) 항목은 보존된다")
+        void retention_preservesCurrentVersion() {
+            long pageId = insertPage(siteId, templateId, "RT2-" + uid().toUpperCase(),
+                    "rt2-" + uid(), "DRAFT");
+            for (int v = 1; v <= 52; v++) {
+                insertPageHistory(pageId, v, "{\"title\":\"v" + v + "\"}");
+            }
+
+            retentionService.enforceRetention(pageId, 52);
+
+            // currentVersion=52 항목은 절대 삭제되지 않음
+            assertThat(historyExists(pageId, 52)).isTrue();
+        }
+
+        @Test
+        @DisplayName("AC-PHIST-004: 페이지 A 정리가 페이지 B(10건) 이력에 영향을 주지 않는다")
+        void retention_isolatesPerPage() {
+            long pageA = insertPage(siteId, templateId, "RTA-" + uid().toUpperCase(),
+                    "rta-" + uid(), "DRAFT");
+            long pageB = insertPage(siteId, templateId, "RTB-" + uid().toUpperCase(),
+                    "rtb-" + uid(), "DRAFT");
+            for (int v = 1; v <= 52; v++) insertPageHistory(pageA, v, "{\"title\":\"a" + v + "\"}");
+            for (int v = 1; v <= 10; v++) insertPageHistory(pageB, v, "{\"title\":\"b" + v + "\"}");
+
+            retentionService.enforceRetention(pageA, 52);
+
+            assertThat(countHistory(pageA)).isEqualTo(50);
+            assertThat(countHistory(pageB)).isEqualTo(10); // B 무영향
+        }
+    }
+
+    // ─── REQ-PHIST-002: 롤백 실제 복원 검증 ────────────────────────────────────
+
+    @Nested
+    @DisplayName("REQ-PHIST-002: 롤백 실제 복원")
+    class PageRollbackRestore {
+
+        @Test
+        @DisplayName("AC-PHIST-005/006/007: v1 롤백 → title='원본'/slug='orig' 복원 + DRAFT + version+1")
+        void rollback_restoresSnapshotAndPersists() throws Exception {
+            String origSlug = "orig-" + uid();
+            long pageId = insertPage(siteId, templateId, "RBR-" + uid().toUpperCase(),
+                    "current-" + uid(), "PUBLISHED");
+            // currentVersion을 3으로 올리고 v1 snapshot 시드
+            jdbcTemplate.update("UPDATE page SET current_version = 3 WHERE id = ?", pageId);
+            insertPageHistory(pageId, 1, "{\"title\":\"원본\",\"slug\":\"" + origSlug + "\"}");
+
+            givenAdminToken();
+            mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/1")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.title").value("원본"))
+                    .andExpect(jsonPath("$.slug").value(origSlug))
+                    .andExpect(jsonPath("$.status").value("DRAFT"))
+                    .andExpect(jsonPath("$.currentVersion").value(4));
+
+            // DB 영속 검증
+            String dbTitle = jdbcTemplate.queryForObject(
+                    "SELECT title FROM page WHERE id = ?", String.class, pageId);
+            assertThat(dbTitle).isEqualTo("원본");
+
+            // 롤백 이력 changeSummary 검증 (AC-PHIST-007)
+            String summary = jdbcTemplate.queryForObject(
+                    "SELECT change_summary FROM page_history WHERE page_id = ? AND version = 4",
+                    String.class, pageId);
+            assertThat(summary).contains("ROLLBACK_FROM_v1");
+        }
+
+        @Test
+        @DisplayName("AC-PHIST-008: 미존재 version 롤백 → 4xx + 페이지 불변")
+        void rollback_nonexistentVersion_returns4xx_pageUnchanged() throws Exception {
+            String slug = "rbu-" + uid();
+            long pageId = insertPage(siteId, templateId, "RBU-" + uid().toUpperCase(),
+                    slug, "PUBLISHED");
+
+            givenAdminToken();
+            mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/999")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().is4xxClientError());
+
+            // 페이지 불변 (status=PUBLISHED, version=1 유지)
+            String status = jdbcTemplate.queryForObject(
+                    "SELECT status FROM page WHERE id = ?", String.class, pageId);
+            assertThat(status).isEqualTo("PUBLISHED");
+            Integer ver = jdbcTemplate.queryForObject(
+                    "SELECT current_version FROM page WHERE id = ?", Integer.class, pageId);
+            assertThat(ver).isEqualTo(1);
+        }
+    }
+
+    // ─── REQ-PHIST-004: 롤백 감사 로그 ─────────────────────────────────────────
+
+    @Nested
+    @DisplayName("REQ-PHIST-004: 롤백 감사 로그")
+    class PageRollbackAudit {
+
+        @Test
+        @DisplayName("AC-PHIST-013/014: 롤백 성공 → audit_log 1건 (action=UPDATE, from/to version)")
+        void rollback_success_writesAuditLog() throws Exception {
+            long pageId = insertPage(siteId, templateId, "AUD-" + uid().toUpperCase(),
+                    "aud-" + uid(), "PUBLISHED");
+            insertPageHistory(pageId, 1, "{\"title\":\"원본\",\"slug\":\"orig\"}");
+
+            long before = countAuditForPage(pageId);
+
+            givenAdminToken();
+            mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/1")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().isOk());
+
+            // IT profile은 auditExecutor를 SyncTaskExecutor로 override → 동기 적재, polling 불필요
+            assertThat(countAuditForPage(pageId)).isEqualTo(before + 1);
+
+            // afterValue에 from/to version 포함 (AC-PHIST-014)
+            String afterValue = jdbcTemplate.queryForObject(
+                    "SELECT after_value::text FROM audit_log " +
+                            "WHERE entity_type = 'Page' AND entity_id = ? AND action = 'UPDATE' " +
+                            "ORDER BY id DESC LIMIT 1",
+                    String.class, String.valueOf(pageId));
+            assertThat(afterValue).contains("from_version").contains("to_version");
+        }
+
+        @Test
+        @DisplayName("AC-PHIST-015: 롤백 실패(version 미존재) → audit_log 미기록")
+        void rollback_failure_writesNoAuditLog() throws Exception {
+            long pageId = insertPage(siteId, templateId, "AUF-" + uid().toUpperCase(),
+                    "auf-" + uid(), "PUBLISHED");
+
+            long before = countAuditForPage(pageId);
+
+            givenAdminToken();
+            mockMvc.perform(post("/api/v1/content/pages/" + pageId + "/rollback/999")
+                            .header("Authorization", TOKEN))
+                    .andExpect(status().is4xxClientError());
+
+            assertThat(countAuditForPage(pageId)).isEqualTo(before);
+        }
+    }
+
     // ─── 헬퍼 ─────────────────────────────────────────────────────────────────
 
     private String uid() {
         return UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private void insertPageHistory(long pageId, int version, String snapshotJson) {
+        jdbcTemplate.update(
+                "INSERT INTO page_history (page_id, version, snapshot, edited_by, change_summary) " +
+                        "VALUES (?, ?, ?::jsonb, ?, ?)",
+                pageId, version, snapshotJson, adminId, "seed-v" + version);
+    }
+
+    private int countHistory(long pageId) {
+        Integer c = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM page_history WHERE page_id = ?", Integer.class, pageId);
+        return c == null ? -1 : c;
+    }
+
+    private boolean historyExists(long pageId, int version) {
+        Integer c = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM page_history WHERE page_id = ? AND version = ?",
+                Integer.class, pageId, version);
+        return c != null && c > 0;
+    }
+
+    private long countAuditForPage(long pageId) {
+        Long c = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM audit_log WHERE entity_type = 'Page' AND entity_id = ?",
+                Long.class, String.valueOf(pageId));
+        return c == null ? -1L : c;
     }
 
     private void givenAdminToken() {

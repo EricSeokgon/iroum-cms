@@ -172,6 +172,12 @@ ai:
     top-k-default: 10
     top-k-max: 50
 
+# SPEC-CMS-PAGE-HISTORY-001 REQ-PHIST-001 — 페이지 이력 보존 정책
+cms:
+  history:
+    # 페이지당 보존할 최대 이력 version 개수. 0 이하면 무한 보존(정리 없음).
+    max-versions: 50
+
 resilience4j:
   circuitbreaker:
     instances:
