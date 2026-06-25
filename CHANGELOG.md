@@ -57,6 +57,13 @@
   - **어드민 프론트엔드**: `PointPolicyAdminView.vue` (이벤트별 포인트 값 + 시스템 ON/OFF 토글), `PointLedgerAdminView.vue` (사용자/이벤트/기간 검색), `UserPointHistoryView.vue` (본인 총액 + 내역), `frontend/admin/src/api/point.ts`, 라우터 등록
   - **테스트**: 28개 통과 (단위 테스트 18개 + 통합 테스트 10개, `PointPolicyServiceImplTest`×4, `UserPointServiceImplTest`×5, `BbsPostLikeServiceImplTest`×4, `PointPolicyControllerTest`×5, `PostControllerTest` 좋아요 추가)
 
+- **SPEC-CMS-USER-APPROVAL-002**: 사용자 가입 승인 흐름 고도화
+  - 가입 시 이메일 인증 코드(OTP) 검증 필수화 (`verifiedToken` 파라미터, 기존 VerificationService 재사용)
+  - 이메일 인증 완료 시각 `email_verified_at` 기록 (V61 마이그레이션)
+  - 승인 대기 리마인더 이메일 스케줄러 (매일 02:00, `REMINDER_DAYS` 설정 가능)
+  - 승인 대기 자동 거절 스케줄러 (매일 02:00, `MAX_WAIT_DAYS` 설정 가능)
+  - 관리자 승인 대기 목록에 이메일 인증 완료 여부 컬럼 추가
+
 - **AI 스마트 태그 추천 기능** (SPEC-CMS-AI-004)
   - `POST /api/v1/ai/tag-recommend` — 게시글/Q&A 본문 기반 AI 태그 추천 REST API (비인증 공개 엔드포인트, 최대 5개 태그 추천)
   - `POST /api/v1/ai/tag-feedback` — 태그 채택/거부 피드백 로깅 API (`SUGGESTED`/`ACCEPTED`/`REJECTED` 이벤트 기록)
