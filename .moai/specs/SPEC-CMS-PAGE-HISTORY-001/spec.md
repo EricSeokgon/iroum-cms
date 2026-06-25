@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-PAGE-HISTORY-001
-version: 0.1.1
-status: draft
+version: 0.2.0
+status: Implemented
 created_at: 2026-06-22
-updated_at: 2026-06-22
+updated_at: 2026-06-25
 priority: medium
 labels: [cms, page-history, retention, rollback, audit]
 author: ircp
@@ -14,6 +14,7 @@ issue_number: null
 
 ## HISTORY
 
+- v0.2.0 (2026-06-25): TDD 구현 완료. status draft → Implemented. REQ-PHIST-001~005 전 19 AC 충족. 백엔드: PageHistoryRetentionService(보존 정책)·PageChangeSummaryGenerator(자동 요약)·rollbackPage snapshot 복원+감사로그. 프론트: PageListView 이력 버튼+PageHistoryDialog 재사용. 단위(PageChangeSummaryGeneratorTest 5 + PageServiceTest 신규 5) + IT(PageIT Retention 3/RollbackRestore 2/RollbackAudit 2) + 프론트(PageListView.spec 4) GREEN. 마이그레이션 불필요(idx_page_history_page 기존재). 감사로그는 SyncTaskExecutor(IT)로 동기 검증.
 - v0.1.1 (2026-06-22): plan-auditor 감사 반영. 프론트매터 표준화(status=draft, created_at/updated_at, priority=medium, labels), 19개 AC 전체를 EARS "the system shall" 형식으로 재작성, REQ-PHIST-004 감사 액션을 Option A(action="UPDATE", afterValue에 from/to version)로 확정(선택지 제거), AC-PHIST-019 권한 미보유 시 버튼 비렌더(숨김) 명확화.
 - v0.1.0 (2026-06-22): 최초 작성. 기구현된 페이지 이력/롤백 기능(SPEC-CMS-004 REQ-CONTENT-005-D-2/6/7)의 미완성 갭 5건을 보강하는 SPEC. 보존 정책(GC), 롤백 IT 완성, changeSummary 자동생성, 롤백 감사로그, 목록 화면 이력 진입점.
 
