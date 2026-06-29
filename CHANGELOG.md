@@ -129,6 +129,20 @@
 
 - **게시글/공지 목록 API `?lang=en` 파라미터 처리** — 영어 제목 반환 (SPEC-CMS-NOTICE-I18N-002)
 
+- **통합 미디어 라이브러리** (`MediaController`, `MediaService`, `MediaStorage`, `MediaAssetMapper`, SPEC-CMS-MEDIA-001)
+  - **V12 마이그레이션**: `media_asset`, `media_asset_usage`, `media_collection`, `media_collection_item`, `media_processing_job` 5개 테이블 + GIN 인덱스(tags, thumbnail_paths)
+  - **업로드 파이프라인**: 청크 업로드(10MB/청크, multipart range) + 드래그앤드롭 + SHA-256 체크섬 검증 (`POST /api/v1/media/init` → `PUT /chunk/{n}` → `POST /complete`)
+  - **매직넘버 기반 MIME 검증**: Apache Tika 3중 방어 (확장자 화이트리스트 → MIME 화이트리스트 → 매직넘버 일치 검증)
+  - **이미지 자동 후처리**: EXIF 제거(`media_processing_job EXIF_STRIP`) → WebP 변환(`cwebp -q 80`) → 다중 썸네일 비동기 생성(small 150px / medium 480px / large 1280px)
+  - **사용처 추적 및 안전 삭제**: `media_asset_usage` 레퍼런스 카운팅 — 활성 사용처 존재 시 삭제 차단(409 ASSET_IN_USE) + 사용처 목록 응답
+  - **서명 URL 다운로드**: HMAC-SHA256 토큰 + TTL 15분 (`GET /api/v1/media/{uuid}/url`)
+  - **고아 자산 관리**: 30일 이상 미사용 자산 조회·일괄 정리 ADMIN 전용 API (`GET/DELETE /api/v1/media/orphans`)
+  - **라이선스 메타데이터**: CC0/CC_BY/CC_BY_NC/PROPRIETARY/INTERNAL 5종 + CC계열 `copyright_holder` 필수 입력 강제
+  - **사용자 컬렉션(앨범)**: 컬렉션 CRUD + 자산 추가·제거·정렬 (`/api/v1/media/collections`)
+  - **접근성**: 이미지 `alt_text` 필수(KWCAG 2.2 §1.1.1), READY 전이 차단 DB 제약(`chk_media_image_alt`)
+  - **프론트엔드**: 미디어 라이브러리 뷰 4종 (목록/업로드/상세/컬렉션), 진행률 표시, 드래그앤드롭 업로드
+  - **IT 테스트**: `MediaIT.java` 14 AC GREEN (업로드/검색/인증·생명주기/컬렉션 4개 그룹)
+
 ---
 
 ## [2.6.1] - 2026-06-09

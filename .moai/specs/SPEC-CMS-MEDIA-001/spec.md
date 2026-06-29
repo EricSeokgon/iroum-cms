@@ -3,7 +3,7 @@ id: SPEC-CMS-MEDIA-001
 version: 0.6.0
 status: Completed
 created: 2026-04-29
-updated: 2026-05-13
+updated: 2026-06-29
 author: manager-spec
 priority: P0
 parent: SPEC-CMS-001 v0.4
@@ -19,7 +19,7 @@ issue_number: null
 | SPEC ID | SPEC-CMS-MEDIA-001 |
 | 제목 | 통합 미디어 라이브러리 |
 | 상위 SPEC | SPEC-CMS-001 (umbrella, v0.3 트리에 추가 예정) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 우선순위 | P0 |
 | 작성자 | manager-spec |
 | 작성일 | 2026-04-29 |
