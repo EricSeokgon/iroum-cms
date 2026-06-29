@@ -3,7 +3,7 @@ id: SPEC-CMS-ML-SERVICE-001
 version: 0.2.0
 status: Completed
 created: 2026-05-19
-updated: 2026-05-20
+updated: 2026-06-29
 author: manager-spec (MoAI)
 priority: P1 (옵션 트랙)
 issue_number: 0
@@ -29,7 +29,7 @@ issue_number: 0
 | 제목 | Python FastAPI ML 추론 서비스 — 7개 엔드포인트 실서비스 구현 |
 | 작성일 | 2026-05-19 |
 | 작성자 | manager-spec (MoAI) |
-| 상태 | Tested |
+| 상태 | Completed |
 | 버전 | v0.1 |
 | 우선순위 | P1 (옵션 트랙) |
 | 분류 | Detail SPEC (parent: SPEC-CMS-001) |

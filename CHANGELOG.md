@@ -22,6 +22,20 @@
 
 ### Added
 
+- **Python FastAPI ML 추론 마이크로서비스** (SPEC-CMS-ML-SERVICE-001)
+  - **아키텍처**: Spring Boot(게이트웨이) ↔ Python FastAPI(순수 추론 전용) 분리 구조. `MlServiceClientImpl` + Resilience4j `ml-service` CircuitBreaker 계약 실서비스 구현
+  - **7개 FastAPI 엔드포인트** (`docs/ai-ml-service-openapi.yaml` 계약 정합):
+    - `POST /ml/v1/growth-stage` — 규칙 증강 성장단계 예측 (`SEED/STARTUP/GROWTH/EXPANSION/MATURITY` + 확률맵 + confidence)
+    - `POST /ml/v1/risk-score` — 부도확률 + 위험등급(`GREEN/YELLOW/RED`) + 상위 기여요인 ≤3
+    - `POST /ml/v1/simulation` — 연도별 단계 전이 투영 ≥2포인트
+    - `POST /ml/v1/policy-match` — 코사인 유사도 기반 시맨틱 점수(0~1) + 매칭 근거
+    - `POST /ml/v1/embed` — `sentence-transformers` 384차원 float 벡터 (`paraphrase-multilingual-MiniLM-L12-v2`)
+    - `POST /ml/v1/rag` — 규칙형 템플릿 답변 + 환각 가드 (빈 컨텍스트 시 안내문 반환)
+    - `GET /ml/v1/health` — 상태(`UP`/`DOWN`) + 적재 모델 목록
+  - **PII 보호**: 허용 프로필 필드(`ksic_code/employee_count/growth_stage/region_code/annual_revenue`) 외 키 drop, 요청 본문 평문 미로깅, 응답·오류 메시지 PII 미반향
+  - **컨테이너화**: `ml-service/Dockerfile` (python:3.11-slim, 의존성 고정, 모델 빌드타임 사전 적재). `deploy/docker-compose.prod.yml` 통합 — 내부 네트워크 전용(`ports` 미공개), `ML_SERVICE_URL` 환경변수 주입, `service_healthy` 헬스프로브
+  - **테스트**: Python pytest 단위 테스트(결정성·범위·정규화·환각가드) + Spring ↔ FastAPI 통합 테스트(TestContainers `GenericContainer`)
+
 - **콘텐츠 수정 이력 관리** (SPEC-CMS-CONTENT-REVISION-001)
   - 게시물/페이지 낙관적 잠금 (`bbs_post.version` 컬럼 기반, V54 마이그레이션, 409 RFC 9457 충돌 감지)
   - 수정 이력 라인 단위 diff API (`GET .../history/diff?from=N&to=M`, java-diff-utils 4.15 LCS 알고리즘)
