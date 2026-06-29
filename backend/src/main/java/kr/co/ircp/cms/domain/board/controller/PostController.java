@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.board.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.common.dto.RevisionDiffResponse;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.security.JwtPrincipal;
 import kr.co.ircp.cms.domain.board.dto.PostCreateRequest;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * 게시글 REST 컨트롤러.
@@ -183,5 +185,41 @@ public class PostController {
             @PathVariable int version
     ) {
         return ResponseEntity.ok(postHistoryService.getVersion(postId, version));
+    }
+
+    // ─── SPEC-CMS-CONTENT-REVISION-001 M2: 두 version 간 diff (REQ-REV-003) ───────
+    //
+    // 리터럴 "diff" 경로는 /{postId}/history/{version}(version=int) 매핑보다 더 구체적이라
+    // Spring이 우선 매칭한다. 인증은 다른 GET history 엔드포인트와 동일하게 HTTP 레벨에서 강제.
+
+    /** GET /api/v1/board/posts/{postId}/history/diff?from=2&to=3 — title·content 라인 diff */
+    @GetMapping("/{postId}/history/diff")
+    public ResponseEntity<List<RevisionDiffResponse>> getPostHistoryDiff(
+            @PathVariable Long postId,
+            @RequestParam int from,
+            @RequestParam int to
+    ) {
+        return ResponseEntity.ok(postHistoryService.diff(postId, from, to));
+    }
+
+    // ─── SPEC-CMS-CONTENT-REVISION-001 M3: 게시물 롤백 (REQ-REV-007) ──────────────
+    //
+    // 롤백은 상태를 변경하는 쓰기 작업이므로 다른 게시글 쓰기 endpoint(작성/수정/삭제/예약)와
+    // 동일하게 메소드 레벨 @PreAuthorize("isAuthenticated()") 정책으로 보호한다.
+    // 경로 suffix "/rollback" + POST 메소드로 GET /{postId}/history/{version} 과 충돌하지 않는다.
+
+    /**
+     * POST /api/v1/board/posts/{postId}/history/{version}/rollback — 특정 버전으로 롤백.
+     * Body: {"expectedVersion": int}. 낙관적 잠금 불일치 시 409, 미존재 버전 404, expectedVersion 누락 400.
+     */
+    @PostMapping("/{postId}/history/{version}/rollback")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<PostHistoryDetail> rollbackPostVersion(
+            @PathVariable Long postId,
+            @PathVariable int version,
+            @Valid @RequestBody kr.co.ircp.cms.domain.board.dto.PostRollbackRequest request
+    ) {
+        return ResponseEntity.ok(
+                postHistoryService.rollback(postId, version, request.expectedVersion()));
     }
 }

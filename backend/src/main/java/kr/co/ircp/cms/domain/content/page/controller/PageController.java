@@ -1,6 +1,7 @@
 package kr.co.ircp.cms.domain.content.page.controller;
 
 import jakarta.validation.Valid;
+import kr.co.ircp.cms.common.dto.RevisionDiffResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageListResponse;
@@ -8,6 +9,7 @@ import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PageScheduleRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageUpdateRequest;
+import kr.co.ircp.cms.domain.content.page.service.PageHistoryService;
 import kr.co.ircp.cms.domain.content.page.service.PageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +37,7 @@ import java.util.List;
 public class PageController {
 
     private final PageService pageService;
+    private final PageHistoryService pageHistoryService;
 
     /** GET /api/v1/content/pages — 관리자용 페이지 목록 조회 */
     @GetMapping
@@ -108,6 +111,20 @@ public class PageController {
     @PreAuthorize("hasAuthority('PAGE:HISTORY:READ')")
     public ResponseEntity<List<PageHistoryResponse>> getPageHistory(@PathVariable Long id) {
         return ResponseEntity.ok(pageService.getPageHistory(id));
+    }
+
+    /**
+     * GET /api/v1/content/pages/{id}/history/diff?from=1&to=2 — title·slug 라인 diff.
+     * SPEC-CMS-CONTENT-REVISION-001 M2 (REQ-REV-003, AC-003-3)
+     */
+    @GetMapping("/{id}/history/diff")
+    @PreAuthorize("hasAuthority('PAGE:HISTORY:READ')")
+    public ResponseEntity<List<RevisionDiffResponse>> getPageHistoryDiff(
+            @PathVariable Long id,
+            @RequestParam int from,
+            @RequestParam int to
+    ) {
+        return ResponseEntity.ok(pageHistoryService.diff(id, from, to));
     }
 
     /** POST /api/v1/content/pages/{id}/rollback/{version} — 롤백 */

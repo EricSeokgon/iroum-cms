@@ -32,8 +32,16 @@ public interface PageMapper {
     /** 페이지 생성 */
     void insert(Page page);
 
-    /** 페이지 수정 */
+    /** 페이지 수정 (낙관적 잠금 없음 — 롤백 등 내부 경로 전용) */
     int update(Page page);
+
+    /**
+     * 페이지 수정 (낙관적 잠금).
+     * SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: WHERE current_version = #{currentVersion}
+     * (서비스가 expectedVersion 을 주입) + current_version + 1. 반환 0 → 버전 불일치(409).
+     * 기존 rollback 경로(update)의 동작을 보존하기 위해 별도 메서드로 분리한다.
+     */
+    int updateWithVersion(Page page);
 
     /** 상태 갱신 */
     int updateStatus(@Param("id") Long id, @Param("status") String status);

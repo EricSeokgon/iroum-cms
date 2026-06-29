@@ -355,11 +355,11 @@ class AuthorizationMatrixExpandIT {
         void pageUpdate_forbidden_whenPageWriteMissing() throws Exception {
             givenValidToken(Set.of("EDITOR"), Set.of("CONTENT:WRITE")); // PAGE:WRITE 미보유
 
-            // PageUpdateRequest required fields: title, slug (Pattern: ^[a-z0-9][a-z0-9\\-/]*$)
+            // PageUpdateRequest required fields: title, slug (Pattern: ^[a-z0-9][a-z0-9\\-/]*$), expectedVersion(@NotNull)
             mockMvc.perform(put("/api/v1/content/pages/1")
                             .header("Authorization", "Bearer " + VALID_TOKEN)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"title\":\"테스트 페이지\",\"slug\":\"test-page\"}"))
+                            .content("{\"title\":\"테스트 페이지\",\"slug\":\"test-page\",\"expectedVersion\":1}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
         }

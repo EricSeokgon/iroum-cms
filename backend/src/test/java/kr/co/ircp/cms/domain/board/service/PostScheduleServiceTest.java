@@ -53,7 +53,8 @@ class PostScheduleServiceTest {
     void setUp() {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper,
-                bbsPostI18nMapper, new HtmlSanitizer(), new AuthorizationGuard()
+                bbsPostI18nMapper, new HtmlSanitizer(), new AuthorizationGuard(),
+                org.mockito.Mockito.mock(kr.co.ircp.cms.common.service.RevisionRetentionService.class)
         );
     }
 

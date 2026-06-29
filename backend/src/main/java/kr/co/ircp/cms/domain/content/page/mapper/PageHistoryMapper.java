@@ -23,4 +23,21 @@ public interface PageHistoryMapper {
 
     /** 이력 INSERT */
     void insert(PageHistory history);
+
+    /**
+     * 페이지 이력 전체 건수.
+     * SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006) — 리비전 보존 정책 카운트.
+     */
+    long countByPageId(@Param("pageId") Long pageId);
+
+    /**
+     * 최신 {@code keepCount}개를 제외한 오래된 이력 삭제.
+     * SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006) — 리비전 보존 정책 적용.
+     * version DESC 기준 상위 keepCount 행만 남기고 나머지를 삭제한다.
+     *
+     * @param pageId    페이지 ID
+     * @param keepCount 보존할 최신 이력 개수
+     * @return 삭제된 행 수
+     */
+    int deleteOldestByPageId(@Param("pageId") Long pageId, @Param("keepCount") int keepCount);
 }

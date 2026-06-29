@@ -33,11 +33,15 @@ class PostHistoryServiceTest {
     @Mock
     private BbsPostHistoryMapper bbsPostHistoryMapper;
 
+    @Mock
+    private kr.co.ircp.cms.domain.board.repository.BbsPostMapper bbsPostMapper;
+
     private PostHistoryService postHistoryService;
 
     @BeforeEach
     void setUp() {
-        postHistoryService = new PostHistoryServiceImpl(bbsPostHistoryMapper);
+        postHistoryService = new PostHistoryServiceImpl(
+                bbsPostHistoryMapper, new kr.co.ircp.cms.common.util.LineDiffCalculator(), bbsPostMapper);
     }
 
     // ── AC-PH-001/002: 페이징 목록을 version DESC 메타데이터로 반환 ────────────────

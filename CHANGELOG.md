@@ -22,6 +22,14 @@
 
 ### Added
 
+- **콘텐츠 수정 이력 관리** (SPEC-CMS-CONTENT-REVISION-001)
+  - 게시물/페이지 낙관적 잠금 (`bbs_post.version` 컬럼 기반, V54 마이그레이션, 409 RFC 9457 충돌 감지)
+  - 수정 이력 라인 단위 diff API (`GET .../history/diff?from=N&to=M`, java-diff-utils 4.15 LCS 알고리즘)
+  - 게시물 특정 버전 롤백 API (`POST .../history/{version}/rollback`)
+  - 이력 보관 정책 (`system_setting: content.revision.maxPerEntity`, 기본 50건, best-effort 정리)
+  - 프론트엔드: `RevisionPanel.vue` (이력 목록), `DiffViewer.vue` (INSERT/DELETE/EQUAL 라인 뷰어), `ConflictModal.vue` (409 충돌 해결)
+  - PostFormView / PostDetailView / PageEditorView `expectedVersion` 연동
+
 - **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
   - ADMIN 역할 시드 및 5단 권한 계층 (`SUPER_ADMIN > ADMIN > DEPT_ADMIN > EDITOR > VIEWER`) — V48 Flyway 마이그레이션
   - 어드민 메뉴 접근 권한 카탈로그 (`admin_menu` / `admin_menu_permissions` 테이블) — V49 Flyway 마이그레이션
