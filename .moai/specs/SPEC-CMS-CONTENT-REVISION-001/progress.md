@@ -1,6 +1,8 @@
 # SPEC-CMS-CONTENT-REVISION-001 — 진행 현황 (progress.md)
 
 > Run Phase 시작: 2026-06-29
+> Run Phase 완료: 2026-06-29
+> 구현 커밋: ce1f3a8
 > 개발 모드: TDD (RED-GREEN-REFACTOR)
 > 하네스: standard
 > 실행 모드: Solo
@@ -28,11 +30,11 @@
 
 - [x] Plan Phase 완료 (spec.md, plan.md, acceptance.md, research.md)
 - [x] manager-strategy 실행 계획 수립
-- [ ] M1: 낙관적 잠금 + 마이그레이션 (Priority High)
-- [ ] M2: Diff API (Priority High)
-- [ ] M3: 게시물 롤백 + Retention (Priority Medium)
-- [ ] M4: 프론트엔드 UI (Priority Medium)
-- [ ] M5: 검증/문서 (Priority Low)
+- [x] M1: 낙관적 잠금 + 마이그레이션 (Priority High) — 완료 2026-06-29
+- [x] M2: Diff API (Priority High) — 완료 2026-06-29
+- [x] M3: 게시물 롤백 + Retention (Priority Medium) — 완료 2026-06-29
+- [x] M4: 프론트엔드 UI (Priority Medium) — 완료 2026-06-29
+- [x] M5: 검증/문서 (Priority Low) — Sync Phase 완료 2026-06-29
 
 ## 파일 변경 추적
 

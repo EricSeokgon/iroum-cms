@@ -1,9 +1,9 @@
 ---
 id: SPEC-CMS-CONTENT-REVISION-001
 version: 0.1.0
-status: draft
+status: Implemented
 created: 2026-06-25
-updated: 2026-06-25
+updated: 2026-06-29
 author: manager-spec
 priority: medium
 issue_number: TBD
@@ -200,4 +200,45 @@ ON CONFLICT (key) DO NOTHING;
 - **diff**: 백엔드 라인 LCS 계산(서버 단일 진실). 페이지 JSONB snapshot은 표시용 텍스트 평탄화 후 diff.
 - **롤백 불변성**: 롤백도 새 revision 적재. 과거 version 파괴 금지.
 - **retention**: `system_setting` N 설정, best-effort 정리.
+
+---
+
+## 10. Implementation Notes
+
+> Run Phase 완료: 2026-06-29. 커밋: `ce1f3a8`
+
+### 10.1 주요 기술 결정
+
+| 항목 | 결정 |
+|------|------|
+| 낙관적 잠금 | `bbs_post.version` 신규 컬럼(V54) + `page.current_version` 재사용. UPDATE WHERE version=? → 0행 → 409 RFC 9457 |
+| diff 라이브러리 | `io.github.java-diff-utils:java-diff-utils:4.15` (4.17 미존재 → 4.15 채택) |
+| retention 정책 | `system_setting` key `content.revision.maxPerEntity` (기본값 50), best-effort 정리 |
+| 페이지 diff 범위 | title+slug only (content_block은 snapshot에 미저장이므로 비범위) |
+| 롤백 불변성 | 롤백도 새 revision 적재, 과거 version 파괴 금지 |
+| 도메인 분리 | 통합 추상화 금지, board·content.page 도메인에 병렬 구현 |
+
+### 10.2 범위 조정 사항
+
+- **PageSnapshotFlattener**: title+slug만 diff 계산 (content_block은 snapshot JSONB에 저장되지 않아 비범위)
+- **PageEditorView**: PATCH /seo 경로를 통해 expectedVersion 전달 (PageEditorView 직접 전달 방식 조정)
+- **Page 이중 version 증가 버그**: `PageServiceImpl.updateWithVersion` 분리로 Java+SQL 이중 증가 해소
+- **java-diff-utils 버전**: 4.17이 Maven Central에 미존재 → 4.15 사용
+
+### 10.3 구현 통계
+
+| 항목 | 수치 |
+|------|------|
+| 변경 파일 수 | 63개 (신규 24 + 수정 39) |
+| 추가 라인 | +2,464 |
+| 삭제 라인 | -147 |
+| 테스트 수 | 2,101개 통과 |
+| 구현 커밋 | `ce1f3a8` |
+
+### 10.4 마일스톤 완료 요약
+
+- **M1** (낙관적 잠금 + V54 마이그레이션): V54 SQL, `RevisionConflictException`, `PostUpdateRequest`/`PageUpdateRequest` expectedVersion, GlobalExceptionHandler 409 핸들러
+- **M2** (Diff API): `LineDiffCalculator`, `DiffLine`/`RevisionDiffResponse` DTO, 게시물/페이지 diff API (`GET .../history/diff?from=N&to=M`)
+- **M3** (게시물 롤백 + Retention): `RevisionRetentionService`, 게시물 롤백 API (`POST .../history/{version}/rollback`), `PageHistoryMapper` deleteOldest 추가
+- **M4** (프론트엔드 UI): `RevisionPanel.vue`, `DiffViewer.vue`, `ConflictModal.vue`, PostFormView/PostDetailView/PageEditorView expectedVersion 연동
 - **UI**: 공유 `RevisionPanel`+`DiffViewer` 컴포넌트를 게시물/페이지 화면에 각각 마운트.
