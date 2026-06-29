@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-CONTENT-REVISION-001
 version: 0.1.0
-status: Implemented
+status: Completed
 created: 2026-06-25
 updated: 2026-06-29
 author: manager-spec
