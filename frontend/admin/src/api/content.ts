@@ -1,5 +1,6 @@
 // 콘텐츠 관리 API 래퍼 — SPEC-CMS-004 Bundle C
 import { apiClient } from '@iroum/shared/api/client'
+import type { RevisionDiffResponse } from '@/types/revision'
 
 // @MX:ANCHOR: [AUTO] contentApi — SiteView, MenuTreeView, TemplateManagerView, PageListView, PageEditorView 등에서 참조
 // @MX:REASON: fan_in >= 3: Bundle C 8개 뷰 컴포넌트 및 stores/content.ts에서 공통 호출
@@ -402,14 +403,20 @@ export const pages = {
     return apiClient.post(`${BASE}/pages`, req)
   },
 
-  /** PUT /api/v1/content/pages/{id} */
-  update(id: number, req: PageUpdateRequest): Promise<{ data: PageItemResponse }> {
-    return apiClient.put(`${BASE}/pages/${id}`, req)
+  /**
+   * PUT /api/v1/content/pages/{id}
+   * SPEC-CMS-CONTENT-REVISION-001: 낙관적 락(expectedVersion) 적용.
+   * 충돌 시 409 { code: 'REVISION_CONFLICT', currentVersion } 반환.
+   */
+  update(id: number, req: PageUpdateRequest, expectedVersion?: number): Promise<{ data: PageItemResponse }> {
+    const body = expectedVersion != null ? { ...req, expectedVersion } : req
+    return apiClient.put(`${BASE}/pages/${id}`, body)
   },
 
-  /** PATCH /api/v1/content/pages/{id}/seo */
-  updateSeo(id: number, req: Partial<PageUpdateRequest>): Promise<{ data: PageItemResponse }> {
-    return apiClient.patch(`${BASE}/pages/${id}/seo`, req)
+  /** PATCH /api/v1/content/pages/{id}/seo (expectedVersion 전달 시 낙관적 락 검증) */
+  updateSeo(id: number, req: Partial<PageUpdateRequest>, expectedVersion?: number): Promise<{ data: PageItemResponse }> {
+    const body = expectedVersion != null ? { ...req, expectedVersion } : req
+    return apiClient.patch(`${BASE}/pages/${id}/seo`, body)
   },
 
   /** POST /api/v1/content/pages/{id}/publish */
@@ -440,6 +447,11 @@ export const pages = {
   /** POST /api/v1/content/pages/{id}/rollback/{version} */
   rollback(id: number, version: number): Promise<{ data: PageItemResponse }> {
     return apiClient.post(`${BASE}/pages/${id}/rollback/${version}`)
+  },
+
+  /** GET /api/v1/content/pages/{id}/history/diff?from=&to= — 필드 단위 버전 diff (SPEC-CMS-CONTENT-REVISION-001) */
+  historyDiff(id: number, from: number, to: number): Promise<{ data: RevisionDiffResponse[] }> {
+    return apiClient.get(`${BASE}/pages/${id}/history/diff`, { params: { from, to } })
   },
 
   /** GET /api/v1/content/pages/{pageId}/blocks */

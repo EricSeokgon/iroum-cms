@@ -1310,6 +1310,25 @@ public class GlobalExceptionHandler {
         return detail;
     }
 
+    // ─── SPEC-CMS-CONTENT-REVISION-001 — 리비전 낙관적 잠금 충돌 ──────────────────
+
+    /**
+     * 콘텐츠 리비전 낙관적 잠금 충돌 → HTTP 409 Conflict.
+     *
+     * <p>REQ-REV-005 — 게시물·페이지 수정 시 expectedVersion 이 서버 현재 버전과
+     * 불일치하면 발생. 응답 바디에 현재 버전(currentVersion)을 실어 재시도를 유도한다.
+     */
+    // @MX:NOTE: [AUTO] RevisionConflictException 핸들러 — 게시물/페이지 공통 낙관적 잠금 충돌을 409 ProblemDetail 로 표준화
+    // @MX:SPEC: SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005 — code=REVISION_CONFLICT 고정, currentVersion 속성 포함
+    @ExceptionHandler(kr.co.ircp.cms.common.exception.RevisionConflictException.class)
+    public ProblemDetail handleRevisionConflict(kr.co.ircp.cms.common.exception.RevisionConflictException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Revision Conflict");
+        detail.setProperty("code", kr.co.ircp.cms.common.exception.RevisionConflictException.CODE);
+        detail.setProperty("currentVersion", ex.getCurrentVersion());
+        return detail;
+    }
+
     /** 미처리 IllegalArgumentException → 400 (비즈니스 로직 검증 실패 fallback). */
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(IllegalArgumentException ex) {

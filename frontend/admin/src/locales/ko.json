@@ -2,6 +2,19 @@
   "app": {
     "title": "iroum-cms 관리자"
   },
+  "revision": {
+    "history": "수정 이력",
+    "version": "버전 {n}",
+    "viewDiff": "변경 비교",
+    "rollback": "이 버전으로 복원",
+    "noHistory": "수정 이력이 없습니다",
+    "conflict": {
+      "title": "편집 충돌 감지",
+      "message": "다른 사용자가 먼저 수정했습니다. 현재 서버 버전: {version}",
+      "reload": "최신 버전 불러오기",
+      "dismiss": "계속 수정하기"
+    }
+  },
   "nav": {
     "home": "홈",
     "health": "서버 상태",

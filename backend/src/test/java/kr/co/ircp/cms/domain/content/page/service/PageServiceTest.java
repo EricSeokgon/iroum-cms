@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -46,12 +47,14 @@ class PageServiceTest {
     @Mock private ContentBlockMapper contentBlockMapper;
     @Mock private PageHistoryMapper pageHistoryMapper;
     @Mock private SeoRedirectService seoRedirectService;
+    @Mock private kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
 
     private PageService pageService;
 
     @BeforeEach
     void setUp() {
-        pageService = new PageServiceImpl(pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService);
+        pageService = new PageServiceImpl(
+                pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService, retentionService);
     }
 
     private Page stubPage(long id, String status, String slug) {
@@ -141,9 +144,9 @@ class PageServiceTest {
         // Arrange
         Page existing = stubPage(1L, "DRAFT", "about-us");
         when(pageMapper.findById(1L)).thenReturn(Optional.of(existing));
-        when(pageMapper.update(any())).thenReturn(1);
+        when(pageMapper.updateWithVersion(any())).thenReturn(1);
         PageUpdateRequest request = new PageUpdateRequest(
-                "수정된 제목", "about-us", null, null, null, null, null, null, null, "제목 변경"
+                "수정된 제목", "about-us", null, null, null, null, null, null, null, "제목 변경", 1
         );
 
         // Act
@@ -152,6 +155,89 @@ class PageServiceTest {
         // Assert
         assertThat(response).isNotNull();
         verify(pageHistoryMapper).insert(any());
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001: 페이지 수정 특성화 테스트(기존 동작 보존)
+    // M1 낙관적 잠금 추가 후에도 slug 변경 시 seo_redirect, 이력 INSERT 가 유지되어야 한다.
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("페이지 수정 — slug 변경 시 seo_redirect 자동 등록 + 이력 INSERT 유지")
+    void updatePage_withSlugChange_seoRedirectIsInserted() {
+        // Arrange — slug 가 old-slug → new-slug 로 변경
+        Page existing = stubPage(1L, "DRAFT", "old-slug");
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(pageMapper.updateWithVersion(any())).thenReturn(1);
+        PageUpdateRequest request = new PageUpdateRequest(
+                "제목", "new-slug", null, null, null, null, null, null, null, "슬러그 변경", 1
+        );
+
+        // Act
+        pageService.updatePage(1L, request, 99L);
+
+        // Assert — 기존 동작 보존: seo_redirect 등록 + 이력 INSERT
+        verify(seoRedirectService).upsertFromSlugChange(eq("/old-slug"), eq("/new-slug"), anyString());
+        verify(pageHistoryMapper).insert(any());
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 페이지 낙관적 잠금
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("페이지 수정 — expectedVersion 일치 시 갱신 성공(409 미발생)")
+    void updatePage_whenVersionMatches_increments() {
+        Page existing = stubPage(1L, "DRAFT", "about-us"); // currentVersion=1
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(pageMapper.updateWithVersion(any())).thenReturn(1); // 1행 갱신 = 버전 일치
+        PageUpdateRequest request = new PageUpdateRequest(
+                "수정 제목", "about-us", null, null, null, null, null, null, null, "변경", 1
+        );
+
+        PageResponse response = pageService.updatePage(1L, request, 99L);
+
+        assertThat(response).isNotNull();
+        verify(pageMapper).updateWithVersion(any());
+    }
+
+    @Test
+    @DisplayName("페이지 수정 — expectedVersion 불일치 시 RevisionConflictException(409) + currentVersion")
+    void updatePage_whenVersionMismatch_throws409() {
+        // findById: 첫 호출(수정 대상) version=1, 둘째 호출(충돌 시 현재 버전 조회) version=7
+        Page stale = stubPage(1L, "DRAFT", "about-us"); // currentVersion=1
+        Page current = stubPage(1L, "DRAFT", "about-us");
+        current.setCurrentVersion(7);
+        when(pageMapper.findById(1L))
+                .thenReturn(Optional.of(stale))
+                .thenReturn(Optional.of(current));
+        when(pageMapper.updateWithVersion(any())).thenReturn(0); // 0행 = 버전 불일치
+        PageUpdateRequest request = new PageUpdateRequest(
+                "수정 제목", "about-us", null, null, null, null, null, null, null, "변경", 1
+        );
+
+        assertThatThrownBy(() -> pageService.updatePage(1L, request, 99L))
+                .isInstanceOf(kr.co.ircp.cms.common.exception.RevisionConflictException.class)
+                .extracting("currentVersion").isEqualTo(7L);
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006): 저장 후 이력 보존 정책 호출
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("페이지 수정 — 저장 성공 후 retentionService.prunePageHistory 호출")
+    void updatePage_afterSave_retentionServiceIsCalled() {
+        Page existing = stubPage(1L, "DRAFT", "about-us");
+        when(pageMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(pageMapper.updateWithVersion(any())).thenReturn(1);
+        PageUpdateRequest request = new PageUpdateRequest(
+                "수정된 제목", "about-us", null, null, null, null, null, null, null, "제목 변경", 1
+        );
+
+        pageService.updatePage(1L, request, 99L);
+
+        verify(retentionService).prunePageHistory(1L);
     }
 
     // ──────────────────────────────────────────────

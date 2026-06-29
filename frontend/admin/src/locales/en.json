@@ -2,6 +2,19 @@
   "app": {
     "title": "iroum-cms Admin"
   },
+  "revision": {
+    "history": "Revision History",
+    "version": "Version {n}",
+    "viewDiff": "View Changes",
+    "rollback": "Restore This Version",
+    "noHistory": "No revision history",
+    "conflict": {
+      "title": "Edit Conflict",
+      "message": "Someone else modified this. Server version: {version}",
+      "reload": "Load Latest Version",
+      "dismiss": "Keep Editing"
+    }
+  },
   "nav": {
     "home": "Home",
     "health": "Server Status",

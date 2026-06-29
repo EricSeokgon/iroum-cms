@@ -42,6 +42,17 @@ public interface BbsPostHistoryMapper {
     long countByPostId(@Param("postId") Long postId);
 
     /**
+     * 최신 {@code keepCount}개를 제외한 오래된 이력 삭제.
+     * SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006) — 리비전 보존 정책 적용.
+     * version DESC 기준 상위 keepCount 행만 남기고 나머지를 삭제한다.
+     *
+     * @param postId    게시글 ID
+     * @param keepCount 보존할 최신 이력 개수
+     * @return 삭제된 행 수
+     */
+    int deleteOldestByPostId(@Param("postId") Long postId, @Param("keepCount") int keepCount);
+
+    /**
      * 특정 (postId, version) 단건 본문 조회 (title + content_html, editor LEFT JOIN).
      * REQ-PH-004/005
      */

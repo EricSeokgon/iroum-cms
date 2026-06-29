@@ -176,7 +176,7 @@ class PostIT extends AbstractIntegrationTest {
             givenUserToken(userId, Set.of("USER"));
             String body = """
                     {"title":"수정후 제목","contentHtml":"<p>수정 본문</p>",
-                     "isNotice":false,"isSecret":false,"editReason":"오타 수정"}
+                     "isNotice":false,"isSecret":false,"editReason":"오타 수정","expectedVersion":1}
                     """;
 
             mockMvc.perform(put("/api/v1/board/posts/" + postId)

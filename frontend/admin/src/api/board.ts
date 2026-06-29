@@ -16,6 +16,7 @@ import type {
   AttachmentDownloadUrl,
   PageResponse,
 } from '@iroum/shared/types/api'
+import type { RevisionDiffResponse } from '@/types/revision'
 
 // @MX:ANCHOR: [AUTO] boardApi — BoardListView, PostListView, PostDetailView, PostFormView에서 참조
 // @MX:REASON: fan_in >= 3: 게시판 관련 뷰 컴포넌트 및 테스트에서 공통 호출
@@ -91,9 +92,14 @@ export const boardApi = {
     return apiClient.post(`${BASE}/posts`, { ...req, bbsId })
   },
 
-  /** PUT /api/v1/board/posts/{id} */
-  updatePost(id: number, req: PostUpdateRequest): Promise<{ data: PostDetail }> {
-    return apiClient.put(`${BASE}/posts/${id}`, req)
+  /**
+   * PUT /api/v1/board/posts/{id}
+   * SPEC-CMS-CONTENT-REVISION-001: 낙관적 락(expectedVersion) 적용.
+   * 충돌 시 409 { code: 'REVISION_CONFLICT', currentVersion } 반환.
+   */
+  updatePost(id: number, req: PostUpdateRequest, expectedVersion?: number): Promise<{ data: PostDetail }> {
+    const body = expectedVersion != null ? { ...req, expectedVersion } : req
+    return apiClient.put(`${BASE}/posts/${id}`, body)
   },
 
   /** DELETE /api/v1/board/posts/{id} */
@@ -123,6 +129,21 @@ export const boardApi = {
   /** GET /api/v1/board/posts/{id}/history/{version} — 특정 버전 단건 본문 */
   getPostVersion(postId: number, version: number): Promise<{ data: PostHistoryDetail }> {
     return apiClient.get(`${BASE}/posts/${postId}/history/${version}`)
+  },
+
+  // ── 게시글 버전 비교/복원 (SPEC-CMS-CONTENT-REVISION-001) ────────────────────
+
+  /** GET /api/v1/board/posts/{id}/history/diff?from=&to= — 필드 단위 버전 diff */
+  getPostHistoryDiff(postId: number, from: number, to: number): Promise<{ data: RevisionDiffResponse[] }> {
+    return apiClient.get(`${BASE}/posts/${postId}/history/diff`, { params: { from, to } })
+  },
+
+  /**
+   * POST /api/v1/board/posts/{id}/history/{version}/rollback — 특정 버전으로 복원.
+   * expectedVersion(현재 버전)으로 낙관적 락 검증, 충돌 시 409 반환.
+   */
+  rollbackPost(postId: number, version: number, expectedVersion: number): Promise<{ data: PostDetail }> {
+    return apiClient.post(`${BASE}/posts/${postId}/history/${version}/rollback`, { expectedVersion })
   },
 
   // ── 게시글 다국어 번역 (SPEC-CMS-NOTICE-I18N-001) ──────────────────────────

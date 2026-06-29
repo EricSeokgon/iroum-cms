@@ -31,4 +31,23 @@
         VALUES (#{pageId}, #{version}, #{snapshot}::jsonb, #{editedBy}, #{changeSummary})
     </insert>
 
+    <select id="countByPageId" resultType="long">
+        SELECT COUNT(*) FROM page_history WHERE page_id = #{pageId}
+    </select>
+
+    <!--
+        SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006): 리비전 보존 정책.
+        version DESC 상위 keepCount 행만 남기고 오래된 이력을 삭제한다.
+    -->
+    <delete id="deleteOldestByPageId">
+        DELETE FROM page_history
+        WHERE page_id = #{pageId}
+          AND version NOT IN (
+              SELECT version FROM page_history
+              WHERE page_id = #{pageId}
+              ORDER BY version DESC
+              LIMIT #{keepCount}
+          )
+    </delete>
+
 </mapper>

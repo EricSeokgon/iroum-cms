@@ -48,6 +48,11 @@ public class PageServiceImpl implements PageService {
     private final ContentBlockMapper contentBlockMapper;
     private final PageHistoryMapper pageHistoryMapper;
     private final SeoRedirectService seoRedirectService;
+    // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
+    private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
+
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(PageServiceImpl.class);
 
     /**
      * 페이지 생성.
@@ -130,9 +135,34 @@ public class PageServiceImpl implements PageService {
         if (request.ogImageUrl() != null) existing.setOgImageUrl(request.ogImageUrl());
         if (request.canonicalUrl() != null) existing.setCanonicalUrl(request.canonicalUrl());
         existing.setUpdatedBy(updatedBy);
-        existing.setCurrentVersion(existing.getCurrentVersion() + 1);
 
-        pageMapper.update(existing);
+        // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 낙관적 잠금.
+        // 더블 증가 버그 수정 — current_version 증가는 SQL(current_version + 1)에만 위임하고
+        // Java 측 +1 은 제거한다. WHERE current_version = expectedVersion 충돌 검출을 위해
+        // 엔티티에 클라이언트가 보낸 expectedVersion 을 주입한다.
+        int expectedVersion = request.expectedVersion();
+        existing.setCurrentVersion(expectedVersion);
+
+        int updatedRows = pageMapper.updateWithVersion(existing);
+        if (updatedRows == 0) {
+            // 버전 불일치(다른 사용자 선수정) → 서버 현재 버전을 실어 409 로 응답
+            long currentVersion = pageMapper.findById(id)
+                    .map(Page::getCurrentVersion)
+                    .map(Integer::longValue)
+                    .orElse((long) expectedVersion);
+            throw new kr.co.ircp.cms.common.exception.RevisionConflictException(currentVersion);
+        }
+
+        // SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006): 저장 성공 후 이력 보존 정책 적용.
+        // best-effort — 보존 정리 실패가 저장 결과를 되돌리지 않도록 호출자에서도 방어한다.
+        try {
+            retentionService.prunePageHistory(id);
+        } catch (Exception e) {
+            log.warn("페이지 이력 보존 정리 호출 실패 (best-effort, 무시). pageId={}", id, e);
+        }
+
+        // 응답에는 갱신 후 버전(expectedVersion + 1)을 반영
+        existing.setCurrentVersion(expectedVersion + 1);
         return PageResponse.from(existing);
     }
 

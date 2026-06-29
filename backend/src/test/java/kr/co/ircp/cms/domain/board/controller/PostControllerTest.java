@@ -115,6 +115,21 @@ class PostControllerTest {
                 .andExpect(jsonPath("$.id").value(5));
     }
 
+    @Test
+    @WithMockUser
+    @DisplayName("PUT /api/v1/board/posts/{id} — expectedVersion 누락 시 400 Bad Request")
+    void updatePost_missingExpectedVersion_returns400() throws Exception {
+        // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: expectedVersion 은 @NotNull → 누락 시 400
+        String bodyWithoutVersion =
+                "{\"title\":\"수정 제목\",\"contentHtml\":\"<p>내용</p>\",\"isNotice\":false,\"isSecret\":false}";
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/api/v1/board/posts/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyWithoutVersion))
+                .andExpect(status().isBadRequest());
+    }
+
     // ──────────────────────────────────────────────────────────────
     // SPEC-CMS-POST-SCHEDULE-001 — 예약 발행 API
     // ──────────────────────────────────────────────────────────────
@@ -253,6 +268,50 @@ class PostControllerTest {
                 .thenThrow(new kr.co.ircp.cms.domain.board.exception.PostHistoryVersionNotFoundException(7L, 999));
 
         mockMvc.perform(get("/api/v1/board/posts/7/history/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001 M2 — 두 version diff API (REQ-REV-003)
+    // ──────────────────────────────────────────────────────────────
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history/diff?from&to — 200 OK, title·content diff 리스트 (AC-003-1/2)")
+    void getPostHistoryDiff_returns200WithList() throws Exception {
+        var titleDiff = new kr.co.ircp.cms.common.dto.RevisionDiffResponse(
+                "title", 2, 3,
+                List.of(new kr.co.ircp.cms.common.dto.DiffLine(
+                        kr.co.ircp.cms.common.dto.DiffType.DELETE, 1, null, "옛 제목"),
+                        new kr.co.ircp.cms.common.dto.DiffLine(
+                                kr.co.ircp.cms.common.dto.DiffType.INSERT, null, 1, "새 제목")));
+        var contentDiff = new kr.co.ircp.cms.common.dto.RevisionDiffResponse(
+                "content", 2, 3,
+                List.of(new kr.co.ircp.cms.common.dto.DiffLine(
+                        kr.co.ircp.cms.common.dto.DiffType.EQUAL, 1, 1, "본문")));
+        when(postHistoryService.diff(anyLong(), anyInt(), anyInt()))
+                .thenReturn(List.of(titleDiff, contentDiff));
+
+        mockMvc.perform(get("/api/v1/board/posts/7/history/diff")
+                        .param("from", "2")
+                        .param("to", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].field").value("title"))
+                .andExpect(jsonPath("$[0].fromVersion").value(2))
+                .andExpect(jsonPath("$[0].toVersion").value(3))
+                .andExpect(jsonPath("$[1].field").value("content"));
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("GET /{postId}/history/diff — 미존재 version은 404 (AC-003)")
+    void getPostHistoryDiff_unknownVersion_returns404() throws Exception {
+        when(postHistoryService.diff(anyLong(), anyInt(), anyInt()))
+                .thenThrow(new kr.co.ircp.cms.domain.board.exception.PostHistoryVersionNotFoundException(7L, 99));
+
+        mockMvc.perform(get("/api/v1/board/posts/7/history/diff")
+                        .param("from", "99")
+                        .param("to", "3"))
                 .andExpect(status().isNotFound());
     }
 

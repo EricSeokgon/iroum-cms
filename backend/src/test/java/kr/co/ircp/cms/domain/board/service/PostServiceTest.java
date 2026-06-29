@@ -48,6 +48,7 @@ class PostServiceTest {
     @Mock private BbsPostHistoryMapper bbsPostHistoryMapper;
     @Mock private BbsViewLogMapper bbsViewLogMapper;
     @Mock private kr.co.ircp.cms.domain.board.repository.BbsPostI18nMapper bbsPostI18nMapper;
+    @Mock private kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
 
     private PostService postService;
     private final HtmlSanitizer htmlSanitizer = new HtmlSanitizer();
@@ -57,7 +58,7 @@ class PostServiceTest {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper,
                 bbsPostI18nMapper, htmlSanitizer,
-                new AuthorizationGuard()
+                new AuthorizationGuard(), retentionService
         );
     }
 
@@ -70,7 +71,7 @@ class PostServiceTest {
         // authorId=1L 고정: 기본 케이스의 update/delete 요청자(1L)와 일치하도록 설정.
         return BbsPost.builder().id(id).bbsId(bbsId).authorId(1L)
                 .title("제목").contentHtml("<p>내용</p>").contentText("내용")
-                .status("PUBLISHED").viewCount(0).commentCount(0).build();
+                .status("PUBLISHED").viewCount(0).commentCount(0).version(1).build();
     }
 
     // ──────────────────────────────────────────────
@@ -182,11 +183,12 @@ class PostServiceTest {
         BbsPost existing = stubPost(1L, 1L);
         when(bbsPostMapper.findById(1L)).thenReturn(Optional.of(existing));
         when(bbsPostHistoryMapper.nextVersionByPostId(1L)).thenReturn(1);
+        when(bbsPostMapper.update(any())).thenReturn(1);
         when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정"
+                false, null, null, false, "오타 수정", 1
         );
 
         PostDetail result = postService.updatePost(1L, request, 1L);
@@ -194,6 +196,98 @@ class PostServiceTest {
         assertThat(result.title()).isEqualTo("수정 제목");
         verify(bbsPostHistoryMapper).insert(any());
         verify(bbsPostMapper).update(any());
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 게시글 낙관적 잠금
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("게시글 수정 — expectedVersion 일치 시 갱신 성공(409 미발생)")
+    void updatePost_whenVersionMatches_succeeds() {
+        BbsPost existing = stubPost(1L, 1L);
+        when(bbsPostMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(bbsPostHistoryMapper.nextVersionByPostId(1L)).thenReturn(1);
+        when(bbsPostMapper.update(any())).thenReturn(1); // 1행 갱신 = 버전 일치
+        when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
+
+        PostUpdateRequest request = new PostUpdateRequest(
+                "수정 제목", "<p>수정 내용</p>", "수정 내용",
+                false, null, null, false, "오타 수정", 1
+        );
+
+        PostDetail result = postService.updatePost(1L, request, 1L);
+
+        assertThat(result).isNotNull();
+        verify(bbsPostMapper).update(any());
+    }
+
+    @Test
+    @DisplayName("게시글 수정 — expectedVersion 불일치 시 RevisionConflictException(409) + currentVersion")
+    void updatePost_whenVersionMismatch_throwsConflict() {
+        // findById: 첫 호출(수정 대상) → version=1, 둘째 호출(충돌 시 현재 버전 조회) → version=5
+        BbsPost stale = stubPost(1L, 1L); // version=1
+        BbsPost current = BbsPost.builder().id(1L).bbsId(1L).authorId(1L)
+                .title("최신").contentHtml("<p>최신</p>").status("PUBLISHED").version(5).build();
+        when(bbsPostMapper.findById(1L))
+                .thenReturn(Optional.of(stale))
+                .thenReturn(Optional.of(current));
+        when(bbsPostHistoryMapper.nextVersionByPostId(1L)).thenReturn(2);
+        when(bbsPostMapper.update(any())).thenReturn(0); // 0행 = 버전 불일치
+
+        PostUpdateRequest request = new PostUpdateRequest(
+                "수정 제목", "<p>수정 내용</p>", "수정 내용",
+                false, null, null, false, "오타 수정", 1
+        );
+
+        assertThatThrownBy(() -> postService.updatePost(1L, request, 1L))
+                .isInstanceOf(kr.co.ircp.cms.common.exception.RevisionConflictException.class)
+                .extracting("currentVersion").isEqualTo(5L);
+    }
+
+    // ──────────────────────────────────────────────
+    // SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006): 저장 후 이력 보존 정책 호출
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("게시글 수정 — 저장 성공 후 retentionService.prunePostHistory 호출")
+    void updatePost_afterSave_retentionServiceIsCalled() {
+        BbsPost existing = stubPost(1L, 1L);
+        when(bbsPostMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(bbsPostHistoryMapper.nextVersionByPostId(1L)).thenReturn(1);
+        when(bbsPostMapper.update(any())).thenReturn(1);
+        when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
+
+        PostUpdateRequest request = new PostUpdateRequest(
+                "수정 제목", "<p>수정 내용</p>", "수정 내용",
+                false, null, null, false, "오타 수정", 1
+        );
+
+        postService.updatePost(1L, request, 1L);
+
+        verify(retentionService).prunePostHistory(1L);
+    }
+
+    @Test
+    @DisplayName("게시글 수정 — retentionService가 예외를 던져도 저장 결과는 영향받지 않는다")
+    void updatePost_retentionThrows_saveIsNotAffected() {
+        BbsPost existing = stubPost(1L, 1L);
+        when(bbsPostMapper.findById(1L)).thenReturn(Optional.of(existing));
+        when(bbsPostHistoryMapper.nextVersionByPostId(1L)).thenReturn(1);
+        when(bbsPostMapper.update(any())).thenReturn(1);
+        when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
+        org.mockito.Mockito.doThrow(new RuntimeException("retention failure"))
+                .when(retentionService).prunePostHistory(1L);
+
+        PostUpdateRequest request = new PostUpdateRequest(
+                "수정 제목", "<p>수정 내용</p>", "수정 내용",
+                false, null, null, false, "오타 수정", 1
+        );
+
+        PostDetail result = postService.updatePost(1L, request, 1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.title()).isEqualTo("수정 제목");
     }
 
     // ──────────────────────────────────────────────

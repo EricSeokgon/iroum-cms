@@ -38,6 +38,8 @@ public class BbsPost {
     private int commentCount;
     private int attachmentCount;
     private String status;
+    // SPEC-CMS-CONTENT-REVISION-001: 낙관적 잠금 기준 버전. UPDATE 시 version+1, WHERE version=expectedVersion.
+    private int version;
     private Instant publishedAt;
     // SPEC-CMS-POST-SCHEDULE-001: 예약 발행 시각 (NULL=예약 없음, status=SCHEDULED 일 때만 의미)
     private Instant scheduledAt;

@@ -179,11 +179,20 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 편집 충돌 모달 (SPEC-CMS-CONTENT-REVISION-001) -->
+    <ConflictModal
+      :visible="conflictVisible"
+      :current-version="conflictVersion"
+      @reload="reloadAfterConflict"
+      @dismiss="conflictVisible = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -191,7 +200,9 @@ import type { FormInstance, FormRules, UploadFile, UploadRawFile } from 'element
 import { useAuthStore } from '@/stores/auth'
 import { boardApi } from '@/api/board'
 import type { PostCreateRequest } from '@iroum/shared/types/api'
+import type { RevisionConflictPayload } from '@/types/revision'
 import TiptapEditor from '@/components/editor/TiptapEditor.vue'
+import ConflictModal from '@/components/revision/ConflictModal.vue'
 
 interface Props {
   bbsId?: string
@@ -217,6 +228,11 @@ const hasEnTranslation = ref(false)
 const publishMode = ref<'NOW' | 'SCHEDULE'>('NOW')
 const scheduledAt = ref<string>('')
 const isScheduled = ref(false)
+
+// 낙관적 락(편집 충돌) 상태 — SPEC-CMS-CONTENT-REVISION-001
+const expectedVersion = ref<number | undefined>(undefined)
+const conflictVisible = ref(false)
+const conflictVersion = ref(0)
 
 // 과거 날짜 선택 차단 (오늘 이전 비활성화)
 function disablePastDate(date: Date): boolean {
@@ -254,6 +270,7 @@ async function loadPost(): Promise<void> {
     form.contentHtml = p.contentHtml
     form.categoryCode = p.categoryCode ?? ''
     form.isNotice = p.isNotice
+    expectedVersion.value = p.version
     // 예약 상태로 로드되면 picker 초기값 + 예약 모드 표시 (REQ-POST-SCHEDULE-006-2)
     if (p.status === 'SCHEDULED' && p.scheduledAt) {
       publishMode.value = 'SCHEDULE'
@@ -346,7 +363,7 @@ async function handleSave(): Promise<void> {
         contentHtml: form.contentHtml,
         categoryCode: form.categoryCode || undefined,
         isNotice: form.isNotice,
-      })
+      }, expectedVersion.value)
       await saveEnTranslation(Number(props.id))
       postId = Number(props.id)
     } else {
@@ -368,11 +385,33 @@ async function handleSave(): Promise<void> {
       ElMessage.success(isEdit.value ? t('board.posts.success.updated') : t('board.posts.success.created'))
     }
     router.push({ name: 'board-post-detail', params: { id: postId } })
-  } catch {
+  } catch (e) {
+    // 409 REVISION_CONFLICT → 충돌 모달 표시 (저장 실패 메시지 대신)
+    if (isRevisionConflict(e)) {
+      conflictVersion.value = (e.response!.data as RevisionConflictPayload).currentVersion
+      conflictVisible.value = true
+      return
+    }
     ElMessage.error(t('board.posts.error.saveFailed'))
   } finally {
     saving.value = false
   }
+}
+
+// axios 409 + REVISION_CONFLICT 코드 판별
+function isRevisionConflict(e: unknown): e is import('axios').AxiosError {
+  return (
+    axios.isAxiosError(e) &&
+    e.response?.status === 409 &&
+    (e.response.data as RevisionConflictPayload | undefined)?.code === 'REVISION_CONFLICT'
+  )
+}
+
+// 충돌 모달의 "최신 버전 불러오기" → 게시글 재로드 후 expectedVersion 갱신
+async function reloadAfterConflict(): Promise<void> {
+  conflictVisible.value = false
+  await loadPost()
+  ElMessage.info(t('revision.conflict.reload'))
 }
 
 // 예약 취소 → DRAFT 복귀 (REQ-POST-SCHEDULE-006-2)

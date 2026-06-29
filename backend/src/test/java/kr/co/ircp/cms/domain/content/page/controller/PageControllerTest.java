@@ -57,6 +57,9 @@ class PageControllerTest {
     @MockitoBean
     private PageService pageService;
 
+    @MockitoBean
+    private kr.co.ircp.cms.domain.content.page.service.PageHistoryService pageHistoryService;
+
     private static PageResponse samplePage(Long id, String slug, String status) {
         return new PageResponse(
                 id, 1L, 1L, null, "PAGE-" + id, "페이지 제목", slug, status,
@@ -100,7 +103,7 @@ class PageControllerTest {
     void updatePage_returnsOk() throws Exception {
         PageUpdateRequest req = new PageUpdateRequest(
                 "변경된 제목", "new-slug", 1L, null,
-                null, null, null, null, null, "수정 사유"
+                null, null, null, null, null, "수정 사유", 1
         );
         PageResponse updated = samplePage(5L, "new-slug", "DRAFT");
         when(pageService.updatePage(eq(5L), any(PageUpdateRequest.class), any())).thenReturn(updated);
@@ -171,6 +174,41 @@ class PageControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].version").value(2))
                 .andExpect(jsonPath("$[1].version").value(1));
+    }
+
+    @Test
+    @DisplayName("GET /pages/{id}/history/diff — title·slug diff 200 OK (AC-003-3)")
+    void getPageHistoryDiff_returnsOk() throws Exception {
+        var slugDiff = new kr.co.ircp.cms.common.dto.RevisionDiffResponse(
+                "slug", 1, 2,
+                List.of(new kr.co.ircp.cms.common.dto.DiffLine(
+                        kr.co.ircp.cms.common.dto.DiffType.DELETE, 1, null, "old-slug"),
+                        new kr.co.ircp.cms.common.dto.DiffLine(
+                                kr.co.ircp.cms.common.dto.DiffType.INSERT, null, 1, "new-slug")));
+        var titleDiff = new kr.co.ircp.cms.common.dto.RevisionDiffResponse(
+                "title", 1, 2,
+                List.of(new kr.co.ircp.cms.common.dto.DiffLine(
+                        kr.co.ircp.cms.common.dto.DiffType.EQUAL, 1, 1, "제목")));
+        when(pageHistoryService.diff(eq(3L), eq(1), eq(2)))
+                .thenReturn(List.of(slugDiff, titleDiff));
+
+        mockMvc.perform(get("/api/v1/content/pages/3/history/diff")
+                        .param("from", "1")
+                        .param("to", "2")
+                        .with(jwtAuth(withAuthority("PAGE:HISTORY:READ"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].field").value("slug"))
+                .andExpect(jsonPath("$[1].field").value("title"));
+    }
+
+    @Test
+    @DisplayName("GET /pages/{id}/history/diff — 권한 없는 사용자 403 Forbidden")
+    void getPageHistoryDiff_noAuthority_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/content/pages/3/history/diff")
+                        .param("from", "1")
+                        .param("to", "2")
+                        .with(jwtAuth(withAuthority("PAGE:READ"))))
+                .andExpect(status().isForbidden());
     }
 
     @Test

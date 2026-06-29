@@ -201,17 +201,28 @@
     :page-id="pageId"
     @rolled-back="onRolledBack"
   />
+
+  <!-- 편집 충돌 모달 (SPEC-CMS-CONTENT-REVISION-001) -->
+  <ConflictModal
+    :visible="conflictVisible"
+    :current-version="conflictVersion"
+    @reload="reloadAfterConflict"
+    @dismiss="conflictVisible = false"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import axios from 'axios'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { pages } from '@/api/content'
 import type { PageItemResponse as PageType, ContentBlockResponse, PageStatus } from '@/api/content'
+import type { RevisionConflictPayload } from '@/types/revision'
 import ContentBlockEditor from '@/components/content/ContentBlockEditor.vue'
 import PageHistoryDialog from '@/components/content/PageHistoryDialog.vue'
+import ConflictModal from '@/components/revision/ConflictModal.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -228,6 +239,10 @@ const historyOpen = ref(false)
 const scheduleOpen = ref(false)
 const scheduleAt = ref<Date | null>(null)
 const previewUrl = ref('')
+
+// 낙관적 락(편집 충돌) 상태 — SPEC-CMS-CONTENT-REVISION-001
+const conflictVisible = ref(false)
+const conflictVersion = ref(0)
 
 // 로컬 블록 (ContentBlockEditor와 양방향 바인딩)
 const localBlocks = ref<ContentBlockResponse[]>([])
@@ -287,19 +302,42 @@ async function saveSeo(): Promise<void> {
   if (!page.value) return
   savingSeo.value = true
   try {
+    // 현재 버전(currentVersion)을 expectedVersion으로 전달하여 낙관적 락 검증
     await pages.updateSeo(page.value.id, {
       seoTitle: seoForm.value.seoTitle || undefined,
       seoDescription: seoForm.value.seoDescription || undefined,
       seoKeywords: seoForm.value.seoKeywords || undefined,
       ogImageUrl: seoForm.value.ogImageUrl || undefined,
       canonicalUrl: seoForm.value.canonicalUrl || undefined,
-    })
+    }, page.value.currentVersion)
     ElMessage.success(t('content.page.editor.seoSaved'))
-  } catch {
+  } catch (e) {
+    if (handleConflict(e)) return
     ElMessage.error(t('content.page.editor.seoError'))
   } finally {
     savingSeo.value = false
   }
+}
+
+// 409 REVISION_CONFLICT 감지 시 충돌 모달 표시 (true 반환 = 충돌 처리됨)
+function handleConflict(e: unknown): boolean {
+  if (
+    axios.isAxiosError(e) &&
+    e.response?.status === 409 &&
+    (e.response.data as RevisionConflictPayload | undefined)?.code === 'REVISION_CONFLICT'
+  ) {
+    conflictVersion.value = (e.response.data as RevisionConflictPayload).currentVersion
+    conflictVisible.value = true
+    return true
+  }
+  return false
+}
+
+// 충돌 모달 "최신 버전 불러오기" → 페이지 재로드
+async function reloadAfterConflict(): Promise<void> {
+  conflictVisible.value = false
+  await loadPage()
+  ElMessage.info(t('revision.conflict.reload'))
 }
 
 async function saveBlocks(): Promise<void> {

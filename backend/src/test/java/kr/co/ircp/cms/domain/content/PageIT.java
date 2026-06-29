@@ -151,7 +151,7 @@ class PageIT extends AbstractIntegrationTest {
 
             givenAdminToken();
             String body = """
-                    {"title":"새 제목","slug":"%s","changeSummary":"제목 수정"}
+                    {"title":"새 제목","slug":"%s","changeSummary":"제목 수정","expectedVersion":1}
                     """.formatted(slug);
             mockMvc.perform(put("/api/v1/content/pages/" + pageId)
                             .header("Authorization", TOKEN)
@@ -288,7 +288,7 @@ class PageIT extends AbstractIntegrationTest {
             String newSlug = "new-" + uid();
             givenAdminToken();
             String body = """
-                    {"title":"변경된 제목","slug":"%s","changeSummary":"slug 변경"}
+                    {"title":"변경된 제목","slug":"%s","changeSummary":"slug 변경","expectedVersion":1}
                     """.formatted(newSlug);
             mockMvc.perform(put("/api/v1/content/pages/" + pageId)
                             .header("Authorization", TOKEN)

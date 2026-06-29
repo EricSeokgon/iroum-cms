@@ -51,6 +51,11 @@ public class PostServiceImpl implements PostService {
     private final BbsPostI18nMapper bbsPostI18nMapper;
     private final HtmlSanitizer htmlSanitizer;
     private final AuthorizationGuard authorizationGuard;
+    // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
+    private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
+
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(PostServiceImpl.class);
 
     @Override
     public PageResponse<PostSummary> listPosts(Long bbsMasterId, int page, int size, String lang) {
@@ -149,6 +154,9 @@ public class PostServiceImpl implements PostService {
         );
     }
 
+    // @MX:ANCHOR: [AUTO] updatePost — 게시글 수정의 단일 진입점(이력 보존 + 낙관적 잠금)
+    // @MX:REASON: PostController.updatePost + 향후 롤백(M3)에서 재사용되는 핵심 쓰기 경로(fan_in >= 2, 공개 API 경계). 낙관적 잠금 불변식(version 일치 시에만 갱신)을 보장.
+    // @MX:SPEC: SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005
     @Override
     @Transactional
     public PostDetail updatePost(Long id, PostUpdateRequest request, Long editorId) {
@@ -181,8 +189,28 @@ public class PostServiceImpl implements PostService {
             existing.setNoticeFrom(request.noticeFrom());
             existing.setNoticeUntil(request.noticeUntil());
             existing.setSecret(request.isSecret());
+            // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 낙관적 잠금 기준은 클라이언트가 보낸 expectedVersion.
+            // UPDATE WHERE version = expectedVersion 으로 충돌을 검출한다.
+            existing.setVersion(request.expectedVersion());
         }
-        bbsPostMapper.update(existing);
+
+        int updatedRows = bbsPostMapper.update(existing);
+        if (updatedRows == 0) {
+            // 버전 불일치(다른 사용자 선수정) → 서버 현재 버전을 실어 409 로 응답
+            long currentVersion = bbsPostMapper.findById(id)
+                    .map(BbsPost::getVersion)
+                    .map(Integer::longValue)
+                    .orElseGet(() -> request != null ? request.expectedVersion().longValue() : 0L);
+            throw new kr.co.ircp.cms.common.exception.RevisionConflictException(currentVersion);
+        }
+
+        // SPEC-CMS-CONTENT-REVISION-001 M3 (REQ-REV-006): 저장 성공 후 이력 보존 정책 적용.
+        // best-effort — 보존 정리 실패가 저장 결과를 되돌리지 않도록 호출자에서도 방어한다.
+        try {
+            retentionService.prunePostHistory(id);
+        } catch (Exception e) {
+            log.warn("게시물 이력 보존 정리 호출 실패 (best-effort, 무시). postId={}", id, e);
+        }
 
         BbsMaster master = bbsMasterMapper.findById(existing.getBbsId()).orElse(null);
         String masterCode = master != null ? master.getCode() : null;
