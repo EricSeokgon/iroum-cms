@@ -431,6 +431,8 @@ export interface PostDetail extends PostSummary {
   categoryCode?: string
   attachments: AttachmentSummary[]
   updatedAt: string
+  // 낙관적 잠금 버전 (SPEC-CMS-CONTENT-REVISION-001)
+  version: number
 }
 
 /**
