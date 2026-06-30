@@ -138,7 +138,9 @@ export async function loginAsSuperAdmin(page: Page): Promise<void> {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        roles: ['SUPER_ADMIN'],
+        // SUPER_ADMIN은 ADMIN의 상위 역할이나 라우터 가드는 문자열 정확 일치 검사 →
+        // permissions:['ADMIN'] 라우트(FAQ/Q&A 등) 접근을 위해 ADMIN 역할을 명시 포함
+        roles: ['SUPER_ADMIN', 'ADMIN'],
         permissions: ['ROLE:READ', 'USER:READ', 'USER:WRITE', 'AUDIT:READ', 'SYSTEM:DASHBOARD'],
       }),
     })
