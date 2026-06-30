@@ -9,6 +9,8 @@
 //
 // @MX:NOTE: [AUTO] useNotificationWs — AppHeader/AdminLayout 의 30초 폴링을 대체하는 실시간 구독 진입점
 import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
+import { Client as StompClient } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 import { useNotificationCenterStore } from '@/stores/notificationCenter'
 import { useAuthStore } from '@/stores/auth'
 
@@ -63,17 +65,10 @@ interface IncomingMessage {
  * 자동 재연결(reconnectDelay)로 끊김 시 백그라운드 재연결을 시도한다(REQ-NWS-004).
  */
 function createDefaultClient(handlers: StompClientHandlers): StompClientLike {
-  // 동적 import 회피 — 운영 번들에만 포함되도록 정적 import.
-  // (테스트 경로는 clientFactory 주입으로 본 함수를 호출하지 않는다)
-  /* eslint-disable @typescript-eslint/no-var-requires */
-  const { Client } = require('@stomp/stompjs') as typeof import('@stomp/stompjs')
-  const SockJS = require('sockjs-client') as typeof import('sockjs-client')['default']
-  /* eslint-enable @typescript-eslint/no-var-requires */
-
   const auth = useAuthStore()
   const token = auth.getToken() ?? ''
 
-  const client = new Client({
+  const client = new StompClient({
     webSocketFactory: () => new SockJS('/ws/notifications') as unknown as WebSocket,
     connectHeaders: { Authorization: `Bearer ${token}` },
     reconnectDelay: 5_000,
