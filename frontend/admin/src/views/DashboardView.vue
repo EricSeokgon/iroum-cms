@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div data-testid="dashboard-main">
     <!-- 헤더 -->
     <div class="mb-6 flex items-center justify-between">
       <h2 class="text-xl font-semibold text-gray-800">{{ t('dashboard.title') }}</h2>

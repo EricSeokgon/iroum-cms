@@ -130,6 +130,22 @@ export async function loginAsSuperAdmin(page: Page): Promise<void> {
       body: JSON.stringify(MOCK_REFRESH_RESPONSE),
     })
   })
+  // AdminLayout.vue의 onMounted에서 loadPermissions()를 호출하므로
+  // me/permissions mock이 없으면 hasPermission()이 항상 false를 반환 →
+  // v-if="hasPermission(...)" 메뉴 항목이 렌더링되지 않아 E2E 타임아웃 발생.
+  await page.route('**/api/v1/me/permissions', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        roles: ['SUPER_ADMIN'],
+        permissions: ['ROLE:READ', 'USER:READ', 'USER:WRITE', 'AUDIT:READ', 'SYSTEM:DASHBOARD'],
+      }),
+    })
+  })
+  await page.route('**/api/v1/admin/menus/accessible', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+  })
 }
 
 /**
