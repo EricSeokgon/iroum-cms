@@ -17,7 +17,7 @@
         :placeholder="t('board.posts.field.tagPlaceholder')"
         :aria-label="t('board.posts.field.tagPlaceholder')"
         @keyup.enter="addTag"
-        @keydown.comma.prevent="addTag"
+        @keydown="onKeydown"
       />
     </div>
 
@@ -66,6 +66,14 @@ const inputValue = ref('')
 const filteredRecommendations = computed(() =>
   props.recommendations.filter((tg) => !props.modelValue.includes(tg)),
 )
+
+// 콤마 키 처리 (vue/valid-v-on에서 .comma modifier 미지원 → 직접 처리)
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === ',') {
+    e.preventDefault()
+    addTag()
+  }
+}
 
 // 자유 입력 태그 추가 (Enter/콤마)
 function addTag(): void {
