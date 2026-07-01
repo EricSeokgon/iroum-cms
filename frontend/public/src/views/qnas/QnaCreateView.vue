@@ -87,7 +87,7 @@
             class="min-w-[140px] flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-primary-600"
             data-testid="qna-tag-input"
             @keyup.enter.prevent="addTag"
-            @keydown.comma.prevent="addTag"
+            @keydown="onKeydown"
           />
         </div>
         <!-- AI 추천 칩 -->
@@ -174,6 +174,14 @@ const {
 const filteredRecommendations = computed(() =>
   recommendations.value.filter((tg) => !tags.value.includes(tg)),
 )
+
+// 콤마 키 처리 (vue/valid-v-on에서 .comma modifier 미지원 → 직접 처리)
+function onKeydown(e: KeyboardEvent): void {
+  if (e.key === ',') {
+    e.preventDefault()
+    addTag()
+  }
+}
 
 function addTag(): void {
   const tag = tagInput.value.trim().replace(/,$/, '').trim()
