@@ -109,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     logout,
     clearLocal,
+    getToken: () => accessToken.value,
     _applyToken,  // 테스트용 노출
     _clearState,  // 테스트용 노출
   }
