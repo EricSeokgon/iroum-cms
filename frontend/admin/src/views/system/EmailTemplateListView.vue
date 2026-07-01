@@ -314,7 +314,7 @@
             <span class="font-semibold text-gray-700">제목:</span>
             {{ previewResult.subject }}
           </p>
-          <div class="rounded border border-gray-200 p-3" v-html="safePreviewHtml" />
+          <div class="rounded border border-gray-200 p-3" v-html="safePreviewHtml"></div>
         </div>
       </div>
 
