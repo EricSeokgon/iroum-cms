@@ -39,8 +39,14 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue'),
+          component: () => import('@/views/dashboard/DashboardMainView.vue'),
           meta: { title: '대시보드' },
+        },
+        {
+          path: 'dashboard/summary',
+          name: 'dashboard-summary',
+          component: () => import('@/views/DashboardView.vue'),
+          meta: { title: '대시보드 (요약)' },
         },
         {
           path: 'dashboard/widgets',
