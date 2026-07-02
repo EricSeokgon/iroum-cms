@@ -326,7 +326,40 @@ PIPA 제29조 안전성 확보 조치 의무 추가 완화 — PII-001(저장 �
 | SPEC-CMS-META-IT-GREEN-MANDATORY-001 | Meta: IT user environment GREEN mandatory 정책 (단독+통합+종합 GREEN 필수, evidence 10건: PII 5 + AUTHZ 5) | Implemented (v0.3 Evidence 강화) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-REGRESSION-001 | AUTHZ IT 51 RED 회귀 진단 + 운영 응답 코드 동기 (ExpandIT 31 + controller 11 = 51 RED → 0, 100% 회복) | Implemented (1차) |
 | SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-003 | HTTP 권한 매트릭스 IT 확장 3차 (8 도메인 35 endpoint × 106 AC + ArchUnit baseline 88, 79% IT 커버) | Implemented (1차) |
-| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004 | HTTP 권한 매트릭스 IT 확장 4차 (잔여 26 endpoint → 100% 커버, AUTHZ 트랙 종결) | Planned |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-004 | HTTP 권한 매트릭스 IT 확장 4차 (잔여 27 endpoint 100% IT 커버, Final) | Completed |
+| SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 | 신규 엔드포인트 인가 IT 커버리지 복원 | Completed |
+| SPEC-CMS-SECURITY-PII-KMS-001 | 운영 KMS 어댑터 (AWS KMS / HashiCorp Vault) | Completed |
+| SPEC-CMS-SECURITY-PII-ROTATION-001 | PII 암호화 키 자동 회전 배치 | Completed |
+| SPEC-CMS-AI-001 | AI/ML 기능 (성장단계 예측·가상 시뮬레이션·경영위험 예측·알고리즘 품질 모니터링) | Completed |
+| SPEC-CMS-AI-002 | AI 정책 매칭 (시맨틱 추천·개인화 랭킹·하이브리드 검색·피드백 루프) | Completed |
+| SPEC-CMS-AI-003 | RAG 질의응답 — 정책 문서 시맨틱 검색·자연어 질의·생성형 답변 | Completed |
+| SPEC-CMS-ML-SERVICE-001 | Python FastAPI ML 추론 서비스 — Spring Boot ML 계약 실서비스 구현 | Completed |
+| SPEC-CMS-KPI-001 | 플랫폼 KPI 통합 관리 | Completed |
+| SPEC-CMS-KPI-002 | 운영 활동 지표 KPI 확장 | Completed |
+| SPEC-CMS-DASHBOARD-PERSONALIZE-001 | 대시보드 개인화 (사용자별 위젯/스타일 저장) | Completed |
+| SPEC-CMS-DASHBOARD-REFRESH-001 | 사용자별 대시보드 자동 새로고침 주기 개인화 | Completed |
+| SPEC-CMS-PUBLIC-001 | 시민 대상 공공 사이트 SPA (Public Citizen-Facing Web SPA) | Completed |
+| SPEC-CMS-PUBLIC-E2E-001 | Public SPA Playwright E2E 테스트 도입 | Completed |
+| SPEC-CMS-ADMIN-E2E-001 | Admin SPA Playwright E2E 테스트 도입 | Completed |
+| SPEC-CMS-ADMIN-TEST-001 | Admin SPA 테스트 인프라 복구 및 커버리지 확장 | Completed |
+| SPEC-CMS-RBAC-001 | 관리자 역할 기반 접근 제어(RBAC) 권한 관리 체계 완성 | Completed |
+| SPEC-CMS-USER-BULK-STATUS-001 | 사용자 일괄 상태 변경 | Completed |
+| SPEC-CMS-AUDIT-LOG-VIEW-001 | 관리자 감사 로그 조회 화면 | Completed |
+| SPEC-CMS-AUDIT-LOG-MULTI-FILTER-001 | 감사 로그 다중값 필터 (action / severity) | Completed |
+| SPEC-CMS-CONTENT-REVISION-001 | 콘텐츠 수정 이력(Revision) 관리 | Completed |
+| SPEC-CMS-POST-HISTORY-001 | 게시글 버전 히스토리 뷰어 | Completed |
+| SPEC-CMS-POST-MODERATE-001 | 게시글 관리자 모더레이션 패널 | Completed |
+| SPEC-CMS-POST-SCHEDULE-001 | 게시글(bbs_post) 예약 발행 | Completed |
+| SPEC-CMS-COMMENT-MODERATE-001 | 댓글 관리자 모더레이션 | Completed |
+| SPEC-CMS-QNA-MODERATE-001 | Q&A 관리자 모더레이션 패널 | Completed |
+| SPEC-CMS-PUB-CAT-001 | 발간자료 카테고리 관리자 CRUD | Completed |
+| SPEC-CMS-NOTICE-I18N-001 | 공지사항 다중 언어 지원 (Notice i18n) | Completed |
+| SPEC-CMS-NOTICE-I18N-002 | 공지 목록 API 다국어 제목 (Notice List i18n) | Completed |
+| SPEC-CMS-NOTIFICATION-CENTER-001 | 관리자 알림 센터 (Admin Notification Center) | Completed |
+| SPEC-CMS-NOTIFICATION-STAT-001 | 관리자 알림 발송 통계 대시보드 | Completed |
+| SPEC-CMS-NC-IT-001 | AdminNotificationController 통합 테스트 | Completed |
+| SPEC-CMS-SIM-001 | 비회원 창업기업 가상 시뮬레이션 환경 확장 (위저드 UI·5년 투영·정책 번들·사용 통계) | Completed |
+| SPEC-CMS-TEST-INFRA-CONTEXT-RESTORE-001 | 백엔드 IT Spring 컨텍스트 로드 복구 | Completed |
 
 SPEC 문서 위치: `.moai/specs/`
 
