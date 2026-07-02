@@ -126,21 +126,21 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   contentBlockApi,
-  type ContentBlockRequest,
-  type ContentBlockResponse,
-  type ContentBlockType,
+  type SharedContentBlockRequest,
+  type SharedContentBlockResponse,
+  type SharedBlockType,
 } from '@/api/content'
 
-const BLOCK_TYPES: ContentBlockType[] = ['RICH_TEXT', 'HTML', 'MARKDOWN', 'EMBED']
+const BLOCK_TYPES: SharedBlockType[] = ['RICH_TEXT', 'HTML', 'MARKDOWN', 'EMBED']
 
 const loading = ref(false)
 const saving = ref(false)
 const dialogOpen = ref(false)
-const blockList = ref<ContentBlockResponse[]>([])
+const blockList = ref<SharedContentBlockResponse[]>([])
 const filterStatus = ref<string>('')
 const filterType = ref<string>('')
 
-interface BlockForm extends ContentBlockRequest {
+interface BlockForm extends SharedContentBlockRequest {
   id?: number
 }
 
@@ -180,12 +180,12 @@ function openCreate() {
   dialogOpen.value = true
 }
 
-function openEdit(row: ContentBlockResponse) {
+function openEdit(row: SharedContentBlockResponse) {
   form.value = {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    blockType: row.blockType as ContentBlockType,
+    blockType: row.blockType as SharedBlockType,
     contentHtml: row.contentHtml ?? '',
     contentRaw: row.contentRaw ?? '',
     description: row.description ?? '',
@@ -197,7 +197,7 @@ function openEdit(row: ContentBlockResponse) {
 async function save() {
   saving.value = true
   try {
-    const payload: ContentBlockRequest = {
+    const payload: SharedContentBlockRequest = {
       name: form.value.name,
       slug: form.value.slug,
       blockType: form.value.blockType,
@@ -221,7 +221,7 @@ async function save() {
   }
 }
 
-async function toggleStatus(row: ContentBlockResponse) {
+async function toggleStatus(row: SharedContentBlockResponse) {
   const next = row.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
   try {
     await contentBlockApi.updateStatus(row.id, next)
@@ -232,7 +232,7 @@ async function toggleStatus(row: ContentBlockResponse) {
   }
 }
 
-async function remove(row: ContentBlockResponse) {
+async function remove(row: SharedContentBlockResponse) {
   try {
     await ElMessageBox.confirm(`'${row.name}' 블록을 삭제하시겠습니까?`, '삭제 확인', {
       type: 'warning',
