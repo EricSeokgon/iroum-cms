@@ -701,3 +701,4 @@ function formatDate(iso: string | null | undefined): string {
     minute: '2-digit',
   })
 }
+</script>
