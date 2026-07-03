@@ -57,11 +57,6 @@ public class PageServiceImpl implements PageService {
     // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
     private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
     private final ObjectMapper objectMapper;
-    // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
-    private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
-
-    private static final org.slf4j.Logger log =
-            org.slf4j.LoggerFactory.getLogger(PageServiceImpl.class);
 
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(PageServiceImpl.class);

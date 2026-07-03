@@ -69,20 +69,4 @@
         )
     </delete>
 
-    <!-- RevisionRetentionService: 특정 페이지 이력 수 조회 -->
-    <select id="countByPageId" resultType="long">
-        SELECT COUNT(*) FROM page_history WHERE page_id = #{pageId}
-    </select>
-
-    <!-- RevisionRetentionService: 오래된 이력 삭제 (최신 max 개만 유지) -->
-    <delete id="deleteOldestByPageId">
-        DELETE FROM page_history
-        WHERE id IN (
-            SELECT id FROM page_history
-            WHERE page_id = #{pageId}
-            ORDER BY version ASC
-            LIMIT GREATEST(0, (SELECT COUNT(*) FROM page_history WHERE page_id = #{pageId}) - #{max})
-        )
-    </delete>
-
 </mapper>
