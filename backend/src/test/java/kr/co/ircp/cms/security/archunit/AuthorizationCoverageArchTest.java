@@ -108,11 +108,7 @@ class AuthorizationCoverageArchTest {
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
     //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
-    // (SPEC-CMS-SURVEY-001 — 127→129, SurveyController getResponses(SURVEY:READ) +
-    //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.)
-    // (SPEC-CMS-REVIEW-001 — 129→131, ReviewAdminController hideReview/deleteReview 메소드 레벨
-    //  hasAuthority('REVIEW:DELETE') 2건 추가. 클래스 레벨 hasAuthority('REVIEW:READ')는 메소드 카운트 제외.
-    //  인가 매트릭스(401/403/204)는 ReviewAdminControllerIT(domain.board)에서 커버 — security 패키지 IT set 무영향.)
+    // (하단 baseline 상세 변경 이력 참조 — 최신: 140)
     @Test
     @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 140, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
@@ -121,7 +117,7 @@ class AuthorizationCoverageArchTest {
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 136건
+        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 140건
         // (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 113→124, +11 카운트 증가).
         // (SPEC-CMS-POST-SCHEDULE-001 — 124→126, PostController schedule/cancelSchedule 2개 endpoint 추가.
         //  두 endpoint 는 기존 게시글 쓰기와 동일한 isAuthenticated() 정책이며 PostIT 의 예약 발행 시나리오

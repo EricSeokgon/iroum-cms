@@ -1,6 +1,6 @@
 # SPEC-CMS-REVIEW-001 Compact
 
-게시물(BbsPost) 별점(1-5) + 리뷰 텍스트 시스템. 다중 리뷰 허용, 평균 별점 집계, 관리자 중앙 관리. 신규 테이블 `bbs_post_review` 분리, V55 마이그레이션.
+게시물(BbsPost) 별점(1-5) + 리뷰 텍스트 시스템. 다중 리뷰 허용, 평균 별점 집계, 관리자 중앙 관리. 신규 테이블 `bbs_post_review` 분리, V56 마이그레이션.
 
 ## Requirements (REQ-REV-*)
 
@@ -41,7 +41,7 @@
 
 ## Files to Modify
 
-- [NEW] V55__review_system_rbac.sql (DDL + permissions + admin_menu seed)
+- [NEW] V56__review_system_rbac.sql (DDL + permissions + admin_menu seed)
 - [NEW] BbsPostReview.java (entity), BbsPostReviewMapper.java + .xml
 - [NEW] ReviewService/Impl, ReviewAdminService/Impl
 - [NEW] ReviewController, ReviewAdminController, Review* DTO

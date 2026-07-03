@@ -14,7 +14,7 @@ issue_number: 0
 ## HISTORY
 
 - 2026-06-25 (v0.1.1): SYNC 완료. 37파일 2797 insertions 구현 확인. status Implemented → Completed.
-- 2026-06-22 (v0.1.0): 초안 작성. 게시물(BbsPost) 대상 별점(1-5) + 리뷰 텍스트 시스템. 다중 리뷰 허용, 평균 별점 집계, 관리자 중앙 관리(목록/숨김/삭제). `bbs_post_review` 신규 테이블 분리. V55 마이그레이션.
+- 2026-06-22 (v0.1.0): 초안 작성. 게시물(BbsPost) 대상 별점(1-5) + 리뷰 텍스트 시스템. 다중 리뷰 허용, 평균 별점 집계, 관리자 중앙 관리(목록/숨김/삭제). `bbs_post_review` 신규 테이블 분리. V56 마이그레이션.
 
 ---
 
@@ -127,9 +127,9 @@ issue_number: 0
 
 기존 `/api/v1/posts/{id}/comments` 공개 API 패턴과 `@PreAuthorize` 가드 패턴을 따른다.
 
-### 5.6 V55 마이그레이션 통합
+### 5.6 V56 마이그레이션 통합
 
-`V55__review_system_rbac.sql` 단일 파일에 (1) `bbs_post_review` DDL, (2) `bbs_post` ALTER(additive), (3) `permissions` + `role_permissions` 시드, (4) `admin_menu` 시드를 포함한다.
+`V56__review_system_rbac.sql` 단일 파일에 (1) `bbs_post_review` DDL, (2) `bbs_post` ALTER(additive), (3) `permissions` + `role_permissions` 시드, (4) `admin_menu` 시드를 포함한다.
 
 > 주의: 미머지 Draft SPEC들이 V번호를 잠정 사용 중. run 직전 `backend/src/main/resources/db/migration/` 최신 버전 재확인 후 충돌 시 재번호.
 
@@ -137,7 +137,7 @@ issue_number: 0
 
 패키지 루트: `kr.co.ircp.cms.domain.board` (board 도메인 controller/service/repository/entity/dto 레이어링 준수).
 
-- [NEW] `backend/src/main/resources/db/migration/V55__review_system_rbac.sql` — DDL + permissions + admin_menu seed
+- [NEW] `backend/src/main/resources/db/migration/V56__review_system_rbac.sql` — DDL + permissions + admin_menu seed
 - [NEW] `.../domain/board/entity/BbsPostReview.java` — 엔티티 (Instant 타임스탬프, status String)
 - [NEW] `.../domain/board/repository/BbsPostReviewMapper.java` — MyBatis 인터페이스
 - [NEW] `backend/src/main/resources/mapper/board/BbsPostReviewMapper.xml` — SQL 쿼리

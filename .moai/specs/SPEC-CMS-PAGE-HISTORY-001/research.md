@@ -67,7 +67,7 @@
 
 ## 3. 마이그레이션 상태
 
-- 디렉토리 최신: **V55**(`V55__review_system_rbac.sql`, SPEC-CMS-REVIEW-001 draft). V54=survey.
+- 디렉토리 최신: **V56**(`V56__review_system_rbac.sql`, SPEC-CMS-REVIEW-001 draft). V55=survey.
 - 본 SPEC 마이그레이션 필요 여부:
   - REQ-PHIST-001: `page_history(page_id, version)` 인덱스가 없으면 V56 추가(정리 쿼리 성능). SPEC-CMS-004 마이그레이션의 기존 인덱스 확인 후 결정.
   - REQ-PHIST-004: 채택안 A면 불필요, B면 V56 CHECK ALTER.
