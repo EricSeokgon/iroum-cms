@@ -108,20 +108,21 @@ class AuthorizationCoverageArchTest {
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
     //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
-    // (SPEC-CMS-SURVEY-001 — 127→129, SurveyController getResponses(SURVEY:READ) +
-    //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.)
-    // (SPEC-CMS-REVIEW-001 — 129→131, ReviewAdminController hideReview/deleteReview 메소드 레벨
+    // (SPEC-CMS-SURVEY-001 — 129→131, SurveyController getResponses(SURVEY:READ) +
+    //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.
+    //  main 최신 baseline(129, CONTENT-REVISION-001 M2/M3 반영 후)을 기준으로 갱신 — 원 브랜치의 127 가정치는 폐기.)
+    // (SPEC-CMS-REVIEW-001 — 131→133, ReviewAdminController hideReview/deleteReview 메소드 레벨
     //  hasAuthority('REVIEW:DELETE') 2건 추가. 클래스 레벨 hasAuthority('REVIEW:READ')는 메소드 카운트 제외.
     //  인가 매트릭스(401/403/204)는 ReviewAdminControllerIT(domain.board)에서 커버 — security 패키지 IT set 무영향.)
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 131, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 133, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 127건
+        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 133건
         // (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 113→124, +11 카운트 증가).
         // (SPEC-CMS-POST-SCHEDULE-001 — 124→126, PostController schedule/cancelSchedule 2개 endpoint 추가.
         //  두 endpoint 는 기존 게시글 쓰기와 동일한 isAuthenticated() 정책이며 PostIT 의 예약 발행 시나리오
@@ -136,15 +137,19 @@ class AuthorizationCoverageArchTest {
         // (SPEC-CMS-CONTENT-REVISION-001 M3 — 128→129, PostController.rollbackPostVersion()
         //  POST /{postId}/history/{version}/rollback 추가. 다른 게시글 쓰기와 동일한 isAuthenticated() 정책(어휘 무변경)이며
         //  PostControllerRollbackTest 슬라이스(200/400/404)에서 인가 거동을 검증한다.)
+        // (SPEC-CMS-SURVEY-001 — 129→131, SurveyController getResponses(SURVEY:READ) +
+        //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가.)
+        // (SPEC-CMS-REVIEW-001 — 131→133, ReviewAdminController hideReview/deleteReview
+        //  메소드 레벨 hasAuthority('REVIEW:DELETE') 2건 추가. 클래스 레벨 hasAuthority('REVIEW:READ')는 제외.)
         // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 컨트롤러)는
         // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 권한 어휘 검증으로 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(131)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(133)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(131L);
+                .isEqualTo(133L);
     }
 
     // =================================================================================

@@ -15,7 +15,7 @@
 
 선행: 없음. 다른 모든 Phase의 기반.
 
-- A1: V55 마이그레이션 작성 — `bbs_post_review` DDL (CHECK 1-5, FK, 인덱스), `bbs_post` ALTER(`review_count`, `average_rating`)
+- A1: V56 마이그레이션 작성 — `bbs_post_review` DDL (CHECK 1-5, FK, 인덱스), `bbs_post` ALTER(`review_count`, `average_rating`)
 - A2: V55에 `permissions`(REVIEW:READ/WRITE/DELETE) + `role_permissions`(ADMIN, MANAGER) 시드
 - A3: V55에 `admin_menu` "리뷰 관리"(`/admin/reviews`, 필요 권한 REVIEW:READ) 시드
 - A4: `BbsPostReview.java` 엔티티 (Instant 타임스탬프, status String, rating int, BigDecimal 불사용)
@@ -61,7 +61,7 @@
 
 | Task | 파일 | Phase |
 |------|------|-------|
-| V55 마이그레이션 | `backend/src/main/resources/db/migration/V55__review_system_rbac.sql` | A |
+| V56 마이그레이션 | `backend/src/main/resources/db/migration/V56__review_system_rbac.sql` | A |
 | 엔티티 | `.../board/entity/BbsPostReview.java` | A |
 | 매퍼 IF/XML | `.../board/repository/BbsPostReviewMapper.java`, `mapper/board/BbsPostReviewMapper.xml` | A |
 | BbsPost 확장 | `.../board/entity/BbsPost.java`, `mapper/board/BbsPostMapper.xml` | A |
