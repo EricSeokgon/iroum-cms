@@ -57,6 +57,32 @@
   - **보안 설정**: SecurityConfig `/api/v1/ai/tag-recommend` permitAll 규칙 추가 (`/api/v1/ai/**` authenticated 규칙 상단에 위치) @MX:WARN
   - T-016 데이터 일관성 수정: Post/QNA 도메인 DTO + MyBatis mapper에 `tags` 필드 배선 (기존 `StringArrayTypeHandler` 재사용)
 
+- **페이지 버전 이력 관리 고도화** (`PageHistoryRetentionJob`, `PageChangeSummaryGenerator`, `PageServiceImpl`, `PageListView.vue`, SPEC-CMS-PAGE-HISTORY-001)
+  - **V56 마이그레이션 불필요**: 기존 `page_history` 테이블(SPEC-CMS-004) 재사용
+  - **`PageHistoryRetentionJob`**: 페이지당 최대 N개(기본 50) 이력 보존 배치 — `@Scheduled(cron, zone="Asia/Seoul")`, `page.history.retention.max-versions/cron` 설정값 바인딩
+  - **`PageHistoryMapper`**: `findPageIdsWithExcessHistory`, `deleteOldestExceedingLimit` 2개 쿼리 추가 — 보존 윈도 초과 항목 페이지 단위 정리
+  - **`PageChangeSummaryGenerator`**: diff 기반 changeSummary 자동 생성 ("제목 변경", "slug 변경") — `Objects.equals()` NPE 방어
+  - **`PageServiceImpl`**: `updatePage()` 스냅샷 JSON을 `objectMapper.writeValueAsString(Map)` 안전화, `rollbackPage()` `@AuditLog(action="UPDATE", captureReturn=true)` 감사 추적 추가
+  - **`PageListView.vue`**: "이력" 액션 버튼 (`v-if="canViewHistory"` → `PAGE:HISTORY:READ` 권한 가드), `PageHistoryDialog` 연동
+  - **`PageIT`**: AC-PAGE-10 — `page_history` 시드→`rollbackPage()`→title/slug 복원 DB 검증
+  - **단위 테스트**: `PageChangeSummaryGeneratorTest` 4/4 PASS, `PageHistoryRetentionJobTest` 2/2 PASS
+
+- **게시물 별점 리뷰 시스템** (`BbsPostReview`, `ReviewService`, `ReviewAdminService`, `ReviewController`, `ReviewAdminController`, `PostReviewSection.vue`, `ReviewManagementView.vue`, SPEC-CMS-REVIEW-001)
+  - **V55 마이그레이션**: `bbs_post_review` 테이블 + `bbs_post` 집계 컬럼(`review_count`, `avg_rating`) 추가, RBAC 권한 시드(`REVIEW:READ/WRITE/DELETE`), admin_menu 시드
+  - **백엔드**: `GET /api/v1/posts/{id}/reviews` (공개 목록), `POST /api/v1/posts/{id}/reviews` (리뷰 작성), 관리자 `GET/PATCH/DELETE /api/v1/admin/reviews/**`
+  - **`ReviewService`**: 리뷰 생성·공개 목록·집계 재계산(`@MX:ANCHOR`). `ReviewAdminService`: 관리자 목록·숨김·삭제(멱등성)
+  - **`SecurityConfig`**: `GET /api/v1/posts/*/reviews permitAll` 추가
+  - **프론트엔드**: `PostReviewSection.vue` — 공개 별점·리뷰 목록 + 인증 사용자 작성 폼. `ReviewManagementView.vue` — 관리자 숨김/삭제 모더레이션 테이블
+  - **IT 테스트**: `ReviewAdminControllerIT` — 인가 매트릭스 401/403/200 + 멱등 삭제 11건 GREEN
+
+- **설문조사 결과 시각화 및 알림 연동** (`SurveyNotificationService`, `SurveyServiceImpl`, `SurveyController`, `SurveyResultsView.vue`, `SurveyResponsesView.vue`, SPEC-CMS-SURVEY-001)
+  - **V54 마이그레이션**: `survey_notification_log` 테이블(UNIQUE(survey_id, type) 중복 차단), RBAC `SURVEY:READ/WRITE/EXPORT` 권한, admin_menu 설문관리 메뉴, system_settings 시드
+  - **`SurveyNotificationService`**: 설문 공개(INAPP 일괄), 종료/한도도달(관리자 알림) best-effort 발송 — `AdminNotificationMapper.insertForAdminRoles()`, `UserNotificationInboxMapper.insertBatchForActiveSurveyOpen()` INSERT…SELECT 단일 SQL
+  - **`SurveyServiceImpl`**: `updateSurvey` 상태전환 감지(DRAFT→OPEN, *→CLOSED), `submitResponse` 응답한도 도달 감지, `getResponses`/`exportResults` 신규
+  - **`SurveyController`**: `GET /{id}/responses` (`SURVEY:READ`), `GET /{id}/results/export` (`SURVEY:EXPORT`)
+  - **프론트엔드**: `SurveyResultsView.vue` 통계 차트, `SurveyResponsesView.vue` 페이징 목록, `SurveyRespondView.vue` KWCAG 2.2 AA 접근성 패치
+  - **단위 테스트**: `SurveyNotificationServiceImplTest` 6건, `SurveyServiceTest` +10건, 프론트엔드 +7건 GREEN
+
 - **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
   - ADMIN 역할 시드 및 5단 권한 계층 (`SUPER_ADMIN > ADMIN > DEPT_ADMIN > EDITOR > VIEWER`) — V48 Flyway 마이그레이션
   - 어드민 메뉴 접근 권한 카탈로그 (`admin_menu` / `admin_menu_permissions` 테이블) — V49 Flyway 마이그레이션

@@ -2,7 +2,7 @@
 
 ## P1: Session Context
 
-session_id: f2650980-9681-4c9f-8376-90b6a911a33f
+session_id: d28adaad-9d98-42b4-be3b-a5a5bb8649d3
 cwd: /home/sklee/moai/iroum-cms
 event: PreCompact
 

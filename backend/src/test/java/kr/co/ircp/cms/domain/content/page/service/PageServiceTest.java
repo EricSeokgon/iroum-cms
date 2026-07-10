@@ -1,5 +1,6 @@
 package kr.co.ircp.cms.domain.content.page.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.ircp.cms.domain.content.page.dto.PageCreateRequest;
 import kr.co.ircp.cms.domain.content.page.dto.PageHistoryResponse;
 import kr.co.ircp.cms.domain.content.page.dto.PagePublishRequest;
@@ -54,7 +55,8 @@ class PageServiceTest {
     @BeforeEach
     void setUp() {
         pageService = new PageServiceImpl(
-                pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService, retentionService);
+                pageMapper, contentBlockMapper, pageHistoryMapper, seoRedirectService, retentionService,
+                new ObjectMapper());
     }
 
     private Page stubPage(long id, String status, String slug) {

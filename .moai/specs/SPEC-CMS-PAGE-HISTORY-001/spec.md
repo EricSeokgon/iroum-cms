@@ -1,7 +1,7 @@
 ---
 id: SPEC-CMS-PAGE-HISTORY-001
 version: 0.1.1
-status: draft
+status: Completed
 created_at: 2026-06-22
 updated_at: 2026-06-22
 priority: medium
