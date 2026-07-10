@@ -433,7 +433,12 @@ useDashboardPreferenceApply()
 const notificationStore = useNotificationCenterStore()
 // 초기 미읽음 수는 한 번 로드하고, 이후 갱신은 WebSocket 푸시(끊김 시 30초 폴링 폴백)가 담당한다.
 void notificationStore.fetchUnreadCount()
-useNotificationWs()
+// Playwright E2E는 백엔드 없이 page.route() mock만으로 구동되므로(REQ-CI-001) 실제 SockJS
+// 연결을 시도하면 모든 admin 페이지 마운트마다 무의미한 재연결 재시도가 누적되어 CI가 급격히
+// 느려진다. VITE_E2E 플래그(ci.yml Frontend E2E Admin 스텝)로 WS 구독을 건너뛴다.
+if (!import.meta.env.VITE_E2E) {
+  useNotificationWs()
+}
 
 function handleMenuSelect(index: string): void {
   // el-menu :router="true" 대신 명시적 네비게이션 사용
