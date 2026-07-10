@@ -108,15 +108,16 @@ class AuthorizationCoverageArchTest {
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005에서 baseline 113→124 갱신 + 미커버 28 endpoint
     //   인가 IT(AuthorizationMatrixExpand5IT) 추가 후 재활성화. 기계적 상향이 아닌 실제 IT 커버리지 동반 갱신.
     //   PR #25 fix(menu) — 126→127, MenuController.replacePermissions() 추가 (IT는 EXPAND-002 §A.3 기존 커버).
+    // (하단 baseline 상세 변경 이력 참조 — 최신: 140)
     @Test
-    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 136, 메소드 레벨만)")
+    @DisplayName("AC-AAD-001-1: 운영 @PreAuthorize 메소드 카운트 baseline 회귀 검증 (현재 140, 메소드 레벨만)")
     void operational_preAuthorize_baselineCount() {
         long count = operationalControllers.stream()
                 .flatMap(c -> c.getMethods().stream())
                 .filter(this::hasPreAuthorize)
                 .count();
 
-        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 136건
+        // baseline: 본 갱신 시점 운영 @PreAuthorize 메소드 레벨 140건
         // (SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 113→124, +11 카운트 증가).
         // (SPEC-CMS-POST-SCHEDULE-001 — 124→126, PostController schedule/cancelSchedule 2개 endpoint 추가.
         //  두 endpoint 는 기존 게시글 쓰기와 동일한 isAuthenticated() 정책이며 PostIT 의 예약 발행 시나리오
@@ -136,15 +137,20 @@ class AuthorizationCoverageArchTest {
         //  CONTENT:WRITE(쓰기 4개) 정책이며, ContentBlockIT 의 인가 시나리오
         //  (AC-004 HTML 비-SUPER_ADMIN 403, AC-001/006/007 CONTENT:WRITE 게이트, AC-003/008/011 CONTENT:READ 게이트)
         //  에서 거동을 검증한다.)
+        // (SPEC-CMS-SURVEY-001 — 136→138, SurveyController getResponses(SURVEY:READ) +
+        //  exportResults(SURVEY:EXPORT) 2개 endpoint 추가. AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 커버.)
+        // (SPEC-CMS-REVIEW-001 — 138→140, ReviewAdminController hideReview/deleteReview 메소드 레벨
+        //  hasAuthority('REVIEW:DELETE') 2건 추가. 클래스 레벨 hasAuthority('REVIEW:READ')는 메소드 카운트 제외.
+        //  인가 매트릭스(401/403/204)는 ReviewAdminControllerIT(domain.board)에서 커버 — security 패키지 IT set 무영향.)
         // 클래스 레벨 @PreAuthorize (Governance ADMIN, Retention ADMIN 등 컨트롤러)는
         // 메소드 카운트에서 제외됨 — 클래스 레벨 매핑은 REQ-AAD-003 권한 어휘 검증으로 별도 처리.
         // 신규 추가/제거 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라
         // AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신할 것.
         assertThat(count)
-                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(136)과 다릅니다 (실제: %d). " +
+                .as("운영 @PreAuthorize 메소드 레벨 카운트가 baseline(140)과 다릅니다 (실제: %d). " +
                         "신규 추가 시 README 'HTTP 권한 매트릭스 IT 신규 endpoint 추가 절차'를 따라 " +
                         "AuthorizationMatrixExpand*IT에 시나리오를 추가하고 본 baseline을 갱신하세요.", count)
-                .isEqualTo(136L);
+                .isEqualTo(140L);
     }
 
     // =================================================================================
@@ -162,7 +168,7 @@ class AuthorizationCoverageArchTest {
      */
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — 110→138 (Expand5IT 미커버 28 endpoint 추가) 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (138 unique endpoint)")
+    @DisplayName("AC-AAD-001-2: IT @DisplayName endpoint 추출 baseline 회귀 (140 unique endpoint)")
     void it_displayName_endpointBaselineCount() {
         Set<String> itEndpoints = extractItEndpoints();
 
@@ -171,9 +177,9 @@ class AuthorizationCoverageArchTest {
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
                         "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에서 " +
                         "시나리오 추가/제거가 발생했습니다. " +
-                        "본 baseline(138)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
+                        "본 baseline(140)을 갱신하거나 변경을 회귀 신호로 해석하세요. " +
                         "추출된 endpoint set: %s", itEndpoints)
-                .hasSize(138);
+                .hasSize(140);
     }
 
     /**
@@ -184,7 +190,7 @@ class AuthorizationCoverageArchTest {
      */
     // @MX:NOTE: [AUTO] SPEC-CMS-SECURITY-AUTHZ-IT-EXPAND-005 — baseline 138 endpoint 정확 매칭 후 재활성화.
     @Test
-    @DisplayName("AC-AAD-002-1: 138 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
+    @DisplayName("AC-AAD-002-1: 140 endpoint baseline 정확 매칭 — 누락/추가 회귀 RED")
     void it_endpointSet_matchesBaseline88() {
         Set<String> itEndpoints = extractItEndpoints();
         Set<String> baseline = baselineEndpoints();
@@ -200,7 +206,7 @@ class AuthorizationCoverageArchTest {
                 .collect(Collectors.toSet());
 
         assertThat(missingFromIt)
-                .as("baseline 138 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
+                .as("baseline 140 endpoint 중 IT 시나리오에 누락된 endpoint: %s. " +
                         "AuthorizationMatrixIT, AuthorizationMatrixExpandIT, AuthorizationMatrixExpand2IT, " +
                         "AuthorizationMatrixExpand3IT, AuthorizationMatrixExpand4IT 또는 AuthorizationMatrixExpand5IT에 " +
                         "해당 시나리오가 제거되었습니다. 회귀 검토 필요.", missingFromIt)
@@ -426,6 +432,15 @@ class AuthorizationCoverageArchTest {
                 "SYSTEM:LOG:READ",
                 "SYSTEM:ADMIN",
                 "AUDIT:READ",
+                // ─── Survey Authority (2종, SPEC-CMS-SURVEY-001) ──────────────
+                "SURVEY:READ",
+                "SURVEY:EXPORT",
+                // ─── Review Authority (1종, SPEC-CMS-REVIEW-001) ──────────────
+                // ReviewAdminController 메소드 레벨 REVIEW:DELETE(hide/delete) 만 추출됨.
+                // 클래스 레벨 REVIEW:READ 는 extractOperationalAuthorityVocabularies(메소드 레벨 스캔)에서
+                // 미검출 — baseline 에 포함하지 않음(removedFromOps 회귀 방지).
+                // 인가 매트릭스는 ReviewAdminControllerIT(domain.board)에서 401/403/204 커버.
+                "REVIEW:DELETE",
                 // ─── 인증만 요구 (1종) ─────────────────────────────────────────
                 "isAuthenticated"
         );
@@ -622,7 +637,13 @@ class AuthorizationCoverageArchTest {
                 "POST /api/v1/dashboard/preference/reset",
                 "PATCH /api/v1/dashboard/preference/widgets/{id}/hidden",
                 "POST /api/v1/dashboard/preference/widgets/{id}/show-all",
-                "PATCH /api/v1/dashboard/layouts/{id}/positions"
+                "PATCH /api/v1/dashboard/layouts/{id}/positions",
+
+                // ─── SPEC-CMS-SURVEY-001 2 endpoint (설문 응답 목록 + 결과 CSV 내보내기) ───
+                // SurveyController.getResponses (SURVEY:READ) + exportResults (SURVEY:EXPORT).
+                // AuthorizationMatrixExpand4IT §A.1 AC-AME4-A1-47~50 에서 401/403 인가 시나리오 커버.
+                "GET /api/v1/surveys/{id}/responses",
+                "GET /api/v1/surveys/{id}/results/export"
         );
     }
 }

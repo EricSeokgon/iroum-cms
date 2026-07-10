@@ -3,6 +3,7 @@ package kr.co.ircp.cms.domain.board.service;
 import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.dto.SurveyResultDto;
 import kr.co.ircp.cms.domain.board.dto.SurveySubmitRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveySummary;
@@ -34,4 +35,10 @@ public interface SurveyService {
 
     /** 설문 결과 통계 (관리자). */
     SurveyResultDto getResults(Long surveyId);
+
+    /** 설문 개별 응답 목록 페이징 조회 (관리자). REQ-SURVEY-008. */
+    PageResponse<SurveyResponseItem> getResponses(Long surveyId, int page, int size);
+
+    /** 설문 결과 UTF-8 BOM CSV 내보내기 (관리자, SURVEY:EXPORT). REQ-SURVEY-006. */
+    byte[] exportResults(Long surveyId);
 }

@@ -209,6 +209,13 @@ const router = createRouter({
           component: () => import('@/views/board/CommentManagementView.vue'),
           meta: { title: '댓글 관리', requiresAuth: true },
         },
+        // ── 리뷰 모더레이션 (SPEC-CMS-REVIEW-001) ──────────────────────────
+        {
+          path: 'board/reviews',
+          name: 'board-reviews',
+          component: () => import('@/views/board/ReviewManagementView.vue'),
+          meta: { title: '리뷰 관리', permissions: ['REVIEW:READ'] },
+        },
         // ── Q&A 모더레이션 (SPEC-CMS-QNA-MODERATE-001) ─────────────────────
         {
           path: 'board/qnas/management',
@@ -277,6 +284,21 @@ const router = createRouter({
           component: () => import('@/views/board/SurveyDetailView.vue'),
           props: true,
           meta: { requiresAuth: true, title: '설문조사 상세' },
+        },
+        // ── 설문 결과/응답 라우트 (SPEC-CMS-SURVEY-001) ─────────────────────
+        {
+          path: 'board/surveys/:id/results',
+          name: 'board-survey-results',
+          component: () => import('@/views/board/SurveyResultsView.vue'),
+          props: true,
+          meta: { requiresAuth: true, title: '설문 결과' },
+        },
+        {
+          path: 'board/surveys/:id/responses',
+          name: 'board-survey-responses',
+          component: () => import('@/views/board/SurveyResponsesView.vue'),
+          props: true,
+          meta: { requiresAuth: true, title: '설문 응답 목록' },
         },
         // ── 콘텐츠 관리 라우트 (SPEC-CMS-004) ──────────────────────────────
         {

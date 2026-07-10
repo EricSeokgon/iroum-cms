@@ -49,4 +49,67 @@
         WHERE id = #{id}
     </update>
 
+    <!--
+        SPEC-CMS-SURVEY-001 REQ-SURVEY-008/010: 제출 완료 응답 목록 페이징 + 질문별 답변.
+        nested collection 으로 응답 1건당 answers 묶음 매핑.
+        익명 응답(respondent_id NULL)은 respondent_name 도 NULL.
+        answer_text 는 4개 답변 컬럼을 COALESCE 로 단일 문자열로 정규화.
+    -->
+    <resultMap id="surveyResponseItemMap" type="kr.co.ircp.cms.domain.board.dto.SurveyResponseItem">
+        <constructor>
+            <idArg  column="response_id"     javaType="java.lang.Long"/>
+            <arg    column="respondent_id"   javaType="java.lang.Long"/>
+            <arg    column="respondent_name" javaType="java.lang.String"/>
+            <arg    column="submitted_at"    javaType="java.time.Instant"/>
+        </constructor>
+        <collection property="answers"
+                    ofType="kr.co.ircp.cms.domain.board.dto.SurveyAnswerDetail"
+                    resultMap="surveyAnswerDetailMap"/>
+    </resultMap>
+
+    <resultMap id="surveyAnswerDetailMap" type="kr.co.ircp.cms.domain.board.dto.SurveyAnswerDetail">
+        <constructor>
+            <idArg column="question_id"   javaType="java.lang.Long"/>
+            <arg   column="question_text" javaType="java.lang.String"/>
+            <arg   column="question_type" javaType="java.lang.String"/>
+            <arg   column="answer_value"  javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <select id="listBySurveyId" resultMap="surveyResponseItemMap">
+        SELECT
+            r.id                  AS response_id,
+            r.respondent_id       AS respondent_id,
+            u.name                AS respondent_name,
+            r.submitted_at        AS submitted_at,
+            q.id                  AS question_id,
+            q.question_text       AS question_text,
+            q.question_type       AS question_type,
+            COALESCE(
+                a.answer_text,
+                a.answer_options::text,
+                CAST(a.answer_rating AS TEXT),
+                CAST(a.answer_date AS TEXT)
+            )                     AS answer_value
+        FROM (
+            SELECT id, respondent_id, submitted_at
+            FROM survey_response
+            WHERE survey_id = #{surveyId}
+              AND submitted_at IS NOT NULL
+            ORDER BY submitted_at DESC, id DESC
+            LIMIT #{size} OFFSET #{offset}
+        ) r
+        LEFT JOIN users u            ON u.id = r.respondent_id
+        LEFT JOIN survey_answer a    ON a.response_id = r.id
+        LEFT JOIN survey_question q  ON q.id = a.question_id
+        ORDER BY r.submitted_at DESC, r.id DESC, q.sort_order, q.id
+    </select>
+
+    <select id="countBySurveyId" resultType="long">
+        SELECT COUNT(*)
+        FROM survey_response
+        WHERE survey_id = #{surveyId}
+          AND submitted_at IS NOT NULL
+    </select>
+
 </mapper>

@@ -49,22 +49,28 @@
 
         <!-- 문항 -->
         <div class="space-y-4">
-          <div
+          <fieldset
             v-for="(q, idx) in survey.questions"
             :key="q.id"
-            class="rounded-lg bg-white p-6 shadow-sm"
+            role="group"
+            :aria-labelledby="`q-label-${q.id}`"
+            :aria-describedby="errors[q.id] ? `q-error-${q.id}` : undefined"
+            class="rounded-lg border-0 bg-white p-6 shadow-sm"
           >
-            <p class="mb-3 font-medium text-gray-800">
+            <legend :id="`q-label-${q.id}`" class="mb-3 font-medium text-gray-800">
               <span class="mr-1 text-gray-400">{{ idx + 1 }}.</span>
               {{ q.questionText }}
-              <span v-if="q.required" class="ml-1 text-red-500">*</span>
-            </p>
+              <span v-if="q.required" class="ml-1 text-red-500" aria-hidden="true">*</span>
+              <span v-if="q.required" class="sr-only">(필수)</span>
+            </legend>
 
             <!-- 단일 선택 -->
             <el-radio-group
               v-if="q.questionType === 'SINGLE'"
               v-model="answers[q.id].answerOptions"
               class="flex flex-col gap-2"
+              :aria-required="q.required"
+              :aria-labelledby="`q-label-${q.id}`"
             >
               <el-radio
                 v-for="opt in parseOptions(q.options)"
@@ -76,7 +82,12 @@
             </el-radio-group>
 
             <!-- 복수 선택 -->
-            <div v-else-if="q.questionType === 'MULTI'" class="flex flex-col gap-2">
+            <div
+              v-else-if="q.questionType === 'MULTI'"
+              class="flex flex-col gap-2"
+              :aria-required="q.required"
+              :aria-labelledby="`q-label-${q.id}`"
+            >
               <el-checkbox
                 v-for="opt in parseOptions(q.options)"
                 :key="opt.value"
@@ -95,6 +106,8 @@
               type="textarea"
               :rows="3"
               placeholder="의견을 입력해주세요"
+              :aria-label="q.questionText"
+              :aria-required="q.required"
             />
 
             <!-- 평점 -->
@@ -104,6 +117,7 @@
                 :max="5"
                 show-score
                 score-template="{value}점"
+                :aria-label="`${q.questionText} 점수 선택 (1-5점)`"
               />
             </div>
 
@@ -115,9 +129,23 @@
               format="YYYY-MM-DD"
               value-format="YYYY-MM-DD"
               placeholder="날짜 선택"
+              :aria-label="q.questionText"
+              :aria-required="q.required"
             />
-          </div>
+
+            <!-- 문항별 오류 메시지 (aria-describedby 연관) -->
+            <p
+              v-if="errors[q.id]"
+              :id="`q-error-${q.id}`"
+              class="mt-2 text-sm text-red-500"
+            >
+              {{ errors[q.id] }}
+            </p>
+          </fieldset>
         </div>
+
+        <!-- 제출 상태/오류 안내 (스크린리더 announce) -->
+        <p aria-live="polite" class="sr-only" data-testid="form-status">{{ statusMessage }}</p>
 
         <!-- 제출 -->
         <div class="mt-6 flex justify-end">
@@ -159,6 +187,10 @@ const submitting = ref(false)
 const answers = reactive<Record<number, SurveyAnswerRequest>>({})
 // MULTI 체크박스 바인딩용 (string[] per questionId)
 const multiChecked = reactive<Record<number, string[]>>({})
+// errors[questionId] — 문항별 검증 오류 메시지 (aria-describedby 연관, KWCAG 2.2 AA)
+const errors = reactive<Record<number, string>>({})
+// 스크린리더 안내용 상태 메시지 (aria-live)
+const statusMessage = ref('')
 
 function parseOptions(raw: string | null): Array<{ value: string; label: string }> {
   if (!raw) return []
@@ -197,9 +229,13 @@ async function load(): Promise<void> {
 async function submit(): Promise<void> {
   if (!survey.value) return
 
-  // 필수 항목 검증
-  for (const q of survey.value.questions) {
-    if (!q.required) continue
+  // 이전 오류 초기화
+  for (const key of Object.keys(errors)) delete errors[Number(key)]
+
+  // 필수 항목 검증 — 문항별 오류 메시지를 aria-describedby 로 연관 (AC-021)
+  let firstInvalidIndex = -1
+  survey.value.questions.forEach((q, idx) => {
+    if (!q.required) return
     const a = answers[q.id]
     const empty =
       (q.questionType === 'TEXT' && !a.answerText?.trim()) ||
@@ -207,16 +243,24 @@ async function submit(): Promise<void> {
       (q.questionType === 'RATING' && (a.answerRating == null || a.answerRating === 0)) ||
       (q.questionType === 'DATE' && !a.answerDate)
     if (empty) {
-      ElMessage.warning(`${survey.value.questions.indexOf(q) + 1}번 문항은 필수 응답입니다.`)
-      return
+      errors[q.id] = `${idx + 1}번 문항은 필수 응답입니다.`
+      if (firstInvalidIndex === -1) firstInvalidIndex = idx
     }
+  })
+
+  if (firstInvalidIndex !== -1) {
+    statusMessage.value = `${firstInvalidIndex + 1}번 문항부터 필수 응답이 누락되었습니다.`
+    ElMessage.warning(`${firstInvalidIndex + 1}번 문항은 필수 응답입니다.`)
+    return
   }
 
   submitting.value = true
   try {
     await submitSurveyResponse(surveyId, { answers: Object.values(answers) })
     submitted.value = true
+    statusMessage.value = '응답이 정상적으로 제출되었습니다.'
   } catch {
+    statusMessage.value = '제출에 실패했습니다. 잠시 후 다시 시도해주세요.'
     ElMessage.error('제출에 실패했습니다. 잠시 후 다시 시도해주세요.')
   } finally {
     submitting.value = false

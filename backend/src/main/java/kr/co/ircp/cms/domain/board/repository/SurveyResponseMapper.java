@@ -1,9 +1,11 @@
 package kr.co.ircp.cms.domain.board.repository;
 
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.entity.SurveyResponse;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -24,4 +26,17 @@ public interface SurveyResponseMapper {
 
     /** 응답 제출 완료 처리 (submitted_at = NOW). */
     void markSubmitted(@Param("id") Long id);
+
+    /**
+     * 제출 완료된 응답 목록 페이징 조회 (질문별 답변 포함).
+     * SPEC-CMS-SURVEY-001 REQ-SURVEY-008/010.
+     */
+    List<SurveyResponseItem> listBySurveyId(
+            @Param("surveyId") Long surveyId,
+            @Param("offset") int offset,
+            @Param("size") int size
+    );
+
+    /** 제출 완료된 응답 총 건수. */
+    long countBySurveyId(@Param("surveyId") Long surveyId);
 }

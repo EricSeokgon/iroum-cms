@@ -6,12 +6,15 @@ import kr.co.ircp.cms.domain.auth.dto.PageResponse;
 import kr.co.ircp.cms.domain.auth.util.HashUtil;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.dto.SurveyResultDto;
 import kr.co.ircp.cms.domain.board.dto.SurveySubmitRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveySummary;
 import kr.co.ircp.cms.domain.board.dto.SurveyUpdateRequest;
 import kr.co.ircp.cms.domain.board.service.SurveyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -110,6 +113,29 @@ public class SurveyController {
     @PreAuthorize("hasAuthority('CONTENT:READ') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
     public ResponseEntity<SurveyResultDto> getResults(@PathVariable Long id) {
         return ResponseEntity.ok(surveyService.getResults(id));
+    }
+
+    /** GET /api/v1/surveys/{id}/responses — 개별 응답 목록 페이징 (관리자). REQ-SURVEY-008. */
+    @GetMapping("/{id}/responses")
+    @PreAuthorize("hasAuthority('SURVEY:READ') or hasRole('ADMIN') or hasRole('SUPER_ADMIN') or hasRole('CONTENT_ADMIN')")
+    public ResponseEntity<PageResponse<SurveyResponseItem>> getResponses(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(surveyService.getResponses(id, page, size));
+    }
+
+    /** GET /api/v1/surveys/{id}/results/export — 결과 CSV 내보내기 (SURVEY:EXPORT). REQ-SURVEY-006/007. */
+    @GetMapping("/{id}/results/export")
+    @PreAuthorize("hasAuthority('SURVEY:EXPORT') or hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<byte[]> exportResults(@PathVariable Long id) {
+        byte[] csv = surveyService.exportResults(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"survey-" + id + "-results.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
+                .body(csv);
     }
 
     /**

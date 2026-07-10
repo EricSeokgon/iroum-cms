@@ -8,6 +8,7 @@ import kr.co.ircp.cms.domain.board.dto.SurveyAnswerRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyCreateRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveyDetail;
 import kr.co.ircp.cms.domain.board.dto.SurveyQuestionRequest;
+import kr.co.ircp.cms.domain.board.dto.SurveyResponseItem;
 import kr.co.ircp.cms.domain.board.dto.SurveyResultDto;
 import kr.co.ircp.cms.domain.board.dto.SurveySubmitRequest;
 import kr.co.ircp.cms.domain.board.dto.SurveySummary;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -200,6 +202,41 @@ class SurveyControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.surveyId").value(1))
                 .andExpect(jsonPath("$.totalResponses").value(100));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("GET /api/v1/surveys/{id}/responses — ADMIN 인증 시 200 OK + 응답 목록 페이징")
+    void getResponses_returns200_whenAdmin() throws Exception {
+        SurveyResponseItem item = new SurveyResponseItem(
+                7001L, 42L, "홍길동", Instant.now(),
+                List.of(new kr.co.ircp.cms.domain.board.dto.SurveyAnswerDetail(11L, "질문1", "TEXT", "응답")));
+        PageResponse<SurveyResponseItem> page = PageResponse.of(List.of(item), 0, 20, 1L);
+        when(surveyService.getResponses(eq(1L), anyInt(), anyInt())).thenReturn(page);
+
+        mockMvc.perform(get("/api/v1/surveys/1/responses"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].responseId").value(7001))
+                .andExpect(jsonPath("$.content[0].respondentName").value("홍길동"))
+                .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("GET /api/v1/surveys/{id}/results/export — ADMIN 인증 시 200 OK + UTF-8 BOM CSV")
+    void exportResults_returns200WithBom_whenAdmin() throws Exception {
+        byte[] csv = new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'a', ',', 'b'};
+        when(surveyService.exportResults(1L)).thenReturn(csv);
+
+        byte[] body = mockMvc.perform(get("/api/v1/surveys/1/results/export"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition",
+                        "attachment; filename=\"survey-1-results.csv\""))
+                .andReturn().getResponse().getContentAsByteArray();
+
+        org.assertj.core.api.Assertions.assertThat(body[0] & 0xFF).isEqualTo(0xEF);
+        org.assertj.core.api.Assertions.assertThat(body[1] & 0xFF).isEqualTo(0xBB);
+        org.assertj.core.api.Assertions.assertThat(body[2] & 0xFF).isEqualTo(0xBF);
     }
 
     // ─── 인증/인가 거부 시나리오 (REQ-BOARD-013 보안 가드) ─────────────────────

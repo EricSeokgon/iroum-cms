@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+    설문 알림 발송 로그 매퍼 XML.
+    SPEC-CMS-SURVEY-001 REQ-SURVEY-020: 멱등성 — UNIQUE(survey_id, type) 충돌 시 DuplicateKeyException
+-->
+<mapper namespace="kr.co.ircp.cms.domain.board.repository.SurveyNotificationLogMapper">
+
+    <resultMap id="surveyNotificationLogResultMap"
+               type="kr.co.ircp.cms.domain.board.entity.SurveyNotificationLog">
+        <id     property="id"           column="id"/>
+        <result property="surveyId"     column="survey_id"/>
+        <result property="type"         column="type"/>
+        <result property="status"       column="status"/>
+        <result property="errorMessage" column="error_message"/>
+        <result property="createdAt"    column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO survey_notification_log (survey_id, type, status, error_message)
+        VALUES (
+            #{surveyId},
+            #{type},
+            COALESCE(#{status}, 'SENT'),
+            #{errorMessage}
+        )
+    </insert>
+
+    <select id="findBySurveyId" resultMap="surveyNotificationLogResultMap">
+        SELECT id, survey_id, type, status, error_message, created_at
+        FROM survey_notification_log
+        WHERE survey_id = #{surveyId}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+</mapper>

@@ -1906,7 +1906,19 @@
       "deleted": "설문조사가 삭제되었습니다.",
       "published": "설문조사가 게시되었습니다.",
       "closed": "설문조사가 마감되었습니다."
-    }
+    },
+    "responses": "응답 목록",
+    "exportCsv": "CSV 내보내기",
+    "exportError": "CSV 내보내기에 실패했습니다.",
+    "completionRate": "완료율",
+    "totalAnswers": "총 응답 {count}건",
+    "noResponse": "응답 없음",
+    "responseId": "응답 ID",
+    "respondent": "응답자",
+    "submittedAt": "제출일시",
+    "viewDetail": "상세보기",
+    "responseDetail": "응답 상세",
+    "anonymous": "익명"
   },
   "notifications": {
     "title": "알림 설정",
