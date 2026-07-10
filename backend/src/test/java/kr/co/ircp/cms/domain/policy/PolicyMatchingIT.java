@@ -354,7 +354,8 @@ class PolicyMatchingIT extends AbstractIntegrationTest {
     private void givenAdminToken() {
         JwtTokenProvider.JwtClaims claims = new JwtTokenProvider.JwtClaims(
                 adminId, "policy-admin-" + adminId,
-                Set.of("ADMIN", "SUPER_ADMIN"), Set.of(),
+                Set.of("ADMIN", "SUPER_ADMIN"),
+                Set.of("POLICY:DISPATCH:READ", "POLICY:DISPATCH:WRITE"),
                 Instant.now().plusSeconds(900));
         when(tokenBlacklistMapper.exists(anyString())).thenReturn(false);
         when(jwtTokenProvider.validateAccessToken(anyString())).thenReturn(Optional.of(claims));
