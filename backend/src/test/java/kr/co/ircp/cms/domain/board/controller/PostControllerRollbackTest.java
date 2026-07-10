@@ -45,6 +45,10 @@ class PostControllerRollbackTest {
     @MockitoBean
     private PostHistoryService postHistoryService;
 
+    // SPEC-CMS-POINTS-001 — PostController가 BbsPostLikeService를 주입받으므로 @WebMvcTest 슬라이스에 Mock 제공
+    @MockitoBean
+    private kr.co.ircp.cms.domain.board.service.BbsPostLikeService bbsPostLikeService;
+
     @Autowired
     private ObjectMapper objectMapper;
 
