@@ -9,6 +9,8 @@ import kr.co.ircp.cms.domain.board.repository.QnaMapper;
 import kr.co.ircp.cms.domain.board.repository.QnaNotificationLogMapper;
 import kr.co.ircp.cms.domain.board.repository.QnaNotificationOptoutMapper;
 import kr.co.ircp.cms.domain.board.repository.UserNotificationInboxMapper;
+import kr.co.ircp.cms.domain.email.template.admin.dto.RenderResult;
+import kr.co.ircp.cms.domain.email.template.admin.service.EmailTemplateResolver;
 import kr.co.ircp.cms.domain.security.pii.EmailEncryptionService;
 import kr.co.ircp.cms.domain.security.pii.EncryptedEmail;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Q&A 답변 알림 서비스 구현체.
@@ -46,6 +50,8 @@ public class QnaNotificationServiceImpl implements QnaNotificationService {
     private final UserNotificationInboxMapper inboxMapper;
     private final JavaMailSender mailSender;
     private final EmailEncryptionService emailEncryptionService;
+    // SPEC-CMS-EMAIL-TEMPLATE-001 REQ-ET-031/033 — QNA_ANSWER 템플릿 우선, 미존재 시 하드코딩 fallback.
+    private final EmailTemplateResolver templateResolver;
 
     @Value("${spring.mail.username:noreply@iroum-cms.kr}")
     private String fromAddress;
@@ -176,14 +182,24 @@ public class QnaNotificationServiceImpl implements QnaNotificationService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(toEmail);
-        message.setSubject("[iroum-cms] Q&A 답변이 등록되었습니다: " + qna.getTitle());
-        message.setText(String.format(
-                "안녕하세요.\n\n" +
-                "Q&A 질문 '%s'에 답변이 등록되었습니다.\n\n" +
-                "서비스에 접속하여 답변을 확인해 주세요.\n\n" +
-                "iroum-cms 시스템",
-                qna.getTitle()
-        ));
+
+        // QNA_ANSWER 템플릿 우선 시도 (REQ-ET-031). 미존재/실패 시 하드코딩 fallback (REQ-ET-033).
+        Optional<RenderResult> rendered = templateResolver.resolveAndRender(
+                "QNA_ANSWER", "ko", Map.of("title", qna.getTitle()));
+        if (rendered.isPresent()) {
+            message.setSubject(rendered.get().subject());
+            message.setText(rendered.get().bodyText() != null && !rendered.get().bodyText().isBlank()
+                    ? rendered.get().bodyText() : rendered.get().bodyHtml());
+        } else {
+            message.setSubject("[iroum-cms] Q&A 답변이 등록되었습니다: " + qna.getTitle());
+            message.setText(String.format(
+                    "안녕하세요.\n\n" +
+                    "Q&A 질문 '%s'에 답변이 등록되었습니다.\n\n" +
+                    "서비스에 접속하여 답변을 확인해 주세요.\n\n" +
+                    "iroum-cms 시스템",
+                    qna.getTitle()
+            ));
+        }
         mailSender.send(message);
         log.debug("Q&A EMAIL 알림 발송 완료: recipientId={}, qnaId={}", item.getRecipientId(), item.getQnaId());
     }

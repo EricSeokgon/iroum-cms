@@ -202,6 +202,19 @@
           <el-menu-item index="/system/menu-stats">
             <span>메뉴별 방문 통계</span>
           </el-menu-item>
+          <!-- 이메일 템플릿 관리 (SPEC-CMS-EMAIL-TEMPLATE-001) -->
+          <el-menu-item
+            v-if="hasPermission('EMAIL_TEMPLATE:READ')"
+            index="/system/email-templates"
+          >
+            <span>이메일 템플릿 관리</span>
+          </el-menu-item>
+          <el-menu-item
+            v-if="hasPermission('EMAIL_TEMPLATE:WRITE')"
+            index="/system/smtp-config"
+          >
+            <span>SMTP 설정</span>
+          </el-menu-item>
           <!-- 동의어 관리 (SPEC-CMS-010) — ADMIN 전용 -->
           <el-menu-item
             v-if="hasPermission('ROLE:READ')"

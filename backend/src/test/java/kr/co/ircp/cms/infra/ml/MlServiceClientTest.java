@@ -7,8 +7,12 @@ import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
 import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationRequest;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -90,5 +94,48 @@ class MlServiceClientTest {
         assertThatThrownBy(() -> client.predictGrowthStage(request))
                 .isInstanceOf(MlServiceException.class)
                 .hasMessageContaining("timeout");
+    }
+
+    // ─── SPEC-CMS-AI-004 태그 추천 (REQ-AI-TAG-004) ─────────────────────────────
+
+    @Test
+    @DisplayName("tagRecommendation은 결정적 추천 태그·점수·모델 버전을 반환한다")
+    void tagRecommendationReturnsDeterministicResponse() {
+        MockMlServiceClient client = new MockMlServiceClient();
+        TagRecommendationRequest request =
+                new TagRecommendationRequest("스마트팜 청년 창업 지원 정책 본문 내용입니다", List.of(), 5);
+
+        TagRecommendationResponse response = client.tagRecommendation(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.recommendedTags()).isNotEmpty();
+        assertThat(response.recommendedTags()).hasSizeLessThanOrEqualTo(5);
+        assertThat(response.scores()).isNotEmpty();
+        assertThat(response.modelVersion()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("tagRecommendation 호출 시 호출 카운트가 증가한다 (캐시 hit 검증용)")
+    void tagRecommendationCallCountIncrements() {
+        MockMlServiceClient client = new MockMlServiceClient();
+        TagRecommendationRequest request =
+                new TagRecommendationRequest("스마트팜 청년 창업 지원 정책 본문 내용입니다", List.of(), 5);
+
+        assertThat(client.tagRecommendationCallCount()).isZero();
+        client.tagRecommendation(request);
+        client.tagRecommendation(request);
+        assertThat(client.tagRecommendationCallCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("태그 추천 타임아웃 시뮬레이션을 설정하면 MlServiceException을 던진다")
+    void tagRecommendationTimeoutSimulation() {
+        MockMlServiceClient client = new MockMlServiceClient();
+        client.simulateTagRecommendationTimeout(true);
+        TagRecommendationRequest request =
+                new TagRecommendationRequest("스마트팜 청년 창업 지원 정책 본문 내용입니다", List.of(), 5);
+
+        assertThatThrownBy(() -> client.tagRecommendation(request))
+                .isInstanceOf(MlServiceException.class);
     }
 }

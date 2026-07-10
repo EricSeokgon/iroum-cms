@@ -25,6 +25,8 @@ public record PostDetail(
         String status,
         String metadata,
         List<AttachmentSummary> attachments,
+        // SPEC-CMS-AI-004: AI 스마트 태그 (null 없이 항상 빈 목록 이상).
+        List<String> tags,
         Instant createdAt,
         Instant updatedAt
 ) {

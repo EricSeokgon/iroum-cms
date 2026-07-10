@@ -184,7 +184,7 @@ class QnaServiceTest {
         QnaCreateRequest request = new QnaCreateRequest(
                 "환불 문의",
                 "<p>환불<b>은</b> 가능한가요?</p>",
-                true
+                true, null
         );
         ArgumentCaptor<Qna> captor = ArgumentCaptor.forClass(Qna.class);
 

@@ -21,6 +21,8 @@ export interface QnaCreateRequest {
   title: string
   questionHtml: string
   isPrivate: boolean
+  /** 선택 태그 (SPEC-CMS-AI-004 REQ-AI-TAG-015) */
+  tags?: string[]
 }
 
 export interface QnaListParams {

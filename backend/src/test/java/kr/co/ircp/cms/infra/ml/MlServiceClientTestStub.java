@@ -13,6 +13,8 @@ import kr.co.ircp.cms.infra.ml.dto.RiskScoreRequest;
 import kr.co.ircp.cms.infra.ml.dto.RiskScoreResponse;
 import kr.co.ircp.cms.infra.ml.dto.SimulationRequest;
 import kr.co.ircp.cms.infra.ml.dto.SimulationResponse;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationRequest;
+import kr.co.ircp.cms.infra.ml.dto.TagRecommendationResponse;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -79,6 +81,11 @@ public class MlServiceClientTestStub implements MlServiceClient {
     @Override
     public RagResponse rag(RagRequest request) {
         return delegate.rag(request);
+    }
+
+    @Override
+    public TagRecommendationResponse tagRecommendation(TagRecommendationRequest request) {
+        return delegate.tagRecommendation(request);
     }
 
     @Override

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-EMAIL-TEMPLATE-001 — 이메일 템플릿 CRUD 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.email.template.admin.repository.EmailTemplateMapper">
+
+    <resultMap id="templateResultMap"
+               type="kr.co.ircp.cms.domain.email.template.admin.entity.EmailTemplate">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="templateType" column="template_type"/>
+        <result property="language" column="language"/>
+        <result property="subject" column="subject"/>
+        <result property="bodyHtml" column="body_html"/>
+        <result property="bodyText" column="body_text"/>
+        <result property="variables" column="variables"
+                typeHandler="kr.co.ircp.cms.domain.email.template.admin.repository.JsonbObjectListTypeHandler"/>
+        <result property="isActive" column="is_active"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="criteria.templateType != null and criteria.templateType != ''">
+                AND template_type = #{criteria.templateType}
+            </if>
+            <if test="criteria.language != null and criteria.language != ''">
+                AND language = #{criteria.language}
+            </if>
+            <if test="criteria.isActive != null">
+                AND is_active = #{criteria.isActive}
+            </if>
+            <if test="criteria.keyword != null and criteria.keyword != ''">
+                AND (code ILIKE '%' || #{criteria.keyword} || '%'
+                     OR name ILIKE '%' || #{criteria.keyword} || '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="findById" resultMap="templateResultMap">
+        SELECT * FROM email_template WHERE id = #{id}
+    </select>
+
+    <select id="findActiveByCodeAndLanguage" resultMap="templateResultMap">
+        SELECT * FROM email_template
+        WHERE code = #{code} AND language = #{language} AND is_active = TRUE
+    </select>
+
+    <select id="findAll" resultMap="templateResultMap">
+        SELECT * FROM email_template
+        <include refid="filterWhere"/>
+        ORDER BY updated_at DESC, id DESC
+        LIMIT #{criteria.effectiveSize} OFFSET #{criteria.offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM email_template
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="existsByCodeAndLanguage" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM email_template
+            WHERE code = #{code} AND language = #{language}
+            <if test="excludeId != null">AND id != #{excludeId}</if>
+        )
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO email_template
+            (code, name, template_type, language, subject, body_html, body_text,
+             variables, is_active, created_by, updated_by)
+        VALUES (
+            #{code}, #{name}, #{templateType}, #{language}, #{subject}, #{bodyHtml}, #{bodyText},
+            <choose>
+                <when test="variables != null">
+                    #{variables, typeHandler=kr.co.ircp.cms.domain.email.template.admin.repository.JsonbObjectListTypeHandler}
+                </when>
+                <otherwise>NULL</otherwise>
+            </choose>,
+            #{isActive}, #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE email_template SET
+            name          = #{name},
+            template_type = #{templateType},
+            subject       = #{subject},
+            body_html     = #{bodyHtml},
+            body_text     = #{bodyText},
+            variables     =
+                <choose>
+                    <when test="variables != null">
+                        #{variables, typeHandler=kr.co.ircp.cms.domain.email.template.admin.repository.JsonbObjectListTypeHandler}
+                    </when>
+                    <otherwise>NULL</otherwise>
+                </choose>,
+            is_active     = #{isActive},
+            updated_by    = #{updatedBy},
+            updated_at    = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM email_template WHERE id = #{id}
+    </delete>
+
+</mapper>

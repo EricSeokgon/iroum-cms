@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-EMAIL-TEMPLATE-001 — SMTP 동적 설정 매퍼 (단일 활성 행) -->
+<mapper namespace="kr.co.ircp.cms.domain.email.template.admin.repository.SmtpConfigMapper">
+
+    <resultMap id="smtpResultMap"
+               type="kr.co.ircp.cms.domain.email.template.admin.entity.SmtpConfig">
+        <id property="id" column="id"/>
+        <result property="host" column="host"/>
+        <result property="port" column="port"/>
+        <result property="username" column="username"/>
+        <result property="passwordEnc" column="password_enc"/>
+        <result property="fromAddress" column="from_address"/>
+        <result property="fromName" column="from_name"/>
+        <result property="encryption" column="encryption"/>
+        <result property="isActive" column="is_active"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findActive" resultMap="smtpResultMap">
+        SELECT * FROM smtp_config WHERE is_active = TRUE ORDER BY id DESC LIMIT 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO smtp_config
+            (host, port, username, password_enc, from_address, from_name, encryption, is_active, updated_by)
+        VALUES (
+            #{host}, #{port}, #{username}, #{passwordEnc}, #{fromAddress}, #{fromName},
+            #{encryption}, #{isActive}, #{updatedBy}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE smtp_config SET
+            host         = #{host},
+            port         = #{port},
+            username     = #{username},
+            password_enc = #{passwordEnc},
+            from_address = #{fromAddress},
+            from_name    = #{fromName},
+            encryption   = #{encryption},
+            is_active    = #{isActive},
+            updated_by   = #{updatedBy},
+            updated_at   = now()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

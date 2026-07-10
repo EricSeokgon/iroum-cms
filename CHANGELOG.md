@@ -44,6 +44,19 @@
   - 프론트엔드: `RevisionPanel.vue` (이력 목록), `DiffViewer.vue` (INSERT/DELETE/EQUAL 라인 뷰어), `ConflictModal.vue` (409 충돌 해결)
   - PostFormView / PostDetailView / PageEditorView `expectedVersion` 연동
 
+- **AI 스마트 태그 추천 기능** (SPEC-CMS-AI-004)
+  - `POST /api/v1/ai/tag-recommend` — 게시글/Q&A 본문 기반 AI 태그 추천 REST API (비인증 공개 엔드포인트, 최대 5개 태그 추천)
+  - `POST /api/v1/ai/tag-feedback` — 태그 채택/거부 피드백 로깅 API (`SUGGESTED`/`ACCEPTED`/`REJECTED` 이벤트 기록)
+  - **ML 서비스 통합**: `MlServiceClientImpl.tagRecommendation()` — CircuitBreaker(`ml-service`) + 3초 타임아웃 + 폴백(빈 배열 반환) @MX:ANCHOR
+  - **Caffeine 캐시**: `tagRecommendationCache` — SHA-256 콘텐츠 해시 키, 30분 TTL로 ML 호출 최소화
+  - **비동기 로그**: `AiTagRecommendationLogService` — `@Async("aiLogExecutor")` 패턴으로 추천/채택/거부 이벤트 PostgreSQL 기록
+  - **V55 DB 마이그레이션**: `ai_tag_recommendation_log` 테이블 생성 + `bbs_post`/`qna`에 `tags TEXT[]` 컬럼 추가
+  - **어드민 프론트엔드**: `useTagRecommendation.ts` 컴포저블 (debounce 500ms, 20자 최소 입력 가드) + `TagRecommendationInput.vue` 재사용 컴포넌트
+  - **어드민 통합**: 게시글 작성/수정 폼, 목록, 상세 화면에 태그 UI 통합 (el-tag 칩 방식)
+  - **공공 프론트엔드**: Q&A 작성 화면(`QnaCreateView.vue`)에 Tailwind 태그 UI 통합 (비인증 시민 사용자 지원)
+  - **보안 설정**: SecurityConfig `/api/v1/ai/tag-recommend` permitAll 규칙 추가 (`/api/v1/ai/**` authenticated 규칙 상단에 위치) @MX:WARN
+  - T-016 데이터 일관성 수정: Post/QNA 도메인 DTO + MyBatis mapper에 `tags` 필드 배선 (기존 `StringArrayTypeHandler` 재사용)
+
 - **RBAC 관리자 권한 제어 시스템** (SPEC-CMS-RBAC-001)
   - ADMIN 역할 시드 및 5단 권한 계층 (`SUPER_ADMIN > ADMIN > DEPT_ADMIN > EDITOR > VIEWER`) — V48 Flyway 마이그레이션
   - 어드민 메뉴 접근 권한 카탈로그 (`admin_menu` / `admin_menu_permissions` 테이블) — V49 Flyway 마이그레이션

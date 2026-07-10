@@ -163,7 +163,7 @@ class PostServiceTest {
         when(bbsMasterMapper.findById(1L)).thenReturn(Optional.of(stubMaster(1L)));
         PostCreateRequest request = new PostCreateRequest(
                 1L, "제목", "<p>내용</p>", "내용",
-                false, null, null, false, null, null, null
+                false, null, null, false, null, null, null, null
         );
 
         PostDetail result = postService.createPost(request, 1L);
@@ -188,7 +188,7 @@ class PostServiceTest {
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정", 1
+                false, null, null, false, "오타 수정", 1, null
         );
 
         PostDetail result = postService.updatePost(1L, request, 1L);
@@ -213,7 +213,7 @@ class PostServiceTest {
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정", 1
+                false, null, null, false, "오타 수정", 1, null
         );
 
         PostDetail result = postService.updatePost(1L, request, 1L);
@@ -237,7 +237,7 @@ class PostServiceTest {
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정", 1
+                false, null, null, false, "오타 수정", 1, null
         );
 
         assertThatThrownBy(() -> postService.updatePost(1L, request, 1L))
@@ -260,7 +260,7 @@ class PostServiceTest {
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정", 1
+                false, null, null, false, "오타 수정", 1, null
         );
 
         postService.updatePost(1L, request, 1L);
@@ -281,7 +281,7 @@ class PostServiceTest {
 
         PostUpdateRequest request = new PostUpdateRequest(
                 "수정 제목", "<p>수정 내용</p>", "수정 내용",
-                false, null, null, false, "오타 수정", 1
+                false, null, null, false, "오타 수정", 1, null
         );
 
         PostDetail result = postService.updatePost(1L, request, 1L);

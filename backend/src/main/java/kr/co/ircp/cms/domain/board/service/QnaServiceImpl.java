@@ -15,6 +15,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -74,6 +75,8 @@ public class QnaServiceImpl implements QnaService {
                 .questionerId(questionerId)
                 .isPrivate(request.isPrivate())
                 .status(QnaStatus.PENDING.name())
+                // SPEC-CMS-AI-004: 요청 태그 반영 (null/미전송 시 빈 목록 — TypeHandler NPE 방지)
+                .tags(request.tags() != null ? request.tags() : Collections.emptyList())
                 .build();
         qnaMapper.insert(qna);
         return toDetail(qna);
@@ -134,7 +137,7 @@ public class QnaServiceImpl implements QnaService {
     private QnaSummary toSummary(Qna q) {
         return new QnaSummary(
                 q.getId(), q.getTitle(), q.getQuestionerId(),
-                q.getStatus(), q.isPrivate(), q.getCreatedAt()
+                q.getStatus(), q.isPrivate(), q.getCreatedAt(), q.getTags()
         );
     }
 
@@ -145,7 +148,7 @@ public class QnaServiceImpl implements QnaService {
                 q.getQuestionerId(),
                 q.getAnswerHtml(), q.getAnswerText(),
                 q.getAnswererId(), q.getAnsweredAt(),
-                q.isPrivate(), q.getStatus(),
+                q.isPrivate(), q.getStatus(), q.getTags(),
                 q.getCreatedAt(), q.getUpdatedAt()
         );
     }

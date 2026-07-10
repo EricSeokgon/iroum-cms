@@ -76,7 +76,7 @@ class QnaControllerTest {
                 "<p>로그인이 안돼요</p>", "로그인이 안돼요",
                 10L,
                 null, null, null, null,
-                isPrivate, "PENDING",
+                isPrivate, "PENDING", List.of(),
                 Instant.now(), Instant.now()
         );
     }
@@ -86,7 +86,7 @@ class QnaControllerTest {
     void list_returns200_whenUser() throws Exception {
         // given
         QnaSummary summary = new QnaSummary(
-                1L, "비밀번호 분실 문의", 10L, "PENDING", false, Instant.now()
+                1L, "비밀번호 분실 문의", 10L, "PENDING", false, Instant.now(), List.of()
         );
         PageResponse<QnaSummary> page = PageResponse.of(List.of(summary), 0, 20, 1L);
         when(qnaService.listQnas(any(), any(), any(), anyInt(), anyInt(), any(), anyBoolean(), anyBoolean()))
@@ -137,7 +137,7 @@ class QnaControllerTest {
         // given
         when(qnaService.createQna(any(), any())).thenReturn(sampleDetail(5L, false));
         QnaCreateRequest req = new QnaCreateRequest(
-                "비밀번호 분실 문의", "<p>로그인이 안됩니다</p>", false
+                "비밀번호 분실 문의", "<p>로그인이 안됩니다</p>", false, null
         );
 
         // when & then
@@ -160,7 +160,7 @@ class QnaControllerTest {
                 10L,
                 "<p>이메일로 재설정 링크를 발송하세요.</p>", "이메일 재설정",
                 1L, Instant.now(),
-                false, "ANSWERED",
+                false, "ANSWERED", List.of(),
                 Instant.now(), Instant.now()
         );
         when(qnaService.answerQna(eq(1L), any(), any())).thenReturn(answered);
