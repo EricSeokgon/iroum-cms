@@ -5,8 +5,8 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import kr.co.ircp.cms.domain.notification.admin.dto.ConnectionAckPayload;
 import kr.co.ircp.cms.domain.notification.admin.repository.AdminNotificationMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -24,7 +24,6 @@ import org.springframework.web.socket.messaging.SessionSubscribeEvent;
 // @MX:NOTE: [AUTO] AdminNotificationAckListener — 구독 시점 CONNECTED ack 발행(REQ-NWS-004)
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class AdminNotificationAckListener {
 
     /** ack 토픽 suffix. 실제 경로: {@code /topic/notifications/{userId}/ack}. */
@@ -33,6 +32,17 @@ public class AdminNotificationAckListener {
     private final SimpMessagingTemplate messagingTemplate;
     private final AdminNotificationMapper mapper;
     private final TaskScheduler taskScheduler;
+
+    // @MX:NOTE: [AUTO] Spring WebSocket 메시지 브로커가 자동 등록하는 스케줄러를 명시 지정.
+    //   미지정 시 DispatchSchedulerConfig 의 dispatchScheduler 빈과 충돌(NoUniqueBeanDefinitionException).
+    public AdminNotificationAckListener(
+            SimpMessagingTemplate messagingTemplate,
+            AdminNotificationMapper mapper,
+            @Qualifier("messageBrokerTaskScheduler") TaskScheduler taskScheduler) {
+        this.messagingTemplate = messagingTemplate;
+        this.mapper = mapper;
+        this.taskScheduler = taskScheduler;
+    }
 
     @EventListener
     public void onSubscribe(SessionSubscribeEvent event) {
