@@ -32,6 +32,12 @@ export default defineConfig({
   build: {
     target: 'es2022',
   },
+  // SPEC-CMS-NOTIFICATION-WS-001 — @stomp/stompjs·sockjs-client(CJS 하이브리드)를
+  // 서버 시작 시 사전 번들링해 첫 admin 페이지 요청에서 late dependency discovery로 인한
+  // Vite full-reload/재최적화 지연이 발생하지 않도록 한다.
+  optimizeDeps: {
+    include: ['@stomp/stompjs', 'sockjs-client'],
+  },
   test: {
     globals: true,
     environment: 'jsdom',
