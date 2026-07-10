@@ -3,7 +3,7 @@ package kr.co.ircp.cms.domain.policy.dispatch.executor;
 import kr.co.ircp.cms.domain.policy.dispatch.dto.NotificationDispatchTargetWithUser;
 import kr.co.ircp.cms.domain.policy.dispatch.entity.NotificationDispatchSchedule;
 import kr.co.ircp.cms.domain.policy.dispatch.repository.NotificationDispatchTargetMapper;
-import kr.co.ircp.cms.domain.policy.dispatch.repository.UserNotificationInboxMapper;
+import kr.co.ircp.cms.domain.policy.dispatch.repository.PolicyDispatchInboxMapper;
 import kr.co.ircp.cms.domain.policy.subscription.repository.NotificationSubscriptionMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("InappDispatchExecutor (SPEC-CMS-NOTI-EXT-001)")
 class InappDispatchExecutorTest {
 
-    @Mock private UserNotificationInboxMapper inboxMapper;
+    @Mock private PolicyDispatchInboxMapper inboxMapper;
     @Mock private NotificationSubscriptionMapper subscriptionMapper;
     @Mock private NotificationDispatchTargetMapper targetMapper;
 

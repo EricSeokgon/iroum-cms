@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <!-- SPEC-CMS-NOTI-EXT-001 — 사용자 인앱 알림 수신함 적재 -->
-<mapper namespace="kr.co.ircp.cms.domain.policy.dispatch.repository.UserNotificationInboxMapper">
+<mapper namespace="kr.co.ircp.cms.domain.policy.dispatch.repository.PolicyDispatchInboxMapper">
 
     <insert id="insertInbox">
         INSERT INTO user_notification_inbox

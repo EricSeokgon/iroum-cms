@@ -11,7 +11,7 @@ import org.apache.ibatis.annotations.Param;
  */
 // @MX:SPEC: SPEC-CMS-NOTI-EXT-001
 @Mapper
-public interface UserNotificationInboxMapper {
+public interface PolicyDispatchInboxMapper {
 
     /** 인앱 알림 1건 적재. */
     void insertInbox(

@@ -462,6 +462,12 @@ class AuthorizationCoverageArchTest {
                 // ─── Points Authority (2종, SPEC-CMS-POINTS-001) ─────────────────
                 "POINTS:READ",
                 "POINTS:WRITE",
+                // ─── Notification Extension Authority (5종, SPEC-CMS-NOTI-EXT-001) ──
+                "NOTIFICATION_TEMPLATE:READ",
+                "NOTIFICATION_TEMPLATE:WRITE",
+                "NOTIFICATION_TEMPLATE:DELETE",
+                "POLICY:DISPATCH:READ",
+                "POLICY:DISPATCH:WRITE",
                 // ─── 인증만 요구 (1종) ─────────────────────────────────────────
                 "isAuthenticated"
         );

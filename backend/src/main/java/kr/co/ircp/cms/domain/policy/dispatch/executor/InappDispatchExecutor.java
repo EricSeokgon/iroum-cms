@@ -3,7 +3,7 @@ package kr.co.ircp.cms.domain.policy.dispatch.executor;
 import kr.co.ircp.cms.domain.policy.dispatch.dto.NotificationDispatchTargetWithUser;
 import kr.co.ircp.cms.domain.policy.dispatch.entity.NotificationDispatchSchedule;
 import kr.co.ircp.cms.domain.policy.dispatch.repository.NotificationDispatchTargetMapper;
-import kr.co.ircp.cms.domain.policy.dispatch.repository.UserNotificationInboxMapper;
+import kr.co.ircp.cms.domain.policy.dispatch.repository.PolicyDispatchInboxMapper;
 import kr.co.ircp.cms.domain.policy.subscription.repository.NotificationSubscriptionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class InappDispatchExecutor implements DispatchChannelExecutor {
 
-    private final UserNotificationInboxMapper inboxMapper;
+    private final PolicyDispatchInboxMapper inboxMapper;
     private final NotificationSubscriptionMapper subscriptionMapper;
     private final NotificationDispatchTargetMapper targetMapper;
 
