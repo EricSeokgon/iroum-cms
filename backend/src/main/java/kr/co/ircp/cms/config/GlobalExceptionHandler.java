@@ -25,6 +25,8 @@ import kr.co.ircp.cms.domain.auth.exception.SystemRoleProtectedException;
 import kr.co.ircp.cms.domain.auth.exception.TokenExpiredException;
 import kr.co.ircp.cms.domain.auth.exception.TokenReuseException;
 import kr.co.ircp.cms.domain.auth.exception.UserNotFoundException;
+import kr.co.ircp.cms.domain.auth.exception.UserPendingApprovalException;
+import kr.co.ircp.cms.domain.approval.exception.UserNotPendingApprovalException;
 import kr.co.ircp.cms.domain.ai.exception.AiPredictionNotFoundException;
 import kr.co.ircp.cms.domain.ai.exception.AiRateLimitExceededException;
 import kr.co.ircp.cms.domain.ai.exception.AiSimulationNotFoundException;
@@ -391,6 +393,34 @@ public class GlobalExceptionHandler {
                 HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Access Out Of Scope");
         detail.setProperty("code", "ACCESS_OUT_OF_SCOPE");
+        return detail;
+    }
+
+    /**
+     * 가입 승인 대기 상태 로그인 시도 → HTTP 403 Forbidden.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-004 — PENDING_APPROVAL 사용자는 승인 전 로그인 불가.
+     */
+    @ExceptionHandler(UserPendingApprovalException.class)
+    public ProblemDetail handleUserPendingApproval(UserPendingApprovalException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage());
+        detail.setTitle("User Pending Approval");
+        detail.setProperty("code", "USER_PENDING_APPROVAL");
+        return detail;
+    }
+
+    /**
+     * 승인 대기 상태가 아닌 사용자에 대한 승인/거절 시도 → HTTP 409 Conflict.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-001 REQ-UA-013 — 이미 처리된 사용자 재처리 거부.
+     */
+    @ExceptionHandler(UserNotPendingApprovalException.class)
+    public ProblemDetail handleUserNotPendingApproval(UserNotPendingApprovalException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("User Not Pending Approval");
+        detail.setProperty("code", "USER_NOT_PENDING_APPROVAL");
         return detail;
     }
 

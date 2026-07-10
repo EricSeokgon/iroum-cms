@@ -17,5 +17,8 @@ public enum UserStatus {
     LOCKED,
 
     /** 소프트 삭제된 계정 (deleted_at 동시 설정) */
-    DELETED
+    DELETED,
+
+    /** 가입 승인 대기 계정 (SPEC-CMS-USER-APPROVAL-001 — 승인 게이트 ON 시 신규 공개 가입자) */
+    PENDING_APPROVAL
 }
