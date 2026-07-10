@@ -39,8 +39,14 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue'),
+          component: () => import('@/views/dashboard/DashboardMainView.vue'),
           meta: { title: '대시보드' },
+        },
+        {
+          path: 'dashboard/summary',
+          name: 'dashboard-summary',
+          component: () => import('@/views/DashboardView.vue'),
+          meta: { title: '대시보드 (요약)' },
         },
         {
           path: 'dashboard/widgets',
@@ -327,6 +333,12 @@ const router = createRouter({
           name: 'content-seo-redirects',
           component: () => import('@/views/content/SeoRedirectManagerView.vue'),
           meta: { title: 'SEO 리다이렉트' },
+        },
+        {
+          path: 'content/blocks',
+          name: 'ContentBlockManager',
+          component: () => import('@/views/content/ContentBlockManagerView.vue'),
+          meta: { requiresAuth: true, title: '콘텐츠 블록 관리' },
         },
         // ── 시스템 관리 라우트 (SPEC-CMS-005) ──────────────────────────────
         {

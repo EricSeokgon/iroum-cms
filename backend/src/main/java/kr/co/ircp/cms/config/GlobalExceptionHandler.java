@@ -49,6 +49,9 @@ import kr.co.ircp.cms.domain.board.exception.QnaNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.SurveyNotFoundException;
 import kr.co.ircp.cms.domain.board.exception.SurveyPeriodInvalidException;
 import kr.co.ircp.cms.domain.content.banner.exception.BannerAltTextMissingException;
+import kr.co.ircp.cms.domain.content.block.exception.ContentBlockEmbedProviderInvalidException;
+import kr.co.ircp.cms.domain.content.block.exception.ContentBlockNotFoundException;
+import kr.co.ircp.cms.domain.content.block.exception.ContentBlockSlugDuplicateException;
 import kr.co.ircp.cms.domain.content.banner.exception.BannerPeriodInvalidException;
 import kr.co.ircp.cms.domain.content.menu.exception.MenuCircularReferenceException;
 import kr.co.ircp.cms.domain.content.menu.exception.MenuCodeDuplicateException;
@@ -1366,6 +1369,35 @@ public class GlobalExceptionHandler {
         ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
         detail.setTitle("Admin Notification Not Found");
         detail.setProperty("code", "ADMIN_NOTIFICATION_NOT_FOUND");
+        return detail;
+    }
+
+    // ─── SPEC-CMS-CONTENT-BLOCK-001 공유 콘텐츠 블록 예외 ────────────────────────
+
+    /** 공유 콘텐츠 블록 미존재 → 404. REQ-CB-012 */
+    @ExceptionHandler(ContentBlockNotFoundException.class)
+    public ProblemDetail handleContentBlockNotFound(ContentBlockNotFoundException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        detail.setTitle("Content Block Not Found");
+        detail.setProperty("code", ContentBlockNotFoundException.CODE);
+        return detail;
+    }
+
+    /** 공유 콘텐츠 블록 slug 중복 → 409. REQ-CB-011 */
+    @ExceptionHandler(ContentBlockSlugDuplicateException.class)
+    public ProblemDetail handleContentBlockSlugDuplicate(ContentBlockSlugDuplicateException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        detail.setTitle("Content Block Slug Duplicate");
+        detail.setProperty("code", ContentBlockSlugDuplicateException.CODE);
+        return detail;
+    }
+
+    /** EMBED 제공자 허용 목록 위반 → 422. REQ-CB-015 */
+    @ExceptionHandler(ContentBlockEmbedProviderInvalidException.class)
+    public ProblemDetail handleContentBlockEmbedProviderInvalid(ContentBlockEmbedProviderInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage());
+        detail.setTitle("Embed Provider Invalid");
+        detail.setProperty("code", ContentBlockEmbedProviderInvalidException.CODE);
         return detail;
     }
 }

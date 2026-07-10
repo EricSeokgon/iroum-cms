@@ -623,3 +623,68 @@ export const seoRedirects = {
     return apiClient.delete(`${BASE}/seo/redirects/${id}`)
   },
 }
+
+// ── 공유 콘텐츠 블록 (SPEC-CMS-CONTENT-BLOCK-001) ──────────────────────────────
+// @MX:NOTE: [AUTO] Shared* 접두사 — 페이지 스코프 ContentBlockRequest/Response/BlockType(위 라인 154-171, 독립 재사용 라이브러리)과의 이름 충돌 회피
+export type SharedBlockType = 'RICH_TEXT' | 'HTML' | 'MARKDOWN' | 'EMBED'
+
+export interface SharedContentBlockRequest {
+  name: string
+  slug: string
+  blockType: SharedBlockType
+  contentHtml?: string
+  contentRaw?: string
+  description?: string
+  status?: string
+}
+
+export interface SharedContentBlockResponse {
+  id: number
+  name: string
+  slug: string
+  blockType: string
+  contentHtml: string | null
+  contentRaw: string | null
+  description: string | null
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+// @MX:NOTE: [AUTO] contentBlockApi — ContentBlockManagerView 에서 참조 (재사용 블록 라이브러리)
+export const contentBlockApi = {
+  /** GET /api/v1/content/blocks */
+  list(params?: { status?: string; type?: string }): Promise<{ data: SharedContentBlockResponse[] }> {
+    return apiClient.get(`${BASE}/blocks`, { params })
+  },
+
+  /** GET /api/v1/content/blocks/{id} */
+  getById(id: number): Promise<{ data: SharedContentBlockResponse }> {
+    return apiClient.get(`${BASE}/blocks/${id}`)
+  },
+
+  /** GET /api/v1/content/blocks/{id}/preview */
+  preview(id: number): Promise<{ data: { html: string } }> {
+    return apiClient.get(`${BASE}/blocks/${id}/preview`)
+  },
+
+  /** POST /api/v1/content/blocks */
+  create(req: SharedContentBlockRequest): Promise<{ data: SharedContentBlockResponse }> {
+    return apiClient.post(`${BASE}/blocks`, req)
+  },
+
+  /** PUT /api/v1/content/blocks/{id} */
+  update(id: number, req: SharedContentBlockRequest): Promise<{ data: SharedContentBlockResponse }> {
+    return apiClient.put(`${BASE}/blocks/${id}`, req)
+  },
+
+  /** PATCH /api/v1/content/blocks/{id}/status */
+  updateStatus(id: number, status: string): Promise<{ data: SharedContentBlockResponse }> {
+    return apiClient.patch(`${BASE}/blocks/${id}/status`, { status })
+  },
+
+  /** DELETE /api/v1/content/blocks/{id} */
+  delete(id: number): Promise<void> {
+    return apiClient.delete(`${BASE}/blocks/${id}`)
+  },
+}

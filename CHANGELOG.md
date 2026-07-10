@@ -83,6 +83,28 @@
   - **IT 테스트 24건**: `AdminKpiControllerIT` 9건, `KpiAggregationServiceImplIT` 4건, `KpiExportServiceImplIT` 9건, `KpiPerformanceIT` 2건 — AC-001~016 전체 커버
   - **프론트엔드**: `KpiDashboardView.vue` + `KpiFilterPanel.vue` + `KpiSummaryCards.vue` + `KpiTrendChart.vue` + `KpiConversionFunnel.vue` + `kpiStore.ts` + `kpiStore.spec.ts` (18건 유닛 테스트), ko/en i18n 추가, 라우터 등록
 
+- **재사용 콘텐츠 블록 라이브러리** (`SharedContentBlockController`, `SharedContentBlockServiceImpl`, `ContentBlockManagerView.vue`, SPEC-CMS-CONTENT-BLOCK-001)
+  - **DB 스키마**: `shared_content_block` 테이블 신규 (V55 마이그레이션) — 페이지 스코프 `content_block`과 분리된 독립 공유 테이블
+  - **백엔드 CRUD API** (`/api/v1/content/blocks`):
+    - `POST /content/blocks` — 블록 생성 (201, CONTENT:WRITE)
+    - `GET /content/blocks` — 목록 조회 (200, CONTENT:READ) + `?status=`, `?type=` 필터
+    - `GET /content/blocks/{id}` — 단건 조회 (200, CONTENT:READ)
+    - `GET /content/blocks/{id}/preview` — 미리보기 (200, CONTENT:READ)
+    - `PUT /content/blocks/{id}` — 수정 (200, CONTENT:WRITE)
+    - `PATCH /content/blocks/{id}/status` — 상태 변경 (200, CONTENT:WRITE)
+    - `DELETE /content/blocks/{id}` — 삭제 (204, CONTENT:DELETE)
+  - **블록 타입 및 보안 정책**:
+    - `RICH_TEXT`: Jsoup.relaxed() XSS 정제
+    - `HTML`: SUPER_ADMIN 전용 (정제 우회)
+    - `MARKDOWN`: Jsoup.none() 정제
+    - `EMBED`: 제공자 허용 목록 강제 (youtube.com, vimeo.com, map.kakao.com) — 위반 시 422 `BLOCK_EMBED_PROVIDER_INVALID`
+  - **슬러그 중복 방지**: 409 `BLOCK_SLUG_DUPLICATE`. 미존재 시 404 `BLOCK_NOT_FOUND`
+  - **`SharedContentBlockServiceImpl`**: Jsoup 타입별 정제 전략 + 제공자 허용 목록 검증 통합
+  - **`SharedContentBlockMapper`** + XML 매퍼: MyBatis 기반 CRUD 쿼리
+  - **`GlobalExceptionHandler`**: 3개 예외 클래스 RFC 9457 ProblemDetail 핸들러 추가
+  - **프론트엔드**: `contentBlockApi` (`frontend/admin/src/api/content.ts`). `ContentBlockManagerView.vue` (255라인) — 목록/생성/수정/삭제/상태변경/미리보기 Vue 3 + TypeScript + Element Plus. `/content/blocks` 라우터 등록
+  - **IT**: `ContentBlockIT.java` — AC-001~AC-014 14개 인수 기준 전체 GREEN
+
 - **발간자료 카테고리 관리자 CRUD** (`PublicationCategoryAdminController`, `PublicationCategoryAdminServiceImpl`, `PublicationCategoryManagerView.vue`, SPEC-CMS-PUB-CAT-001)
   - **백엔드**: `GET /api/v1/admin/publication-categories` (INACTIVE 포함 전체 트리). `POST` — 루트/자식 카테고리 생성(201). `PUT /{id}` — 이름/정렬/상태 수정(200). `DELETE /{id}` — 리프 삭제(204). 하위 카테고리 존재 또는 연결된 발간자료 존재 시 409 Conflict
   - **DB 트리거 대응**: `trg_pub_cat_depth`가 `depth`를 자동 계산 → INSERT 시 depth 컬럼 제외, 저장 후 `findById` 재조회로 depth 반영
