@@ -290,7 +290,7 @@ CREATE TABLE IF NOT EXISTS notification_template (
 **PUSH 구현 시 필요한 요소**:
 1. `firebase-admin` 또는 `google.firebase:firebase-admin` dependency 추가
 2. FCM 서비스 계정 키 관리 (환경변수/Secret)
-3. 사용자별 FCM device token 저장 테이블 (V60+)
+3. 사용자별 FCM device token 저장 테이블 (V64+)
 4. `notification_subscription` 또는 별도 테이블 확장
 5. `PushNotificationService` 인터페이스 + 구현체
 6. `notification_dispatch_target.channel` CHECK 제약 확장 (ALTER TABLE)
@@ -629,7 +629,7 @@ FCM 의존성, device token 저장, push service 클래스가 모두 없다.
 - **비동기 스레드 풀**: `auditExecutor`가 현재 이메일 발송에 사용됨. 발송 워커는 별도 스레드 풀 권장
 - **암호화**: 이메일 PII는 반드시 `EmailEncryptionService` 통해 처리
 - **UNIQUE 제약**: `email_template (code, language)` — 알림 템플릿 설계 시 동일 패턴 적용 권장
-- **Flyway 버전**: 다음 마이그레이션은 V60부터 시작
+- **Flyway 버전**: 다음 마이그레이션은 V64부터 시작
 
 ---
 
@@ -646,10 +646,10 @@ FCM 의존성, device token 저장, push service 클래스가 모두 없다.
 | PUSH (FCM) 알림 | | SPEC-CMS-NOTI-PUSH-001 |
 | KAKAO/SMS 연동 | | SPEC-CMS-NOTI-KAKAO-001 |
 
-### 12.2 Priority High — notification_template 스키마 확장 (V60 마이그레이션)
+### 12.2 Priority High — notification_template 스키마 확장 (V64 마이그레이션)
 
 ```sql
--- V60: notification_template 정식 확장 (SPEC-CMS-NOTI-EXT-001)
+-- V64: notification_template 정식 확장 (SPEC-CMS-NOTI-EXT-001)
 ALTER TABLE notification_template
   ADD COLUMN subject          VARCHAR(300),           -- 이메일 제목 (EMAIL 채널용)
   ADD COLUMN body_html        TEXT,                   -- HTML 본문 (EMAIL 채널용)
@@ -678,7 +678,7 @@ NotificationDispatchWorker (@Scheduled + @Transactional)
   ↓ schedule status COMPLETED/FAILED 업데이트
 ```
 
-### 12.4 Priority High — 권한 시드 추가 (V60 또는 V61)
+### 12.4 Priority High — 권한 시드 추가 (V64 또는 V64)
 
 ```sql
 INSERT INTO permissions (code, resource, action, description) VALUES
@@ -727,7 +727,7 @@ domain/notification/template/admin/
 
 ```
 Phase 1 (백엔드 기반)
-  1. V60 마이그레이션 (notification_template 확장 + 권한 시드)
+  1. V64 마이그레이션 (notification_template 확장 + 권한 시드)
   2. NotificationTemplate 엔티티 + Mapper + CRUD 서비스
   3. NotificationTemplateAdminController (@PreAuthorize)
   4. PolicyDispatchController @PreAuthorize 추가
@@ -741,7 +741,7 @@ Phase 3 (프론트엔드)
   8. notificationTemplate.ts API 래퍼
   9. notificationTemplate.ts Pinia 스토어
   10. NotificationTemplateListView.vue
-  11. 라우터 등록 + 메뉴 카탈로그 추가 (V61)
+  11. 라우터 등록 + 메뉴 카탈로그 추가 (V64)
   12. PolicyDispatchView 템플릿 드롭다운 연동
 ```
 

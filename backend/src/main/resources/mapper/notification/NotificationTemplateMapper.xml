@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- SPEC-CMS-NOTI-EXT-001 — 알림 템플릿 CRUD 매퍼 -->
+<mapper namespace="kr.co.ircp.cms.domain.notification.template.admin.repository.NotificationTemplateMapper">
+
+    <resultMap id="templateMap"
+               type="kr.co.ircp.cms.domain.notification.template.admin.entity.NotificationTemplate">
+        <id property="id" column="id"/>
+        <result property="code" column="code"/>
+        <result property="name" column="name"/>
+        <result property="channel" column="channel"/>
+        <result property="bodyTemplate" column="body_template"/>
+        <result property="reviewStatus" column="review_status"/>
+        <result property="subject" column="subject"/>
+        <result property="bodyHtml" column="body_html"/>
+        <result property="variables" column="variables"/>
+        <result property="language" column="language"/>
+        <result property="isActive" column="is_active"/>
+        <result property="emailTemplateId" column="email_template_id"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="updatedBy" column="updated_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <sql id="cols">
+        id, code, name, channel, body_template, review_status, subject, body_html,
+        variables::text AS variables, language, is_active, email_template_id,
+        created_by, updated_by, created_at, updated_at
+    </sql>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO notification_template
+            (code, name, channel, subject, body_html, variables, language,
+             is_active, email_template_id, created_by, updated_by)
+        VALUES (
+            #{code}, #{name}, #{channel}, #{subject}, #{bodyHtml},
+            COALESCE(#{variables}, '[]')::jsonb, #{language},
+            #{isActive}, #{emailTemplateId}, #{createdBy}, #{updatedBy}
+        )
+    </insert>
+
+    <select id="findById" resultMap="templateMap">
+        SELECT <include refid="cols"/> FROM notification_template WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultMap="templateMap">
+        SELECT <include refid="cols"/> FROM notification_template
+        <where>
+            <if test="isActive != null">AND is_active = #{isActive}</if>
+        </where>
+        ORDER BY updated_at DESC, id DESC
+        LIMIT #{pageSize} OFFSET #{pageOffset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM notification_template
+        <where>
+            <if test="isActive != null">AND is_active = #{isActive}</if>
+        </where>
+    </select>
+
+    <select id="existsByCodeAndLanguage" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1 FROM notification_template
+            WHERE code = #{code} AND language = #{language}
+            <if test="excludeId != null">AND id != #{excludeId}</if>
+        )
+    </select>
+
+    <update id="update">
+        UPDATE notification_template SET
+            name              = #{name},
+            channel           = #{channel},
+            subject           = #{subject},
+            body_html         = #{bodyHtml},
+            variables         = COALESCE(#{variables}, '[]')::jsonb,
+            language          = #{language},
+            is_active         = #{isActive},
+            email_template_id = #{emailTemplateId},
+            updated_by        = #{updatedBy},
+            updated_at        = now()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM notification_template WHERE id = #{id}
+    </delete>
+</mapper>

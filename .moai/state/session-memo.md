@@ -2,7 +2,7 @@
 
 ## P1: Session Context
 
-session_id: d28adaad-9d98-42b4-be3b-a5a5bb8649d3
-cwd: /home/sklee/moai/iroum-cms
+session_id: 94b07475-c78f-4271-85bb-5856132078ad
+cwd: /home/sklee/moai/iroum-cms/.worktrees/noti-ext
 event: PreCompact
 
