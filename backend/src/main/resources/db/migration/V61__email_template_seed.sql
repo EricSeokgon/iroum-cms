@@ -25,9 +25,9 @@ VALUES (
     'OTP 본인인증',
     'OTP',
     'ko',
-    '[iroum-cms] 본인인증 코드: ${code}',
-    '<p>안녕하세요.</p><p>본인인증 코드는 <strong>${code}</strong> 입니다.</p><p>5분 이내에 입력해 주세요.</p><p>이 코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.</p><p>iroum-cms 시스템</p>',
-    '안녕하세요.\n\n본인인증 코드는 ${code} 입니다.\n5분 이내에 입력해 주세요.\n\n이 코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.\n\niroum-cms 시스템',
+    '[iroum-cms] 본인인증 코드: $${code}',
+    '<p>안녕하세요.</p><p>본인인증 코드는 <strong>$${code}</strong> 입니다.</p><p>5분 이내에 입력해 주세요.</p><p>이 코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.</p><p>iroum-cms 시스템</p>',
+    '안녕하세요.\n\n본인인증 코드는 $${code} 입니다.\n5분 이내에 입력해 주세요.\n\n이 코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.\n\niroum-cms 시스템',
     '[{"name":"code","description":"OTP 인증 코드 (6자리 숫자)","required":true},{"name":"purpose","description":"인증 목적 (예: SIGN_UP, PASSWORD_RESET)","required":false}]'::jsonb,
     true,
     'SYSTEM'
