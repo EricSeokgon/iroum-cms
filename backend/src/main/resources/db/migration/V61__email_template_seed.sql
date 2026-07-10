@@ -30,7 +30,7 @@ VALUES (
     '안녕하세요.\n\n본인인증 코드는 $${code} 입니다.\n5분 이내에 입력해 주세요.\n\n이 코드를 요청하지 않으셨다면 이 이메일을 무시해 주세요.\n\niroum-cms 시스템',
     '[{"name":"code","description":"OTP 인증 코드 (6자리 숫자)","required":true},{"name":"purpose","description":"인증 목적 (예: SIGN_UP, PASSWORD_RESET)","required":false}]'::jsonb,
     true,
-    'SYSTEM'
+    1
 ) ON CONFLICT (code, language) DO NOTHING;
 
 -- 비밀번호 재설정 완료 안내 템플릿
@@ -45,7 +45,7 @@ VALUES (
     '안녕하세요.\n\n비밀번호가 성공적으로 재설정되었습니다.\n\n본인이 요청하지 않았다면 즉시 고객센터에 문의해 주세요.\n\niroum-cms 시스템',
     '[]'::jsonb,
     true,
-    'SYSTEM'
+    1
 ) ON CONFLICT (code, language) DO NOTHING;
 
 -- Q&A 답변 알림 템플릿
@@ -60,5 +60,5 @@ VALUES (
     '안녕하세요.\n\n문의하신 Q&A에 답변이 등록되었습니다.\niroum-cms 시스템에 로그인하여 확인해 주세요.\n\niroum-cms 시스템',
     '[]'::jsonb,
     true,
-    'SYSTEM'
+    1
 ) ON CONFLICT (code, language) DO NOTHING;
