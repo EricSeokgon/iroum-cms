@@ -30,8 +30,8 @@ const mockApprove = vi.mocked(userApprovalsApi.approve)
 const mockReject = vi.mocked(userApprovalsApi.reject)
 
 const pending: PendingUser[] = [
-  { userId: 10, username: 'a@example.com', email: 'a@example.com', name: '대기자A', createdAt: '2026-06-01T00:00:00Z', organizationId: null },
-  { userId: 11, username: 'b@example.com', email: 'b@example.com', name: '대기자B', createdAt: '2026-06-02T00:00:00Z', organizationId: null },
+  { userId: 10, username: 'a@example.com', email: 'a@example.com', name: '대기자A', createdAt: '2026-06-01T00:00:00Z', organizationId: null, emailVerifiedAt: '2026-06-01T01:00:00Z' },
+  { userId: 11, username: 'b@example.com', email: 'b@example.com', name: '대기자B', createdAt: '2026-06-02T00:00:00Z', organizationId: null, emailVerifiedAt: null },
 ]
 
 const emptyPage: PageResponse<PendingUser> = { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 }
@@ -99,6 +99,15 @@ describe('ApprovalQueueView', () => {
     await flushPromises()
 
     expect(mockReject).toHaveBeenCalledWith(11, '자격 미달')
+  })
+
+  it('AC-UA2-008-3 — 이메일 인증 완료/미인증 컬럼을 표시한다', async () => {
+    mockList.mockResolvedValue({ data: filledPage } as never)
+    const wrapper = mountView()
+    await flushPromises()
+    // emailVerifiedAt 이 있으면 "인증 완료", null 이면 "미인증"
+    expect(wrapper.text()).toContain('인증 완료')
+    expect(wrapper.text()).toContain('미인증')
   })
 
   it('검색어 입력 후 검색 시 keyword 파라미터로 재조회한다', async () => {

@@ -4,6 +4,8 @@ import jakarta.validation.ConstraintViolationException;
 import kr.co.ircp.cms.domain.auth.exception.AccessOutOfScopeException;
 import kr.co.ircp.cms.domain.auth.exception.AdminEmailPartialSearchException;
 import kr.co.ircp.cms.domain.auth.exception.InvalidVerifiedTokenException;
+import kr.co.ircp.cms.domain.auth.exception.RegistrationTokenInvalidException;
+import kr.co.ircp.cms.domain.auth.exception.RegistrationTokenRequiredException;
 import kr.co.ircp.cms.domain.auth.exception.VerificationAttemptExceededException;
 import kr.co.ircp.cms.domain.auth.exception.VerificationCodeMismatchException;
 import kr.co.ircp.cms.domain.auth.exception.VerificationCooldownException;
@@ -512,6 +514,34 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNAUTHORIZED, "유효하지 않거나 만료된 인증 토큰입니다. 다시 인증해 주세요.");
         detail.setTitle("Invalid Verified Token");
         detail.setProperty("code", "VERIFICATION_TOKEN_INVALID");
+        return detail;
+    }
+
+    /**
+     * 가입 이메일 인증 토큰 누락 → HTTP 400 Bad Request.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — 인증 게이트 ON 인데 verifiedToken 필드 누락.
+     */
+    @ExceptionHandler(RegistrationTokenRequiredException.class)
+    public ProblemDetail handleRegistrationTokenRequired(RegistrationTokenRequiredException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "가입을 위해 이메일 인증이 필요합니다. 인증 후 다시 시도해 주세요.");
+        detail.setTitle("Registration Verification Required");
+        detail.setProperty("code", "REGISTRATION_VERIFY_TOKEN_REQUIRED");
+        return detail;
+    }
+
+    /**
+     * 가입 이메일 인증 토큰 무효 → HTTP 403 Forbidden.
+     *
+     * <p>SPEC-CMS-USER-APPROVAL-002 REQ-UA2-002 — 토큰 만료·목적 불일치·대상 불일치.
+     */
+    @ExceptionHandler(RegistrationTokenInvalidException.class)
+    public ProblemDetail handleRegistrationTokenInvalid(RegistrationTokenInvalidException ex) {
+        ProblemDetail detail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "유효하지 않거나 만료된 인증 토큰입니다. 다시 인증해 주세요.");
+        detail.setTitle("Registration Verification Invalid");
+        detail.setProperty("code", "REGISTRATION_VERIFY_TOKEN_INVALID");
         return detail;
     }
 

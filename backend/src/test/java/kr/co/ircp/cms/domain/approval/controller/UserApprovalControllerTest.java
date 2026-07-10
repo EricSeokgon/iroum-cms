@@ -70,7 +70,7 @@ class UserApprovalControllerTest {
     @DisplayName("GET /approvals — SUPER_ADMIN: 200 + 페이지 응답")
     void list_superAdmin_returnsOk() throws Exception {
         UserApprovalSummary s = new UserApprovalSummary(
-                10L, "u10@example.com", "u10@example.com", "홍길동", Instant.now(), null);
+                10L, "u10@example.com", "u10@example.com", "홍길동", Instant.now(), null, null);
         when(approvalService.getPendingApprovals(anyInt(), anyInt(), any()))
                 .thenReturn(new UserApprovalService.PageResult(List.of(s), 1));
 

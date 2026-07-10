@@ -11,8 +11,9 @@ import java.time.Instant;
  * @param username       로그인 아이디 (공개 가입자는 email 과 동일)
  * @param email          이메일
  * @param name           이름
- * @param createdAt      가입 신청 일시
- * @param organizationId 소속 조직 ID (공개 가입자는 null)
+ * @param createdAt       가입 신청 일시
+ * @param organizationId  소속 조직 ID (공개 가입자는 null)
+ * @param emailVerifiedAt 이메일 인증 완료 시각 (NULL=미인증). SPEC-CMS-USER-APPROVAL-002 REQ-UA2-008
  */
 public record UserApprovalSummary(
         Long userId,
@@ -20,6 +21,7 @@ public record UserApprovalSummary(
         String email,
         String name,
         Instant createdAt,
-        Long organizationId
+        Long organizationId,
+        Instant emailVerifiedAt
 ) {
 }
