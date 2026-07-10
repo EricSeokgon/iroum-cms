@@ -23,7 +23,9 @@ import kr.co.ircp.cms.domain.board.repository.BbsPostMapper;
 import kr.co.ircp.cms.domain.board.repository.BbsViewLogMapper;
 import kr.co.ircp.cms.domain.board.util.AuthorizationGuard;
 import kr.co.ircp.cms.domain.board.util.HtmlSanitizer;
+import kr.co.ircp.cms.domain.point.service.UserPointService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ import java.util.stream.Collectors;
  * // @MX:NOTE: [AUTO] GREEN 단계 구현 완료. view_log dedupe 후 view_count 증가.
  * // @MX:SPEC: REQ-BOARD-002
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -53,6 +56,8 @@ public class PostServiceImpl implements PostService {
     private final AuthorizationGuard authorizationGuard;
     // SPEC-CMS-CONTENT-REVISION-001 M3: 저장 후 이력 보존 정책(best-effort) 적용.
     private final kr.co.ircp.cms.common.service.RevisionRetentionService retentionService;
+    // SPEC-CMS-POINTS-001 REQ-PNT-002 — 게시글 작성 best-effort 포인트 적립
+    private final UserPointService userPointService;
 
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(PostServiceImpl.class);
@@ -144,6 +149,13 @@ public class PostServiceImpl implements PostService {
                 .tags(request.tags() != null ? request.tags() : Collections.emptyList())
                 .build();
         bbsPostMapper.insert(post);
+
+        // SPEC-CMS-POINTS-001 REQ-PNT-002/008: 포인트 적립은 best-effort — 실패해도 게시글 작성은 정상 완료.
+        try {
+            userPointService.awardForPost(authorId, post.getId());
+        } catch (Exception e) {
+            log.warn("포인트 적립 실패 (게시글 ID: {}): {}", post.getId(), e.getMessage());
+        }
 
         return new PostDetail(
                 post.getId(), post.getBbsId(), master.getCode(), master.isUseComment(),

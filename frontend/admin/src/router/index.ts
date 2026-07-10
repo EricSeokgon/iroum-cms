@@ -426,6 +426,25 @@ const router = createRouter({
           component: () => import('@/views/system/SmtpConfigView.vue'),
           meta: { title: 'SMTP 설정', permissions: ['EMAIL_TEMPLATE:WRITE'] },
         },
+        // ── 참여 포인트 관리 라우트 (SPEC-CMS-POINTS-001) ───────────────────
+        {
+          path: 'points/policy',
+          name: 'point-policy',
+          component: () => import('@/views/points/PointPolicyAdminView.vue'),
+          meta: { title: '포인트 정책 관리', permissions: ['POINTS:WRITE'] },
+        },
+        {
+          path: 'points/ledger',
+          name: 'point-ledger',
+          component: () => import('@/views/points/PointLedgerAdminView.vue'),
+          meta: { title: '포인트 내역 조회', permissions: ['POINTS:READ'] },
+        },
+        {
+          path: 'me/points',
+          name: 'my-points',
+          component: () => import('@/views/points/UserPointHistoryView.vue'),
+          meta: { title: '내 포인트' },
+        },
         // ── 안전관리 라우트 (SPEC-CMS-006) ─────────────────────────────────
         {
           path: 'safety/incidents',

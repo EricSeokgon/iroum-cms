@@ -44,6 +44,19 @@
   - 프론트엔드: `RevisionPanel.vue` (이력 목록), `DiffViewer.vue` (INSERT/DELETE/EQUAL 라인 뷰어), `ConflictModal.vue` (409 충돌 해결)
   - PostFormView / PostDetailView / PageEditorView `expectedVersion` 연동
 
+- **게시판/댓글 참여 포인트 지급 시스템** (SPEC-CMS-POINTS-001)
+  - 사용자 게시글 작성, 댓글 작성, 게시글 좋아요(최초 1회) 활동에 포인트 자동 적립
+  - **포인트 정책 관리 API**: `GET /api/v1/admin/points/policy` — 현재 정책(이벤트별 포인트 값, 시스템 활성화 여부) 조회. `PUT /api/v1/admin/points/policy` — 정책 변경 (`POINTS:WRITE` 권한, `@AuditLog` 기록)
+  - **관리자 내역 조회 API**: `GET /api/v1/admin/points/ledger` — 사용자/이벤트/기간 조건 필터 + 페이징 (`POINTS:READ` 권한)
+  - **사용자 본인 조회 API**: `GET /api/v1/users/me/points/summary` — 누적 포인트 총액. `GET /api/v1/users/me/points/history` — 적립 내역 (인증 사용자 본인 한정)
+  - **좋아요 API**: `POST /api/v1/board/posts/{postId}/like` — 좋아요 등록(최초 1회 포인트 적립). `DELETE /api/v1/board/posts/{postId}/like` — 좋아요 취소(적립 포인트 회수 없음)
+  - **신규 DB 테이블**: `user_point_ledger` (append-only 적립 원장), `user_point_summary` (사용자별 누적 총액 비정규화), `bbs_post_like` (1인 1게시글 좋아요 추적, `UNIQUE(user_id, post_id)`)
+  - **V60 Flyway 마이그레이션**: `V60__points_system.sql` — 위 3개 테이블 생성 + `POINTS:ENABLED`, `POINTS:POST_CREATED`, `POINTS:COMMENT_CREATED`, `POINTS:LIKE_GIVEN` system_setting seed + `POINTS:READ`/`POINTS:WRITE` RBAC seed
+  - **신규 백엔드 패키지**: `kr.co.ircp.cms.domain.point` — Entity(`UserPointLedger`, `UserPointSummary`), Mapper, Service(`PointPolicyService`, `UserPointService`), Controller(`PointPolicyController`, `PointLedgerController`), DTO 전체 포함
+  - **아키텍처 결정**: `@Transactional(REQUIRES_NEW)`로 포인트 적립 격리(best-effort) — 포인트 실패가 게시글/댓글 작성을 롤백하지 않음. 정책 캐시 없음(즉시 반영). `DuplicateKeyException` 무음 처리로 좋아요 중복 요청 시 포인트 미적립
+  - **어드민 프론트엔드**: `PointPolicyAdminView.vue` (이벤트별 포인트 값 + 시스템 ON/OFF 토글), `PointLedgerAdminView.vue` (사용자/이벤트/기간 검색), `UserPointHistoryView.vue` (본인 총액 + 내역), `frontend/admin/src/api/point.ts`, 라우터 등록
+  - **테스트**: 28개 통과 (단위 테스트 18개 + 통합 테스트 10개, `PointPolicyServiceImplTest`×4, `UserPointServiceImplTest`×5, `BbsPostLikeServiceImplTest`×4, `PointPolicyControllerTest`×5, `PostControllerTest` 좋아요 추가)
+
 - **AI 스마트 태그 추천 기능** (SPEC-CMS-AI-004)
   - `POST /api/v1/ai/tag-recommend` — 게시글/Q&A 본문 기반 AI 태그 추천 REST API (비인증 공개 엔드포인트, 최대 5개 태그 추천)
   - `POST /api/v1/ai/tag-feedback` — 태그 채택/거부 피드백 로깅 API (`SUGGESTED`/`ACCEPTED`/`REJECTED` 이벤트 기록)

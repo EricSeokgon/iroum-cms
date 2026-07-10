@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.ircp.cms.domain.point.mapper.UserPointLedgerMapper">
+
+    <resultMap id="LedgerRM" type="kr.co.ircp.cms.domain.point.entity.UserPointLedger">
+        <id     property="id"          column="id"/>
+        <result property="userId"      column="user_id"/>
+        <result property="eventType"   column="event_type"/>
+        <result property="referenceId" column="reference_id"/>
+        <result property="points"      column="points"/>
+        <result property="createdAt"   column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="kr.co.ircp.cms.domain.point.entity.UserPointLedger"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_point_ledger (user_id, event_type, reference_id, points)
+        VALUES (#{userId}, #{eventType}, #{referenceId}, #{points})
+    </insert>
+
+    <select id="findByUserId" resultMap="LedgerRM">
+        SELECT id, user_id, event_type, reference_id, points, created_at
+        FROM user_point_ledger
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM user_point_ledger WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByFilter" resultMap="LedgerRM">
+        SELECT id, user_id, event_type, reference_id, points, created_at
+        FROM user_point_ledger
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="eventType != null and eventType != ''">AND event_type = #{eventType}</if>
+            <if test="from != null">AND created_at &gt;= #{from}</if>
+            <if test="to != null">AND created_at &lt;= #{to}</if>
+        </where>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countByFilter" resultType="long">
+        SELECT COUNT(*)
+        FROM user_point_ledger
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="eventType != null and eventType != ''">AND event_type = #{eventType}</if>
+            <if test="from != null">AND created_at &gt;= #{from}</if>
+            <if test="to != null">AND created_at &lt;= #{to}</if>
+        </where>
+    </select>
+
+</mapper>

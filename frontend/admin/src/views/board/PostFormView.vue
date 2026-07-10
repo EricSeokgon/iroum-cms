@@ -296,6 +296,7 @@ async function loadPost(): Promise<void> {
     form.isNotice = p.isNotice
     expectedVersion.value = p.version
     tags.value = p.tags ?? []
+    expectedVersion.value = p.version
     // 예약 상태로 로드되면 picker 초기값 + 예약 모드 표시 (REQ-POST-SCHEDULE-006-2)
     if (p.status === 'SCHEDULED' && p.scheduledAt) {
       publishMode.value = 'SCHEDULE'

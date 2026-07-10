@@ -43,7 +43,8 @@ class CommentServiceTest {
 
     @BeforeEach
     void setUp() {
-        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper, new AuthorizationGuard());
+        commentService = new CommentServiceImpl(bbsMasterMapper, bbsPostMapper, bbsCommentMapper, new AuthorizationGuard(),
+                org.mockito.Mockito.mock(kr.co.ircp.cms.domain.point.service.UserPointService.class));
     }
 
     private BbsPost stubPost(long id, long bbsId) {

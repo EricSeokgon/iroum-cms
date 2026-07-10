@@ -23,7 +23,7 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // @MX:NOTE: [AUTO] V1~V62 마이그레이션 총 61개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
+    // @MX:NOTE: [AUTO] V1~V63 마이그레이션 총 62개 (V11 없음) — 신규 마이그레이션 추가 시 기대값 갱신 필요
     // V50 (admin_role_menu_permissions), V51 (clean_admin_menus_from_public_menu_table),
     // V52 (super_admin_permissions_sync), V53 (kpi_definition_activity_seed, SPEC-CMS-KPI-002),
     // V54 (bbs_post_optimistic_lock, SPEC-CMS-CONTENT-REVISION-001 M1),
@@ -33,8 +33,9 @@ class MigrationOrderIT extends AbstractIntegrationTest {
     // V58 (ai_tag_recommendation, SPEC-CMS-AI-004),
     // V59 (email_template, SPEC-CMS-EMAIL-TEMPLATE-001), V60 (email_template_send_log),
     // V61 (email_template_seed — 권한 + 기본 템플릿 시드, SPEC-CMS-EMAIL-TEMPLATE-001 T10),
-    // V62 (user_registration_approval — 가입 승인 게이트, SPEC-CMS-USER-APPROVAL-001 T0) 추가로 61개.
-    private static final int EXPECTED_MIGRATION_COUNT = 61;
+    // V62 (user_registration_approval — 가입 승인 게이트, SPEC-CMS-USER-APPROVAL-001 T0),
+    // V63 (points_system — 참여 포인트 지급 시스템, SPEC-CMS-POINTS-001) 추가로 62개.
+    private static final int EXPECTED_MIGRATION_COUNT = 62;
 
     @Test
     void allMigrationsApplied_inOrder() {
@@ -68,6 +69,6 @@ class MigrationOrderIT extends AbstractIntegrationTest {
                 "32", "33", "34", "35", "36",
                 "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47",
                 "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58",
-                "59", "60", "61", "62");
+                "59", "60", "61", "62", "63");
     }
 }

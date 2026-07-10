@@ -58,7 +58,8 @@ class PostServiceTest {
         postService = new PostServiceImpl(
                 bbsMasterMapper, bbsPostMapper, bbsPostHistoryMapper, bbsViewLogMapper,
                 bbsPostI18nMapper, htmlSanitizer,
-                new AuthorizationGuard(), retentionService
+                new AuthorizationGuard(), retentionService,
+                org.mockito.Mockito.mock(kr.co.ircp.cms.domain.point.service.UserPointService.class)
         );
     }
 
