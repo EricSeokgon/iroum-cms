@@ -24,8 +24,6 @@ public record PostUpdateRequest(
         /** 클라이언트가 알고 있는 게시물 버전. 서버 현재 버전과 다르면 409. 누락 시 400. */
         @NotNull Integer expectedVersion,
         // SPEC-CMS-AI-004: AI 스마트 태그 (선택, 공백 허용, 최대 5개). null/미전송 시 빈 목록 처리.
-        List<String> tags,
-        // SPEC-CMS-CONTENT-REVISION-001 REQ-REV-005: 낙관적 잠금.
-        @NotNull Integer expectedVersion
+        List<String> tags
 ) {
 }
